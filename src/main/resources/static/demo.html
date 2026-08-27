@@ -1,0 +1,2230 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>DeepResearch · Agent Research Console</title>
+  <style>
+    :root {
+      --canvas: #f2f5fa;
+      --surface: #ffffff;
+      --surface-soft: #f7f9fc;
+      --surface-blue: #f1f5ff;
+      --ink: #142033;
+      --muted: #68778c;
+      --faint: #96a2b4;
+      --line: #dce4ef;
+      --primary: #315efb;
+      --primary-dark: #2548d7;
+      --primary-soft: #e9efff;
+      --teal: #0f9f8f;
+      --teal-soft: #e2f7f3;
+      --amber: #ad7418;
+      --amber-soft: #fff4d9;
+      --danger: #c54550;
+      --danger-soft: #fff0f1;
+      --navy: #111c31;
+      --purple: #7357d9;
+      --shadow: 0 16px 44px rgba(24, 43, 74, .09);
+      --shadow-soft: 0 8px 24px rgba(24, 43, 74, .07);
+      --radius: 16px;
+      --radius-sm: 11px;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-width: 320px; background: var(--canvas); }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 7% 3%, rgba(49, 94, 251, .09), transparent 27rem),
+        radial-gradient(circle at 94% 9%, rgba(15, 159, 143, .07), transparent 25rem),
+        var(--canvas);
+      font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, textarea, input { font: inherit; }
+    button { color: inherit; }
+    button, label, summary { -webkit-tap-highlight-color: transparent; }
+    :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    [hidden] { display: none !important; }
+
+    .app-bar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 0 28px;
+      color: white;
+      background: rgba(17, 28, 49, .96);
+      border-bottom: 1px solid rgba(255,255,255,.09);
+      backdrop-filter: blur(16px);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .brand-mark {
+      width: 38px; height: 38px; flex: 0 0 38px;
+      display: grid; place-items: center;
+      border-radius: 12px;
+      background: linear-gradient(145deg, #4d75ff, #1ec4ae);
+      box-shadow: 0 8px 22px rgba(49,94,251,.35);
+    }
+    .brand-mark svg { width: 22px; height: 22px; }
+    .brand-name { font-size: 16px; font-weight: 760; letter-spacing: -.01em; }
+    .brand-sub { color: #9eacc2; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
+    .bar-actions { display: flex; align-items: center; gap: 10px; }
+    .service-badge, .identity-badge {
+      min-height: 36px;
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 7px 11px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 999px;
+      color: #c9d3e2;
+      background: rgba(255,255,255,.05);
+      white-space: nowrap;
+    }
+    .service-dot { width: 8px; height: 8px; border-radius: 50%; background: #7d8a9d; }
+    .service-dot.online { background: #40d4b5; box-shadow: 0 0 0 4px rgba(64,212,181,.13); }
+    .service-dot.offline { background: #ff7881; box-shadow: 0 0 0 4px rgba(255,120,129,.12); }
+    .bar-button {
+      min-height: 38px; padding: 8px 13px;
+      border: 1px solid rgba(255,255,255,.14); border-radius: 10px;
+      color: white; background: rgba(255,255,255,.08); cursor: pointer;
+      transition: background .15s ease, transform .15s ease;
+    }
+    .bar-button:hover { background: rgba(255,255,255,.14); }
+    .bar-button:active { transform: scale(.98); }
+
+    .layout {
+      width: min(1800px, 100%);
+      min-height: calc(100vh - 72px);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr) 360px;
+      gap: 18px;
+      padding: 20px;
+    }
+    .panel {
+      background: rgba(255,255,255,.94);
+      border: 1px solid rgba(220,228,239,.95);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-soft);
+    }
+    .control-panel, .activity-panel { align-self: start; position: sticky; top: 92px; max-height: calc(100vh - 112px); }
+    .control-panel { overflow: auto; padding: 19px; }
+    .activity-panel { display: flex; flex-direction: column; overflow: hidden; }
+    .main-panel { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+
+    .eyebrow {
+      margin: 0 0 5px;
+      color: var(--primary);
+      font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 8px; font-size: clamp(22px, 2.6vw, 34px); line-height: 1.18; letter-spacing: -.035em; }
+    h2 { margin-bottom: 4px; font-size: 16px; letter-spacing: -.012em; }
+    h3 { margin-bottom: 5px; font-size: 14px; }
+    .muted { color: var(--muted); }
+    .small { font-size: 12px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+    .mode-switch {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 4px; padding: 4px; margin-bottom: 18px;
+      border-radius: 12px; background: #edf1f7;
+    }
+    .mode-button {
+      min-height: 40px; padding: 8px;
+      border: 0; border-radius: 9px;
+      color: var(--muted); background: transparent; cursor: pointer;
+      font-weight: 680; transition: all .18s ease;
+    }
+    .mode-button.active { color: var(--primary); background: white; box-shadow: 0 3px 10px rgba(27,48,82,.09); }
+    .mode-note { margin: -8px 2px 16px; color: var(--muted); font-size: 12px; }
+
+    .field { display: block; margin-bottom: 15px; }
+    .field-label { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 7px; font-size: 12px; font-weight: 720; }
+    .count { color: var(--faint); font-weight: 500; }
+    textarea, input[type="text"], input[type="password"] {
+      width: 100%;
+      border: 1px solid var(--line); border-radius: 12px;
+      color: var(--ink); background: white;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    textarea:hover, input[type="text"]:hover, input[type="password"]:hover { border-color: #c6d1df; }
+    textarea:focus, input[type="text"]:focus, input[type="password"]:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(49,94,251,.11); outline: 0; }
+    textarea { min-height: 132px; resize: vertical; padding: 12px 13px; line-height: 1.6; }
+    input[type="text"], input[type="password"] { height: 42px; padding: 9px 11px; }
+
+    .presets { display: flex; flex-wrap: wrap; gap: 7px; margin: -5px 0 16px; }
+    .preset {
+      padding: 6px 9px; border: 1px solid var(--line); border-radius: 999px;
+      color: var(--muted); background: white; cursor: pointer; font-size: 11px;
+      transition: color .15s, border-color .15s, transform .15s;
+    }
+    .preset:hover { color: var(--primary); border-color: #b8c8ff; transform: translateY(-1px); }
+    .tool-grid { display: grid; gap: 8px; }
+    .tool-chip {
+      min-height: 48px; display: flex; align-items: center; gap: 10px;
+      padding: 9px 11px; border: 1px solid var(--line); border-radius: 12px;
+      background: white; cursor: pointer; transition: all .16s ease;
+    }
+    .tool-chip:hover { border-color: #bdcafa; transform: translateY(-1px); }
+    .tool-chip:has(input:checked) { border-color: #9fb3ff; background: var(--surface-blue); }
+    .tool-chip input { width: 16px; height: 16px; accent-color: var(--primary); }
+    .tool-icon { width: 29px; height: 29px; display: grid; place-items: center; border-radius: 8px; background: var(--surface-soft); font-size: 15px; }
+    .tool-copy { min-width: 0; flex: 1; }
+    .tool-name { display: block; font-size: 12px; font-weight: 740; }
+    .tool-help { display: block; color: var(--faint); font-size: 10px; }
+    .cost-tag { color: var(--amber); font-size: 9px; font-weight: 760; }
+
+    details.options { margin: 16px 0; padding: 0 2px; }
+    details.options summary { min-height: 38px; display: flex; align-items: center; color: var(--muted); cursor: pointer; font-weight: 680; }
+    details.options summary::marker { color: var(--primary); }
+    .option-body { padding-top: 9px; }
+    .key-preview { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--faint); font-size: 10px; }
+
+    .button-row { display: grid; grid-template-columns: 1fr auto; gap: 9px; }
+    .button {
+      min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 10px 14px; border: 1px solid transparent; border-radius: 11px;
+      cursor: pointer; font-weight: 720; transition: all .15s ease;
+    }
+    .button:hover:not(:disabled) { transform: translateY(-1px); }
+    .button:active:not(:disabled) { transform: scale(.98); }
+    .button:disabled { opacity: .48; cursor: not-allowed; }
+    .button.loading::before { content: ""; width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.45); border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; }
+    .button.loading #startIcon { display: none; }
+    .button-primary { color: white; background: linear-gradient(135deg, var(--primary), #4c75ff); box-shadow: 0 9px 20px rgba(49,94,251,.2); }
+    .button-primary:hover:not(:disabled) { background: linear-gradient(135deg, var(--primary-dark), #3d66ef); }
+    .button-secondary { color: var(--primary); border-color: #c7d3ff; background: var(--primary-soft); }
+    .button-ghost { color: var(--muted); border-color: var(--line); background: white; }
+    .button-danger { color: var(--danger); border-color: #f1c7cb; background: var(--danger-soft); }
+    .icon-button { width: 44px; padding: 0; }
+    .spinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.4); border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; }
+
+    .unknown-card {
+      margin: 14px 0 0; padding: 12px;
+      border: 1px solid #efcf8e; border-radius: 12px; background: var(--amber-soft);
+      animation: rise .22s ease both;
+    }
+    .unknown-card strong { color: #78500d; }
+    .unknown-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+
+    .recent-section { margin-top: 20px; padding-top: 17px; border-top: 1px solid var(--line); }
+    .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .section-heading h2 { margin: 0; font-size: 12px; }
+    .recent-list { display: grid; gap: 7px; }
+    .recent-empty { padding: 10px; color: var(--faint); text-align: center; font-size: 11px; }
+    .recent-run {
+      width: 100%; min-width: 0; padding: 9px 10px; text-align: left;
+      border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); cursor: pointer;
+    }
+    .recent-run:hover { border-color: #b9c7f9; background: var(--surface-blue); }
+    .recent-run strong, .recent-run span { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .recent-run strong { font-size: 10px; }
+    .recent-run span { margin-top: 3px; color: var(--faint); font-size: 9px; }
+    .recent-question { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; font-size: 11px; }
+    .recent-meta { display: block; margin-top: 2px; color: var(--faint); font-size: 9px; }
+
+    .connection-banner {
+      min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 9px 13px; border: 1px solid #b9c8ff; border-radius: 12px;
+      color: #2648b7; background: var(--primary-soft); box-shadow: var(--shadow-soft);
+      animation: rise .2s ease both;
+    }
+    .connection-banner.warning { color: #7c540d; border-color: #ebca84; background: var(--amber-soft); }
+    .connection-banner.error { color: #91343d; border-color: #edc1c5; background: var(--danger-soft); }
+
+    .run-card { overflow: hidden; }
+    .run-head {
+      position: relative; min-height: 190px; padding: 27px 28px 24px; overflow: hidden;
+      color: white; background:
+        radial-gradient(circle at 84% 12%, rgba(85,219,198,.25), transparent 16rem),
+        linear-gradient(135deg, #14213a, #182c56 64%, #174d57);
+    }
+    .run-head::after {
+      content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .13;
+      background-image: linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.18) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: linear-gradient(90deg, black, transparent 75%);
+    }
+    .run-head-content { position: relative; z-index: 2; max-width: 690px; }
+    .run-kicker { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-bottom: 13px; }
+    .status-pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 9px; border: 1px solid rgba(255,255,255,.17); border-radius: 999px; color: #dce4f2; background: rgba(255,255,255,.08); font-size: 10px; font-weight: 800; letter-spacing: .04em; }
+    .status-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #94a3b8; }
+    .status-pill.running::before { background: #58dec5; box-shadow: 0 0 0 4px rgba(88,222,197,.12); animation: pulse 1.7s ease-in-out infinite; }
+    .status-pill.success::before { background: #58dec5; }
+    .status-pill.warning::before { background: #ffc95d; }
+    .status-pill.error::before { background: #ff7f89; }
+    .run-head h1 { margin-bottom: 8px; max-width: 650px; color: white; }
+    .run-description { max-width: 650px; margin: 0; color: #b8c6d9; }
+    .run-identifiers { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 17px; color: #91a5c1; font-size: 10px; }
+    .run-id-item { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+    .run-id-value { max-width: 270px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .copy-mini { padding: 2px 5px; border: 0; border-radius: 5px; color: #b9c9df; background: rgba(255,255,255,.08); cursor: pointer; }
+
+    .agent-orbit { position: absolute; z-index: 1; right: 36px; top: 28px; width: 150px; height: 150px; opacity: .86; }
+    .orbit-ring { position: absolute; inset: 18px; border: 1px solid rgba(255,255,255,.2); border-radius: 50%; animation: rotate 14s linear infinite; }
+    .orbit-ring::before, .orbit-ring::after { content: ""; position: absolute; width: 11px; height: 11px; border: 3px solid #1d3154; border-radius: 50%; background: #67dfca; }
+    .orbit-ring::before { left: -5px; top: 49px; }
+    .orbit-ring::after { right: 4px; bottom: 10px; background: #7898ff; }
+    .orbit-core { position: absolute; inset: 49px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.2); border-radius: 50%; background: rgba(255,255,255,.1); box-shadow: 0 0 30px rgba(83,219,196,.15); font-weight: 800; }
+
+    .phase-wrap { padding: 18px 24px 20px; background: white; }
+    .progress-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; color: var(--muted); font-size: 11px; }
+    .progress-track { height: 5px; overflow: hidden; border-radius: 999px; background: #e9eef5; }
+    .progress-fill { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), var(--teal)); transition: width .45s cubic-bezier(.2,.8,.2,1); }
+    .progress-fill.running { position: relative; overflow: hidden; }
+    .progress-fill.running::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.65), transparent); animation: shimmer 1.6s linear infinite; }
+    .phase-rail { display: grid; grid-template-columns: repeat(7, 1fr); margin-top: 13px; }
+    .phase { position: relative; min-width: 0; color: var(--faint); text-align: center; font-size: 10px; }
+    .phase::before { content: ""; position: relative; z-index: 2; width: 10px; height: 10px; display: block; margin: 0 auto 6px; border: 2px solid #cbd5e2; border-radius: 50%; background: white; }
+    .phase::after { content: ""; position: absolute; z-index: 1; left: 0; right: 0; top: 5px; height: 1px; background: #dce4ef; }
+    .phase:first-child::after { left: 50%; }
+    .phase:last-child::after { right: 50%; }
+    .phase.done, .phase.active { color: var(--ink); font-weight: 720; }
+    .phase.done::before { border-color: var(--teal); background: var(--teal); box-shadow: inset 0 0 0 2px white; }
+    .phase.active::before { border-color: var(--primary); box-shadow: 0 0 0 5px rgba(49,94,251,.12); animation: pulse 1.8s ease-in-out infinite; }
+
+    .answer-card { padding: 24px 26px; min-height: 330px; }
+    .answer-toolbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 19px; }
+    .answer-toolbar p { margin: 3px 0 0; }
+    .answer-empty { min-height: 220px; display: grid; place-items: center; text-align: center; }
+    .empty-visual { width: 112px; height: 92px; position: relative; margin: 0 auto 18px; }
+    .empty-doc { position: absolute; left: 27px; top: 7px; width: 58px; height: 73px; border: 1px solid #cfd9e6; border-radius: 13px; background: linear-gradient(160deg, white, #f1f5fb); box-shadow: var(--shadow-soft); }
+    .empty-doc::before, .empty-doc::after { content: ""; position: absolute; left: 13px; right: 13px; height: 4px; border-radius: 4px; background: #dbe4f2; }
+    .empty-doc::before { top: 24px; box-shadow: 0 12px 0 #dbe4f2, 0 24px 0 #e6ebf3; }
+    .empty-orb { position: absolute; right: 5px; top: 0; width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(145deg, #5f82ff, #24b7a5); box-shadow: 0 8px 19px rgba(49,94,251,.22); animation: float 3.4s ease-in-out infinite; }
+    .answer-empty h2 { font-size: 17px; }
+    .answer-empty p { max-width: 430px; margin: 0; color: var(--muted); }
+    .answer-running { padding: 4px 0; }
+    .skeleton { overflow: hidden; height: 12px; margin: 12px 0; border-radius: 5px; background: #e9eef5; position: relative; }
+    .skeleton::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent); animation: shimmer 1.35s linear infinite; }
+    .skeleton.w90 { width: 90%; } .skeleton.w76 { width: 76%; } .skeleton.w56 { width: 56%; }
+    .answer-result { animation: rise .3s ease both; }
+    .result-banner { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 17px; padding: 12px 13px; border-radius: 12px; background: var(--teal-soft); color: #12685e; }
+    .result-banner.warning { color: #77520d; background: var(--amber-soft); }
+    .result-banner.error { color: #8c3540; background: var(--danger-soft); }
+    .answer-text { color: #243348; font-size: 15px; line-height: 1.78; overflow-wrap: anywhere; }
+    .answer-text > :first-child { margin-top: 0; }
+    .answer-text > :last-child { margin-bottom: 0; }
+    .answer-text h2, .answer-text h3, .answer-text h4, .answer-text h5 {
+      position: relative; margin: 27px 0 12px; color: #14233a; line-height: 1.35; letter-spacing: -.018em;
+    }
+    .answer-text h2 { font-size: 23px; }
+    .answer-text h3 {
+      padding: 9px 13px; border-left: 4px solid var(--primary); border-radius: 0 10px 10px 0;
+      font-size: 19px; background: linear-gradient(90deg, rgba(49,94,251,.09), rgba(49,94,251,0));
+    }
+    .answer-text h4 { font-size: 16px; }
+    .answer-text h5 { color: var(--muted); font-size: 14px; }
+    .answer-text p { margin: 0 0 15px; }
+    .answer-text ol, .answer-text ul { display: grid; gap: 12px; margin: 9px 0 20px; padding-left: 1.65rem; }
+    .answer-text li { padding-left: .32rem; }
+    .answer-text li::marker { color: var(--primary); font-weight: 800; }
+    .answer-text strong { color: #152a4a; font-weight: 820; }
+    .answer-text code {
+      padding: 2px 5px; border: 1px solid #dbe3f2; border-radius: 5px;
+      color: #3452ae; background: #f3f6fd; font: .9em/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .answer-text pre.answer-code { margin: 15px 0; padding: 14px 16px; overflow: auto; border-radius: 12px; color: #d8e4f5; background: #16243a; }
+    .answer-text pre.answer-code code { padding: 0; border: 0; color: inherit; background: transparent; }
+    .answer-text blockquote { margin: 16px 0; padding: 10px 14px; border-left: 4px solid var(--teal); color: #52657c; background: var(--teal-soft); }
+    .answer-text hr { height: 1px; margin: 23px 0; border: 0; background: var(--line); }
+    .answer-citation {
+      display: inline-flex; align-items: center; margin: 0 2px; padding: 2px 7px;
+      border: 1px solid #5a31bd; border-radius: 999px; color: #fff; background: #7047d7;
+      box-shadow: 0 4px 12px rgba(80,48,172,.28); font-size: .82em; font-weight: 820;
+      line-height: 1.45; text-decoration: none; vertical-align: .08em; white-space: nowrap;
+    }
+    .answer-citation:hover { color: #fff; background: #5730bd; }
+    .answer-citation.unverified {
+      border-color: #e5b951; color: #805700; background: #fff5d8;
+      box-shadow: none; cursor: help;
+    }
+    .answer-citation.unverified:hover { color: #805700; background: #ffefbf; }
+
+    .tab-card { overflow: hidden; }
+    .tabs { display: flex; gap: 2px; padding: 8px 10px 0; border-bottom: 1px solid var(--line); overflow-x: auto; }
+    .tab-button { min-height: 42px; padding: 9px 13px; border: 0; border-bottom: 2px solid transparent; color: var(--muted); background: transparent; cursor: pointer; white-space: nowrap; font-weight: 680; }
+    .tab-button[aria-selected="true"] { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-panel { min-height: 130px; padding: 18px 20px; }
+    .citation-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .citation-contract-note {
+      width: 100%; margin-bottom: 4px; padding: 9px 11px; border: 1px solid #d8cdfb;
+      border-radius: 9px; color: #5235a5; background: #f5f1ff; font-size: 10px; line-height: 1.55;
+    }
+    .citation-contract-note.unverified { border-color: #f0d48a; color: #805700; background: #fff8e6; }
+    .citation-chip { max-width: 100%; display: flex; align-items: flex-start; gap: 8px; padding: 7px 10px; border: 1px solid #cbd7ff; border-radius: 9px; color: #3150b9; background: var(--surface-blue); overflow-wrap: anywhere; scroll-margin-top: 96px; font-size: 11px; }
+    .citation-index { width: 19px; height: 19px; flex: 0 0 19px; display: grid; place-items: center; border-radius: 5px; color: white; background: var(--primary); font-size: 9px; font-weight: 800; }
+    .citation-chip a { color: inherit; text-underline-offset: 2px; }
+    .citation-chip.unverified { border-color: #f0d48a; color: #805700; background: #fff8e6; }
+    .citation-chip.unverified .citation-index { background: #b27b08; }
+    .trace-list { display: grid; gap: 8px; }
+    .trace-row { display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 10px; padding: 9px 10px; border-radius: 9px; background: var(--surface-soft); font-size: 11px; }
+    .trace-role { color: var(--primary); font-weight: 740; }
+    .usage-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+    .metric { padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); }
+    .metric-label { display: block; color: var(--muted); font-size: 10px; }
+    .metric-value { display: block; margin-top: 3px; font-size: 18px; font-weight: 780; letter-spacing: -.02em; }
+    .raw-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+    .raw-toolbar-copy { color: var(--muted); font-size: 10px; }
+    .raw-actions { display: flex; gap: 6px; }
+    .json-tree {
+      max-height: 440px; margin: 0; padding: 13px 14px; overflow: auto; border-radius: 11px;
+      color: #cad7e9; background: #17243a; font: 11px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .json-tree details { margin-left: 14px; }
+    .json-tree > details { margin-left: 0; }
+    .json-tree summary { width: fit-content; max-width: 100%; cursor: pointer; color: #9fb4d1; list-style-position: outside; }
+    .json-tree summary:hover { color: white; }
+    .json-tree summary::marker { color: #6d8cff; }
+    .json-key { color: #8fb7ff; }
+    .json-hint { margin-left: 7px; color: #71839d; font-size: 10px; }
+    .json-children { margin-left: 2px; padding-left: 3px; border-left: 1px solid rgba(143,183,255,.13); }
+    .json-leaf { min-width: 0; margin-left: 17px; overflow-wrap: anywhere; }
+    .json-string { color: #8bd9c3; }
+    .json-number { color: #f1c56f; }
+    .json-boolean { color: #c6a7ff; }
+    .json-null { color: #8796aa; font-style: italic; }
+    .json-closing { margin-left: 16px; color: #71839d; }
+
+    .activity-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 19px 18px 13px; border-bottom: 1px solid var(--line); }
+    .activity-head h2 { margin: 0; }
+    .activity-actions { display: flex; gap: 5px; }
+    .tiny-button { min-height: 30px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: white; cursor: pointer; font-size: 10px; }
+    .stream-state { display: flex; align-items: center; gap: 7px; padding: 9px 18px; border-bottom: 1px solid var(--line); color: var(--muted); background: var(--surface-soft); font-size: 10px; }
+    .stream-state-dot { width: 7px; height: 7px; border-radius: 50%; background: #9aa7b9; }
+    .stream-state-dot.live { background: var(--teal); animation: pulse 1.7s ease-in-out infinite; }
+    .stream-state-dot.reconnect { background: #e0a32d; }
+    .stream-state-dot.connected, .stream-state-dot.done { background: var(--teal); }
+    .stream-state-dot.connected { animation: pulse 1.7s ease-in-out infinite; }
+    .stream-state-dot.reconnecting { background: #e0a32d; }
+    .timeline { flex: 1; min-height: 250px; overflow-y: auto; padding: 14px 17px 20px; }
+    .timeline-empty { min-height: 210px; display: grid; place-items: center; padding: 20px; color: var(--faint); text-align: center; font-size: 11px; }
+    .event { position: relative; margin-left: 8px; padding: 0 0 14px 22px; border-left: 1px solid #dce4ef; animation: rise .22s ease both; }
+    .event:last-child { padding-bottom: 3px; }
+    .event-dot { position: absolute; left: -6px; top: 13px; width: 11px; height: 11px; border: 2px solid white; border-radius: 50%; background: #71819a; box-shadow: 0 0 0 1px #cfd9e5; }
+    .event.planner .event-dot { background: var(--purple); }
+    .event.worker .event-dot { background: var(--primary); }
+    .event.reviewer .event-dot { background: #dda32d; }
+    .event.synthesizer .event-dot { background: var(--teal); }
+    .event.error .event-dot { background: var(--danger); }
+    .event-card { padding: 10px 11px; border: 1px solid #e1e7f0; border-radius: 11px; background: white; box-shadow: 0 4px 14px rgba(31,48,75,.045); transition: transform .16s ease, box-shadow .16s ease; }
+    .event-card:hover { transform: translateY(-1px); box-shadow: 0 8px 19px rgba(31,48,75,.08); }
+    .event.planner .event-card { border-color: #ddd5fa; background: #faf9ff; }
+    .event.worker .event-card { border-color: #d5dfff; background: #fafbff; }
+    .event.reviewer .event-card { border-color: #f0dfb8; background: #fffdf8; }
+    .event.synthesizer .event-card { border-color: #ccebe6; background: #f9fefd; }
+    .event.error .event-card { border-color: #f0cbd0; background: #fff9f9; }
+    .event-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+    .event-role { display: inline-flex; align-items: center; gap: 5px; color: #33445c; font-size: 10px; font-weight: 800; }
+    .event-role-icon { width: 20px; height: 20px; display: inline-grid; place-items: center; border-radius: 6px; color: white; background: #71819a; font-size: 10px; }
+    .event.planner .event-role-icon { background: var(--purple); }
+    .event.worker .event-role-icon { background: var(--primary); }
+    .event.reviewer .event-role-icon { background: #d39a29; }
+    .event.synthesizer .event-role-icon { background: var(--teal); }
+    .event.error .event-role-icon { background: var(--danger); }
+    .event-time { color: var(--faint); font-size: 9px; }
+    .event-type-line { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+    .event-type { font-size: 12px; font-weight: 760; overflow-wrap: anywhere; }
+    .event-code { padding: 1px 5px; border-radius: 5px; color: #8290a4; background: #edf1f6; font-size: 8px; letter-spacing: .02em; }
+    .event-summary { margin: 0; color: var(--muted); font-size: 10.5px; overflow-wrap: anywhere; }
+    .event-payload { margin-top: 7px; }
+    .event-payload summary { width: fit-content; color: #7c899a; cursor: pointer; font-size: 9px; }
+    .event-payload pre { max-height: 180px; margin: 6px 0 0; padding: 8px 9px; overflow: auto; border-radius: 7px; color: #bfcde1; background: #1d2b42; white-space: pre-wrap; overflow-wrap: anywhere; font: 9px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .cursor-footer { padding: 10px 17px; border-top: 1px solid var(--line); color: var(--faint); background: var(--surface-soft); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    dialog {
+      width: min(520px, calc(100vw - 28px)); max-height: calc(100vh - 40px); padding: 0; overflow: auto;
+      border: 1px solid var(--line); border-radius: 18px; color: var(--ink); background: white; box-shadow: 0 28px 80px rgba(13,27,52,.24);
+    }
+    dialog::backdrop { background: rgba(12,22,39,.58); backdrop-filter: blur(5px); }
+    .dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 21px 22px 14px; border-bottom: 1px solid var(--line); }
+    .dialog-head h2 { margin: 0 0 3px; font-size: 19px; }
+    .close-button { width: 36px; height: 36px; border: 0; border-radius: 9px; background: var(--surface-soft); cursor: pointer; }
+    .dialog-body { padding: 19px 22px 22px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+    .token-wrap { position: relative; }
+    .token-wrap input { padding-right: 73px; }
+    .token-toggle { position: absolute; right: 6px; top: 5px; height: 32px; padding: 4px 8px; border: 0; border-radius: 7px; color: var(--muted); background: var(--surface-soft); cursor: pointer; font-size: 10px; }
+    .check-row { display: flex; align-items: flex-start; gap: 9px; margin: 5px 0 17px; color: var(--muted); font-size: 11px; }
+    .check-row input { margin-top: 3px; accent-color: var(--primary); }
+    .dev-box { margin: 16px 0; padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+    .dev-box p { margin: 0 0 9px; color: var(--muted); font-size: 11px; }
+    .dialog-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+
+    .toast-stack { position: fixed; z-index: 80; right: 20px; bottom: 20px; display: grid; gap: 8px; pointer-events: none; }
+    .toast { min-width: 240px; max-width: min(380px, calc(100vw - 40px)); padding: 11px 13px; border: 1px solid var(--line); border-left: 4px solid var(--primary); border-radius: 11px; color: var(--ink); background: white; box-shadow: var(--shadow); animation: toast-in .2s ease both; }
+    .toast.success { border-left-color: var(--teal); }
+    .toast.error { border-left-color: var(--danger); }
+    .toast.warning { border-left-color: #d49a27; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes rotate { to { transform: rotate(360deg); } }
+    @keyframes pulse { 50% { opacity: .48; } }
+    @keyframes float { 50% { transform: translateY(7px); } }
+    @keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+    @keyframes rise { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes toast-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+
+    @media (max-width: 1280px) {
+      .layout { grid-template-columns: 310px minmax(0, 1fr); }
+      .activity-panel { position: static; grid-column: 2; max-height: 520px; }
+    }
+    @media (max-width: 820px) {
+      .app-bar { height: 64px; padding: 0 14px; }
+      .brand-sub, .service-badge { display: none; }
+      .identity-badge { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+      .layout { display: flex; flex-direction: column; padding: 12px; gap: 12px; min-height: calc(100vh - 64px); }
+      .control-panel, .activity-panel { position: static; max-height: none; }
+      .control-panel { order: 1; }
+      .main-panel { order: 2; }
+      .activity-panel { order: 3; }
+      .agent-orbit { opacity: .35; right: -12px; }
+      .run-head { padding: 23px 20px; }
+      .phase-wrap, .answer-card { padding-left: 17px; padding-right: 17px; }
+      .usage-grid { grid-template-columns: 1fr 1fr; }
+      .phase span { display: none; }
+      .trace-row { grid-template-columns: 1fr; gap: 3px; }
+    }
+    @media (max-width: 520px) {
+      .bar-actions { gap: 6px; }
+      .identity-badge { display: none; }
+      .control-panel { padding: 15px; }
+      .answer-toolbar { flex-direction: column; }
+      .usage-grid, .form-grid { grid-template-columns: 1fr; }
+      .button-row { grid-template-columns: 1fr; }
+      .button-row .icon-button { width: 100%; }
+      .run-id-value { max-width: 190px; }
+      .tabs { padding-left: 5px; }
+      .answer-text h2 { font-size: 20px; }
+      .answer-text h3 { font-size: 17px; }
+      .raw-toolbar { align-items: flex-start; flex-direction: column; }
+      .raw-actions { flex-wrap: wrap; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-bar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 17.5 9.3 13l3.1 2.8L19 8.4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="5" cy="17.5" r="1.5" fill="white"/><circle cx="19" cy="8.4" r="1.5" fill="white"/></svg>
+      </div>
+      <div><div class="brand-name">DeepResearch</div><div class="brand-sub">Agent Research Console</div></div>
+    </div>
+    <div class="bar-actions">
+      <div class="service-badge" title="Java 公网入口健康状态"><span id="serviceDot" class="service-dot"></span><span id="serviceText">正在检查服务</span></div>
+      <div id="identityBadge" class="identity-badge"><span aria-hidden="true">◉</span><span id="identityText">未认证</span></div>
+      <button id="authOpenButton" class="bar-button" type="button">连接与身份</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="panel control-panel" aria-label="研究控制台">
+      <p class="eyebrow">New research</p>
+      <h2>开始一次研究</h2>
+      <p class="muted small">由 Planner 拆解任务，Worker 检索，Reviewer 核验，再由 Synthesizer 合成答案。</p>
+
+      <div class="mode-switch" role="tablist" aria-label="运行模式">
+        <button id="workflowModeButton" class="mode-button active" type="button" role="tab" aria-selected="true">Durable Workflow</button>
+        <button id="nativeModeButton" class="mode-button" type="button" role="tab" aria-selected="false">Single Agent</button>
+      </div>
+      <p id="modeNote" class="mode-note">Python/LangGraph 本地编排 · DeepSeek API 推理 · Java/MCP 执行工具</p>
+
+      <label class="field" for="questionInput">
+        <span class="field-label"><span>研究问题</span><span id="questionCount" class="count">0 / 4000</span></span>
+        <textarea id="questionInput" maxlength="4000" placeholder="例如：结合知识库和公开资料，分析 Cross-Encoder 重排能带来什么收益与代价？"></textarea>
+      </label>
+
+      <div class="presets" aria-label="预设问题">
+        <button class="preset" type="button" data-prompt="结合知识库和公开资料，分析 Cross-Encoder 重排的收益、代价和适用场景。">Cross-Encoder</button>
+        <button class="preset" type="button" data-prompt="解释本项目如何通过 checkpoint、claim fencing 与 SSE 重放实现崩溃恢复。">Durable Agent</button>
+        <button class="preset" type="button" data-prompt="先检索 RRF 的工作原理，再计算向量排序第 1 名与 BM25 第 3 名在 k=60 时的融合分数。">RRF + 计算</button>
+      </div>
+
+      <fieldset id="toolFieldset" style="border:0;padding:0;margin:0 0 15px">
+        <legend class="field-label">允许 Worker 使用的工具</legend>
+        <div class="tool-grid">
+          <label class="tool-chip"><input type="checkbox" name="tool" value="kb_search" checked><span class="tool-icon" aria-hidden="true">▤</span><span class="tool-copy"><span class="tool-name">知识库检索</span><span class="tool-help">项目内可追溯证据</span></span></label>
+          <label class="tool-chip"><input type="checkbox" name="tool" value="web_search" checked><span class="tool-icon" aria-hidden="true">◎</span><span class="tool-copy"><span class="tool-name">网页搜索</span><span class="tool-help">Tavily 外部检索</span></span><span class="cost-tag">外部调用</span></label>
+          <label class="tool-chip"><input type="checkbox" name="tool" value="calculator" checked><span class="tool-icon" aria-hidden="true">∑</span><span class="tool-copy"><span class="tool-name">计算器</span><span class="tool-help">确定性数值计算</span></span></label>
+        </div>
+      </fieldset>
+
+      <details class="options">
+        <summary>会话与可靠性选项</summary>
+        <div class="option-body">
+          <label class="field" for="sessionInput"><span class="field-label">Session ID <span class="count">可留空自动生成</span></span><input id="sessionInput" type="text" maxlength="64" autocomplete="off" placeholder="延续既有会话时填写"></label>
+          <div class="field"><span class="field-label">本次 Idempotency-Key</span><div id="idempotencyPreview" class="key-preview mono">开始研究时自动生成</div></div>
+        </div>
+      </details>
+
+      <div class="button-row">
+        <button id="startButton" class="button button-primary" type="button"><span id="startIcon" aria-hidden="true">✦</span><span id="startLabel">开始研究</span></button>
+        <button id="cancelButton" class="button button-danger icon-button" type="button" aria-label="取消当前任务" title="取消当前任务" hidden>■</button>
+      </div>
+
+      <section id="unknownCard" class="unknown-card" hidden role="alert">
+        <strong>创建结果未知</strong>
+        <div class="small">连接在收到响应前中断。不要新建任务；安全重试会复用完全相同的请求体与幂等键。</div>
+        <div class="unknown-actions"><button id="safeRetryButton" class="button button-secondary" type="button">使用原请求安全重试</button><button id="discardUnknownButton" class="button button-ghost" type="button">放弃并新建</button></div>
+      </section>
+
+      <section class="recent-section">
+        <div class="section-heading"><h2>本机最近访问</h2><span class="muted" style="font-size:9px">最多 5 条</span></div>
+        <div id="recentRuns" class="recent-list"><div class="recent-empty">暂无已知 runId</div></div>
+      </section>
+    </aside>
+
+    <section class="main-panel" aria-label="研究结果">
+      <div id="connectionBanner" class="connection-banner" hidden><span id="connectionMessage">SSE 连接正在恢复</span><button id="manualReconnectButton" class="tiny-button" type="button">立即恢复</button></div>
+
+      <section class="panel run-card">
+        <div class="run-head">
+          <div class="run-head-content">
+            <div class="run-kicker"><span id="runStatusPill" class="status-pill">READY</span><span id="runStageLabel" class="muted small" style="color:#9fb0c8">等待新任务</span></div>
+            <h1 id="runTitle">让研究过程可见，也可恢复</h1>
+            <p id="runDescription" class="run-description">输入问题后，页面将实时展示规划、并行执行、审阅、修订与合成阶段；每个事件都来自可重放的安全轨迹。</p>
+            <div class="run-identifiers">
+              <span class="run-id-item">RUN <span id="runIdValue" class="run-id-value mono">尚未创建</span><button id="copyRunButton" class="copy-mini" type="button" aria-label="复制 Run ID" hidden>复制</button></span>
+              <span class="run-id-item">SESSION <span id="sessionIdValue" class="run-id-value mono">—</span></span>
+              <span class="run-id-item">MODE <span id="modeValue" class="mono">LANGGRAPH</span></span>
+            </div>
+          </div>
+          <div class="agent-orbit" aria-hidden="true"><div class="orbit-ring"></div><div class="orbit-core">AI</div></div>
+        </div>
+        <div class="phase-wrap">
+          <div class="progress-meta"><span id="progressLabel">尚未开始</span><strong id="progressValue">0%</strong></div>
+          <div class="progress-track" role="progressbar" aria-label="Workflow 进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progressFill" class="progress-fill"></div></div>
+          <div id="phaseRail" class="phase-rail" aria-label="Workflow 阶段">
+            <div class="phase" data-stage="QUEUED"><span>排队</span></div><div class="phase" data-stage="PLANNING"><span>规划</span></div><div class="phase" data-stage="WORKING"><span>执行</span></div><div class="phase" data-stage="REVIEWING"><span>审阅</span></div><div class="phase" data-stage="SYNTHESIZING"><span>合成</span></div><div class="phase" data-stage="FINALIZING"><span>收尾</span></div><div class="phase" data-stage="TERMINAL"><span>完成</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel answer-card">
+        <div class="answer-toolbar">
+          <div><p class="eyebrow">Grounded answer</p><h2>研究结论</h2><p id="answerSubtitle" class="muted small">最终答案会在证据核验完成后出现</p></div>
+          <button id="copyAnswerButton" class="button button-ghost" type="button" hidden>复制答案</button>
+        </div>
+        <div id="answerEmpty" class="answer-empty"><div><div class="empty-visual" aria-hidden="true"><div class="empty-doc"></div><div class="empty-orb"></div></div><h2>从一个值得研究的问题开始</h2><p>Agent 会把计划、工具证据和审阅结果整理成可追溯答案；证据不足时会明确拒答。</p></div></div>
+        <div id="answerRunning" class="answer-running" hidden aria-label="正在生成研究答案"><div class="skeleton w90"></div><div class="skeleton"></div><div class="skeleton w76"></div><div class="skeleton w90"></div><div class="skeleton w56"></div></div>
+        <div id="answerResult" class="answer-result" hidden><div id="resultBanner" class="result-banner"><span id="resultIcon" aria-hidden="true">✓</span><div><strong id="resultTitle">研究完成</strong><div id="resultMessage" class="small">答案已通过 Reviewer 核验</div></div></div><div id="answerText" class="answer-text"></div></div>
+      </section>
+
+      <section class="panel tab-card">
+        <div class="tabs" role="tablist" aria-label="运行详情">
+          <button class="tab-button" type="button" role="tab" aria-selected="true" aria-controls="citationsPanel" data-tab="citations">引用 <span id="citationCount">0</span></button>
+          <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="tracePanel" data-tab="trace">安全轨迹</button>
+          <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="usagePanel" data-tab="usage">Usage</button>
+          <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="rawPanel" data-tab="raw">原始 JSON</button>
+        </div>
+        <div id="citationsPanel" class="tab-panel" role="tabpanel"><div id="citationList" class="citation-list"><span class="muted small">任务完成后显示引用标识；引用不一定是 URL。</span></div></div>
+        <div id="tracePanel" class="tab-panel" role="tabpanel" hidden><div id="traceList" class="trace-list"><span class="muted small">这里仅展示计划、证据数量和安全摘要，不保存 Chain-of-Thought。</span></div></div>
+        <div id="usagePanel" class="tab-panel" role="tabpanel" hidden><div class="usage-grid"><div class="metric"><span class="metric-label">Model calls</span><span id="modelCallsMetric" class="metric-value">—</span></div><div class="metric"><span class="metric-label">Tool calls</span><span id="toolCallsMetric" class="metric-value">—</span></div><div class="metric"><span class="metric-label">Total tokens</span><span id="tokensMetric" class="metric-value">—</span></div><div class="metric"><span class="metric-label">Duration</span><span id="durationMetric" class="metric-value">—</span></div><div class="metric"><span class="metric-label">Input tokens</span><span id="inputTokensMetric" class="metric-value">—</span></div><div class="metric"><span class="metric-label">Output tokens</span><span id="outputTokensMetric" class="metric-value">—</span></div><div class="metric"><span class="metric-label">Estimated cost</span><span id="costMetric" class="metric-value">—</span></div><div class="metric"><span class="metric-label">SSE reconnects</span><span id="reconnectMetric" class="metric-value">0</span></div></div></div>
+        <div id="rawPanel" class="tab-panel" role="tabpanel" hidden>
+          <div class="raw-toolbar"><span class="raw-toolbar-copy">点击字段箭头逐层查看，嵌套对象默认收起。</span><div class="raw-actions"><button id="expandJsonButton" class="tiny-button" type="button">全部展开</button><button id="collapseJsonButton" class="tiny-button" type="button">全部收起</button><button id="copyJsonButton" class="tiny-button" type="button">复制 JSON</button></div></div>
+          <div id="rawJson" class="json-tree" aria-label="可折叠原始 JSON"></div>
+        </div>
+      </section>
+    </section>
+
+    <aside class="panel activity-panel" aria-label="实时活动">
+      <div class="activity-head"><div><p class="eyebrow">Live activity</p><h2>Agent 事件流</h2></div><div class="activity-actions"><button id="disconnectButton" class="tiny-button" type="button" title="只断开 SSE，不重新创建任务" disabled>断线演练</button><button id="clearEventsButton" class="tiny-button" type="button">清屏</button></div></div>
+      <div class="stream-state"><span id="streamStateDot" class="stream-state-dot"></span><span id="streamStateText">尚未连接</span></div>
+      <div id="timeline" class="timeline" role="log" aria-live="polite" aria-relevant="additions"><div id="timelineEmpty" class="timeline-empty">开始研究后，Planner、Worker、Reviewer 与 Synthesizer 的安全事件会实时出现在这里。</div></div>
+      <div id="cursorFooter" class="cursor-footer mono">Last-Event-ID: —</div>
+    </aside>
+  </main>
+
+  <dialog id="authDialog" aria-labelledby="authDialogTitle">
+    <div class="dialog-head"><div><h2 id="authDialogTitle">连接与身份</h2><p class="muted small" style="margin:0">Token 仅保存在内存或当前浏览会话，不写入 URL。</p></div><button id="authCloseButton" class="close-button" type="button" aria-label="关闭">✕</button></div>
+    <div class="dialog-body">
+      <label class="field" for="apiBaseInput"><span class="field-label">API Base</span><input id="apiBaseInput" type="text" autocomplete="url" placeholder="同源时留空"></label>
+      <div class="form-grid"><label class="field" for="tenantInput"><span class="field-label">Tenant</span><input id="tenantInput" type="text" value="demo-tenant" autocomplete="off"></label><label class="field" for="userInput"><span class="field-label">User</span><input id="userInput" type="text" value="demo-user" autocomplete="off"></label></div>
+      <label class="field" for="tokenInput"><span class="field-label">Bearer Token</span><span class="token-wrap"><input id="tokenInput" type="password" autocomplete="off" placeholder="粘贴可信 JWT，或在本地签发"><button id="tokenToggleButton" class="token-toggle" type="button">显示</button></span></label>
+      <label class="check-row"><input id="rememberTokenInput" type="checkbox"><span>仅在当前浏览会话保存 Token（关闭标签页后清除）。不建议在长期 localStorage 中保存凭据。</span></label>
+      <div class="dev-box"><strong>本地开发 Token</strong><p>服务端默认关闭匿名签发。需要显式设置 <span class="mono">DEEPRESEARCH_DEV_TOKEN_ENABLED=true</span>；这里只请求 USER 角色。</p><button id="issueDevTokenButton" class="button button-secondary" type="button">签发 USER Dev Token</button></div>
+      <div class="dialog-actions"><button id="clearTokenButton" class="button button-ghost" type="button">清除 Token</button><button id="applyAuthButton" class="button button-primary" type="button">保存并连接</button></div>
+    </div>
+  </dialog>
+
+  <div id="toastStack" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
+  <script>
+  (function () {
+    "use strict";
+
+    var $ = function (id) { return document.getElementById(id); };
+    var TERMINAL = new Set([
+      "SUCCEEDED", "INSUFFICIENT_EVIDENCE", "FAILED", "CANCELLED", "TIMED_OUT", "BUDGET_EXCEEDED",
+      "MAX_ROUNDS_REACHED", "CITATION_VALIDATION_FAILED", "MODEL_TIMEOUT", "TOOL_TIMEOUT",
+      "MODEL_RATE_LIMITED", "MODEL_SCHEMA_INVALID", "MODEL_PROVIDER_FAILED",
+      "MODEL_EXECUTION_FAILED", "MODEL_CALL_FAILED"
+    ]);
+    var STAGES = ["QUEUED", "PLANNING", "WORKING", "REVIEWING", "SYNTHESIZING", "FINALIZING", "TERMINAL"];
+    var STAGE_LABELS = {
+      READY: "准备就绪", QUEUED: "排队", PLANNING: "规划", WORKING: "检索执行",
+      REVIEWING: "证据审阅", SYNTHESIZING: "答案合成", FINALIZING: "结果收尾",
+      TERMINAL: "运行结束", SUCCEEDED: "成功完成", FAILED: "运行失败",
+      INSUFFICIENT_EVIDENCE: "证据不足", CANCELLED: "已取消", TIMED_OUT: "已超时",
+      BUDGET_EXCEEDED: "预算已用尽", MAX_ROUNDS_REACHED: "轮次已用尽",
+      CITATION_VALIDATION_FAILED: "引用校验失败", MODEL_TIMEOUT: "模型调用超时",
+      TOOL_TIMEOUT: "工具调用超时", MODEL_RATE_LIMITED: "模型服务限流",
+      MODEL_SCHEMA_INVALID: "模型结构化输出无效", MODEL_PROVIDER_FAILED: "模型服务调用失败",
+      MODEL_EXECUTION_FAILED: "模型调用失败", MODEL_CALL_FAILED: "模型调用失败",
+      WORKFLOW_FAILED: "工作流执行失败"
+    };
+    var TOOL_LABELS = {
+      KB_SEARCH: "知识库检索", SEARCHKNOWLEDGE: "知识库检索", WEB_SEARCH: "网页搜索",
+      SEARCHWEB: "网页搜索", CALCULATOR: "计算器", CALCULATE: "计算器",
+      READPROJECTFILE: "项目文件读取", FILE_READ: "项目文件读取"
+    };
+    var ROLE_META = {
+      SYSTEM: { label: "系统", icon: "◎", className: "system" },
+      PLANNER: { label: "规划 Agent", icon: "规", className: "planner" },
+      WORKER: { label: "执行 Agent", icon: "执", className: "worker" },
+      REVIEWER: { label: "审阅 Agent", icon: "审", className: "reviewer" },
+      SYNTHESIZER: { label: "汇总 Agent", icon: "汇", className: "synthesizer" },
+      AGENT: { label: "单 Agent", icon: "AI", className: "planner" },
+      SEARCHKNOWLEDGE: { label: "知识库检索", icon: "知", className: "worker" },
+      SEARCHWEB: { label: "网页搜索", icon: "网", className: "worker" },
+      CALCULATOR: { label: "计算器", icon: "算", className: "worker" },
+      CALCULATE: { label: "计算器", icon: "算", className: "worker" },
+      READPROJECTFILE: { label: "项目文件读取", icon: "文", className: "worker" },
+      FINAL: { label: "最终输出", icon: "答", className: "synthesizer" }
+    };
+    var EVENT_META = {
+      QUEUED: { label: "已进入任务队列", description: "任务已持久化，正在等待工作流领取。" },
+      STAGE_CHANGED: { label: "工作流阶段更新", description: "工作流已进入下一个执行阶段。" },
+      PLAN_COMPLETED: { label: "研究计划已生成", description: "规划 Agent 已完成任务拆解。" },
+      TASK_STARTED: { label: "工具任务开始", description: "执行 Agent 正在调用获准的只读工具。" },
+      TASK_COMPLETED: { label: "工具任务完成", description: "工具结果已转换为可审阅证据。" },
+      REVIEW_COMPLETED: { label: "证据审阅完成", description: "审阅 Agent 已检查证据充分性。" },
+      REVISION_STARTED: { label: "补充检索开始", description: "工作流正在进行一次定向证据补充。" },
+      SYNTHESIS_COMPLETED: { label: "研究结论已合成", description: "汇总 Agent 已根据通过审阅的证据生成答案。" },
+      RUN_RESUMED: { label: "已从检查点恢复", description: "工作流从持久化检查点继续执行。" },
+      STARTED: { label: "单 Agent 已启动", description: "已创建单 Agent Tool Calling 执行上下文。" },
+      PLANNING: { label: "正在规划下一步", description: "模型正在根据工具 Schema 选择下一步。" },
+      TOOL_SELECTED: { label: "已选择工具", description: "模型已生成一个结构化工具调用。" },
+      TOOL_OBSERVED: { label: "工具执行完成", description: "工具结果已返回给模型作为观察信息。" },
+      FINAL_ANSWER: { label: "最终答案已生成", description: "模型已根据工具结果完成回答。" },
+      DONE: { label: "单 Agent 已结束", description: "单 Agent 基线执行已经结束。" },
+      SUCCEEDED: { label: "研究任务完成", description: "答案、引用与使用量已持久化。" },
+      INSUFFICIENT_EVIDENCE: { label: "可信证据不足", description: "系统拒绝在缺少证据时自行补全答案。" },
+      FAILED: { label: "研究任务失败", description: "失败信息已按安全规则记录。" },
+      CANCELLED: { label: "研究任务已取消", description: "任务已取消，后续工具授权已撤销。" },
+      TIMED_OUT: { label: "研究任务已超时", description: "任务超过了允许的执行时间。" },
+      BUDGET_EXCEEDED: { label: "运行预算已用尽", description: "任务已触达模型、工具、Token 或成本上限。" },
+      MAX_ROUNDS_REACHED: { label: "推理轮次已用尽", description: "单 Agent 在最大轮数内没有形成最终答案。" },
+      CITATION_VALIDATION_FAILED: { label: "引用映射校验失败", description: "答案编号无法与本次真实工具来源一一对应。" },
+      MODEL_TIMEOUT: { label: "模型调用超时", description: "外部模型调用超过了允许时间。" },
+      TOOL_TIMEOUT: { label: "工具调用超时", description: "获准工具未在时限内完成。" },
+      MODEL_RATE_LIMITED: { label: "模型服务限流", description: "外部模型服务暂时拒绝了过多请求。" },
+      MODEL_SCHEMA_INVALID: { label: "模型结构化输出无效", description: "模型响应未通过当前节点的类型与字段校验。" },
+      MODEL_PROVIDER_FAILED: { label: "模型服务调用失败", description: "模型服务返回不可安全重试的错误，或有限重试后仍未成功。" },
+      MODEL_RETRY_SCHEDULED: { label: "模型调用准备重试", description: "一次模型调用没有得到可靠结果；失败 attempt 已记入预算，工作流将进行有限重试。" },
+      MODEL_EXECUTION_FAILED: { label: "模型调用失败", description: "外部模型调用未能安全完成。" },
+      MODEL_CALL_FAILED: { label: "模型调用失败", description: "Planner、Reviewer 或 Synthesizer 的模型调用未能产生可用结果。" },
+      WORKFLOW_FAILED: { label: "工作流执行失败", description: "工作流在形成可发布结果前发生了技术故障。" }
+    };
+    var STORE_RUN = "deepresearch.console.currentRun";
+    var STORE_RECENT = "deepresearch.console.recentRuns";
+    var STORE_PENDING = "deepresearch.console.pendingCreate";
+    var STORE_AUTH = "deepresearch.console.auth";
+    var STORE_TOKEN = "deepresearch.console.sessionToken";
+    var state = {
+      mode: "workflow",
+      runId: "",
+      sessionId: "",
+      status: "READY",
+      stage: "READY",
+      progress: 0,
+      view: null,
+      events: new Map(),
+      lastEventId: "",
+      pending: null,
+      submitting: false,
+      streamAbort: null,
+      streamGeneration: 0,
+      reconnects: 0,
+      raw: null,
+      legacy: null,
+      auth: { baseUrl: "", tenantId: "demo-tenant", userId: "demo-user", token: "" }
+    };
+
+    function apiBase() {
+      var raw = (state.auth.baseUrl || "").trim().replace(/\/$/, "");
+      if (!raw) return window.location.origin;
+      var target = new URL(raw, window.location.href);
+      if (target.origin !== window.location.origin) {
+        throw new Error("拒绝向跨源 API 发送 Bearer Token。请从目标服务的 /demo.html 打开页面。");
+      }
+      return target.origin;
+    }
+
+    function validatedBaseInput(value) {
+      var raw = String(value || "").trim();
+      var target = new URL(raw || window.location.origin, window.location.href);
+      if (target.origin !== window.location.origin) {
+        throw new Error("为避免 Bearer Token 误发，控制台仅允许同源 API。请从目标服务的 /demo.html 打开页面。");
+      }
+      return raw ? target.origin : "";
+    }
+
+    function authHeaders(extra) {
+      var result = Object.assign({}, extra || {});
+      if (state.auth.token) result.Authorization = "Bearer " + state.auth.token;
+      return result;
+    }
+
+    function safeJsonParse(value, fallback) {
+      try { return JSON.parse(value); } catch (ignored) { return fallback; }
+    }
+
+    function codeKey(value) {
+      return String(value == null ? "" : value).trim().replace(/[\s-]+/g, "_").toUpperCase();
+    }
+
+    function activateTab(tabName) {
+      var selected = document.querySelector('.tab-button[data-tab="' + tabName + '"]');
+      if (!selected) return;
+      document.querySelectorAll(".tab-button").forEach(function (item) {
+        item.setAttribute("aria-selected", String(item === selected));
+      });
+      document.querySelectorAll(".tab-panel").forEach(function (panel) { panel.hidden = true; });
+      $(tabName + "Panel").hidden = false;
+    }
+
+    function roleMeta(value) {
+      var key = codeKey(value || "SYSTEM");
+      if (ROLE_META[key]) return Object.assign({ code: key }, ROLE_META[key]);
+      if (/^ROUND_\d+$/.test(key)) {
+        return { code: key, label: "第 " + key.slice(6) + " 轮", icon: "轮", className: "system" };
+      }
+      return { code: key || "SYSTEM", label: String(value || "系统"), icon: "·", className: "system" };
+    }
+
+    function eventMeta(value) {
+      var key = codeKey(value || "EVENT");
+      if (TOOL_LABELS[key]) {
+        return { code: key, label: TOOL_LABELS[key], description: "该轮调用了" + TOOL_LABELS[key] + "。" };
+      }
+      if (key === "AGENT") {
+        return { code: key, label: "Agent 决策", description: "模型完成了一次受约束的决策。" };
+      }
+      return Object.assign({ code: key || "EVENT", label: String(value || "运行事件"), description: "记录了一条运行事件。" }, EVENT_META[key] || {});
+    }
+
+    function toolLabel(value) {
+      var key = codeKey(value);
+      return TOOL_LABELS[key] || String(value || "获准工具");
+    }
+
+    function eventSummary(event, meta) {
+      var payload = event && event.payload && typeof event.payload === "object" ? event.payload : {};
+      var type = meta.code;
+      if (type === "STAGE_CHANGED") {
+        return "工作流进入“" + (STAGE_LABELS[codeKey(payload.stage)] || payload.stage || "下一") + "”阶段。";
+      }
+      if (type === "PLAN_COMPLETED") {
+        var tools = Array.isArray(payload.tools) ? payload.tools.map(toolLabel).join("、") : "按需选择工具";
+        return "已拆分为 " + (payload.taskCount == null ? "若干" : payload.taskCount) + " 个研究任务；计划使用：" + tools + "。";
+      }
+      if (type === "TASK_STARTED") {
+        return toolLabel(payload.tool || event.role) + "开始执行，调用范围已通过任务级权限约束。";
+      }
+      if (type === "TASK_COMPLETED") {
+        var completed = toolLabel(payload.tool || event.role) + "已完成";
+        if (payload.errorCode) return completed + "，结果码：" + payload.errorCode + "。";
+        return completed + "，获得 " + (payload.evidenceCount == null ? "若干" : payload.evidenceCount) + " 条可用证据。";
+      }
+      if (type === "REVIEW_COMPLETED") {
+        var decision = payload.sufficient === true ? "证据充分" : "仍需补充证据";
+        return "审阅结论：" + decision + "；定向补充任务 " + (payload.revisionTaskCount || 0) + " 项。";
+      }
+      if (type === "REVISION_STARTED") {
+        return "开始第 " + (payload.round || 1) + " 轮定向补充，共 " + (payload.taskCount || 0) + " 个任务。";
+      }
+      if (type === "SYNTHESIS_COMPLETED") {
+        if (payload.citationContractNormalized === true) {
+          return "答案合成完成；已把完整证据序号安全压缩为连续公开引用，共 " +
+            (payload.citationCount || 0) + " 条。";
+        }
+        if (payload.citationContract && String(payload.citationContract).indexOf("VALID") !== 0) {
+          return "答案候选已生成，但引用映射未通过校验（" + payload.citationContract + "），候选答案不会发布。";
+        }
+        return "答案合成完成；可信证据约束" + (payload.grounded ? "已通过" : "未通过") + "，引用 " + (payload.citationCount || 0) + " 条。";
+      }
+      if (type === "RUN_RESUMED") {
+        return "已从持久化检查点恢复；此前状态：" + (STAGE_LABELS[codeKey(payload.previousStatus)] || payload.previousStatus || "未知") + "。";
+      }
+      if (type === "MODEL_RETRY_SCHEDULED") {
+        var retryReason = EVENT_META[codeKey(payload.reasonCode)];
+        return "第 " + (payload.attempts || 1) + " 次模型调用未得到可靠结果（" +
+          (retryReason ? retryReason.label : "未知模型错误") +
+          "）；本次已保守记入预算，正在执行有限重试。";
+      }
+      if (type === "MODEL_CALL_FAILED" && payload.reasonCode) {
+        var failureReason = EVENT_META[codeKey(payload.reasonCode)];
+        return "模型调用在 " + (payload.attempts || 1) + " 次尝试后仍未成功（" +
+          (failureReason ? failureReason.label : "未知模型错误") +
+          "）；候选结果不会发布。";
+      }
+      if (!EVENT_META[type] && payload.summary) return String(payload.summary);
+      return meta.description;
+    }
+
+    function appendInlineMarkdown(parent, source, citations, citationContract) {
+      var text = String(source == null ? "" : source);
+      var verifiedSources = Array.isArray(citations) ? citations : [];
+      var hasIndexedContract = citationContract === "INDEXED_V1";
+      var pattern = /(\*\*[^*\n]+\*\*|`[^`\n]+`|\[(?:来源|source)\s*\d+\]|[（(][^()（）\n]{1,80}\s+来源[）)])/gi;
+      var cursor = 0;
+      var match;
+      while ((match = pattern.exec(text)) !== null) {
+        if (match.index > cursor) parent.appendChild(document.createTextNode(text.slice(cursor, match.index)));
+        var token = match[0];
+        if (token.slice(0, 2) === "**") {
+          var strong = document.createElement("strong");
+          appendInlineMarkdown(strong, token.slice(2, -2), citations, citationContract);
+          parent.appendChild(strong);
+        } else if (token.charAt(0) === "`") {
+          var code = document.createElement("code");
+          code.textContent = token.slice(1, -1);
+          parent.appendChild(code);
+        } else {
+          var marker = token.match(/^\[(?:来源|source)\s*(\d+)\]$/i);
+          var citationNumber = marker ? Number(marker[1]) : 0;
+          var isVerified = hasIndexedContract &&
+            citationNumber >= 1 && citationNumber <= verifiedSources.length;
+          var citation = document.createElement(isVerified ? "a" : "span");
+          citation.className = "answer-citation" + (isVerified ? "" : " unverified");
+          citation.textContent = token;
+          if (isVerified) {
+            citation.href = "#citation-" + citationNumber;
+            citation.title = "编号映射已由后端校验，对应引用列表第 " + citationNumber + " 项；不代表来源本身一定权威";
+            citation.addEventListener("click", function (event) {
+              event.preventDefault();
+              activateTab("citations");
+              window.requestAnimationFrame(function () {
+                var target = $("citation-" + citationNumber);
+                if (target) target.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              });
+            });
+          } else {
+            citation.title = marker ?
+              "编号没有与结构化引用列表建立映射，不能视为已验证引用" :
+              "旧格式来源名称未建立唯一编号映射，不能自动猜测 URL";
+          }
+          parent.appendChild(citation);
+        }
+        cursor = match.index + token.length;
+      }
+      if (cursor < text.length) parent.appendChild(document.createTextNode(text.slice(cursor)));
+    }
+
+    function renderMarkdownAnswer(root, source, citations, citationContract) {
+      root.replaceChildren();
+      root.dataset.markdown = String(source == null ? "" : source);
+      var lines = root.dataset.markdown.replace(/\r\n?/g, "\n").split("\n");
+      var paragraph = [];
+      var list = null;
+      var listKind = "";
+      var codeLines = [];
+      var inCode = false;
+
+      function flushParagraph() {
+        if (!paragraph.length) return;
+        var node = document.createElement("p");
+        appendInlineMarkdown(node, paragraph.join(" "), citations, citationContract);
+        root.appendChild(node);
+        paragraph = [];
+      }
+
+      function closeList() {
+        list = null;
+        listKind = "";
+      }
+
+      function appendListItem(kind, text, start) {
+        flushParagraph();
+        if (!list || listKind !== kind) {
+          closeList();
+          list = document.createElement(kind);
+          if (kind === "ol" && start > 1) list.start = start;
+          root.appendChild(list);
+          listKind = kind;
+        }
+        var item = document.createElement("li");
+        appendInlineMarkdown(item, text, citations, citationContract);
+        list.appendChild(item);
+      }
+
+      lines.forEach(function (line) {
+        if (/^\s*```/.test(line)) {
+          if (inCode) {
+            var pre = document.createElement("pre");
+            var code = document.createElement("code");
+            pre.className = "answer-code";
+            code.textContent = codeLines.join("\n");
+            pre.appendChild(code);
+            root.appendChild(pre);
+            codeLines = [];
+            inCode = false;
+          } else {
+            flushParagraph();
+            closeList();
+            inCode = true;
+          }
+          return;
+        }
+        if (inCode) {
+          codeLines.push(line);
+          return;
+        }
+        var heading = line.match(/^\s*(#{1,6})\s+(.+?)\s*$/);
+        if (heading) {
+          flushParagraph();
+          closeList();
+          var level = Math.min(5, Math.max(2, heading[1].length));
+          var title = document.createElement("h" + level);
+          appendInlineMarkdown(title, heading[2], citations, citationContract);
+          root.appendChild(title);
+          return;
+        }
+        var ordered = line.match(/^\s*(\d+)\.\s+(.+)$/);
+        if (ordered) {
+          appendListItem("ol", ordered[2], Number(ordered[1]));
+          return;
+        }
+        var unordered = line.match(/^\s*[-+*]\s+(.+)$/);
+        if (unordered) {
+          appendListItem("ul", unordered[1], 1);
+          return;
+        }
+        var quote = line.match(/^\s*>\s?(.*)$/);
+        if (quote) {
+          flushParagraph();
+          closeList();
+          var blockquote = document.createElement("blockquote");
+          appendInlineMarkdown(blockquote, quote[1], citations, citationContract);
+          root.appendChild(blockquote);
+          return;
+        }
+        if (/^\s*(?:---+|___+|\*\*\*+)\s*$/.test(line)) {
+          flushParagraph();
+          closeList();
+          root.appendChild(document.createElement("hr"));
+          return;
+        }
+        if (!line.trim()) {
+          flushParagraph();
+          closeList();
+          return;
+        }
+        closeList();
+        paragraph.push(line.trim());
+      });
+      if (inCode) {
+        var unfinished = document.createElement("pre");
+        var unfinishedCode = document.createElement("code");
+        unfinished.className = "answer-code";
+        unfinishedCode.textContent = codeLines.join("\n");
+        unfinished.appendChild(unfinishedCode);
+        root.appendChild(unfinished);
+      }
+      flushParagraph();
+    }
+
+    function jsonLeaf(value) {
+      var node = document.createElement("span");
+      if (value === null || value === undefined) {
+        node.className = "json-null";
+        node.textContent = "null";
+      } else if (typeof value === "string") {
+        node.className = "json-string";
+        node.textContent = JSON.stringify(value);
+      } else if (typeof value === "number") {
+        node.className = "json-number";
+        node.textContent = String(value);
+      } else if (typeof value === "boolean") {
+        node.className = "json-boolean";
+        node.textContent = String(value);
+      } else {
+        node.className = "json-string";
+        node.textContent = JSON.stringify(String(value));
+      }
+      return node;
+    }
+
+    function jsonNode(value, key, depth, budget) {
+      budget.count += 1;
+      if (budget.count > budget.max || depth > budget.maxDepth) {
+        var truncated = document.createElement("div");
+        truncated.className = "json-leaf json-null";
+        truncated.textContent = "… 内容过大，已停止继续展开";
+        return truncated;
+      }
+      var isArray = Array.isArray(value);
+      var isObject = value !== null && typeof value === "object" && !isArray;
+      if (!isArray && !isObject) {
+        var leaf = document.createElement("div");
+        leaf.className = "json-leaf";
+        if (key !== null) {
+          var leafKey = document.createElement("span");
+          leafKey.className = "json-key";
+          leafKey.textContent = String(key) + ": ";
+          leaf.appendChild(leafKey);
+        }
+        leaf.appendChild(jsonLeaf(value));
+        return leaf;
+      }
+      var entries = isArray ? value.map(function (item, index) { return [index, item]; }) : Object.entries(value);
+      var details = document.createElement("details");
+      var summary = document.createElement("summary");
+      var children = document.createElement("div");
+      var closing = document.createElement("div");
+      details.open = depth === 0;
+      if (key !== null) {
+        var objectKey = document.createElement("span");
+        objectKey.className = "json-key";
+        objectKey.textContent = String(key) + ": ";
+        summary.appendChild(objectKey);
+      }
+      summary.appendChild(document.createTextNode(isArray ? "[ … ]" : "{ … }"));
+      var hint = document.createElement("span");
+      hint.className = "json-hint";
+      hint.textContent = isArray ? entries.length + " 项" : entries.length + " 个字段";
+      summary.appendChild(hint);
+      children.className = "json-children";
+      if (!entries.length) {
+        var empty = document.createElement("div");
+        empty.className = "json-leaf json-null";
+        empty.textContent = isArray ? "[]" : "{}";
+        children.appendChild(empty);
+      } else {
+        entries.some(function (entry) {
+          if (budget.count >= budget.max) {
+            var truncated = document.createElement("div");
+            truncated.className = "json-leaf json-null";
+            truncated.textContent = "… 其余内容已折叠，避免阻塞页面";
+            children.appendChild(truncated);
+            return true;
+          }
+          children.appendChild(jsonNode(entry[1], entry[0], depth + 1, budget));
+          return false;
+        });
+      }
+      closing.className = "json-closing";
+      closing.textContent = isArray ? "]" : "}";
+      details.append(summary, children, closing);
+      return details;
+    }
+
+    function renderRawJson(value) {
+      var root = $("rawJson");
+      root.replaceChildren(jsonNode(value == null ? {} : value, null, 0, { count: 0, max: 2000, maxDepth: 12 }));
+    }
+
+    function setJsonExpanded(expanded) {
+      $("rawJson").querySelectorAll("details").forEach(function (node) { node.open = expanded; });
+    }
+
+    async function responseData(response) {
+      var text = await response.text();
+      var data = text ? safeJsonParse(text, { message: text }) : {};
+      if (!response.ok) {
+        var error = new Error(data.message || data.detail || data.error || ("HTTP " + response.status));
+        error.status = response.status;
+        error.code = data.code || data.error || "";
+        throw error;
+      }
+      return data;
+    }
+
+    function friendlyError(error, context) {
+      if (!error) return "请求失败，请检查网络连接。";
+      if (error.name === "AbortError") return "等待响应超时，服务端是否已创建任务仍未知。";
+      if (error.status === 401) return "Token 缺失或已过期，请重新连接身份。";
+      if (error.status === 403 && context === "dev-token") return "本地 Dev Token 签发默认关闭，请开启 DEEPRESEARCH_DEV_TOKEN_ENABLED 或粘贴可信 JWT。";
+      if (error.status === 403) return "当前身份没有执行此操作的权限。";
+      if (error.status === 404) return "任务不存在或无权访问。";
+      if (error.status === 409) return "请求冲突：幂等键与请求体不一致，或事件游标不属于当前任务。";
+      if (error.status === 503 && context === "workflow") return "Durable Workflow 尚未启用。请设置 DEEPRESEARCH_WORKFLOW_ENABLED=true 并启动 Python workflow sidecar。";
+      return error.message || "请求失败，请检查网络连接。";
+    }
+
+    function makeIdempotencyKey() {
+      var suffix = window.crypto && crypto.randomUUID ? crypto.randomUUID() :
+        Math.random().toString(36).slice(2) + Date.now().toString(36);
+      return "ui-" + Date.now() + "-" + suffix;
+    }
+
+    function tokenFingerprint(token) {
+      var hash = 2166136261;
+      String(token || "").split("").forEach(function (character) {
+        hash ^= character.charCodeAt(0);
+        hash = Math.imul(hash, 16777619);
+      });
+      return (hash >>> 0).toString(16).padStart(8, "0");
+    }
+
+    function currentRequestScope() {
+      return {
+        origin: new URL(apiBase(), window.location.href).origin,
+        tenantId: state.auth.tenantId,
+        userId: state.auth.userId,
+        credential: tokenFingerprint(state.auth.token)
+      };
+    }
+
+    function sameRequestScope(pending) {
+      if (!pending || !pending.scope) return false;
+      var current = currentRequestScope();
+      return pending.scope.origin === current.origin && pending.scope.tenantId === current.tenantId &&
+        pending.scope.userId === current.userId && pending.scope.credential === current.credential;
+    }
+
+    function toast(message, kind) {
+      var node = document.createElement("div");
+      node.className = "toast " + (kind || "");
+      node.textContent = message;
+      $("toastStack").appendChild(node);
+      window.setTimeout(function () { node.remove(); }, 2600);
+    }
+
+    function setService(text, ok) {
+      $("serviceText").textContent = text;
+      $("serviceDot").classList.toggle("online", !!ok);
+    }
+
+    function setStreamState(text, kind) {
+      $("streamStateText").textContent = text;
+      var visual = kind === "connected" || kind === "done" ? "live" :
+        (kind === "reconnecting" ? "reconnect" : "");
+      $("streamStateDot").className = "stream-state-dot" + (visual ? " " + visual : "");
+    }
+
+    function saveAuth() {
+      localStorage.setItem(STORE_AUTH, JSON.stringify({
+        baseUrl: state.auth.baseUrl,
+        tenantId: state.auth.tenantId,
+        userId: state.auth.userId
+      }));
+      if ($("rememberTokenInput").checked && state.auth.token) {
+        sessionStorage.setItem(STORE_TOKEN, state.auth.token);
+      } else {
+        sessionStorage.removeItem(STORE_TOKEN);
+      }
+    }
+
+    function saveRun() {
+      // Single Agent 没有 workflow GET/SSE 恢复端点，不能覆盖 durable run 的恢复凭据。
+      if (state.mode !== "workflow") return;
+      if (!state.runId) {
+        sessionStorage.removeItem(STORE_RUN);
+        return;
+      }
+      sessionStorage.setItem(STORE_RUN, JSON.stringify({
+        runId: state.runId,
+        sessionId: state.sessionId,
+        status: state.status,
+        stage: state.stage,
+        progress: state.progress,
+        lastEventId: state.lastEventId
+      }));
+    }
+
+    function savePending() {
+      if (state.pending) sessionStorage.setItem(STORE_PENDING, JSON.stringify(state.pending));
+      else sessionStorage.removeItem(STORE_PENDING);
+    }
+
+    function recentRuns() {
+      return safeJsonParse(localStorage.getItem(STORE_RECENT) || "[]", []);
+    }
+
+    function rememberRun() {
+      if (!state.runId) return;
+      var rows = recentRuns().filter(function (row) { return row.runId !== state.runId; });
+      rows.unshift({ runId: state.runId, sessionId: state.sessionId, status: state.status, updatedAt: Date.now() });
+      localStorage.setItem(STORE_RECENT, JSON.stringify(rows.slice(0, 5)));
+      renderRecent();
+    }
+
+    function renderRecent() {
+      var root = $("recentRuns");
+      root.replaceChildren();
+      var rows = recentRuns();
+      if (!rows.length) {
+        var empty = document.createElement("div");
+        empty.className = "recent-empty";
+        empty.textContent = "暂无已知 runId";
+        root.appendChild(empty);
+        return;
+      }
+      rows.forEach(function (row) {
+        var button = document.createElement("button");
+        var title = document.createElement("strong");
+        var meta = document.createElement("span");
+        button.type = "button";
+        button.className = "recent-run";
+        title.className = "recent-question mono";
+        title.textContent = row.runId;
+        meta.className = "recent-meta";
+        meta.textContent = row.status || "UNKNOWN";
+        button.append(title, meta);
+        button.addEventListener("click", function () { openKnownRun(row); });
+        root.appendChild(button);
+      });
+    }
+
+    function selectedTools() {
+      return Array.from(document.querySelectorAll('input[name="tool"]:checked')).map(function (input) {
+        return input.value;
+      });
+    }
+
+    function workflowBody() {
+      var body = {
+        question: $("questionInput").value.trim(),
+        requestedTools: selectedTools()
+      };
+      var sessionId = $("sessionInput").value.trim();
+      if (sessionId) body.sessionId = sessionId;
+      return body;
+    }
+
+    function legacyBody() {
+      var body = { question: $("questionInput").value.trim() };
+      var sessionId = $("sessionInput").value.trim();
+      if (sessionId) body.sessionId = sessionId;
+      return body;
+    }
+
+    function lockComposer(locked) {
+      $("questionInput").disabled = locked;
+      $("sessionInput").disabled = locked;
+      $("toolFieldset").disabled = locked || state.mode !== "workflow";
+      $("workflowModeButton").disabled = locked;
+      $("nativeModeButton").disabled = locked;
+      $("startButton").disabled = state.submitting || (locked && !state.pending);
+      $("startButton").classList.toggle("loading", state.submitting);
+    }
+
+    function resetOutput() {
+      state.events.clear();
+      state.view = null;
+      state.legacy = null;
+      state.raw = null;
+      state.lastEventId = "";
+      $("timeline").replaceChildren();
+      var empty = document.createElement("div");
+      empty.id = "timelineEmpty";
+      empty.className = "timeline-empty";
+      empty.textContent = "任务创建后，安全事件会实时出现在这里。";
+      $("timeline").appendChild(empty);
+      $("cursorFooter").textContent = "Last-Event-ID: —";
+      renderRawJson({});
+      renderCitations([], "");
+      renderUsage({});
+    }
+
+    function renderMode() {
+      var workflow = state.mode === "workflow";
+      $("workflowModeButton").classList.toggle("active", workflow);
+      $("nativeModeButton").classList.toggle("active", !workflow);
+      $("workflowModeButton").setAttribute("aria-selected", String(workflow));
+      $("nativeModeButton").setAttribute("aria-selected", String(!workflow));
+      $("toolFieldset").hidden = !workflow;
+      $("modeNote").textContent = workflow ?
+        "Python/LangGraph 本地编排 · DeepSeek API 推理 · Java/MCP 执行工具 · checkpoint/SSE 可恢复" :
+        "Java/Spring AI 单 Agent 编排 · DeepSeek API 推理 · Java 直接执行工具 · 不具备 Workflow 恢复";
+      $("modeValue").textContent = workflow ? "LANGGRAPH" : "SINGLE AGENT";
+      $("startLabel").textContent = workflow ? "开始研究" : "运行基线";
+    }
+
+    function displayStage() {
+      var stage = TERMINAL.has(state.status) ? "TERMINAL" : state.stage;
+      var stageIndex = STAGES.indexOf(stage);
+      document.querySelectorAll(".phase").forEach(function (node, index) {
+        node.classList.toggle("done", stageIndex > index);
+        node.classList.toggle("active", stageIndex === index);
+      });
+      $("progressFill").style.width = Math.max(0, Math.min(100, state.progress || 0)) + "%";
+      $("progressValue").textContent = Math.max(0, Math.min(100, state.progress || 0)) + "%";
+      document.querySelector(".progress-track").setAttribute("aria-valuenow", String(state.progress || 0));
+      $("progressLabel").textContent = state.status === "READY" ? "尚未开始" :
+        (STAGE_LABELS[codeKey(state.stage || state.status)] || state.stage || state.status);
+      $("runStatusPill").textContent = state.status;
+      var pillKind = ["QUEUED", "PLANNING", "WORKING", "REVIEWING", "SYNTHESIZING", "FINALIZING"].indexOf(state.status) >= 0 ?
+        "running" : (state.status === "SUCCEEDED" ? "success" :
+        (state.status === "INSUFFICIENT_EVIDENCE" ? "warning" :
+        (TERMINAL.has(state.status) ? "error" : "")));
+      $("runStatusPill").className = "status-pill" + (pillKind ? " " + pillKind : "");
+      $("progressFill").classList.toggle("running", !!state.runId && !TERMINAL.has(state.status));
+      $("runStageLabel").textContent = state.stage || "";
+      $("runIdValue").textContent = state.runId || "尚未创建";
+      $("sessionIdValue").textContent = state.sessionId || "—";
+      $("copyRunButton").hidden = !state.runId;
+      $("cancelButton").hidden = !state.runId || TERMINAL.has(state.status) || state.mode !== "workflow";
+      lockComposer(state.submitting || !!state.pending || (!!state.runId && !TERMINAL.has(state.status)));
+    }
+
+    function renderCitations(citations, citationContract) {
+      var root = $("citationList");
+      root.replaceChildren();
+      $("citationCount").textContent = String(citations.length);
+      var indexed = citationContract === "INDEXED_V1";
+      var note = document.createElement("div");
+      note.className = "citation-contract-note" + (indexed ? "" : " unverified");
+      note.textContent = indexed ?
+        "紫色标记表示“答案编号 ↔ 结构化来源 ID”的映射已通过后端校验；它不等于来源本身一定权威。" :
+        "当前结果没有通过结构化引用映射校验。正文中的黄色来源标记仅作历史展示，不能据此猜测链接。";
+      root.appendChild(note);
+      if (!citations.length) {
+        var empty = document.createElement("span");
+        empty.className = "muted small";
+        empty.textContent = indexed ?
+          "本次回答没有需要展示的外部或知识库来源。" :
+          "暂无可验证的结构化引用。旧运行不会被追溯性地标记为已验证。";
+        root.appendChild(empty);
+        return;
+      }
+      citations.forEach(function (citation, index) {
+        var card = document.createElement("article");
+        var number = document.createElement("span");
+        var content = document.createElement("div");
+        var text = String(citation == null ? "" : citation);
+        card.className = "citation-chip" + (indexed ? "" : " unverified");
+        card.id = "citation-" + (index + 1);
+        number.className = "citation-index";
+        number.textContent = String(index + 1);
+        try {
+          var url = new URL(text);
+          if (indexed && (url.protocol === "http:" || url.protocol === "https:")) {
+            var link = document.createElement("a");
+            link.href = url.href;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.textContent = text;
+            content.appendChild(link);
+          } else content.textContent = text;
+        } catch (ignored) {
+          content.textContent = text;
+        }
+        card.append(number, content);
+        root.appendChild(card);
+      });
+    }
+
+    function renderUsage(usage) {
+      usage = usage || {};
+      $("modelCallsMetric").textContent = usage.modelCalls == null ? "—" : String(usage.modelCalls);
+      $("toolCallsMetric").textContent = usage.toolCalls == null ? "—" : String(usage.toolCalls);
+      $("tokensMetric").textContent = usage.totalTokens == null ? "—" : Number(usage.totalTokens).toLocaleString();
+      $("inputTokensMetric").textContent = usage.inputTokens == null ? "—" : Number(usage.inputTokens).toLocaleString();
+      $("outputTokensMetric").textContent = usage.outputTokens == null ? "—" : Number(usage.outputTokens).toLocaleString();
+      $("durationMetric").textContent = usage.durationMs == null ? "—" : (Number(usage.durationMs) / 1000).toFixed(1) + "s";
+      $("costMetric").textContent = usage.estimatedCost == null ? "—" :
+        String(usage.estimatedCost) + " " + (usage.currency || usage.costCurrency || "");
+      $("reconnectMetric").textContent = String(state.reconnects);
+    }
+
+    function renderAnswer() {
+      var running = state.runId && !TERMINAL.has(state.status);
+      var response = state.view && state.view.finalResponse ? state.view.finalResponse : {};
+      var failureCode = codeKey(
+        (state.view && state.view.errorCode) || (state.status === "FAILED" ? "" : state.status)
+      );
+      var failureMeta = EVENT_META[failureCode] || null;
+      var answer = response.answer || (state.legacy && state.legacy.answer) || "";
+      var citations = Array.isArray(response.citations) ? response.citations :
+        ((state.legacy && Array.isArray(state.legacy.citations)) ? state.legacy.citations : []);
+      var citationContract = response.citationContract ||
+        ((state.legacy && state.legacy.citationContract) || "");
+      $("answerEmpty").hidden = !!state.runId || !!state.legacy;
+      $("answerRunning").hidden = !running;
+      $("answerResult").hidden = !answer && !TERMINAL.has(state.status);
+      $("copyAnswerButton").hidden = !answer;
+      if (running) {
+        $("runTitle").textContent = "研究正在进行";
+        $("runDescription").textContent = "刷新页面或短暂断网不会重新创建任务，事件会从持久游标恢复。";
+      } else if (state.runId || state.legacy) {
+        $("runTitle").textContent = state.status === "SUCCEEDED" ? "研究任务已完成" :
+          (state.status === "INSUFFICIENT_EVIDENCE" ? "可信证据不足" :
+            (failureMeta ? failureMeta.label : "研究任务已结束"));
+        $("runDescription").textContent = state.status === "SUCCEEDED" ?
+          "最终答案、引用与 usage 已持久化，可通过 runId 再次读取。" :
+          "已保留本次运行的安全轨迹与稳定结果码，便于恢复和故障分析。";
+      }
+      var answerRoot = $("answerText");
+      if (answer) {
+        renderMarkdownAnswer(answerRoot, answer, citations, citationContract);
+      } else if (TERMINAL.has(state.status)) {
+        answerRoot.dataset.markdown = "";
+        answerRoot.textContent = state.status === "INSUFFICIENT_EVIDENCE" ?
+          "没有找到足够可信的证据，系统不会自行补全答案。" :
+          (failureMeta ? failureMeta.description :
+            ((state.view && (state.view.errorMessage || state.view.errorCode)) || ("运行终态：" + state.status)));
+      } else {
+        answerRoot.dataset.markdown = "";
+        answerRoot.textContent = "";
+      }
+      var resultClass = "result-banner";
+      var resultTitle = "研究完成";
+      var resultMessage = "答案已完成核验";
+      var icon = "✓";
+      if (state.status === "INSUFFICIENT_EVIDENCE") {
+        resultClass += " warning";
+        resultTitle = "证据不足";
+        resultMessage = "系统拒绝在缺少可信证据时补全答案";
+        icon = "!";
+      } else if (TERMINAL.has(state.status) && state.status !== "SUCCEEDED") {
+        resultClass += " error";
+        resultTitle = failureMeta ? failureMeta.label :
+          (state.status === "CANCELLED" ? "任务已取消" : "任务未完成");
+        resultMessage = failureMeta ? failureMeta.description :
+          ((state.view && (state.view.errorMessage || state.view.errorCode)) || state.status);
+        icon = "×";
+      }
+      $("resultBanner").className = resultClass;
+      $("resultTitle").textContent = resultTitle;
+      $("resultMessage").textContent = resultMessage;
+      $("resultIcon").textContent = icon;
+    }
+
+    function eventKey(event, metaId) {
+      return metaId || event.id || (event.eventId == null ? "" : state.runId + ":" + event.eventId) ||
+        JSON.stringify(event);
+    }
+
+    function advanceEventCursor(candidate) {
+      candidate = String(candidate || "");
+      if (!candidate) return;
+      var prefix = state.runId + ":";
+      var nextRaw = candidate.indexOf(prefix) === 0 ? candidate.slice(prefix.length) : "";
+      var currentRaw = String(state.lastEventId || "").indexOf(prefix) === 0 ?
+        String(state.lastEventId).slice(prefix.length) : "";
+      var nextNumber = /^\d+$/.test(nextRaw) ? Number(nextRaw) : null;
+      var currentNumber = /^\d+$/.test(currentRaw) ? Number(currentRaw) : null;
+      if (nextNumber != null && currentNumber != null && nextNumber < currentNumber) return;
+      if (!state.lastEventId || nextNumber != null || candidate === state.lastEventId) state.lastEventId = candidate;
+    }
+
+    function appendEvent(event, metaId) {
+      if (!event || typeof event !== "object") return;
+      var key = eventKey(event, metaId);
+      if (state.events.has(key)) return;
+      state.events.set(key, event);
+      if (metaId) advanceEventCursor(metaId);
+      else if (event.id && String(event.id).indexOf(state.runId + ":") === 0) advanceEventCursor(event.id);
+      $("cursorFooter").textContent = "Last-Event-ID: " + (state.lastEventId || "—");
+      var oldEmpty = $("timelineEmpty");
+      if (oldEmpty) oldEmpty.remove();
+      var row = document.createElement("article");
+      var marker = document.createElement("span");
+      var card = document.createElement("div");
+      var head = document.createElement("div");
+      var title = document.createElement("strong");
+      var roleIcon = document.createElement("span");
+      var roleLabel = document.createElement("span");
+      var time = document.createElement("time");
+      var typeLine = document.createElement("div");
+      var type = document.createElement("span");
+      var code = document.createElement("span");
+      var detail = document.createElement("p");
+      var payloadDetails = document.createElement("details");
+      var payloadSummary = document.createElement("summary");
+      var payload = document.createElement("pre");
+      var role = roleMeta(event.role || "SYSTEM");
+      var rawEventType = codeKey(event.type || "EVENT");
+      var eventType = eventMeta(
+        rawEventType === "FAILED" && event.payload && event.payload.errorCode ?
+          event.payload.errorCode : event.type || "EVENT"
+      );
+      var isError = ["FAILED", "TIMED_OUT", "BUDGET_EXCEEDED", "CANCELLED"].indexOf(eventType.code) >= 0 ||
+        !!(event.payload && event.payload.errorCode);
+      row.className = "event " + (isError ? "error" : role.className);
+      marker.className = "event-dot";
+      card.className = "event-card";
+      head.className = "event-head";
+      title.className = "event-role";
+      roleIcon.className = "event-role-icon";
+      roleIcon.setAttribute("aria-hidden", "true");
+      time.className = "event-time";
+      typeLine.className = "event-type-line";
+      type.className = "event-type";
+      code.className = "event-code mono";
+      detail.className = "event-summary";
+      payloadDetails.className = "event-payload";
+      roleIcon.textContent = role.icon;
+      roleLabel.textContent = role.label;
+      title.title = "技术角色码：" + role.code;
+      title.append(roleIcon, roleLabel);
+      time.textContent = event.taskId && /^round-\d+$/.test(event.taskId) ?
+        "第 " + event.taskId.slice(6) + " 轮" :
+        (event.createdAt ? new Date(event.createdAt).toLocaleTimeString() : "");
+      type.textContent = eventType.label;
+      code.textContent = eventType.code;
+      detail.textContent = eventSummary(event, eventType);
+      payloadSummary.textContent = "查看事件数据";
+      payload.textContent = JSON.stringify(event.payload || {}, null, 2);
+      payloadDetails.append(payloadSummary, payload);
+      head.append(title, time);
+      typeLine.append(type, code);
+      card.append(head, typeLine, detail, payloadDetails);
+      row.append(marker, card);
+      $("timeline").appendChild(row);
+      $("timeline").scrollTop = $("timeline").scrollHeight;
+      saveRun();
+    }
+
+    function renderTrace(trace) {
+      var root = $("traceList");
+      root.replaceChildren();
+      if (!trace || !trace.length) {
+        var empty = document.createElement("span");
+        empty.className = "muted small";
+        empty.textContent = "暂无安全轨迹。";
+        root.appendChild(empty);
+        return;
+      }
+      trace.forEach(function (event) {
+        var row = document.createElement("article");
+        var title = document.createElement("strong");
+        var text = document.createElement("span");
+        var role = roleMeta(event.role || "SYSTEM");
+        var rawType = codeKey(event.type || "EVENT");
+        var type = eventMeta(
+          rawType === "FAILED" && event.payload && event.payload.errorCode ?
+            event.payload.errorCode : event.type || "EVENT"
+        );
+        row.className = "trace-row";
+        title.className = "trace-role";
+        title.textContent = role.label + " · " + type.label;
+        title.title = role.code + " · " + type.code;
+        text.textContent = eventSummary(event, type);
+        row.append(title, text);
+        root.appendChild(row);
+      });
+    }
+
+    function renderWorkflow(view) {
+      state.view = view;
+      state.raw = view;
+      state.status = view.status || state.status;
+      state.stage = view.stage || state.stage;
+      state.progress = Number.isFinite(view.progress) ? view.progress : state.progress;
+      state.sessionId = view.sessionId || state.sessionId;
+      (view.trace || []).forEach(function (event) { appendEvent(event, event.id || ""); });
+      var finalResponse = view.finalResponse || {};
+      renderCitations(finalResponse.citations || [], finalResponse.citationContract || "");
+      renderUsage(view.usage || {});
+      renderTrace(view.trace || []);
+      renderRawJson(view);
+      renderAnswer();
+      displayStage();
+      saveRun();
+      rememberRun();
+      if (TERMINAL.has(state.status)) {
+        stopStream();
+        setStreamState("任务已结束", "done");
+        $("connectionBanner").hidden = true;
+      }
+    }
+
+    function renderLegacy(data) {
+      state.legacy = data;
+      state.raw = data;
+      state.runId = data.runId || "";
+      state.sessionId = data.sessionId || "";
+      var nativeStatus = codeKey(data.status || "");
+      state.status = data.finished === false ? (nativeStatus || "FAILED") : "SUCCEEDED";
+      if (!TERMINAL.has(state.status)) state.status = "FAILED";
+      state.stage = "TERMINAL";
+      state.progress = 100;
+      (data.events || []).forEach(function (event) {
+        appendEvent({
+          id: state.runId + ":native:" + event.seq,
+          role: event.action || "AGENT",
+          type: event.type || "EVENT",
+          taskId: event.round == null ? null : "round-" + event.round,
+          payload: { summary: event.message || "" },
+          createdAt: new Date().toISOString()
+        }, state.runId + ":native:" + event.seq);
+      });
+      renderTrace((data.steps || []).map(function (step) {
+        return {
+          role: "ROUND " + step.round,
+          type: step.action || "AGENT",
+          payload: { summary: step.decisionSummary || "", outcomeCode: step.outcomeCode || "" }
+        };
+      }));
+      renderCitations(data.citations || [], data.citationContract || "");
+      renderUsage(data.usage || {
+        modelCalls: data.rounds,
+        toolCalls: (data.steps || []).length
+      });
+      renderRawJson(data);
+      renderAnswer();
+      var nativeFailureTitles = {
+        MAX_ROUNDS_REACHED: "Single Agent 轮次已用尽",
+        CITATION_VALIDATION_FAILED: "Single Agent 引用校验未通过",
+        BUDGET_EXCEEDED: "Single Agent 预算已用尽",
+        MODEL_TIMEOUT: "DeepSeek 调用超时",
+        MODEL_RATE_LIMITED: "DeepSeek 服务限流",
+        MODEL_EXECUTION_FAILED: "DeepSeek 调用失败",
+        TOOL_TIMEOUT: "工具调用超时",
+        CANCELLED: "Single Agent 已取消"
+      };
+      $("resultTitle").textContent = data.finished === false ?
+        (nativeFailureTitles[state.status] || "Single Agent 未完成") : "Single Agent 基线完成";
+      $("resultMessage").textContent = data.finished === false ?
+        "结果码：" + (nativeStatus || "FAILED") + "；共执行 " + (data.rounds || 0) + " 轮。" :
+        "共执行 " + (data.rounds || 0) + " 轮；用于与 Durable Workflow 对比成本、质量与恢复能力。";
+      $("answerSubtitle").textContent = "Java Native Tool Calling 对照结果";
+      displayStage();
+      if (state.sessionId) $("sessionInput").value = state.sessionId;
+    }
+
+    function setUnknown(message) {
+      $("unknownCard").hidden = false;
+      $("startButton").hidden = true;
+      $("cancelButton").hidden = true;
+      lockComposer(true);
+      toast(message || "创建结果未知，请复用原请求安全重试", "warning");
+    }
+
+    function clearUnknown() {
+      $("unknownCard").hidden = true;
+      $("startButton").hidden = false;
+      $("idempotencyPreview").textContent = "开始研究时自动生成";
+    }
+
+    async function createWorkflow(pending) {
+      state.submitting = true;
+      lockComposer(true);
+      setService("正在创建任务", true);
+      var controller = new AbortController();
+      var timeout = window.setTimeout(function () { controller.abort(); }, 20000);
+      try {
+        var response = await fetch(apiBase() + "/api/research/workflows", {
+          method: "POST",
+          headers: authHeaders({
+            "Content-Type": "application/json",
+            "Idempotency-Key": pending.key
+          }),
+          body: pending.bodyJson || JSON.stringify(pending.body),
+          signal: controller.signal
+        });
+        var data = await responseData(response);
+        state.pending = null;
+        savePending();
+        clearUnknown();
+        state.runId = data.runId;
+        state.sessionId = data.sessionId || "";
+        state.status = data.status || "QUEUED";
+        state.stage = data.stage || state.status;
+        state.progress = 0;
+        state.lastEventId = "";
+        $("sessionInput").value = state.sessionId;
+        renderWorkflow(Object.assign({
+          progress: 0,
+          trace: [],
+          usage: {},
+          finalResponse: null
+        }, data));
+        toast(data.replayed ? "已安全重放原创建结果" : "研究任务已创建", "success");
+        await refreshStatus(false);
+        startEventLoop();
+      } catch (error) {
+        if (!error.status || (error.status >= 500 && error.status !== 503)) {
+          state.pending = pending;
+          savePending();
+          setUnknown(friendlyError(error, "workflow"));
+        } else {
+          state.pending = null;
+          savePending();
+          toast(friendlyError(error, "workflow"), "error");
+          if (error.status === 503) {
+            $("connectionBanner").hidden = false;
+            $("connectionBanner").className = "connection-banner warning";
+            $("connectionMessage").textContent = friendlyError(error, "workflow");
+            $("manualReconnectButton").hidden = true;
+          }
+          lockComposer(false);
+        }
+        setService("创建未确认", false);
+      } finally {
+        window.clearTimeout(timeout);
+        state.submitting = false;
+        if (!state.pending) lockComposer(!!state.runId && !TERMINAL.has(state.status));
+      }
+    }
+
+    async function runLegacy(pending) {
+      state.submitting = true;
+      lockComposer(true);
+      state.status = "WORKING";
+      state.stage = "WORKING";
+      state.progress = 35;
+      displayStage();
+      renderAnswer();
+      var controller = new AbortController();
+      var timeout = window.setTimeout(function () { controller.abort(); }, 45000);
+      try {
+        var response = await fetch(apiBase() + "/api/research/agent", {
+          method: "POST",
+          headers: authHeaders({
+            "Content-Type": "application/json",
+            "Idempotency-Key": pending.key
+          }),
+          body: pending.bodyJson || JSON.stringify(pending.body),
+          signal: controller.signal
+        });
+        var data = await responseData(response);
+        state.pending = null;
+        savePending();
+        clearUnknown();
+        renderLegacy(data);
+        toast("Single Agent 基线完成", "success");
+      } catch (error) {
+        if (!error.status || error.status >= 500) {
+          state.pending = pending;
+          savePending();
+          setUnknown("Single Agent POST 结果未知");
+        } else {
+          state.pending = null;
+          savePending();
+          state.status = "FAILED";
+          state.stage = "TERMINAL";
+          state.progress = 100;
+          toast(error.message, "error");
+          displayStage();
+          renderAnswer();
+        }
+      } finally {
+        window.clearTimeout(timeout);
+        state.submitting = false;
+        if (!state.pending) lockComposer(false);
+      }
+    }
+
+    function submitNew() {
+      var body = state.mode === "workflow" ? workflowBody() : legacyBody();
+      if (!state.auth.token) {
+        toast("请先在“连接与身份”中设置 Bearer Token。", "warning");
+        $("authDialog").showModal();
+        return;
+      }
+      if (!body.question) {
+        toast("请输入研究问题", "warning");
+        $("questionInput").focus();
+        return;
+      }
+      if (state.mode === "workflow" && !body.requestedTools.length) {
+        toast("请至少允许一个只读工具", "warning");
+        return;
+      }
+      stopStream();
+      resetOutput();
+      state.runId = "";
+      if (state.mode === "workflow") sessionStorage.removeItem(STORE_RUN);
+      state.sessionId = body.sessionId || "";
+      state.status = "READY";
+      state.stage = "READY";
+      state.progress = 0;
+      var pending = {
+        mode: state.mode,
+        key: makeIdempotencyKey(),
+        body: body,
+        bodyJson: JSON.stringify(body),
+        scope: currentRequestScope(),
+        createdAt: new Date().toISOString()
+      };
+      state.pending = pending;
+      savePending();
+      $("idempotencyPreview").textContent = pending.key;
+      if (state.mode === "workflow") createWorkflow(pending);
+      else runLegacy(pending);
+    }
+
+    async function safeRetry() {
+      if (!state.pending) return;
+      if (!sameRequestScope(state.pending)) {
+        toast("身份或 API Origin 已变化，禁止向新幂等作用域重放未知 POST。请恢复原连接。", "error");
+        $("authDialog").showModal();
+        return;
+      }
+      clearUnknown();
+      $("idempotencyPreview").textContent = state.pending.key;
+      if (state.pending.mode === "workflow") await createWorkflow(state.pending);
+      else await runLegacy(state.pending);
+    }
+
+    async function refreshStatus(reportError) {
+      if (!state.runId || state.mode !== "workflow") return;
+      try {
+        var response = await fetch(apiBase() + "/api/research/workflows/" + encodeURIComponent(state.runId), {
+          headers: authHeaders({ Accept: "application/json" }),
+          cache: "no-store"
+        });
+        var data = await responseData(response);
+        renderWorkflow(data);
+        setService("Java API 已连接", true);
+      } catch (error) {
+        setService("状态查询失败", false);
+        if (reportError !== false) toast(error.message, "error");
+      }
+    }
+
+    function parseSseBlock(block) {
+      var event = { id: "", type: "message", data: [] };
+      block.split("\n").forEach(function (line) {
+        if (!line || line.charAt(0) === ":") return;
+        var colon = line.indexOf(":");
+        var field = colon < 0 ? line : line.slice(0, colon);
+        var value = colon < 0 ? "" : line.slice(colon + 1);
+        if (value.charAt(0) === " ") value = value.slice(1);
+        if (field === "id") event.id = value;
+        else if (field === "event") event.type = value;
+        else if (field === "data") event.data.push(value);
+      });
+      if (!event.data.length) return;
+      try {
+        var payload = JSON.parse(event.data.join("\n"));
+        appendEvent(payload, event.id);
+        window.clearTimeout(parseSseBlock.refreshTimer);
+        parseSseBlock.refreshTimer = window.setTimeout(function () { refreshStatus(false); }, 300);
+      } catch (error) {
+        toast("收到无法解析的 SSE 数据", "error");
+      }
+    }
+
+    function normalizeSseBuffer(value, finalChunk) {
+      var normalized = String(value || "").replace(/\r\n/g, "\n");
+      return finalChunk ? normalized.replace(/\r/g, "\n") : normalized.replace(/\r(?!$)/g, "\n");
+    }
+
+    async function consumeEventStream(signal) {
+      var requestHeaders = authHeaders({ Accept: "text/event-stream" });
+      if (state.lastEventId) requestHeaders["Last-Event-ID"] = state.lastEventId;
+      var response = await fetch(apiBase() + "/api/research/workflows/" + encodeURIComponent(state.runId) + "/events", {
+        headers: requestHeaders,
+        cache: "no-store",
+        signal: signal
+      });
+      if (!response.ok) await responseData(response);
+      if (!response.body) throw new Error("当前浏览器不支持 fetch streaming");
+      $("connectionBanner").hidden = true;
+      $("disconnectButton").disabled = false;
+      setStreamState("SSE 已连接", "connected");
+      var reader = response.body.getReader();
+      var decoder = new TextDecoder();
+      var buffer = "";
+      while (true) {
+        var chunk = await reader.read();
+        if (chunk.done) break;
+        buffer += decoder.decode(chunk.value, { stream: true });
+        // 保留分片末尾的单个 CR；若下个分片以 LF 开头，它们仍应被视为一个换行。
+        buffer = normalizeSseBuffer(buffer, false);
+        var boundary;
+        while ((boundary = buffer.indexOf("\n\n")) >= 0) {
+          parseSseBlock(buffer.slice(0, boundary));
+          buffer = buffer.slice(boundary + 2);
+        }
+      }
+      buffer += decoder.decode();
+      buffer = normalizeSseBuffer(buffer, true);
+      if (buffer.trim()) parseSseBlock(buffer);
+    }
+
+    function startEventLoop() {
+      if (!state.runId || TERMINAL.has(state.status) || state.mode !== "workflow") return;
+      stopStream();
+      var controller = new AbortController();
+      var generation = ++state.streamGeneration;
+      state.streamAbort = controller;
+      (async function () {
+        var attempt = 0;
+        while (!controller.signal.aborted && generation === state.streamGeneration &&
+               state.runId && !TERMINAL.has(state.status)) {
+          try {
+            await consumeEventStream(controller.signal);
+            await refreshStatus(false);
+            if (TERMINAL.has(state.status)) return;
+            throw new Error("SSE 连接已关闭");
+          } catch (error) {
+            if (controller.signal.aborted || generation !== state.streamGeneration) return;
+            attempt += 1;
+            state.reconnects += 1;
+            renderUsage(state.view ? state.view.usage : {});
+            $("connectionBanner").hidden = false;
+            $("connectionMessage").textContent = "事件流中断，" + Math.min(8, Math.pow(2, attempt - 1)) + " 秒后从持久游标恢复";
+            setStreamState("等待重连 · " + attempt, "reconnecting");
+            if ([401, 403, 404, 409].indexOf(error.status) >= 0) {
+              $("connectionMessage").textContent = "无法自动恢复：" + error.message;
+              toast(error.message, "error");
+              return;
+            }
+            await new Promise(function (resolve) {
+              window.setTimeout(resolve, Math.min(8000, Math.pow(2, attempt - 1) * 1000));
+            });
+          }
+        }
+      })();
+    }
+
+    function stopStream() {
+      state.streamGeneration += 1;
+      if (state.streamAbort) state.streamAbort.abort();
+      state.streamAbort = null;
+      $("disconnectButton").disabled = true;
+    }
+
+    async function cancelRun() {
+      if (!state.runId || state.mode !== "workflow") return;
+      $("cancelButton").disabled = true;
+      try {
+        var response = await fetch(apiBase() + "/api/research/workflows/" + encodeURIComponent(state.runId) + "/cancel", {
+          method: "POST",
+          headers: authHeaders({ Accept: "application/json" })
+        });
+        await responseData(response);
+        await refreshStatus(true);
+        toast("取消请求已提交", "success");
+      } catch (error) {
+        toast(error.message, "error");
+      } finally {
+        $("cancelButton").disabled = false;
+      }
+    }
+
+    function openKnownRun(row) {
+      if (!row || !row.runId) return;
+      stopStream();
+      resetOutput();
+      state.mode = "workflow";
+      state.runId = row.runId;
+      state.sessionId = row.sessionId || "";
+      state.status = row.status || "QUEUED";
+      state.stage = state.status;
+      state.progress = TERMINAL.has(state.status) ? 100 : 0;
+      state.lastEventId = "";
+      renderMode();
+      displayStage();
+      refreshStatus(true).then(startEventLoop);
+    }
+
+    async function issueDevToken() {
+      $("issueDevTokenButton").disabled = true;
+      try {
+        var tokenBase = validatedBaseInput($("apiBaseInput").value);
+        var payload = {
+          tenantId: $("tenantInput").value.trim() || "demo-tenant",
+          userId: $("userInput").value.trim() || "demo-user",
+          roles: ["USER"],
+          ttlSeconds: 7200
+        };
+        var response = await fetch((tokenBase || location.origin) + "/api/auth/dev-token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        var data = await responseData(response);
+        $("tokenInput").value = data.token || "";
+        toast("Dev Token 已签发", "success");
+      } catch (error) {
+        toast(friendlyError(error, "dev-token"), "error");
+      } finally {
+        $("issueDevTokenButton").disabled = false;
+      }
+    }
+
+    function applyAuth() {
+      try {
+        state.auth.baseUrl = validatedBaseInput($("apiBaseInput").value);
+      } catch (error) {
+        toast(error.message, "error");
+        return;
+      }
+      state.auth.tenantId = $("tenantInput").value.trim() || "demo-tenant";
+      state.auth.userId = $("userInput").value.trim() || "demo-user";
+      state.auth.token = $("tokenInput").value.trim().replace(/^Bearer\s+/i, "");
+      $("tokenInput").value = state.auth.token;
+      saveAuth();
+      $("identityText").textContent = state.auth.token ?
+        state.auth.tenantId + ":" + state.auth.userId : "未认证";
+      $("authDialog").close();
+      checkHealth();
+      if (state.runId && state.mode === "workflow") refreshStatus(false).then(startEventLoop);
+    }
+
+    async function checkHealth() {
+      try {
+        var response = await fetch(apiBase() + "/api/ping", { cache: "no-store" });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        setService("Java API 在线", true);
+      } catch (error) {
+        setService("Java API 未连接", false);
+      }
+    }
+
+    function restore() {
+      var savedAuth = safeJsonParse(localStorage.getItem(STORE_AUTH) || "{}", {});
+      var rejectedLegacyBase = false;
+      try {
+        state.auth.baseUrl = validatedBaseInput(savedAuth.baseUrl || "");
+      } catch (ignored) {
+        rejectedLegacyBase = true;
+        state.auth.baseUrl = "";
+        localStorage.removeItem(STORE_AUTH);
+        sessionStorage.removeItem(STORE_TOKEN);
+        sessionStorage.removeItem(STORE_RUN);
+        sessionStorage.removeItem(STORE_PENDING);
+      }
+      state.auth.tenantId = savedAuth.tenantId || "demo-tenant";
+      state.auth.userId = savedAuth.userId || "demo-user";
+      state.auth.token = rejectedLegacyBase ? "" : (sessionStorage.getItem(STORE_TOKEN) || "");
+      $("apiBaseInput").value = state.auth.baseUrl;
+      $("tenantInput").value = state.auth.tenantId;
+      $("userInput").value = state.auth.userId;
+      $("tokenInput").value = state.auth.token;
+      $("rememberTokenInput").checked = !!state.auth.token;
+      $("identityText").textContent = state.auth.token ?
+        state.auth.tenantId + ":" + state.auth.userId : "未认证";
+
+      var savedRun = safeJsonParse(sessionStorage.getItem(STORE_RUN) || "{}", {});
+      if (savedRun.runId) {
+        state.runId = savedRun.runId;
+        state.sessionId = savedRun.sessionId || "";
+        state.status = savedRun.status || "QUEUED";
+        state.stage = savedRun.stage || state.status;
+        state.progress = savedRun.progress || 0;
+        state.lastEventId = savedRun.lastEventId || "";
+        $("sessionInput").value = state.sessionId;
+        $("cursorFooter").textContent = "Last-Event-ID: " + (state.lastEventId || "—");
+      }
+      state.pending = safeJsonParse(sessionStorage.getItem(STORE_PENDING) || "null", null);
+      if (state.pending) {
+        state.mode = state.pending.mode || "workflow";
+        $("questionInput").value = state.pending.body.question || "";
+        $("sessionInput").value = state.pending.body.sessionId || "";
+        $("idempotencyPreview").textContent = state.pending.key;
+        setUnknown();
+      }
+      $("questionCount").textContent = $("questionInput").value.length + " / 4000";
+      renderRawJson(state.raw || {});
+      renderMode();
+      displayStage();
+      renderRecent();
+      checkHealth();
+      if (rejectedLegacyBase) toast("已清除旧版跨源 API Base 与会话 Token；请从目标服务页面重新连接。", "warning");
+      if (state.runId && !state.pending && state.mode === "workflow" && state.auth.token) {
+        refreshStatus(false).then(startEventLoop);
+      } else if (state.runId && !state.pending && !state.auth.token) {
+        $("connectionBanner").hidden = false;
+        $("connectionBanner").className = "connection-banner warning";
+        $("connectionMessage").textContent = "已恢复 runId；连接身份后才能读取状态并续传事件。";
+        $("manualReconnectButton").hidden = true;
+      }
+    }
+
+    $("workflowModeButton").addEventListener("click", function () { state.mode = "workflow"; renderMode(); });
+    $("nativeModeButton").addEventListener("click", function () { state.mode = "legacy"; renderMode(); });
+    $("questionInput").addEventListener("input", function () {
+      $("questionCount").textContent = $("questionInput").value.length + " / 4000";
+    });
+    $("questionInput").addEventListener("keydown", function (event) {
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") submitNew();
+    });
+    document.querySelectorAll(".preset").forEach(function (button) {
+      button.addEventListener("click", function () {
+        $("questionInput").value = button.dataset.prompt || "";
+        $("questionCount").textContent = $("questionInput").value.length + " / 4000";
+        $("questionInput").focus();
+      });
+    });
+    $("startButton").addEventListener("click", submitNew);
+    $("safeRetryButton").addEventListener("click", safeRetry);
+    $("discardUnknownButton").addEventListener("click", function () {
+      state.pending = null;
+      savePending();
+      clearUnknown();
+      lockComposer(false);
+      toast("仅清除本地记录；原任务仍可能在服务端执行", "warning");
+    });
+    $("cancelButton").addEventListener("click", cancelRun);
+    $("manualReconnectButton").addEventListener("click", function () {
+      $("connectionBanner").hidden = true;
+      refreshStatus(false).then(startEventLoop);
+    });
+    $("disconnectButton").addEventListener("click", function () {
+      if (!state.runId || state.mode !== "workflow" || TERMINAL.has(state.status)) return;
+      stopStream();
+      setStreamState("已手动断开", "reconnecting");
+      $("connectionBanner").hidden = false;
+      $("connectionMessage").textContent = "SSE 已断开；任务继续运行，1 秒后携带 Last-Event-ID 自动恢复";
+      toast("断线演练只中止事件连接，不会重新 POST 创建任务。", "success");
+      window.setTimeout(function () {
+        if (state.runId && state.mode === "workflow" && !TERMINAL.has(state.status)) startEventLoop();
+      }, 1000);
+    });
+    $("clearEventsButton").addEventListener("click", function () {
+      state.events.clear();
+      $("timeline").replaceChildren();
+      var empty = document.createElement("div");
+      empty.id = "timelineEmpty";
+      empty.className = "timeline-empty";
+      empty.textContent = "仅清除了当前页面展示；持久事件仍可从服务端重放。";
+      $("timeline").appendChild(empty);
+    });
+    $("copyRunButton").addEventListener("click", function () {
+      navigator.clipboard.writeText(state.runId).then(function () { toast("Run ID 已复制", "success"); });
+    });
+    $("copyAnswerButton").addEventListener("click", function () {
+      navigator.clipboard.writeText($("answerText").dataset.markdown || $("answerText").textContent).then(function () { toast("答案已复制", "success"); });
+    });
+    $("expandJsonButton").addEventListener("click", function () { setJsonExpanded(true); });
+    $("collapseJsonButton").addEventListener("click", function () { setJsonExpanded(false); });
+    $("copyJsonButton").addEventListener("click", function () {
+      navigator.clipboard.writeText(JSON.stringify(state.raw || {}, null, 2)).then(function () { toast("原始 JSON 已复制", "success"); });
+    });
+    document.querySelectorAll(".tab-button").forEach(function (button) {
+      button.addEventListener("click", function () {
+        activateTab(button.dataset.tab);
+      });
+    });
+    $("authOpenButton").addEventListener("click", function () { $("authDialog").showModal(); });
+    $("authCloseButton").addEventListener("click", function () { $("authDialog").close(); });
+    $("applyAuthButton").addEventListener("click", applyAuth);
+    $("issueDevTokenButton").addEventListener("click", issueDevToken);
+    $("clearTokenButton").addEventListener("click", function () {
+      $("tokenInput").value = "";
+      state.auth.token = "";
+      sessionStorage.removeItem(STORE_TOKEN);
+      $("identityText").textContent = "未认证";
+      toast("Token 已清除", "success");
+    });
+    $("tokenToggleButton").addEventListener("click", function () {
+      var visible = $("tokenInput").type === "text";
+      $("tokenInput").type = visible ? "password" : "text";
+      $("tokenToggleButton").textContent = visible ? "显示" : "隐藏";
+    });
+
+    restore();
+  })();
+  </script>
+</body>
+</html>

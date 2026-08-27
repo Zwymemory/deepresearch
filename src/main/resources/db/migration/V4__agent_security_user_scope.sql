@@ -1,0 +1,8 @@
+ALTER TABLE agent_session
+    ALTER COLUMN user_id TYPE VARCHAR(160);
+
+ALTER TABLE agent_run
+    ALTER COLUMN user_id TYPE VARCHAR(160);
+
+ALTER TABLE user_memory
+    ALTER COLUMN user_id TYPE VARCHAR(160);

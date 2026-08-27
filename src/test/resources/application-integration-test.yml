@@ -1,0 +1,8 @@
+deepresearch:
+  workflow:
+    # Integration tests must not depend on developer-machine environment variables.
+    # These values are test-only and deliberately different from every local/production example.
+    internal-jwt-secret: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    mcp-jwt-secret: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  security:
+    jwt-secret: cccccccccccccccccccccccccccccccc

@@ -1,0 +1,6 @@
+{"id": "demo-001", "question": "员工年假是多少天？", "expectedTitle": "员工手册", "expectedTerms": ["年假", "15"], "expectedChunkKeys": [], "type": "policy", "difficulty": "easy"}
+{"id": "demo-002", "question": "员工请病假需要什么材料？", "expectedTitle": "员工手册", "expectedTerms": ["病假", "证明"], "expectedChunkKeys": [], "type": "policy", "difficulty": "easy"}
+{"id": "demo-003", "question": "MCP-7788 是什么？", "expectedTitle": "技术配置手册", "expectedTerms": ["MCP-7788"], "expectedChunkKeys": [], "type": "identifier", "difficulty": "easy"}
+{"id": "demo-004", "question": "deepresearch.rrf-k 是什么？", "expectedTitle": "技术配置手册", "expectedTerms": ["deepresearch.rrf-k", "RRF"], "expectedChunkKeys": [], "type": "config", "difficulty": "easy"}
+{"id": "demo-005", "question": "ReAct 中 Action 和 Observation 是什么？", "expectedTitle": "AI Agent", "expectedTerms": ["Action", "Observation"], "expectedChunkKeys": [], "type": "concept", "difficulty": "easy"}
+{"id": "demo-006", "question": "RAG 和 ReAct 有什么区别？", "expectedTitle": "AI Agent", "expectedTerms": ["RAG", "ReAct"], "expectedChunkKeys": [], "type": "concept", "difficulty": "easy"}

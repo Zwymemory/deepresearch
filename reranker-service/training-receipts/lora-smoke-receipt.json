@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-08-22T14:46:38.579794+00:00",
+  "status": "PASS",
+  "scope": "Local pipeline smoke only; not a formal quality or deployment experiment.",
+  "claimsBoundary": "Supervised Cross-Encoder ranking smoke. Not LLM SFT, DPO, RLHF, PPO, GRPO, or Agentic RL.",
+  "dataset": {
+    "name": "BEIR SciFact",
+    "splitCounts": {
+      "train": 703,
+      "dev": 104,
+      "officialTest": 300,
+      "strictTest": 104
+    },
+    "negativeSource": "deterministic local BM25 smoke fallback; not the formal BM25+dense+base-reranker candidate pipeline",
+    "trainGroups": 798,
+    "devGroups": 119,
+    "trainGroupsSha256": "d5ce8eb04abd4a9edb08dd49307780f8a7ddee743c33e4067a95630706cd83be",
+    "devGroupsSha256": "55ac289c9e7bf6c771f51802c92d5225dc03acdeb99eda0fd46b03abca1199e6"
+  },
+  "model": {
+    "baseModelId": "BAAI/bge-reranker-base",
+    "baseRevision": "2cfc18c9415c912f9d8155881c133215df768a70",
+    "smokeModelId": "deepresearch-bge-reranker-scifact-lora-smoke",
+    "weightsCommittedToGit": false
+  },
+  "training": {
+    "seed": 42,
+    "groupsUsed": {
+      "train": 8,
+      "dev": 4
+    },
+    "epochs": 1,
+    "batchSize": 1,
+    "maxLength": 64,
+    "lora": {
+      "r": 8,
+      "alpha": 16,
+      "dropout": 0.05,
+      "targetModules": [
+        "query",
+        "value"
+      ]
+    },
+    "meanTrainLoss": 3.52955899015069,
+    "devGroupedNdcgAt10": 0.44021063878714073,
+    "durationSeconds": 8.438691711999127,
+    "device": "cpu"
+  },
+  "environment": {
+    "hardware": "Docker CPU on Apple M5 24GB",
+    "python": "3.12.13",
+    "torch": "2.5.1",
+    "transformers": "4.47.1",
+    "peft": "0.14.0",
+    "accelerate": "1.2.1",
+    "cloudCostCny": 0.0
+  },
+  "fullManifestSha256": "3c87f64c0371cecbbb9d536d72ef9048de27b6eaf852ac493f2970e123b8a470",
+  "deploymentEligible": false,
+  "formalExperiment": "NOT_RUN"
+}

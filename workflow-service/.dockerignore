@@ -1,0 +1,16 @@
+.git
+.pytest_cache
+.ruff_cache
+.venv
+.coverage
+.env*
+__pycache__
+*.py[cod]
+tests
+build
+dist
+*.egg-info
+*.pem
+*.key
+*.p12
+*.pfx

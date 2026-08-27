@@ -1,0 +1,149 @@
+# Week4：用 Docker 跑 PostgreSQL + pgvector（向量数据库）、Elasticsearch（BM25 关键词检索）和 reranker（W4.3 精排）
+# 启动：  docker compose up -d
+# 停止：  docker compose down          （保留数据）
+# 清空：  docker compose down -v        （连数据一起删）
+services:
+  postgres:
+    image: pgvector/pgvector:pg16        # 官方 Postgres16 已内置 pgvector 扩展
+    container_name: deepresearch-pg
+    environment:
+      POSTGRES_USER: deepresearch
+      POSTGRES_PASSWORD: deepresearch
+      POSTGRES_DB: deepresearch
+      WORKFLOW_DB_PASSWORD: ${WORKFLOW_DB_PASSWORD:-deepresearch-workflow-local-only}
+    ports:
+      - "5432:5432"                       # 宿主机 5432 -> 容器 5432
+    volumes:
+      - deepresearch-pgdata:/var/lib/postgresql/data   # 数据持久化，容器删了数据还在
+      - ./docker/postgres/001-workflow-role.sh:/docker-entrypoint-initdb.d/001-workflow-role.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U deepresearch -d deepresearch"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: deepresearch-es
+    hostname: deepresearch-es
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"       # 本地开发关闭认证；生产环境必须开启安全认证
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "${DEEPRESEARCH_ES_PORT:-9201}:9200"
+    volumes:
+      - deepresearch-esdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  workflow-db-bootstrap:
+    image: postgres:16-bookworm
+    container_name: deepresearch-workflow-db-bootstrap
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: deepresearch
+      POSTGRES_PASSWORD: deepresearch
+      PGPASSWORD: deepresearch
+      POSTGRES_DB: deepresearch
+      WORKFLOW_DB_PASSWORD: ${WORKFLOW_DB_PASSWORD:-deepresearch-workflow-local-only}
+    volumes:
+      - ./docker/postgres/001-workflow-role.sh:/bootstrap/001-workflow-role.sh:ro
+    entrypoint: ["/bin/sh", "/bootstrap/001-workflow-role.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  reranker:
+    build:
+      context: ./reranker-service
+    container_name: deepresearch-reranker
+    environment:
+      # Remote model ids use RERANK_MODEL. RERANK_MODEL_PATH is only for an
+      # evaluated local directory mounted by an explicit Compose override.
+      RERANK_MODEL: ${RERANK_MODEL:-BAAI/bge-reranker-base}
+      RERANK_MODEL_PATH: ${RERANK_MODEL_PATH:-}
+      RERANK_MODEL_ID: ${RERANK_MODEL_ID:-BAAI/bge-reranker-base}
+      RERANK_BASE_MODEL_ID: BAAI/bge-reranker-base
+      RERANK_BASE_REVISION: 2cfc18c9415c912f9d8155881c133215df768a70
+      RERANK_MAX_LENGTH: "256"
+      RERANK_BATCH_SIZE: "8"
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - deepresearch-hf-cache:/models/huggingface
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:9000/health', timeout=3).read()\""]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build:
+      context: .
+    container_name: deepresearch-app
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/deepresearch
+      SPRING_DATASOURCE_USERNAME: deepresearch
+      SPRING_DATASOURCE_PASSWORD: deepresearch
+      DEEPRESEARCH_ES_URL: http://elasticsearch:9200
+      DEEPRESEARCH_JWT_SECRET: ${DEEPRESEARCH_JWT_SECRET:-local-api-jwt-secret-change-me-32-bytes-minimum}
+      DEEPRESEARCH_INTERNAL_JWT_SECRET: ${DEEPRESEARCH_INTERNAL_JWT_SECRET:-local-internal-jwt-secret-change-me-32-bytes}
+      DEEPRESEARCH_MCP_JWT_SECRET: ${DEEPRESEARCH_MCP_JWT_SECRET:-local-mcp-jwt-secret-change-me-at-least-32}
+      DEEPRESEARCH_WORKFLOW_ENABLED: ${DEEPRESEARCH_WORKFLOW_ENABLED:-false}
+      DEEPRESEARCH_DEV_TOKEN_ENABLED: ${DEEPRESEARCH_DEV_TOKEN_ENABLED:-false}
+      DEEPRESEARCH_DEV_TOKEN_ALLOW_ADMIN: ${DEEPRESEARCH_DEV_TOKEN_ALLOW_ADMIN:-false}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-local-model-key-not-configured}
+      ZHIPU_API_KEY: ${ZHIPU_API_KEY:-}
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+      DEEPRESEARCH_RERANK_URL: http://reranker:9000/rerank
+    ports:
+      - "8080:8080"
+    depends_on:
+      workflow-db-bootstrap:
+        condition: service_completed_successfully
+      elasticsearch:
+        condition: service_healthy
+      reranker:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  workflow:
+    build:
+      context: ./workflow-service
+    container_name: deepresearch-workflow
+    environment:
+      RUNNER_ENABLED: ${DEEPRESEARCH_WORKFLOW_ENABLED:-false}
+      WORKFLOW_DATABASE_URL: postgresql://deepresearch_workflow:${WORKFLOW_DB_PASSWORD:-deepresearch-workflow-local-only}@postgres:5432/deepresearch
+      JAVA_BASE_URL: http://app:8080
+      MCP_URL: http://app:8080/mcp/sse
+      DEEPRESEARCH_INTERNAL_JWT_SECRET: ${DEEPRESEARCH_INTERNAL_JWT_SECRET:-local-internal-jwt-secret-change-me-32-bytes}
+      INTERNAL_SERVICE_ID: workflow-sidecar
+      OPENAI_API_KEY: ${DEEPSEEK_API_KEY:-local-model-key-not-configured}
+      OPENAI_BASE_URL: https://api.deepseek.com
+      MODEL_NAME: deepseek-v4-flash
+      MODEL_INPUT_COST_PER_MILLION: "1.0"
+      MODEL_OUTPUT_COST_PER_MILLION: "2.0"
+      MODEL_MAX_ATTEMPTS: ${WORKFLOW_MODEL_MAX_ATTEMPTS:-2}
+      MODEL_RETRY_BACKOFF_SECONDS: ${WORKFLOW_MODEL_RETRY_BACKOFF_SECONDS:-0.5}
+      LANGGRAPH_STRICT_MSGPACK: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    # No host port: the sidecar is reachable only on the Compose network.
+
+volumes:
+  deepresearch-pgdata:
+  deepresearch-esdata:
+  deepresearch-hf-cache:

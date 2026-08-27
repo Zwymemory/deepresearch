@@ -1,0 +1,9 @@
+-r requirements.txt
+
+# Training-only dependencies. The runtime image intentionally does not install
+# these packages because it serves a merged sequence-classification model.
+accelerate==1.2.1
+peft==0.14.0
+pytest==8.3.4
+httpx==0.28.1
+ruff==0.8.4

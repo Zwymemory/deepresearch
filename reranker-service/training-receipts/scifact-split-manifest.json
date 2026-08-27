@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-22",
+  "dataset": "BEIR SciFact",
+  "sourceUrl": "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/scifact.zip",
+  "licenseNote": "See THIRD_PARTY_NOTICES.md and verify upstream terms before publishing weights.",
+  "command": "python -m training.scifact --data-dir ../testdata/open/scifact/raw/scifact --output-dir training-artifacts/split",
+  "seed": 42,
+  "counts": {
+    "corpusDocuments": 5183,
+    "rawTrainQueries": 809,
+    "removedTrainQueries": 2,
+    "trainQueries": 703,
+    "devQueries": 104,
+    "testQueries": 300,
+    "strictTestQueries": 104
+  },
+  "removedTrainQueryIds": [
+    "871",
+    "1291"
+  ],
+  "normalizedLeakagePairs": [
+    {
+      "trainQueryId": "871",
+      "testQueryId": "870"
+    },
+    {
+      "trainQueryId": "1291",
+      "testQueryId": "1292"
+    }
+  ],
+  "sourceSha256": {
+    "corpus": "dec31c8182f3d744c7d2c09423756fd1d17cbef75808db13ba01cc0aab4d1ac6",
+    "queries": "8ff84a7c903f722981cd8d595c022660140c51867b27608a6d4910db86080313",
+    "trainQrels": "a53f2114831916c096b6c37d9e54da68cef4efdcdbd5ed46533601af972acf1d",
+    "testQrels": "0864bb985e0ca2367ba217977e72004d549054b2b06666ed9d4825ac7c21284c"
+  },
+  "splitDigests": {
+    "train": "2897440a816a35b7621c0eec23de326c57a2cb2b189d47fe7b05fd1e68006778",
+    "dev": "7e0f984c8c6f1f014f9ce566388aff21310b285bf498fe3c40d174459bfb8aca",
+    "test": "69a6209b96bf0ff7a6077aa3b4e424d28a60e8e3585d6f12db23ef957e96f53f",
+    "strictTest": "30d884a49b6cf6fd81f581f4f090a203330ec7298739495515227412538e1c14"
+  },
+  "verification": {
+    "splitContract": "PASS",
+    "rerankerTestsWithSnapshot": "21 passed",
+    "formalLoraTraining": "NOT_RUN"
+  }
+}

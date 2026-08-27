@@ -1,0 +1,4 @@
+# Two historical curl examples use an invalid local demo token. Ignore only
+# their exact Gitleaks fingerprints; every other finding remains release-blocking.
+8a9db26bebbd0a57d42574d4c12b56cca890e2ed:deepresearch/Week10.5代码详解.md:curl-auth-header:151
+8a9db26bebbd0a57d42574d4c12b56cca890e2ed:deepresearch/Week10.5代码详解.md:curl-auth-header:154

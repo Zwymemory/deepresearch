@@ -1,0 +1,6 @@
+# Unit tests exercise the serving contract and the dependency-light training
+# utilities. Full LoRA training dependencies remain in requirements-training.txt.
+fastapi==0.115.6
+httpx==0.28.1
+pydantic==2.10.4
+pytest==8.3.4

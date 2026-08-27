@@ -1,0 +1,4 @@
+{"id":"agent-001","userId":"agent-eval","question":"MCP-7788 是什么？","expectedTools":["kb_search"],"mustContain":["MCP-7788"]}
+{"id":"agent-002","userId":"agent-eval","question":"6000 * 15% 等于多少？","expectedTools":["calculator"],"mustContain":["900"]}
+{"id":"agent-003","userId":"agent-eval","question":"读取 README.md，总结当前项目包含哪些 Agent 能力。","expectedTools":["file_read"],"mustContain":["Agent"]}
+{"id":"agent-004","userId":"agent-eval","sessionSetup":["MCP-7788 是什么？"],"question":"它怎么配置？","expectedTools":["kb_search"],"mustContain":["MCP-7788"]}

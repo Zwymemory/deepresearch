@@ -1,0 +1,34 @@
+server:
+  shutdown: immediate
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 1s
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
+      - org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration
+  ai:
+    openai:
+      api-key: unit-test-openai-key
+    zhipuai:
+      api-key: unit-test-zhipuai-key
+
+tavily:
+  api-key: unit-test-tavily-key
+
+deepresearch:
+  workflow:
+    enabled: false
+    internal-jwt-secret: unit-test-internal-secret-with-at-least-32-bytes
+    mcp-jwt-secret: unit-test-mcp-secret-with-at-least-32-bytes
+  elasticsearch:
+    url: http://127.0.0.1:1
+  rerank:
+    enabled: false
+  security:
+    jwt-secret: unit-test-jwt-secret-with-at-least-32-bytes
+    dev-token-enabled: true
+    dev-token-allow-admin: false
+    mcp-public: true

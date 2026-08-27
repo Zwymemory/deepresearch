@@ -1,0 +1,168 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: deepresearch
+  # 可选加载本地密钥覆盖文件（application-local.yml 已被 .gitignore 忽略，不会提交）
+  # 优先级高于本文件，用来在本地放 API Key，避免硬编码进会提交的主配置
+  config:
+    import: optional:file:./application-local.yml
+  # MCP SDK 在 boundedElastic 上执行 ToolCallback；自动传播经过认证的
+  # SecurityContext，确保执行点仍能校验 task-level delegation scope。
+  reactor:
+    context-propagation: auto
+  # 【Week4】连数据库（pgvector 向量库底层就是 PostgreSQL；由 docker-compose.yml 启动）
+  datasource:
+    url: jdbc:postgresql://localhost:5432/deepresearch
+    username: deepresearch
+    password: deepresearch
+  flyway:
+    baseline-on-migrate: true       # 兼容已有 pgvector/vector_store schema
+    baseline-version: 0             # 让首次加入 Flyway 时仍会执行 V1 业务表迁移
+  ai:
+    mcp:
+      server:
+        name: deepresearch-kb-server
+        version: 1.0.0
+        type: SYNC
+        base-url: ""
+        sse-endpoint: /mcp/sse
+        sse-message-endpoint: /mcp/message
+        instructions: "Use kb_search for evidence from the DeepResearch knowledge base."
+        capabilities:
+          tool: true
+          resource: false
+          prompt: false
+          completion: false
+      client:
+        # 演示客户端按请求创建短连接，避免应用启动时连接自身尚未监听的端口。
+        enabled: false
+    # 多 provider 分工：chat 用 openai(DeepSeek)，embedding 用 zhipuai(智谱)
+    model:
+      chat: openai
+      embedding: zhipuai
+    openai:
+      # DeepSeek 提供 OpenAI 兼容接口，base-url 指向 DeepSeek
+      base-url: https://api.deepseek.com
+      # API Key 从环境变量读取，不要硬编码进代码/配置！
+      api-key: ${DEEPSEEK_API_KEY}
+      chat:
+        options:
+          model: deepseek-v4-flash    # 原 deepseek-chat 别名已弃用；使用当前非思考 Tool Calling 模型
+          temperature: 0.3
+    # 【Week4】智谱 embedding：把文本转成向量。api-key 在 application-local.yml
+    zhipuai:
+      api-key: ${ZHIPU_API_KEY:}
+      embedding:
+        options:
+          model: embedding-2 #embedding-3         # 智谱 embedding-2，输出 1024 维向量
+    # 【Week4】pgvector 向量库配置
+    vectorstore:
+      pgvector:
+        initialize-schema: true       # 首次启动自动建表 + 装 vector 扩展
+        index-type: HNSW              # 近邻索引（检索快）
+        distance-type: COSINE_DISTANCE # 文本向量常用余弦距离
+        dimensions: 1024              # 必须和 embedding-2 的维度一致
+
+# Tavily 网页搜索（Week2）。Key 从环境变量读取，去 tavily.com 注册获取
+tavily:
+  api-key: ${TAVILY_API_KEY:}
+
+deepresearch:
+  default-temperature: 0.3
+  search-top-k: 5            # RAG 检索条数
+  hybrid-candidate-top-k: 80  # W5.5：混合检索初召回候选数；公开评测需要更大的候选池
+  rrf-k: 60                  # W4.2：RRF 平滑常数，常用 60，避免头部排名分数过度放大
+  elasticsearch:
+    url: ${DEEPRESEARCH_ES_URL:http://localhost:9201}
+    index-name: deepresearch_chunks
+  rerank:
+    enabled: true
+    url: http://localhost:9000/rerank
+    timeout-ms: 30000
+    candidate-top-k: 20
+    model: BAAI/bge-reranker-base
+  context-expansion:
+    enabled: true
+    sibling-window: 1
+    max-context-chunks: 12
+  context-packing:
+    enabled: true
+    max-evidence-chars: 700
+    max-total-chars: 6000
+    max-evidence-per-chunk: 3
+  query-rewrite:
+    enabled: true
+    max-history-messages: 6
+  memory:
+    recent-messages: 8
+    summary-trigger-messages: 12
+    summary-enabled: true
+    max-summary-chars: 1200
+    relevant-memory-limit: 5
+  idempotency:
+    ttl: 24h
+  workflow:
+    # 安全发布：完成 sidecar、数据库和委派密钥配置后再显式开启。
+    enabled: ${DEEPRESEARCH_WORKFLOW_ENABLED:false}
+    deadline: 120s
+    sidecar-service-id: workflow-sidecar
+    # 兼容旧的关闭状态；一旦 enabled=true，启动时强制校验三把密钥彼此不同。
+    internal-jwt-secret: ${DEEPRESEARCH_INTERNAL_JWT_SECRET:${DEEPRESEARCH_JWT_SECRET}}
+    mcp-jwt-secret: ${DEEPRESEARCH_MCP_JWT_SECRET:${DEEPRESEARCH_JWT_SECRET}}
+  agent:
+    mode: native-tool-calling
+    max-rounds: 3
+    max-duration: 30s
+    model-timeout: 20s
+    tool-timeout: 10s
+    max-tool-calls: 6
+    max-input-tokens: 120000
+    max-output-tokens: 120000
+    max-total-tokens: 120000
+    max-estimated-cost: 1.00
+    # CNY/百万 token；价格是运行配置，应随 provider 官方价格调整。
+    input-cost-per-million: 1.00
+    output-cost-per-million: 2.00
+    kb-search-top-k: 3
+    kb-search-recall-k: 20
+    kb-search-candidate-k: 10
+  mcp:
+    demo-server-url: http://127.0.0.1:${server.port:8080}
+    request-timeout: 10s
+  file-tool:
+    allowed-roots:
+      - README.md
+      - W8-W10开发路线.md
+      - testdata
+      - src/main/resources/static
+    max-chars: 6000
+  security:
+    default-user-id: demo-user
+    allow-legacy-headers: false
+    # 安全默认值：生产/普通启动不暴露匿名 token 签发；本地演示需显式 export 开启。
+    dev-token-enabled: ${DEEPRESEARCH_DEV_TOKEN_ENABLED:false}
+    # 即使开启本地签发，默认也只允许 USER；管理员 token 应由可信 IdP/SSO 签发。
+    dev-token-allow-admin: ${DEEPRESEARCH_DEV_TOKEN_ALLOW_ADMIN:false}
+    # 真实 MCP 传输默认只接受任务级 aud=deepresearch-mcp delegation；仅测试 profile 可公开。
+    mcp-public: false
+    # 无默认密钥：必须由环境变量或被 gitignore 的 application-local.yml 显式提供。
+    jwt-secret: ${DEEPRESEARCH_JWT_SECRET}
+    token-ttl-seconds: 7200
+  ingestion:
+    chunk-size: 800
+    chunk-overlap: 120
+    min-chunk-chars: 80
+
+# 健康检查端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  level:
+    org.springframework.ai: INFO
+    com.deepresearch: DEBUG

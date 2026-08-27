@@ -1,0 +1,39 @@
+*.pdf binary
+
+# `git archive` is the supported snapshot-export path for this project.  These
+# files may exist in the private learning workspace, but must never be part of
+# a public release archive.
+docs/career/resume-*.md export-ignore
+testdata/open/** export-ignore
+testdata/eval/open-scifact.jsonl export-ignore
+target/** export-ignore
+**/target/** export-ignore
+**/.venv*/** export-ignore
+**/__pycache__/** export-ignore
+**/.pytest_cache/** export-ignore
+**/.ruff_cache/** export-ignore
+**/.mypy_cache/** export-ignore
+**/.cache/** export-ignore
+**/cache/** export-ignore
+reranker-service/artifacts/** export-ignore
+reranker-service/models/** export-ignore
+reranker-service/runs/** export-ignore
+reranker-service/training-artifacts/** export-ignore
+reranker-service/outputs/** export-ignore
+**/*.safetensors export-ignore
+**/*.bin export-ignore
+**/*.ckpt export-ignore
+**/*.onnx export-ignore
+**/*.gguf export-ignore
+**/*.pth export-ignore
+**/*.pt export-ignore
+**/*.npy export-ignore
+**/*.npz export-ignore
+**/*.pem export-ignore
+**/*.key export-ignore
+**/*.p12 export-ignore
+**/*.pfx export-ignore
+**/.env export-ignore
+**/application-local.yml export-ignore
+**/.DS_Store export-ignore
+**/*.log export-ignore

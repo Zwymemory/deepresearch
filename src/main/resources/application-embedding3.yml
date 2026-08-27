@@ -1,0 +1,17 @@
+spring:
+  ai:
+    zhipuai:
+      embedding:
+        options:
+          # Embedding-3 A/B profile. API key is read from application-local.yml or ZHIPU_API_KEY.
+          model: embedding-3
+          # Spring AI 1.0.0 ZhiPuAiEmbeddingOptions#getDimensions() returns null,
+          # so embedding-3 currently uses the provider default 2048 dimensions.
+          dimensions: 2048
+    vectorstore:
+      pgvector:
+        dimensions: 2048
+        # pgvector HNSW/IVFFLAT vector index supports at most 2000 dimensions.
+        # embedding-3 returns 2048 dimensions, so this profile disables vector indexing
+        # and uses exact/sequential vector search for the benchmark.
+        index-type: NONE
