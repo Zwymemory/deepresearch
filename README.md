@@ -3,6 +3,7 @@
 一个面向企业内部知识检索与复杂问题研究的 **RAG + Multi-Agent 工程原型**。
 
 项目采用“**Java / Spring Boot 安全控制面 + Python / LangGraph 可恢复执行面**”：Java 负责公网 API、认证授权、知识库、MCP 工具执行和持久化；Python 负责任务规划、并行取证、证据审阅与答案合成。回答只使用检索证据，并返回可核验引用。
+![DeepResearch 项目展示](./User%20attachment.png)
 
 > 本仓库用于工程学习、架构验证和作品展示，不是可直接上线的商用平台。
 
