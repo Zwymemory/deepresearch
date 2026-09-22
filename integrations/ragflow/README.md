@@ -4,6 +4,15 @@
 
 ## Inputs
 
+For the local RAGFlow instance, open `http://127.0.0.1` (UI, port 80), then
+use the account menu's API page for an existing API key. A dataset URL such as
+`/dataset/files/<id>` exposes its dataset ID; the HTTP API is on port 9380.
+Set `RAGFLOW_API_KEY` and `RAGFLOW_DATASET_IDS` in an ignored `.env` for
+Compose. Host-run Java uses `RAGFLOW_BASE_URL=http://127.0.0.1:9380`; the
+Compose app defaults to `http://host.docker.internal:9380`. Leave
+`DEEPRESEARCH_RETRIEVAL_PROVIDER=legacy` for normal use until the paired
+project gate passes.
+
 - `synthetic_knowledge.md` is an invented, deterministic document. `synthetic_cases.json` has 25 answerable questions and 3 no-evidence questions. This is a parser/search smoke test; its scores cannot satisfy the project-knowledge gate.
 - `project_cases.json` copies the 25 positive and 4 negative questions from `testdata/eval/project-knowledge-gold.jsonl`. The selected answer anchors are *candidate* snippet labels. Review each label against the actual corpus before setting `goldLabelsReviewed` to `true` in conditions. In particular, a common word appearing in an unrelated chunk must not count as relevance. Edit the labels to a unique exact phrase where needed.
 - `conditions.example.json` is intentionally incomplete. Copy it into a private run directory and record the two Git/config versions, retrieval thresholds, dataset IDs (no API keys), corpus hashes/counts, machine, database snapshots, and wall-clock test window. For the project run, put **all** Java IDs of the synchronized project documents in `projectDocumentIds`. `goldLabelsReviewed` is only for a human-confirmed project gold set. Never put credentials in this file.
