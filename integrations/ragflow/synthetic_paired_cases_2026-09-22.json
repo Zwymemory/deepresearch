@@ -1,0 +1,202 @@
+{
+  "fixture": "synthetic_knowledge_pair_20260922.md",
+  "topK": 5,
+  "cases": [
+    {
+      "id": "p01",
+      "question": "Who is permitted to upload a knowledge-base document through Java?",
+      "relevantAnchors": [
+        "DR-EVAL-01"
+      ]
+    },
+    {
+      "id": "p02",
+      "question": "What happens when the uploaded document's content hash has not changed?",
+      "relevantAnchors": [
+        "DR-EVAL-02"
+      ]
+    },
+    {
+      "id": "p03",
+      "question": "Which parse state makes a remote document ready for retrieval?",
+      "relevantAnchors": [
+        "DR-EVAL-03"
+      ]
+    },
+    {
+      "id": "p04",
+      "question": "How is a remote parse failure represented for reconciliation?",
+      "relevantAnchors": [
+        "DR-EVAL-04"
+      ]
+    },
+    {
+      "id": "p05",
+      "question": "Which dataset IDs may the Java gateway send?",
+      "relevantAnchors": [
+        "DR-EVAL-05"
+      ]
+    },
+    {
+      "id": "p06",
+      "question": "Where must the RAGFlow API key remain?",
+      "relevantAnchors": [
+        "DR-EVAL-06"
+      ]
+    },
+    {
+      "id": "p07",
+      "question": "What syntax numbers displayed source citations?",
+      "relevantAnchors": [
+        "DR-EVAL-07"
+      ]
+    },
+    {
+      "id": "p08",
+      "question": "What fields make up a persistent RAGFlow source identifier?",
+      "relevantAnchors": [
+        "DR-EVAL-08"
+      ]
+    },
+    {
+      "id": "p09",
+      "question": "Which underlying value becomes the evidence similarity score?",
+      "relevantAnchors": [
+        "DR-EVAL-09"
+      ]
+    },
+    {
+      "id": "p10",
+      "question": "How should a missing parser page number appear in evidence?",
+      "relevantAnchors": [
+        "DR-EVAL-10"
+      ]
+    },
+    {
+      "id": "p11",
+      "question": "Does RAGFlow mode read neighboring chunks from vector_store?",
+      "relevantAnchors": [
+        "DR-EVAL-11"
+      ]
+    },
+    {
+      "id": "p12",
+      "question": "What answer status follows an empty evidence list?",
+      "relevantAnchors": [
+        "DR-EVAL-12"
+      ]
+    },
+    {
+      "id": "p13",
+      "question": "Which retrieval path allows reindex-keyword?",
+      "relevantAnchors": [
+        "DR-EVAL-13"
+      ]
+    },
+    {
+      "id": "p14",
+      "question": "Which configuration selects the rollback retrieval path?",
+      "relevantAnchors": [
+        "DR-EVAL-14"
+      ]
+    },
+    {
+      "id": "p15",
+      "question": "How do Java and RAGFlow document identifiers relate in the mapping?",
+      "relevantAnchors": [
+        "DR-EVAL-15"
+      ]
+    },
+    {
+      "id": "p16",
+      "question": "What must be checked before a RAGFlow citation is accepted?",
+      "relevantAnchors": [
+        "DR-EVAL-16"
+      ]
+    },
+    {
+      "id": "p17",
+      "question": "How is a requested topK capped?",
+      "relevantAnchors": [
+        "DR-EVAL-17"
+      ]
+    },
+    {
+      "id": "p18",
+      "question": "How is retrieved document text labelled before answer generation?",
+      "relevantAnchors": [
+        "DR-EVAL-18"
+      ]
+    },
+    {
+      "id": "p19",
+      "question": "How are forged citation markers in document text handled?",
+      "relevantAnchors": [
+        "DR-EVAL-19"
+      ]
+    },
+    {
+      "id": "p20",
+      "question": "What does ERR-P403 mean?",
+      "relevantAnchors": [
+        "DR-EVAL-20"
+      ],
+      "critical": true
+    },
+    {
+      "id": "p21",
+      "question": "What does ERR-R429 mean?",
+      "relevantAnchors": [
+        "DR-EVAL-21"
+      ],
+      "critical": true
+    },
+    {
+      "id": "p22",
+      "question": "What does ERR-C404 mean?",
+      "relevantAnchors": [
+        "DR-EVAL-22"
+      ],
+      "critical": true
+    },
+    {
+      "id": "p23",
+      "question": "Which batch is the fixed validation batch for the synthetic document?",
+      "relevantAnchors": [
+        "DR-EVAL-23"
+      ],
+      "critical": true
+    },
+    {
+      "id": "p24",
+      "question": "Which run number is reserved for event replay examples?",
+      "relevantAnchors": [
+        "DR-EVAL-24"
+      ],
+      "critical": true
+    },
+    {
+      "id": "p25",
+      "question": "What is the synthetic retrieval threshold example?",
+      "relevantAnchors": [
+        "DR-EVAL-25"
+      ],
+      "critical": true
+    },
+    {
+      "id": "n01",
+      "question": "What is the payroll bank routing number for an employee?",
+      "relevantAnchors": []
+    },
+    {
+      "id": "n02",
+      "question": "What is the weather forecast for Mars tomorrow?",
+      "relevantAnchors": []
+    },
+    {
+      "id": "n03",
+      "question": "Which film won a fictional award in 1903?",
+      "relevantAnchors": []
+    }
+  ]
+}
