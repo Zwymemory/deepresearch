@@ -210,20 +210,27 @@ public class KnowledgeBaseService {
 
     public long count() {
         if (retrievalGateway.ragflow()) {
-            Long total = jdbcTemplate.queryForObject("SELECT coalesce(sum(chunk_count),0) FROM kb_document WHERE status='DONE'", Long.class);
+            Long total = jdbcTemplate.queryForObject("""
+                    SELECT coalesce(sum(d.chunk_count),0) FROM kb_document d
+                    JOIN kb_ragflow_document m ON m.legacy_doc_id=d.doc_id
+                    WHERE m.sync_status='DONE' AND m.document_id IS NOT NULL
+                    """, Long.class);
             return total == null ? 0 : total;
         }
         Long n = jdbcTemplate.queryForObject("SELECT count(*) FROM vector_store", Long.class);
         return n == null ? 0 : n;
     }
 
-    @Transactional
     public void clear() {
         if (retrievalGateway.ragflow()) throw new IllegalStateException("RAGFlow 模式不支持批量清空；请逐个删除文档");
-        jdbcTemplate.update("DELETE FROM vector_store");
-        jdbcTemplate.update("DELETE FROM kb_document");
-        keywordSearchService.clear();
-        log.debug("知识库已清空");
+        Runnable legacyClear = () -> {
+            jdbcTemplate.update("DELETE FROM vector_store");
+            jdbcTemplate.update("DELETE FROM kb_document");
+            keywordSearchService.clear();
+            log.debug("知识库已清空");
+        };
+        if (transactions == null) legacyClear.run();
+        else transactions.executeWithoutResult(status -> legacyClear.run());
     }
 
     public int reindexKeywordIndex() {
