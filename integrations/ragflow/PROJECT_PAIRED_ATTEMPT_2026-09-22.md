@@ -44,6 +44,12 @@ returned evidence. Those observations are described in the
 [label review note](PROJECT_GOLD_REVIEW.md); they are not paired scores and do
 not resolve the negative-case contract.
 
+All 79 distinct chunk IDs returned by that RAGFlow-only diagnostic were
+looked up through the direct RAGFlow chunk API. The returned dataset,
+document and chunk IDs matched in [79/79 backchecks](project_citation_checks_2026-09-22.json).
+This establishes ID resolvability for the observed RAGFlow results, not the
+unrun paired citation gate.
+
 ## Remaining gate work
 
 Run the full paired collector with both search services stable and record its
