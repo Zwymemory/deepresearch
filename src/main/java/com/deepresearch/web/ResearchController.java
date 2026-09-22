@@ -6,6 +6,9 @@ import com.deepresearch.service.AgentRuntimeRouter;
 import com.deepresearch.service.AgentIdempotencyService;
 import com.deepresearch.service.UserContextService;
 import com.deepresearch.service.VectorRagService;
+import com.deepresearch.service.KnowledgeRetrievalGateway;
+import com.deepresearch.service.RagflowAnswerService;
+import com.deepresearch.service.RagflowDebugService;
 import com.deepresearch.web.dto.AgentResearchRequest;
 import com.deepresearch.web.dto.AgentResearchResponse;
 import com.deepresearch.web.dto.HybridDebugResponse;
@@ -49,6 +52,9 @@ public class ResearchController {
     private final RagService ragService;
     private final VectorRagService vectorRagService;
     private final HybridRagService hybridRagService;
+    private final KnowledgeRetrievalGateway retrievalGateway;
+    private final RagflowAnswerService ragflowAnswerService;
+    private final RagflowDebugService ragflowDebugService;
     private final AgentRuntimeRouter agentRuntime;
     private final UserContextService userContextService;
     private final AgentIdempotencyService idempotencyService;
@@ -56,12 +62,18 @@ public class ResearchController {
     public ResearchController(RagService ragService,
                              VectorRagService vectorRagService,
                              HybridRagService hybridRagService,
+                             KnowledgeRetrievalGateway retrievalGateway,
+                             RagflowAnswerService ragflowAnswerService,
+                             RagflowDebugService ragflowDebugService,
                              AgentRuntimeRouter agentRuntime,
                              UserContextService userContextService,
                              AgentIdempotencyService idempotencyService) {
         this.ragService = ragService;
         this.vectorRagService = vectorRagService;
         this.hybridRagService = hybridRagService;
+        this.retrievalGateway = retrievalGateway;
+        this.ragflowAnswerService = ragflowAnswerService;
+        this.ragflowDebugService = ragflowDebugService;
         this.agentRuntime = agentRuntime;
         this.userContextService = userContextService;
         this.idempotencyService = idempotencyService;
@@ -74,16 +86,19 @@ public class ResearchController {
 
     @PostMapping("/vector")
     public ResearchAnswer vector(@RequestBody @Valid ResearchRequest request) {
+        if (retrievalGateway.ragflow()) return ragflowAnswerService.answer(request.question(), request.topK());
         return vectorRagService.answer(request.question(), request.topK());
     }
 
     @PostMapping("/hybrid")
     public ResearchAnswer hybrid(@RequestBody @Valid ResearchRequest request) {
+        if (retrievalGateway.ragflow()) return ragflowAnswerService.answer(request.question(), request.topK());
         return hybridRagService.answer(request.question(), request.topK(), request.history());
     }
 
     @PostMapping("/hybrid/debug")
     public HybridDebugResponse hybridDebug(@RequestBody @Valid ResearchRequest request) {
+        if (retrievalGateway.ragflow()) return ragflowDebugService.debug(request.question(), request.topK());
         return hybridRagService.debug(request.question(), request.topK(), request.recallK(), request.candidateK(), request.history());
     }
 
