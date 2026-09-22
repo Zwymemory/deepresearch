@@ -69,3 +69,7 @@ the Java legacy route lacks a usable Zhipu embedding key in this worktree.
 The 25 project positives, four project negatives, paired latency baseline,
 and reviewed gold labels therefore remain unmeasured. No cutover decision
 follows from this smoke run.
+The project negative prompts also need a reviewed retrieval definition:
+their existing answer-level Gold permits evidence-backed safe denial while
+the retrieval-only gate demands an empty result. Broad positive anchors
+must be replaced with distinctive, verified snippets before paired scoring.
