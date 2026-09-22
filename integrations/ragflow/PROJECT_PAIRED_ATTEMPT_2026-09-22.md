@@ -1,5 +1,9 @@
 # Project retrieval paired evaluation attempts — 2026-09-22
 
+This is the earlier interruption record. A later
+[completed paired run](PROJECT_PAIRED_RESULT_2026-09-22.md) supersedes the
+missing-measurement status below.
+
 The 29 project cases were prepared for an interleaved comparison of the local
 `legacy` and `ragflow` Java routes. **Neither paired attempt completed.** There
 is no comparable project score or latency p95, and this run does not support a

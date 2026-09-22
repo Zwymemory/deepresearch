@@ -45,7 +45,7 @@ python3 integrations/ragflow/paired_eval.py score \
   --output /tmp/ragflow-synthetic-report.json
 ```
 
-Repeat `collect` and `score` with `project_cases.json` and separate output names. The project run also uploads/polls the identical synthetic fixture to prove parse completion on both routes; the 25 project queries additionally require the project corpus to have been synchronized in advance. `projectDocumentIds` are checked through `GET /api/kb/documents/{docId}/ragflow-sync`, which reconciles the remote job and reports mapping status. A `kb_document` row marked DONE without a DONE RAGFlow mapping does not pass. Each route is warmed once per query, then measured three times. Route order alternates by query. The first measured ranking supplies the retrieval score; all measured calls supply latency samples, and `unstableCases` reports relevance-rank changes between repetitions. The p95 estimator is the nearest observed rank, `ceil(0.95 × n)`.
+Repeat `collect` and `score` with `project_cases.json` and separate output names. Synchronize the project corpus on both routes first. You can use `--ingest-fixture` to prove synthetic parse completion during that run, but the extra fixture then enters the retrieval corpus and must be recorded in the conditions. The 2026-09-22 project run kept the eight-document project corpus clean and measured fixture parsing in a separate synthetic run. Its project score therefore has `fixtureParsedBoth=false`; read both reports together. `projectDocumentIds` are checked through `GET /api/kb/documents/{docId}/ragflow-sync`, which reconciles the remote job and reports mapping status. A `kb_document` row marked DONE without a DONE RAGFlow mapping does not pass. Each route is warmed once per query, then measured three times. Route order alternates by query. The first measured ranking supplies the retrieval score; all measured calls supply latency samples, and `unstableCases` reports relevance-rank changes between repetitions. The p95 estimator is the nearest observed rank, `ceil(0.95 × n)`.
 
 ## Reading the report
 
@@ -53,4 +53,8 @@ The report includes per-case ranks, HitRate@K, per-query Recall@K, MRR@K, NDCG@K
 
 The migration plan's retrieval thresholds are encoded as gates: at least 25 reviewed project positives, at most one new miss relative to legacy, zero critical new misses, no evidence for negative questions on both paths, every displayed RAGFlow citation resolved to the same real dataset/document/chunk, and new p95 no more than 1.5 times legacy p95 on the same machine. The collector also checks each declared project document mapping is DONE and that each debug endpoint reports the intended provider; it preserves the new `similarityScores` diagnostics in its capture. Review failures and the complete capture before making a cutover decision. A direct citation lookup validates existence and identifier match; it does not establish source authority or factual truth.
 
-No live retrieval numbers are included in this repository. RAGFlow health alone is insufficient to run the comparison; both populated datasets and server credentials are required.
+The local measurements and reproducible captures are in the
+[project paired report](PROJECT_PAIRED_RESULT_2026-09-22.md) and
+[synthetic paired report](SYNTHETIC_PAIRED_RESULT_2026-09-22.md). They are
+diagnostic results under recorded local conditions. Neither report supports
+changing the default route yet.
