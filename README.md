@@ -124,7 +124,7 @@ docker compose ps
 
 curl -fsS http://localhost:8080/actuator/health
 curl -fsS http://localhost:9201/_cluster/health
-curl -fsS http://localhost:9000/health
+curl -fsS http://localhost:9002/health
 ```
 
 首次启动 reranker 会下载固定 revision 的 BGE 模型，可能需要数分钟。演示页面：<http://localhost:8080/demo.html>。

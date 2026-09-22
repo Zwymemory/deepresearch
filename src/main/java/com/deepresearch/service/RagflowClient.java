@@ -16,7 +16,6 @@ import java.util.UUID;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
-import java.net.URLEncoder;
 
 /** Bounded, server-side RAGFlow HTTP adapter. */
 @Component
@@ -120,11 +119,10 @@ public class RagflowClient {
     public List<String> findDocumentsByName(String datasetId, String exactName) {
         requireAllowed(datasetId);
         if (exactName == null || exactName.isBlank()) throw new IllegalArgumentException("Document name required");
-        String encoded = URLEncoder.encode(exactName, StandardCharsets.UTF_8);
         List<String> ids = new ArrayList<>();
         for (int page = 1; page <= 20; page++) {
             JsonNode docs = request("GET", "/api/v1/datasets/" + datasetId
-                    + "/documents?name=" + encoded + "&page=" + page + "&page_size=100", null).path("docs");
+                    + "/documents?page=" + page + "&page_size=100", null).path("docs");
             if (!docs.isArray()) throw new IllegalStateException("RAGFlow document list missing");
             for (JsonNode doc : docs) {
                 if (exactName.equals(doc.path("name").asText())) {
