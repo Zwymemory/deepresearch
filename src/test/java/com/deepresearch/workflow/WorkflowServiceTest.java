@@ -63,6 +63,25 @@ class WorkflowServiceTest {
     }
 
     @Test
+    void difyRunIsNeverClaimableByLangGraphSidecar() {
+        WorkflowService dify = new WorkflowService(repository, agentStateService,
+                userContextService, new ObjectMapper(), true, Duration.ofSeconds(120), "dify");
+        when(repository.findByIdempotency(anyString(), anyString(), anyString())).thenReturn(Optional.empty());
+        when(agentStateService.prepareContext(anyString(), anyString(), anyString()))
+                .thenReturn(context("sess-wf-dify"));
+        when(repository.insertRun(any())).thenReturn(1);
+
+        var accepted = dify.create(new CreateRequest("question", null, List.of("kb_search")),
+                "request-key-dify-01");
+
+        assertThat(accepted.status()).isEqualTo("DIFY_DISPATCHING");
+        ArgumentCaptor<WorkflowRepository.NewRun> row = ArgumentCaptor.forClass(WorkflowRepository.NewRun.class);
+        verify(repository).insertRun(row.capture());
+        assertThat(row.getValue().status()).isEqualTo("DIFY_DISPATCHING");
+        verify(repository).insertDifyMapping(accepted.runId());
+    }
+
+    @Test
     void rejectsFileToolBeforeCreatingAnyBusinessState() {
         assertThatThrownBy(() -> service.create(
                 new CreateRequest("read files", null, List.of("file_read")), "request-key-0002"))

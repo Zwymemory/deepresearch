@@ -106,7 +106,12 @@ deepresearch:
   workflow:
     # 安全发布：完成 sidecar、数据库和委派密钥配置后再显式开启。
     enabled: ${DEEPRESEARCH_WORKFLOW_ENABLED:false}
+    engine: ${DEEPRESEARCH_WORKFLOW_ENGINE:langgraph}
     deadline: 120s
+    dify:
+      base-url: ${DEEPRESEARCH_DIFY_BASE_URL:http://127.0.0.1:8081/v1}
+      api-key: ${DEEPRESEARCH_DIFY_APP_KEY:}
+      tool-service-token: ${DEEPRESEARCH_WORKFLOW_DIFY_TOOL_SERVICE_TOKEN:}
     sidecar-service-id: workflow-sidecar
     # 兼容旧的关闭状态；一旦 enabled=true，启动时强制校验三把密钥彼此不同。
     internal-jwt-secret: ${DEEPRESEARCH_INTERNAL_JWT_SECRET:${DEEPRESEARCH_JWT_SECRET}}

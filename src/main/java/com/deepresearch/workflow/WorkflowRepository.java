@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Array;
 import java.sql.ResultSet;
@@ -13,6 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /** PostgreSQL source of truth for public workflow state and replayable safe events. */
@@ -48,6 +50,206 @@ public class WorkflowRepository {
                 ON CONFLICT (grant_id) DO NOTHING
                 """, grant.grantId(), grant.runId(), grant.subject(), postgresArray(grant.scopes()),
                 grant.policyVersion(), grant.expiresAt());
+    }
+
+    public void insertDifyMapping(String runId) {
+        jdbcTemplate.update("INSERT INTO dify_workflow_run (run_id, dispatch_state) VALUES (?, 'PENDING') ON CONFLICT DO NOTHING", runId);
+    }
+
+    /** A claimed dispatch is never retried automatically, including after a process crash. */
+    public List<String> claimDifyDispatches(int limit) {
+        return jdbcTemplate.query("""
+                UPDATE dify_workflow_run SET dispatch_state = 'POSTING', updated_at = now()
+                WHERE run_id IN (
+                    SELECT d.run_id FROM dify_workflow_run d
+                    JOIN agent_workflow_run r ON r.run_id = d.run_id
+                    WHERE d.dispatch_state = 'PENDING' AND r.status = 'DIFY_DISPATCHING'
+                      AND r.deadline_at > now()
+                    ORDER BY r.created_at FOR UPDATE OF d SKIP LOCKED LIMIT ?)
+                RETURNING run_id
+                """, (rs, n) -> rs.getString(1), limit);
+    }
+
+    @Transactional
+    public List<String> timeoutPendingDify() {
+        List<String> ids = jdbcTemplate.query("""
+                UPDATE agent_workflow_run r SET status = 'TIMED_OUT', stage = 'TIMED_OUT',
+                    cancel_requested = true, error_code = 'DIFY_DEADLINE_EXCEEDED', updated_at = now()
+                WHERE r.status = 'DIFY_DISPATCHING' AND r.deadline_at <= now()
+                  AND EXISTS (SELECT 1 FROM dify_workflow_run d WHERE d.run_id = r.run_id AND d.dispatch_state = 'PENDING')
+                RETURNING r.run_id
+                """, (rs, n) -> rs.getString(1));
+        for (String id : ids) {
+            revokeGrantForRun(id);
+            insertEvent(id, "dify:terminal", "SYSTEM", null,
+                    "TIMED_OUT", "{\"status\":\"TIMED_OUT\"}");
+        }
+        return ids;
+    }
+
+    @Transactional
+    public void bindDify(String runId, String workflowRunId, String taskId) {
+        jdbcTemplate.update("""
+                UPDATE dify_workflow_run SET workflow_run_id = ?, task_id = ?, dispatch_state = 'BOUND', updated_at = now()
+                WHERE run_id = ? AND dispatch_state = 'POSTING'
+                """, workflowRunId, taskId, runId);
+        jdbcTemplate.update("""
+                UPDATE agent_workflow_run SET status = 'DIFY_WORKING', stage = 'DIFY_WORKING', updated_at = now()
+                WHERE run_id = ? AND status = 'DIFY_DISPATCHING' AND cancel_requested = false
+                """, runId);
+    }
+
+    @Transactional
+    public void unknownDifyDispatch(String runId) {
+        jdbcTemplate.update("UPDATE dify_workflow_run SET dispatch_state = 'UNKNOWN', updated_at = now() WHERE run_id = ? AND dispatch_state = 'POSTING'", runId);
+        int changed = jdbcTemplate.update("""
+                UPDATE agent_workflow_run SET status = 'DISPATCH_UNKNOWN', stage = 'DISPATCH_UNKNOWN',
+                    error_code = 'DIFY_DISPATCH_UNKNOWN',
+                    error_message = 'Dify 派发结果未知，需按 java_run_id 人工对账；禁止自动重试',
+                    updated_at = now()
+                WHERE run_id = ? AND status = 'DIFY_DISPATCHING'
+                """, runId);
+        if (changed == 1) revokeGrantForRun(runId);
+    }
+
+    @Transactional
+    public List<String> abandonStaleDifyDispatches() {
+        List<String> ids = jdbcTemplate.query("""
+                UPDATE dify_workflow_run d SET dispatch_state = 'UNKNOWN', updated_at = now()
+                FROM agent_workflow_run r
+                WHERE d.run_id = r.run_id AND d.dispatch_state = 'POSTING'
+                  AND (d.updated_at < now() - interval '5 minutes' OR r.deadline_at <= now())
+                RETURNING d.run_id
+                """, (rs, n) -> rs.getString(1));
+        for (String id : ids) {
+            int changed = jdbcTemplate.update("""
+                    UPDATE agent_workflow_run SET status = 'DISPATCH_UNKNOWN', stage = 'DISPATCH_UNKNOWN',
+                        error_code = 'DIFY_DISPATCH_UNKNOWN',
+                        error_message = 'Dify 派发结果未知，需按 java_run_id 人工对账；禁止自动重试',
+                        updated_at = now()
+                    WHERE run_id = ? AND status = 'DIFY_DISPATCHING'
+                    """, id);
+            if (changed == 1) revokeGrantForRun(id);
+        }
+        return ids;
+    }
+
+    public Optional<DifyMapping> difyMapping(String runId) {
+        return jdbcTemplate.query("SELECT workflow_run_id, task_id, dispatch_state FROM dify_workflow_run WHERE run_id = ?",
+                (rs, n) -> new DifyMapping(rs.getString(1), rs.getString(2), rs.getString(3)), runId).stream().findFirst();
+    }
+
+    public List<String> boundDifyRuns() {
+        return jdbcTemplate.query("""
+                SELECT d.run_id FROM dify_workflow_run d JOIN agent_workflow_run r ON r.run_id = d.run_id
+                WHERE d.dispatch_state = 'BOUND' AND r.status = 'DIFY_WORKING'
+                ORDER BY d.updated_at LIMIT 20
+                """, (rs, n) -> rs.getString(1));
+    }
+
+    public List<String> expiredDifyRuns() {
+        return jdbcTemplate.query("""
+                SELECT r.run_id FROM agent_workflow_run r JOIN dify_workflow_run d ON d.run_id = r.run_id
+                WHERE r.status = 'DIFY_WORKING' AND r.deadline_at <= now() AND d.dispatch_state = 'BOUND'
+                ORDER BY r.deadline_at LIMIT 20
+                """, (rs, n) -> rs.getString(1));
+    }
+
+    @Transactional
+    public boolean timeoutDify(String runId) {
+        int changed = jdbcTemplate.update("""
+                UPDATE agent_workflow_run SET status = 'TIMED_OUT', stage = 'TIMED_OUT',
+                    cancel_requested = true, error_code = 'DIFY_DEADLINE_EXCEEDED', updated_at = now()
+                WHERE run_id = ? AND status = 'DIFY_WORKING' AND deadline_at <= now()
+                """, runId);
+        if (changed != 1) return false;
+        revokeGrantForRun(runId);
+        insertEvent(runId, "dify:terminal", "SYSTEM", null,
+                "TIMED_OUT", "{\"status\":\"TIMED_OUT\"}");
+        return true;
+    }
+
+    @Transactional
+    public boolean finishDify(String runId, WorkflowStatus status, String responseJson,
+                              String usageJson, String errorCode, String answer) {
+        int changed = jdbcTemplate.update("""
+                UPDATE agent_workflow_run SET status = ?, stage = ?, final_response = CAST(? AS jsonb),
+                    usage = CAST(? AS jsonb), error_code = ?, updated_at = now(), version = version + 1
+                WHERE run_id = ? AND status = 'DIFY_WORKING' AND cancel_requested = false
+                  AND EXISTS (SELECT 1 FROM dify_workflow_run WHERE run_id = ? AND dispatch_state = 'BOUND')
+                """, status.name(), status.name(), responseJson, usageJson, errorCode, runId, runId);
+        if (changed != 1) return false;
+        RunRow row = find(runId).orElseThrow();
+        revokeGrantForRun(runId);
+        if (status == WorkflowStatus.SUCCEEDED) {
+            insertFinalMessages(runId, row.sessionId(), row.userId(), row.question(), answer, true);
+        }
+        insertEvent(runId, "dify:terminal", "SYSTEM", null, status.name(),
+                "{\"status\":\"" + status.name() + "\"}");
+        return true;
+    }
+
+    public record DifyMapping(String workflowRunId, String taskId, String dispatchState) {}
+
+    @Transactional
+    public boolean beginDifyToolCall(String runId, String callId, String tool, String fingerprint) {
+        // Serialize budget checks for this run before inserting a new call ID.
+        List<String> lock = jdbcTemplate.query("SELECT run_id FROM dify_workflow_run WHERE run_id = ? FOR UPDATE",
+                (rs, n) -> rs.getString(1), runId);
+        if (lock.isEmpty()) return false;
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM dify_workflow_tool_call WHERE run_id = ?", Integer.class, runId);
+        if (count != null && count >= 6) return false;
+        return jdbcTemplate.update("""
+                INSERT INTO dify_workflow_tool_call(run_id, call_id, tool_name, request_fingerprint, status)
+                SELECT r.run_id, ?, ?, ?, 'EXECUTING' FROM agent_workflow_run r
+                JOIN dify_workflow_run d ON d.run_id = r.run_id
+                WHERE r.run_id = ? AND r.status = 'DIFY_WORKING' AND r.cancel_requested = false
+                  AND r.deadline_at > now() AND d.dispatch_state = 'BOUND'
+                  AND ? = ANY(r.requested_scopes)
+                ON CONFLICT DO NOTHING
+                """, callId, tool, fingerprint, runId, tool) == 1;
+    }
+
+    public Optional<DifyToolCall> findDifyToolCall(String runId, String callId) {
+        return jdbcTemplate.query("""
+                SELECT tool_name, request_fingerprint, status, safe_result
+                FROM dify_workflow_tool_call WHERE run_id = ? AND call_id = ?
+                """, (rs, n) -> new DifyToolCall(rs.getString(1), rs.getString(2),
+                rs.getString(3), rs.getString(4)), runId, callId).stream().findFirst();
+    }
+
+    @Transactional
+    public boolean completeDifyToolCall(String runId, String callId, String tool,
+                                        String fingerprint, String safeResultJson,
+                                        List<String> citationIds) {
+        int changed = jdbcTemplate.update("""
+                UPDATE dify_workflow_tool_call c SET status = 'COMPLETED',
+                    safe_result = CAST(? AS jsonb), completed_at = now()
+                WHERE c.run_id = ? AND c.call_id = ? AND c.tool_name = ?
+                  AND c.request_fingerprint = ? AND c.status = 'EXECUTING'
+                  AND EXISTS (
+                    SELECT 1 FROM agent_workflow_run r JOIN dify_workflow_run d ON d.run_id = r.run_id
+                    WHERE r.run_id = c.run_id AND r.status = 'DIFY_WORKING'
+                      AND r.cancel_requested = false AND r.deadline_at > now()
+                      AND d.dispatch_state = 'BOUND' AND ? = ANY(r.requested_scopes))
+                """, safeResultJson, runId, callId, tool, fingerprint, tool);
+        if (changed != 1) return false;
+        for (String id : citationIds) {
+            jdbcTemplate.update("""
+                    INSERT INTO dify_workflow_source(run_id, citation_id) VALUES (?, ?)
+                    ON CONFLICT DO NOTHING
+                    """, runId, id);
+        }
+        return true;
+    }
+
+    public record DifyToolCall(String tool, String fingerprint, String status, String safeResultJson) {}
+
+    public Set<String> difySources(String runId) {
+        return new java.util.HashSet<>(jdbcTemplate.query(
+                "SELECT citation_id FROM dify_workflow_source WHERE run_id = ?",
+                (rs, n) -> rs.getString(1), runId));
     }
 
     public boolean insertEvent(String runId, String eventKey, String role, String taskId,

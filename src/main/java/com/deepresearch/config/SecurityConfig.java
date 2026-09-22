@@ -44,11 +44,17 @@ public class SecurityConfig {
                     auth.requestMatchers("/", "/demo.html", "/api/ping", "/actuator/health", "/error").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/auth/dev-token").permitAll();
                     auth.requestMatchers("/actuator/metrics", "/actuator/metrics/**").hasRole("ADMIN");
-                    // 仅这两个私网端点由 controller 验证独立 service JWT；其余 internal 路径拒绝。
+                    // 仅列出的私网端点在 controller/service 验证独立服务身份；其余 internal 路径拒绝。
                     auth.requestMatchers(HttpMethod.POST,
                             "/internal/workflow-grants/*/token",
-                            "/internal/research/workflows/*/finalize").permitAll();
+                            "/internal/research/workflows/*/finalize",
+                            "/internal/dify/tools/kb_search",
+                            "/internal/dify/tools/web_search",
+                            "/internal/dify/tools/calculator").permitAll();
                     auth.requestMatchers("/internal/**").denyAll();
+                    // Dify 只能以普通 API 身份读取已裁剪证据；禁止匿名访问。
+                    auth.requestMatchers(HttpMethod.POST,
+                            "/api/integrations/dify/retrieve").hasAnyRole("USER", "ADMIN");
                     auth.requestMatchers("/api/kb/**", "/api/eval/**", "/api/mcp/**",
                             "/api/agent/bad-cases", "/api/agent/report").hasRole("ADMIN");
                     if (mcpPublic) {
