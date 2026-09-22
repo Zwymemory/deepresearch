@@ -154,6 +154,20 @@
       "relevantAnchors": [
         "call_id"
       ],
+      "requiredFacts": [
+        {
+          "id": "call-id-generation",
+          "evidencePhrases": [
+            "`call_id` 由 `run_id`、`task_id`、tool 和 query 的规范 JSON 做 SHA-256 后生成"
+          ]
+        },
+        {
+          "id": "downstream-dedup-limitation",
+          "evidencePhrases": [
+            "只有下游真正持久化并消费该键，才有去重效果"
+          ]
+        }
+      ],
       "critical": true
     },
     {

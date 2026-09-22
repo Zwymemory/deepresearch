@@ -63,6 +63,23 @@ def validate_manifest(manifest):
             raise ValueError(f"{case['id']}: relevantAnchors must be unique strings")
         if case.get("critical", False) and not anchors:
             raise ValueError(f"{case['id']}: a negative case cannot be critical")
+        facts = case.get("requiredFacts", [])
+        if not isinstance(facts, list) or (facts and not anchors):
+            raise ValueError(f"{case['id']}: requiredFacts must be a list on a positive case")
+        fact_ids = []
+        for fact in facts:
+            if not isinstance(fact, dict):
+                raise ValueError(f"{case['id']}: each required fact must be an object")
+            fact_id = fact.get("id")
+            phrases = fact.get("evidencePhrases")
+            if not isinstance(fact_id, str) or not fact_id.strip() or not isinstance(phrases, list) \
+                    or not phrases or any(not isinstance(phrase, str) or not phrase.strip() for phrase in phrases):
+                raise ValueError(f"{case['id']}: each required fact needs an ID and unique evidence phrases")
+            if len(set(phrases)) != len(phrases):
+                raise ValueError(f"{case['id']}: evidence phrases must be unique within a fact")
+            fact_ids.append(fact_id)
+        if len(set(fact_ids)) != len(fact_ids):
+            raise ValueError(f"{case['id']}: requiredFacts must have unique IDs")
     if not isinstance(manifest.get("topK"), int) or manifest["topK"] < 1:
         raise ValueError("positive topK required")
 
@@ -218,10 +235,11 @@ def score(capture):
     if len(indexed) != len(manifest["cases"]) * 2 or len(indexed) != len(capture["runs"]):
         raise ValueError("capture must have exactly one run per case and route")
     per_case = []
-    aggregate = {route: {"hits": [], "recall": [], "mrr": [], "ndcg": [], "latencies": [],
+    aggregate = {route: {"hits": [], "recall": [], "mrr": [], "ndcg": [], "answerable": [], "latencies": [],
                          "negativeClean": [], "unstable": []} for route in ROUTES}
     for case in manifest["cases"]:
         anchors = case["relevantAnchors"]
+        required_facts = case.get("requiredFacts", [])
         result = {"id": case["id"], "critical": bool(case.get("critical")), "positive": bool(anchors)}
         for route in ROUTES:
             samples = indexed[(case["id"], route)]["samples"]
@@ -247,14 +265,23 @@ def score(capture):
             ndcg = dcg / ideal if ideal else None
             negative_clean = len(samples[0]["entries"]) == 0 if not anchors else None
             unstable = any(other != ranks for other in ranks_by_sample[1:])
+            fact_ranks = {fact["id"]: next((position for position, entry in
+                                            enumerate(samples[0]["entries"][:top_k], 1)
+                                            if any(phrase in (entry.get("preview") or "")
+                                                   for phrase in fact["evidencePhrases"])), None)
+                          for fact in required_facts}
+            answerable = all(rank is not None for rank in fact_ranks.values()) if required_facts else None
             result[route] = {"relevantRanks": ranks, "hit": hit if anchors else None,
                              "negativeClean": negative_clean, "unstable": unstable,
+                             "requiredFactRanks": fact_ranks, "answerableAtK": answerable,
                              "latenciesMs": [sample["latencyMs"] for sample in samples]}
             if anchors:
                 aggregate[route]["hits"].append(int(hit))
                 aggregate[route]["recall"].append(recall)
                 aggregate[route]["mrr"].append(mrr)
                 aggregate[route]["ndcg"].append(ndcg)
+                if required_facts:
+                    aggregate[route]["answerable"].append(int(answerable))
             else:
                 aggregate[route]["negativeClean"].append(int(negative_clean))
             aggregate[route]["unstable"].append(unstable)
@@ -264,6 +291,9 @@ def score(capture):
         positive_count = len(values["hits"])
         negative_count = len(values["negativeClean"])
         metrics[route] = {"positiveCount": positive_count, "negativeCount": negative_count,
+                          "answerableCaseCount": len(values["answerable"]),
+                          "answerableAtK": sum(values["answerable"]) / len(values["answerable"])
+                              if values["answerable"] else None,
                           "hitRateAtK": sum(values["hits"]) / positive_count if positive_count else None,
                           "recallAtK": sum(values["recall"]) / positive_count if positive_count else None,
                           "mrrAtK": sum(values["mrr"]) / positive_count if positive_count else None,
@@ -274,6 +304,11 @@ def score(capture):
     regressions = [case["id"] for case in per_case if case["positive"] and case["legacy"]["hit"]
                    and not case["ragflow"]["hit"]]
     critical_regressions = [case["id"] for case in per_case if case["critical"] and case["id"] in regressions]
+    answerability_regressions = [case["id"] for case in per_case
+                                if case["legacy"]["answerableAtK"] is True
+                                and case["ragflow"]["answerableAtK"] is False]
+    critical_answerability_regressions = [case["id"] for case in per_case
+                                         if case["critical"] and case["id"] in answerability_regressions]
     checks = capture.get("citationChecks") or []
     source_ids = {"kb:" + entry["chunkKey"] for run in capture["runs"] if run["route"] == "ragflow"
                   for entry in run["samples"][0]["entries"] if isinstance(entry.get("chunkKey"), str)}
@@ -299,6 +334,8 @@ def score(capture):
     return {"schemaVersion": 1, "fixtureSha256": capture.get("fixtureSha256"),
             "conditions": capture.get("conditions"), "metrics": metrics, "cases": per_case,
             "newMisses": regressions, "criticalNewMisses": critical_regressions,
+            "newAnswerabilityMisses": answerability_regressions,
+            "criticalNewAnswerabilityMisses": critical_answerability_regressions,
             "citationVerification": {"total": len(source_ids), "verified": len(source_ids & verified),
                                      "checks": checks, "attempted": capture.get("citationCheckAttempted", False)},
             "ingestion": ingestion or None, "projectMappings": project_mappings,

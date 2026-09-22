@@ -61,6 +61,49 @@ class PairedEvalTest(unittest.TestCase):
         self.assertFalse(result["gates"]["criticalNoNewMisses"])
         self.assertFalse(result["gates"]["citationVerified"])
 
+    def test_required_facts_catch_partial_answer_despite_anchor_hit(self):
+        base = Path(__file__).parent
+        manifest = json.loads((base / "project_cases.json").read_text(encoding="utf-8"))
+        case = next(case for case in manifest["cases"] if case["id"] == "project-kb-019")
+        source = (base.parents[1] / "docs/kb-project/05-tool-receipt-and-unknown-result.md").read_text(encoding="utf-8")
+        generation, limitation = (fact["evidencePhrases"][0] for fact in case["requiredFacts"])
+        self.assertIn(generation, source)
+        self.assertIn(limitation, source)
+        capture = self.capture(
+            [{"preview": generation, "chunkKey": "legacy:1"},
+             {"preview": limitation, "chunkKey": "legacy:2"}],
+            [{"preview": generation, "chunkKey": "ragflow:ds:doc:chunk"}], True)
+        capture["manifest"]["cases"][0] = case
+        for run in capture["runs"]:
+            if run["caseId"] == "positive":
+                run["caseId"] = case["id"]
+        result = paired_eval.score(capture)
+        self.assertEqual(result["metrics"]["legacy"]["hitRateAtK"], 1)
+        self.assertEqual(result["metrics"]["ragflow"]["hitRateAtK"], 1)
+        self.assertEqual(result["metrics"]["legacy"]["recallAtK"], 1)
+        self.assertEqual(result["metrics"]["ragflow"]["recallAtK"], 1)
+        self.assertEqual(result["metrics"]["legacy"]["answerableAtK"], 1)
+        self.assertEqual(result["metrics"]["ragflow"]["answerableAtK"], 0)
+        self.assertEqual(result["metrics"]["legacy"]["answerableCaseCount"], 1)
+        self.assertEqual(result["newMisses"], [])
+        self.assertEqual(result["newAnswerabilityMisses"], [case["id"]])
+        self.assertEqual(result["criticalNewAnswerabilityMisses"], [case["id"]])
+        self.assertEqual(result["cases"][0]["ragflow"]["requiredFactRanks"], {
+            "call-id-generation": 1, "downstream-dedup-limitation": None})
+
+    def test_required_fact_labels_are_validated(self):
+        capture = self.capture([], [])
+        case = capture["manifest"]["cases"][0]
+        for invalid in ([{"id": "fact", "evidencePhrases": []}],
+                        [{"id": "fact", "evidencePhrases": ["phrase", "phrase"]}],
+                        [{"id": "fact", "evidencePhrases": ["phrase"]},
+                         {"id": "fact", "evidencePhrases": ["other"]}],
+                        [{"id": [], "evidencePhrases": ["phrase"]}]):
+            with self.subTest(invalid=invalid):
+                case["requiredFacts"] = invalid
+                with self.assertRaises(ValueError):
+                    paired_eval.validate_manifest(capture["manifest"])
+
     def test_all_project_gates_can_pass_on_valid_capture(self):
         cases = [{"id": f"p{i}", "question": f"question {i}", "relevantAnchors": [f"FACT-{i}"],
                   "critical": i == 1} for i in range(25)]
