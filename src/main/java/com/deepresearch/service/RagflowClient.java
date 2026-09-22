@@ -15,6 +15,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
+import java.net.URLEncoder;
 
 /** Bounded, server-side RAGFlow HTTP adapter. */
 @Component
@@ -26,18 +28,29 @@ public class RagflowClient {
     private final String apiKey;
     private final List<String> datasets;
     private final Duration timeout;
+    private final int knnTopK;
+    private final boolean keyword;
+    private final String ingestionMode;
 
     public RagflowClient(ObjectMapper json,
             @Value("${deepresearch.ragflow.base-url:http://127.0.0.1:9380}") String baseUrl,
             @Value("${deepresearch.ragflow.api-key:}") String apiKey,
             @Value("${deepresearch.ragflow.dataset-ids:}") List<String> datasets,
             @Value("${deepresearch.ragflow.connect-timeout:3s}") Duration connectTimeout,
-            @Value("${deepresearch.ragflow.read-timeout:15s}") Duration timeout) {
+            @Value("${deepresearch.ragflow.read-timeout:15s}") Duration timeout,
+            @Value("${deepresearch.ragflow.knn-top-k:256}") int knnTopK,
+            @Value("${deepresearch.ragflow.keyword:true}") boolean keyword,
+            @Value("${deepresearch.ragflow.ingestion-mode:builtin}") String ingestionMode) {
         this.json = json;
         this.baseUrl = baseUrl.replaceAll("/+$", "");
         this.apiKey = apiKey;
         this.datasets = datasets.stream().filter(s -> !s.isBlank()).toList();
         this.timeout = timeout;
+        this.knnTopK = Math.max(1, Math.min(knnTopK, 2048));
+        this.keyword = keyword;
+        if (!List.of("builtin", "pipeline").contains(ingestionMode))
+            throw new IllegalStateException("Invalid RAGFlow ingestion mode");
+        this.ingestionMode = ingestionMode;
         this.http = HttpClient.newBuilder().connectTimeout(connectTimeout).build();
     }
 
@@ -50,10 +63,23 @@ public class RagflowClient {
             throw new IllegalStateException("Invalid RAGFlow base URL");
     }
 
-    public JsonNode retrieve(String question, int limit, double threshold) {
+    public JsonNode retrieve(String question, int limit, double threshold, List<String> documentIds) {
         requireConfigured();
+        if (documentIds.isEmpty()) throw new IllegalArgumentException("No active RAGFlow documents");
+        int candidates = Math.max(limit, knnTopK);
         return request("POST", "/api/v1/retrieval", Map.of("question", question, "dataset_ids", datasets,
-                "page", 1, "page_size", limit, "knn_top_k", limit, "similarity_threshold", threshold));
+                "document_ids", documentIds,
+                "page", 1, "page_size", limit, "knn_top_k", candidates,
+                "knn_num_candidates", Math.max(2048, candidates),
+                "rerank_candidates_count", Math.max(64, limit), "keyword", keyword,
+                "similarity_threshold", threshold));
+    }
+
+    public JsonNode chunk(String datasetId, String documentId, String chunkId) {
+        requireAllowed(datasetId);
+        if (!documentId.matches("[A-Za-z0-9_-]{1,128}") || !chunkId.matches("[A-Za-z0-9_-]{1,128}"))
+            throw new IllegalArgumentException("Invalid RAGFlow chunk identifier");
+        return request("GET", "/api/v1/datasets/" + datasetId + "/documents/" + documentId + "/chunks/" + chunkId, null);
     }
 
     public String upload(String datasetId, String filename, byte[] content) {
@@ -78,7 +104,9 @@ public class RagflowClient {
 
     public void parse(String datasetId, String documentId) {
         requireAllowed(datasetId);
-        request("POST", "/api/v1/datasets/" + datasetId + "/chunks", Map.of("document_ids", List.of(documentId)));
+        if ("pipeline".equals(ingestionMode))
+            request("POST", "/api/v1/documents/ingest", Map.of("doc_ids", List.of(documentId), "run", "1", "delete", false));
+        else request("POST", "/api/v1/datasets/" + datasetId + "/chunks", Map.of("document_ids", List.of(documentId)));
     }
 
     public JsonNode document(String datasetId, String documentId) {
@@ -86,6 +114,28 @@ public class RagflowClient {
         JsonNode docs = request("GET", "/api/v1/datasets/" + datasetId + "/documents?id=" + documentId, null).path("docs");
         if (!docs.isArray() || docs.isEmpty()) throw new IllegalStateException("RAGFlow document missing");
         return docs.get(0);
+    }
+
+    /** Recovers a completed upload when the caller crashed before persisting its remote ID. */
+    public List<String> findDocumentsByName(String datasetId, String exactName) {
+        requireAllowed(datasetId);
+        if (exactName == null || exactName.isBlank()) throw new IllegalArgumentException("Document name required");
+        String encoded = URLEncoder.encode(exactName, StandardCharsets.UTF_8);
+        List<String> ids = new ArrayList<>();
+        for (int page = 1; page <= 20; page++) {
+            JsonNode docs = request("GET", "/api/v1/datasets/" + datasetId
+                    + "/documents?name=" + encoded + "&page=" + page + "&page_size=100", null).path("docs");
+            if (!docs.isArray()) throw new IllegalStateException("RAGFlow document list missing");
+            for (JsonNode doc : docs) {
+                if (exactName.equals(doc.path("name").asText())) {
+                    String id = doc.path("id").asText("");
+                    if (!id.matches("[A-Za-z0-9_-]{1,128}")) throw new IllegalStateException("Invalid RAGFlow document ID");
+                    ids.add(id);
+                }
+            }
+            if (docs.size() < 100) return List.copyOf(ids);
+        }
+        throw new IllegalStateException("RAGFlow document search exceeded page limit");
     }
 
     public void delete(String datasetId, String documentId) {
@@ -121,7 +171,8 @@ public class RagflowClient {
             if (response.statusCode() < 200 || response.statusCode() >= 300)
                 throw new IllegalStateException("RAGFlow HTTP " + response.statusCode());
             JsonNode root = json.readTree(bytes);
-            if (root.path("code").asInt(-1) != 0) throw new IllegalStateException("RAGFlow response code " + root.path("code").asText());
+            int code = root.path("code").asInt(-1);
+            if (code != 0) throw new RagflowApiException(code);
             return root.path("data");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

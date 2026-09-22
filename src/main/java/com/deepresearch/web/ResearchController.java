@@ -92,13 +92,13 @@ public class ResearchController {
 
     @PostMapping("/hybrid")
     public ResearchAnswer hybrid(@RequestBody @Valid ResearchRequest request) {
-        if (retrievalGateway.ragflow()) return ragflowAnswerService.answer(request.question(), request.topK());
+        if (retrievalGateway.ragflow()) return ragflowAnswerService.answer(request.question(), request.topK(), request.history());
         return hybridRagService.answer(request.question(), request.topK(), request.history());
     }
 
     @PostMapping("/hybrid/debug")
     public HybridDebugResponse hybridDebug(@RequestBody @Valid ResearchRequest request) {
-        if (retrievalGateway.ragflow()) return ragflowDebugService.debug(request.question(), request.topK());
+        if (retrievalGateway.ragflow()) return ragflowDebugService.debug(request.question(), request.topK(), request.history());
         return hybridRagService.debug(request.question(), request.topK(), request.recallK(), request.candidateK(), request.history());
     }
 

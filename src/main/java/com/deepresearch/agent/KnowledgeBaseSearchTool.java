@@ -73,7 +73,8 @@ public class KnowledgeBaseSearchTool implements Tool {
                             .append("召回路径: ragflow; score: ").append(item.score()).append('\n')
                             .append(item.content()).append("\n\n");
                 }
-                return new CitationAwareToolOutput(text.toString().trim(), sourceIds);
+                return new CitationAwareToolOutput(
+                        ToolOutputSanitizer.markUntrusted("knowledge-base", text.toString().trim()), sourceIds);
             }
             HybridDebugResponse debug = hybridRagService.debug(input.trim(), topK, recallK, candidateK, List.of());
             List<HybridDebugResponse.Entry> evidences = debug.compressedContext();

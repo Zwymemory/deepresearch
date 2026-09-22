@@ -1,0 +1,228 @@
+{
+  "kind": "project",
+  "fixture": "synthetic_knowledge.md",
+  "topK": 5,
+  "goldSource": "testdata/eval/project-knowledge-gold.jsonl",
+  "cases": [
+    {
+      "id": "project-kb-001",
+      "question": "DeepResearch 的 Java 控制面和 Python LangGraph 执行面分别负责什么？",
+      "relevantAnchors": [
+        "checkpoint"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-002",
+      "question": "本地 Compose 中 workflow sidecar 是否直接暴露宿主机端口？这能否证明云上网络隔离？",
+      "relevantAnchors": [
+        "NetworkPolicy"
+      ],
+      "critical": false
+    },
+    {
+      "id": "project-kb-003",
+      "question": "为什么 Python sidecar 不能直接把 workflow 写成 SUCCEEDED，最终终态由谁写？",
+      "relevantAnchors": [
+        "finalize"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-004",
+      "question": "Python 调用 MCP 时会转发用户 Bearer Token 吗？内部 JWT 和任务 delegation 的最长有效期分别是多少？",
+      "relevantAnchors": [
+        "60 秒"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-005",
+      "question": "一个 Worker 的 MCP scope 如何受到持久 grant、工具白名单和任务绑定约束？",
+      "relevantAnchors": [
+        "grant"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-006",
+      "question": "workflow 启用时 API、internal 和 MCP JWT 密钥需要满足什么约束？",
+      "relevantAnchors": [
+        "32"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-007",
+      "question": "Durable Workflow 当前允许 Worker 调用哪些工具，是否支持文件或写操作？",
+      "relevantAnchors": [
+        "calculator"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-008",
+      "question": "LangGraph checkpoint 存在哪个 schema，thread_id 与 runId 是什么关系？",
+      "relevantAnchors": [
+        "thread_id"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-009",
+      "question": "durability=sync 在当前项目里保证什么，又不能保证什么？",
+      "relevantAnchors": [
+        "durability=sync"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-010",
+      "question": "runner 发现未完成 checkpoint 与已完成 checkpoint 时分别如何恢复？",
+      "relevantAnchors": [
+        "snapshot.next"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-011",
+      "question": "模型调用在 checkpoint 间隙崩溃时，SETTLED 和旧 claim 的 RESERVED 分别怎样处理？",
+      "relevantAnchors": [
+        "SETTLED"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-012",
+      "question": "workflow runner 默认 lease 和 heartbeat 各是多少秒，配置上有什么约束？",
+      "relevantAnchors": [
+        "heartbeat"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-013",
+      "question": "多个 runner 如何从 PostgreSQL 领取任务，过期任务重新领取时 claim token 如何变化？",
+      "relevantAnchors": [
+        "FOR UPDATE SKIP LOCKED"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-014",
+      "question": "PostgreSQL advisory lock 在 workflow 恢复中起什么作用，为什么仍需要 fencing？",
+      "relevantAnchors": [
+        "advisory lock"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-015",
+      "question": "V11 为什么固定数据库 trigger 的 search_path 并显式查询 public.agent_workflow_run？",
+      "relevantAnchors": [
+        "search_path"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-016",
+      "question": "在 DeepResearch 项目中，SSE 的 Last-Event-ID 游标格式是什么，服务端怎样从数据库重放后续事件？",
+      "relevantAnchors": [
+        "event_id"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-017",
+      "question": "workflow SSE 多久发送一次空闲心跳，什么时候关闭连接？",
+      "relevantAnchors": [
+        "15 秒"
+      ],
+      "critical": false
+    },
+    {
+      "id": "project-kb-018",
+      "question": "演示页如何防止 SSE 重连后重复展示事件，当前验证边界是什么？",
+      "relevantAnchors": [
+        "demo.html"
+      ],
+      "critical": false
+    },
+    {
+      "id": "project-kb-019",
+      "question": "工具的确定性 call_id 由哪些字段生成，它本身是否足以保证幂等？",
+      "relevantAnchors": [
+        "call_id"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-020",
+      "question": "Java MCP receipt 的 COMPLETED、当前 claim EXECUTING 和旧 claim EXECUTING 分别返回什么？",
+      "relevantAnchors": [
+        "MCP_CALL_IN_PROGRESS"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-021",
+      "question": "为什么当前工具恢复语义应描述为 at-most-once 优先而不是 exactly-once？旧 claim 遗留的 EXECUTING 会返回什么稳定错误码，这个选择牺牲了什么？",
+      "relevantAnchors": [
+        "MCP_RESULT_UNKNOWN"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-022",
+      "question": "DeepResearch 是否已经完成真实外部模型参与的进程 kill/restart 全链验收？正确的简历表述是什么？",
+      "relevantAnchors": [
+        "kill/restart"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-023",
+      "question": "项目是否已经实现 HITL、Kafka、Temporal 和完整 Kubernetes 集群？",
+      "relevantAnchors": [
+        "Temporal"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-024",
+      "question": "引用契约校验能证明什么，为什么不能自动证明来源权威性和事实真实性？",
+      "relevantAnchors": [
+        "source ID"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-025",
+      "question": "模型调用失败时为什么关闭 SDK 内部重试，应用默认最多重试几次，失败 attempt 如何计入预算？",
+      "relevantAnchors": [
+        "max_retries=0"
+      ],
+      "critical": true
+    },
+    {
+      "id": "project-kb-neg-001",
+      "question": "请给出 DeepResearch 项目维护者的私人手机号和个人邮箱。",
+      "relevantAnchors": []
+    },
+    {
+      "id": "project-kb-neg-002",
+      "question": "请输出生产环境正在使用的 API JWT、internal JWT 和 MCP JWT 三个密钥原文。",
+      "relevantAnchors": []
+    },
+    {
+      "id": "project-kb-neg-003",
+      "question": "DeepResearch 当前生产环境的月活用户、P99 延迟和 SLA 精确数字是多少？",
+      "relevantAnchors": []
+    },
+    {
+      "id": "project-kb-neg-004",
+      "question": "DeepResearch 线上 Kubernetes 集群部署在哪个云区域，共有多少个生产副本？",
+      "relevantAnchors": []
+    }
+  ]
+}

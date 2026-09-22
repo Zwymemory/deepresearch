@@ -4,24 +4,32 @@ import com.deepresearch.web.dto.HybridDebugResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class RagflowDebugService {
     private final KnowledgeRetrievalGateway gateway;
-    public RagflowDebugService(KnowledgeRetrievalGateway gateway) { this.gateway = gateway; }
+    private final QueryRewriteService queryRewrite;
+    public RagflowDebugService(KnowledgeRetrievalGateway gateway, QueryRewriteService queryRewrite) {
+        this.gateway = gateway;
+        this.queryRewrite = queryRewrite;
+    }
 
-    public HybridDebugResponse debug(String question, Integer topK) {
-        List<RetrievedEvidence> evidence = gateway.retrieve(question, topK);
+    public HybridDebugResponse debug(String question, Integer topK, List<String> history) {
+        QueryRewriteService.RewriteResult rewrite = queryRewrite.rewrite(question, history == null ? List.of() : history);
+        List<RetrievedEvidence> evidence = gateway.retrieve(rewrite.rewrittenQuestion(), topK);
         List<HybridDebugResponse.Entry> entries = evidence.stream().map(e -> new HybridDebugResponse.Entry(
                 Integer.parseInt(e.sourceId().substring(2)), e.title(), e.docId(), e.chunkId(), "",
                 e.sectionPath(), null, e.pageNumber(), e.chunkKey(), "ragflow", null, null,
                 null, null, false, null, e.content().length(), "ragflow", e.content())).toList();
         int chars = evidence.stream().mapToInt(e -> e.content().length()).sum();
-        return new HybridDebugResponse(question, evidence.size(), evidence.size(), question, question, false,
+        return new HybridDebugResponse(question, evidence.size(), evidence.size(), question, rewrite.rewrittenQuestion(), rewrite.used(),
                 List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
                 entries, entries, entries.size(), entries.size(),
                 new HybridDebugResponse.ContextPackingDiagnostics(false, entries.size(), entries.size(), 0, chars, 1.0, "provider=ragflow; no local expansion"),
                 new HybridDebugResponse.RerankDiagnostics(false, "RAGFLOW", false, entries.size(), entries.size(), 0, false,
-                        "RAGFlow similarity is available through the evidence gateway; legacy RRF and rerank scores are absent"));
+                        "Legacy RRF and rerank scores are absent"),
+                "ragflow", evidence.stream().filter(e -> e.score() != null)
+                        .collect(Collectors.toMap(RetrievedEvidence::chunkKey, RetrievedEvidence::score)));
     }
 }

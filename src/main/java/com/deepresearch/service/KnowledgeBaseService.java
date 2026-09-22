@@ -171,10 +171,26 @@ public class KnowledgeBaseService {
             List<byte[]> files = jdbcTemplate.query("SELECT original_file FROM kb_ragflow_document WHERE legacy_doc_id=?",
                     (rs, n) -> rs.getBytes(1), docId);
             if (!files.isEmpty() && files.get(0) != null)
-                return ragflowIngestion.ingest(document, true, files.get(0), row.filename());
-            return ragflowIngestion.ingest(document, true);
+                return ragflowIngestion.reindexExisting(docId, document, files.get(0), row.filename());
+            return ragflowIngestion.reindexExisting(docId, document, null, null);
         }
         return transactions == null ? ingestParsed(document, true) : transactions.execute(status -> ingestParsed(document, true));
+    }
+
+    /** Explicit migration of a legacy document, addressed by its stable Java ID. */
+    public IngestResult syncRagflowDocument(String docId) {
+        DocumentRow row = readDocumentRow(docId);
+        ParsedDocument document = parserService.parseStored(row.title(), row.sourceType(), row.filename(), row.rawContent());
+        List<byte[]> files = jdbcTemplate.query("SELECT original_file FROM kb_ragflow_document WHERE legacy_doc_id=?",
+                (rs, n) -> rs.getBytes(1), docId);
+        if (!files.isEmpty() && files.get(0) != null)
+            return ragflowIngestion.ingestExisting(docId, document, files.get(0), row.filename());
+        return ragflowIngestion.ingestExisting(docId, document);
+    }
+
+    public Map<String, Object> ragflowSyncStatus(String docId) {
+        ragflowIngestion.reconcile(docId);
+        return ragflowIngestion.status(docId);
     }
 
     public IngestResult deleteDocument(String docId) {

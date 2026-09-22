@@ -1,6 +1,7 @@
 package com.deepresearch.web.dto;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * W4.2 混合检索调试响应。
@@ -27,8 +28,23 @@ public record HybridDebugResponse(
         int contextChunkCount,
         int compressedContextCount,
         ContextPackingDiagnostics contextPackingDiagnostics,
-        RerankDiagnostics rerankDiagnostics
+        RerankDiagnostics rerankDiagnostics,
+        String provider,
+        Map<String, Double> similarityScores
 ) {
+    public HybridDebugResponse(String question, int recallK, int finalK, String originalQuestion,
+                               String rewrittenQuestion, boolean rewriteUsed, List<Entry> vectorOnly,
+                               List<Entry> keywordOnly, List<Entry> noRrfMerge, List<Entry> rrfFusion,
+                               List<Entry> rrfDocFusion, List<Entry> rerankResult, List<Entry> rerankDocResult,
+                               List<Entry> expandedContext, List<Entry> compressedContext, int contextChunkCount,
+                               int compressedContextCount, ContextPackingDiagnostics contextPackingDiagnostics,
+                               RerankDiagnostics rerankDiagnostics) {
+        this(question, recallK, finalK, originalQuestion, rewrittenQuestion, rewriteUsed, vectorOnly,
+                keywordOnly, noRrfMerge, rrfFusion, rrfDocFusion, rerankResult, rerankDocResult,
+                expandedContext, compressedContext, contextChunkCount, compressedContextCount,
+                contextPackingDiagnostics, rerankDiagnostics, "legacy", Map.of());
+    }
+
     public record Entry(
             int index,
             String title,

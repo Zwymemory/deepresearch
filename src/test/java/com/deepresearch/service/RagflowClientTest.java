@@ -25,15 +25,23 @@ class RagflowClientTest {
             exchange.getResponseBody().write(bytes);
             exchange.close();
         });
+        server.createContext("/api/v1/datasets/ds/documents", exchange -> {
+            byte[] bytes = "{\"code\":0,\"data\":{\"docs\":[{\"id\":\"matching\",\"name\":\"wanted.txt\"},{\"id\":\"other\",\"name\":\"unwanted.txt\"}]}}"
+                    .getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
         server.start();
         try {
             RagflowClient client = new RagflowClient(new ObjectMapper(),
                     "http://127.0.0.1:" + server.getAddress().getPort(), "test-key", List.of("ds"),
-                    Duration.ofSeconds(1), Duration.ofSeconds(2));
-            assertThat(client.retrieve("question", 4, 0.2).path("chunks").size()).isZero();
-            assertThat(request.get()).contains("\"dataset_ids\":[\"ds\"]", "\"page_size\":4", "\"knn_top_k\":4");
+                    Duration.ofSeconds(1), Duration.ofSeconds(2), 256, true, "builtin");
+            assertThat(client.retrieve("question", 4, 0.2, List.of("doc")).path("chunks").size()).isZero();
+            assertThat(request.get()).contains("\"dataset_ids\":[\"ds\"]", "\"document_ids\":[\"doc\"]", "\"page_size\":4", "\"knn_top_k\":256", "\"keyword\":true");
+            assertThat(client.findDocumentsByName("ds", "wanted.txt")).containsExactly("matching");
             reply.set("{\"code\":101,\"message\":\"bad\"}");
-            assertThatThrownBy(() -> client.retrieve("question", 4, 0.2)).hasMessageContaining("response code 101");
+            assertThatThrownBy(() -> client.retrieve("question", 4, 0.2, List.of("doc"))).hasMessageContaining("response code 101");
         } finally { server.stop(0); }
     }
 }
