@@ -73,32 +73,38 @@ public class RagflowIngestionService {
         if (old != null && hash.equals(old.activeHash()) && "DONE".equals(old.syncStatus()) && !force)
             return new IngestResult(id, IngestStatus.UNCHANGED, old.version(), 0, "文档内容未变化");
 
-        if (old == null) {
-            db.update("""
-                    INSERT INTO kb_document(doc_id,title,source_type,filename,raw_content,content_hash,version,chunk_count,status,created_at,updated_at)
-                    VALUES(?,?,?,?,?,?,1,0,'PENDING',now(),now())
-                    """, id, document.title(), document.sourceType().name(), document.filename(), document.rawContent(), hash);
-        }
-        int version = old == null ? 1 : old.version() + 1;
+        int requestedVersion = old == null ? 1 : old.version() + 1;
         String originalName = originalFile == null ? null :
                 (originalFilename == null || originalFilename.isBlank() ? document.filename() : originalFilename);
-        String remoteName = remoteName(id, version, hash, originalName);
-        db.update("""
-                INSERT INTO kb_ragflow_sync_job(legacy_doc_id,dataset_id,remote_name,content_hash,version,
-                    title,source_type,filename,raw_content,original_file,original_filename,status)
-                VALUES(?,?,?,?,?,?,?,?,?,?,?,'PREPARED') ON CONFLICT(legacy_doc_id) DO NOTHING
-                """, id, dataset, remoteName, hash, version, document.title(), document.sourceType().name(),
-                document.filename(), document.rawContent(), originalFile, originalName);
-        Job job = job(id);
-        if (job == null || !hash.equals(job.hash()))
-            throw new IllegalStateException("该文档已有不同内容的 RAGFlow 同步任务，请先完成或删除它");
-        if ("DELETING".equals(job.status())) throw new IllegalStateException("该文档正在删除");
+        String remoteName = remoteName(id, requestedVersion, hash, originalName);
+        if (localTransactions == null) throw new IllegalStateException("RAGFlow sync requires a DataSource");
+        Job durableJob = localTransactions.execute(ignored -> {
+            if (old == null) {
+                db.update("""
+                        INSERT INTO kb_document(doc_id,title,source_type,filename,raw_content,content_hash,version,chunk_count,status,created_at,updated_at)
+                        VALUES(?,?,?,?,?,?,1,0,'PENDING',now(),now())
+                        """, id, document.title(), document.sourceType().name(), document.filename(), document.rawContent(), hash);
+            }
+            db.update("""
+                    INSERT INTO kb_ragflow_sync_job(legacy_doc_id,dataset_id,remote_name,content_hash,version,
+                        title,source_type,filename,raw_content,original_file,original_filename,status)
+                    VALUES(?,?,?,?,?,?,?,?,?,?,?,'PREPARED') ON CONFLICT(legacy_doc_id) DO NOTHING
+                    """, id, dataset, remoteName, hash, requestedVersion, document.title(), document.sourceType().name(),
+                    document.filename(), document.rawContent(), originalFile, originalName);
+            Job persisted = job(id);
+            if (persisted == null || !hash.equals(persisted.hash()))
+                throw new IllegalStateException("该文档已有不同内容的 RAGFlow 同步任务，请先完成或删除它");
+            if ("DELETING".equals(persisted.status())) throw new IllegalStateException("该文档正在删除");
+            return persisted;
+        });
+        if (durableJob == null) throw new IllegalStateException("RAGFlow sync job was not persisted");
+        int durableVersion = durableJob.version();
         process(id, true);
         Job remaining = job(id);
-        if (remaining == null) return new IngestResult(id, IngestStatus.DONE, version, 0, "RAGFlow 入库完成");
+        if (remaining == null) return new IngestResult(id, IngestStatus.DONE, durableVersion, 0, "RAGFlow 入库完成");
         if ("FAILED".equals(remaining.status()))
-            return new IngestResult(id, IngestStatus.FAILED, version, 0, remaining.error());
-        return new IngestResult(id, IngestStatus.PARSING, version, 0, "RAGFlow 解析中；轮询同步状态");
+            return new IngestResult(id, IngestStatus.FAILED, durableVersion, 0, remaining.error());
+        return new IngestResult(id, IngestStatus.PARSING, durableVersion, 0, "RAGFlow 解析中；轮询同步状态");
     }
 
     /** Poll a single document, or replay an interrupted upload/parse step. */

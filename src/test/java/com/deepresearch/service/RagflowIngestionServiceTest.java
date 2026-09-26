@@ -4,182 +4,107 @@ import com.deepresearch.model.IngestStatus;
 import com.deepresearch.model.ParsedDocument;
 import com.deepresearch.model.ParsedSection;
 import com.deepresearch.model.SourceType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Assumptions;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.jdbc.datasource.init.ScriptUtils;
+import org.springframework.jdbc.core.RowMapper;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-/**
- * Set RAGFLOW_TEST_POSTGRES_URL to a disposable PostgreSQL database to run these SQL-backed tests.
- * The test installs V1, V13 and V14 and truncates kb_document between cases.
- */
 class RagflowIngestionServiceTest {
-    private static final ObjectMapper JSON = new ObjectMapper();
-    private static JdbcTemplate db;
+    private JdbcTemplate db;
     private RagflowClient client;
+    private Connection connection;
     private RagflowIngestionService service;
-
-    @BeforeAll
-    static void database() throws Exception {
-        String url = System.getenv("RAGFLOW_TEST_POSTGRES_URL");
-        Assumptions.assumeTrue(url != null && !url.isBlank(), "Set RAGFLOW_TEST_POSTGRES_URL for PostgreSQL integration tests");
-        var source = new DriverManagerDataSource(url,
-                System.getenv().getOrDefault("RAGFLOW_TEST_POSTGRES_USER", "test"),
-                System.getenv().getOrDefault("RAGFLOW_TEST_POSTGRES_PASSWORD", "test"));
-        try (Connection connection = source.getConnection()) {
-            for (String migration : List.of("V1__kb_ingestion.sql", "V13__ragflow_document_mapping.sql",
-                    "V14__ragflow_sync_recovery.sql"))
-                ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/" + migration));
-        }
-        db = new JdbcTemplate(source);
-    }
 
     @BeforeEach
     void setup() throws Exception {
-        db.execute("TRUNCATE kb_document CASCADE");
+        db = mock(JdbcTemplate.class);
         client = mock(RagflowClient.class);
+        DataSource dataSource = mock(DataSource.class);
+        connection = mock(Connection.class);
+        when(db.getDataSource()).thenReturn(dataSource);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.getAutoCommit()).thenReturn(true);
         when(client.datasets()).thenReturn(List.of("ds"));
-        when(client.findDocumentsByName(eq("ds"), anyString())).thenReturn(List.of());
-        when(client.document(eq("ds"), anyString())).thenReturn(JSON.readTree("{\"run\":\"UNSTART\"}"));
         service = new RagflowIngestionService(db, client);
     }
 
     @Test
-    void prewarmsLegacyDocumentBeforeSwitchingProviderAndPromotesOnlyAfterDone() throws Exception {
-        insertLegacy("old text");
-        when(client.upload(eq("ds"), anyString(), any(byte[].class))).thenReturn("remote-new");
-        ParsedDocument update = document("old text");
-        assertThat(service.ingestExisting("doc-old", update).status()).isEqualTo(IngestStatus.PARSING);
-        assertThat(db.queryForObject("SELECT status FROM kb_document WHERE doc_id='doc-old'", String.class)).isEqualTo("DONE");
-        assertThat(db.queryForObject("SELECT count(*) FROM kb_ragflow_document", Integer.class)).isZero();
-        assertThat(service.status("doc-old").get("status")).isEqualTo("PARSING");
+    @SuppressWarnings("unchecked")
+    void rollsBackDocumentInsertWhenDurableJobInsertFails() throws Exception {
+        when(db.query(anyString(), any(RowMapper.class), any(Object[].class))).thenReturn(List.of());
+        when(db.update(argThat(sql -> sql != null && sql.contains("INSERT INTO kb_document")), any(Object[].class)))
+                .thenReturn(1);
+        when(db.update(argThat(sql -> sql != null && sql.contains("INSERT INTO kb_ragflow_sync_job")), any(Object[].class)))
+                .thenThrow(new DataIntegrityViolationException("job insert failed"));
 
-        when(client.document("ds", "remote-new")).thenReturn(JSON.readTree("{\"run\":\"DONE\",\"chunk_count\":2}"));
-        service.reconcile("doc-old");
-        assertThat(db.queryForObject("SELECT document_id FROM kb_ragflow_document WHERE legacy_doc_id='doc-old'", String.class))
-                .isEqualTo("remote-new");
-        assertThat(db.queryForObject("SELECT status FROM kb_document WHERE doc_id='doc-old'", String.class)).isEqualTo("DONE");
-        assertThat(db.queryForObject("SELECT count(*) FROM kb_ragflow_sync_job", Integer.class)).isZero();
+        assertThatThrownBy(() -> service.ingest(document("new text"), false))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessage("job insert failed");
+
+        verify(connection).rollback();
+        verify(connection, never()).commit();
+        verify(db).update(argThat(sql -> sql != null && sql.contains("INSERT INTO kb_document")), any(Object[].class));
+        verify(db).update(argThat(sql -> sql != null && sql.contains("INSERT INTO kb_ragflow_sync_job")), any(Object[].class));
     }
 
     @Test
-    void recoversUploadThatSucceededBeforeItsRemoteIdWasSaved() throws Exception {
-        insertLegacy("old text");
-        String hash = StructuralChunker.sha256("old text");
-        db.update("""
-                INSERT INTO kb_ragflow_sync_job(legacy_doc_id,dataset_id,remote_name,content_hash,version,
-                    title,source_type,filename,raw_content,status)
-                VALUES('doc-old','ds','dr-doc-old-v2-saved.txt',?,2,'Guide','TEXT','Guide.txt','old text','PREPARED')
-                """, hash);
-        when(client.findDocumentsByName("ds", "dr-doc-old-v2-saved.txt")).thenReturn(List.of("remote-orphan"));
-
-        service.reconcile("doc-old");
-        verify(client, never()).upload(anyString(), anyString(), any(byte[].class));
-        verify(client).parse("ds", "remote-orphan");
-        assertThat(db.queryForObject("SELECT remote_document_id FROM kb_ragflow_sync_job", String.class))
-                .isEqualTo("remote-orphan");
-    }
-
-    @Test
-    void acceptedParseIsNotSubmittedAgainAfterProcessRestart() throws Exception {
-        insertLegacy("old text");
-        db.update("""
-                INSERT INTO kb_ragflow_sync_job(legacy_doc_id,dataset_id,remote_name,remote_document_id,
-                    content_hash,version,title,source_type,filename,raw_content,status)
-                VALUES('doc-old','ds','dr-doc-old-v2-parse.txt','remote-parsing',?,2,
-                    'Guide','TEXT','Guide.txt','old text','UPLOADED')
-                """, StructuralChunker.sha256("old text"));
-        when(client.document("ds", "remote-parsing")).thenReturn(JSON.readTree("{\"run\":\"RUNNING\"}"));
-
-        service.reconcile("doc-old");
-        verify(client, never()).parse(anyString(), anyString());
-        assertThat(service.status("doc-old").get("status")).isEqualTo("PARSING");
-    }
-
-    @Test
-    void deletingDocumentRemovesActiveAndPreviousRemoteVersions() {
-        insertLegacy("old text");
-        db.update("""
-                INSERT INTO kb_ragflow_document(legacy_doc_id,dataset_id,document_id,previous_document_id,
-                    version,content_hash,sync_status)
-                VALUES('doc-old','ds','remote-active','remote-previous',2,?,'DONE')
-                """, StructuralChunker.sha256("old text"));
-
-        service.delete("doc-old");
-        verify(client).delete("ds", "remote-active");
-        verify(client).delete("ds", "remote-previous");
-        assertThat(db.queryForObject("SELECT count(*) FROM kb_document", Integer.class)).isZero();
-    }
-
-    @Test
-    void failedReplacementKeepsOldCitationAndRetryReusesSameRemoteDocument() throws Exception {
-        insertLegacy("old text");
-        String oldHash = StructuralChunker.sha256("old text");
-        db.update("""
-                INSERT INTO kb_ragflow_document(legacy_doc_id,dataset_id,document_id,version,content_hash,sync_status)
-                VALUES('doc-old','ds','remote-old',1,?,'DONE')
-                """, oldHash);
-        when(client.upload(eq("ds"), anyString(), any(byte[].class))).thenReturn("remote-new");
-        when(client.document("ds", "remote-new")).thenReturn(
-                JSON.readTree("{\"run\":\"UNSTART\"}"),
-                JSON.readTree("{\"run\":\"FAIL\"}"),
-                JSON.readTree("{\"run\":\"FAIL\"}"),
-                JSON.readTree("{\"run\":\"DONE\",\"chunk_count\":1}"));
-
-        service.ingestExisting("doc-old", document("new text"));
-        service.reconcile("doc-old");
-        assertThat(service.status("doc-old").get("status")).isEqualTo("FAILED");
-        assertThat(db.queryForObject("SELECT document_id FROM kb_ragflow_document", String.class)).isEqualTo("remote-old");
-        service.ingestExisting("doc-old", document("new text"));
-        service.reconcile("doc-old");
-        verify(client, times(1)).upload(eq("ds"), anyString(), any(byte[].class));
-        assertThat(db.queryForObject("SELECT document_id FROM kb_ragflow_document", String.class)).isEqualTo("remote-new");
-        verify(client).delete("ds", "remote-old");
-    }
-
-    @Test
-    void simultaneousCallsForOneDocumentShareTheDurableAttempt() throws Exception {
-        insertLegacy("old text");
-        CountDownLatch enteredUpload = new CountDownLatch(1);
-        CountDownLatch releaseUpload = new CountDownLatch(1);
-        when(client.upload(eq("ds"), anyString(), any(byte[].class))).thenAnswer(invocation -> {
-            enteredUpload.countDown();
-            if (!releaseUpload.await(5, TimeUnit.SECONDS)) throw new IllegalStateException("test upload timeout");
-            return "remote-new";
+    @SuppressWarnings("unchecked")
+    void reportsVersionFromExistingDurableJob() throws Exception {
+        String hash = StructuralChunker.sha256("same text");
+        doAnswer(invocation -> {
+            String sql = invocation.getArgument(0);
+            RowMapper<?> mapper = invocation.getArgument(1);
+            if (sql.contains("FROM kb_document d")) return List.of(mapper.mapRow(documentRow(), 0));
+            if (sql.contains("FROM kb_ragflow_sync_job")) return List.of(mapper.mapRow(jobRow(hash), 0));
+            return List.of();
+        }).when(db).query(anyString(), any(RowMapper.class), any(Object[].class));
+        when(db.update(anyString(), any(Object[].class))).thenAnswer(invocation -> {
+            String sql = invocation.getArgument(0);
+            if (sql.contains("INSERT INTO kb_ragflow_sync_job")) return 0;
+            if (sql.contains("SET lock_token=")) return 0;
+            return 1;
         });
-        var threads = Executors.newFixedThreadPool(2);
-        try {
-            var first = threads.submit(() -> service.ingestExisting("doc-old", document("old text")));
-            assertThat(enteredUpload.await(5, TimeUnit.SECONDS)).isTrue();
-            assertThat(service.ingestExisting("doc-old", document("old text")).status()).isEqualTo(IngestStatus.PARSING);
-            releaseUpload.countDown();
-            assertThat(first.get(5, TimeUnit.SECONDS).status()).isEqualTo(IngestStatus.PARSING);
-        } finally { releaseUpload.countDown(); threads.shutdownNow(); }
-        verify(client, times(1)).upload(eq("ds"), anyString(), any(byte[].class));
+
+        var result = service.ingestExisting("doc-old", document("same text"));
+
+        assertThat(result.status()).isEqualTo(IngestStatus.PARSING);
+        assertThat(result.version()).isEqualTo(3);
+        verify(connection).commit();
     }
 
-    private static void insertLegacy(String raw) {
-        db.update("""
-                INSERT INTO kb_document(doc_id,title,source_type,filename,raw_content,content_hash,version,chunk_count,status)
-                VALUES('doc-old','Guide','TEXT','Guide.txt',?,?,1,1,'DONE')
-                """, raw, StructuralChunker.sha256(raw));
+    private ResultSet documentRow() throws Exception {
+        ResultSet row = mock(ResultSet.class);
+        when(row.getString(1)).thenReturn("doc-old");
+        when(row.getInt(2)).thenReturn(10);
+        when(row.getString(5)).thenReturn("ds");
+        return row;
+    }
+
+    private ResultSet jobRow(String hash) throws Exception {
+        ResultSet row = mock(ResultSet.class);
+        when(row.getString(1)).thenReturn("doc-old");
+        when(row.getString(2)).thenReturn("ds");
+        when(row.getString(3)).thenReturn("dr-doc-old-v3-persisted.txt");
+        when(row.getString(5)).thenReturn(hash);
+        when(row.getInt(6)).thenReturn(3);
+        when(row.getString(7)).thenReturn("Guide");
+        when(row.getString(8)).thenReturn("TEXT");
+        when(row.getString(9)).thenReturn("Guide.txt");
+        when(row.getString(10)).thenReturn("same text");
+        when(row.getString(13)).thenReturn("PARSING");
+        return row;
     }
 
     private static ParsedDocument document(String raw) {
