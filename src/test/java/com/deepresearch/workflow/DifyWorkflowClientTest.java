@@ -5,11 +5,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,5 +84,93 @@ class DifyWorkflowClientTest {
                 "http://127.0.0.1:8081/v1", "", "dify"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("App Key");
+    }
+
+    @Test
+    void streamEndingAfterStartedButBeforeFinishedIsAnError() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/v1/workflows/run", exchange -> {
+            byte[] response = "data:{\"event\":\"workflow_started\",\"task_id\":\"task-1\",\"workflow_run_id\":\"remote-1\"}\n\n"
+                    .getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, response.length);
+            try (var out = exchange.getResponseBody()) {
+                out.write(response);
+            }
+        });
+        server.start();
+        try {
+            DifyWorkflowClient client = new DifyWorkflowClient(new ObjectMapper(),
+                    "http://127.0.0.1:" + server.getAddress().getPort() + "/v1",
+                    "app-secret", "dify");
+            List<JsonNode> events = new ArrayList<>();
+
+            assertThatThrownBy(() -> client.run(Map.of("java_run_id", "wf-1"),
+                    "java:user", events::add))
+                    .isInstanceOf(IOException.class)
+                    .hasMessageContaining("before workflow_finished");
+            assertThat(events).hasSize(1);
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void oversizedSseLineIsRejectedBeforeItCanGrowWithoutBound() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/v1/workflows/run", exchange -> {
+            byte[] response = ("data:" + "x".repeat(262_145)).getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, response.length);
+            try (var out = exchange.getResponseBody()) {
+                out.write(response);
+            }
+        });
+        server.start();
+        try {
+            DifyWorkflowClient client = new DifyWorkflowClient(new ObjectMapper(),
+                    "http://127.0.0.1:" + server.getAddress().getPort() + "/v1",
+                    "app-secret", "dify");
+
+            assertThatThrownBy(() -> client.run(Map.of("java_run_id", "wf-1"),
+                    "java:user", ignored -> { }))
+                    .isInstanceOf(IOException.class)
+                    .hasMessageContaining("too large");
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void detailBodyReadHasAHardDeadlineAfterHeadersArrive() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        ExecutorService handlers = Executors.newCachedThreadPool();
+        CountDownLatch release = new CountDownLatch(1);
+        server.setExecutor(handlers);
+        server.createContext("/v1/workflows/run/remote-1", exchange -> {
+            exchange.sendResponseHeaders(200, 0);
+            try (var out = exchange.getResponseBody()) {
+                out.write('{');
+                out.flush();
+                release.await(2, TimeUnit.SECONDS);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+            }
+        });
+        server.start();
+        try {
+            DifyWorkflowClient client = new DifyWorkflowClient(new ObjectMapper(),
+                    "http://127.0.0.1:" + server.getAddress().getPort() + "/v1",
+                    "app-secret", "dify", Duration.ofSeconds(1), Duration.ofSeconds(1),
+                    Duration.ofMillis(150), Duration.ofSeconds(1));
+            long started = System.nanoTime();
+
+            assertThatThrownBy(() -> client.detail("remote-1"))
+                    .isInstanceOf(IOException.class);
+            assertThat(Duration.ofNanos(System.nanoTime() - started))
+                    .isLessThan(Duration.ofSeconds(1));
+        } finally {
+            release.countDown();
+            server.stop(0);
+            handlers.shutdownNow();
+        }
     }
 }

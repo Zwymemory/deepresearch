@@ -74,7 +74,8 @@ public class WorkflowRepository {
     public List<String> timeoutPendingDify() {
         List<String> ids = jdbcTemplate.query("""
                 UPDATE agent_workflow_run r SET status = 'TIMED_OUT', stage = 'TIMED_OUT',
-                    cancel_requested = true, error_code = 'DIFY_DEADLINE_EXCEEDED', updated_at = now()
+                    cancel_requested = true, error_code = 'DIFY_DEADLINE_EXCEEDED',
+                    updated_at = now(), version = version + 1
                 WHERE r.status = 'DIFY_DISPATCHING' AND r.deadline_at <= now()
                   AND EXISTS (SELECT 1 FROM dify_workflow_run d WHERE d.run_id = r.run_id AND d.dispatch_state = 'PENDING')
                 RETURNING r.run_id
@@ -90,8 +91,10 @@ public class WorkflowRepository {
     @Transactional
     public void bindDify(String runId, String workflowRunId, String taskId) {
         jdbcTemplate.update("""
-                UPDATE dify_workflow_run SET workflow_run_id = ?, task_id = ?, dispatch_state = 'BOUND', updated_at = now()
-                WHERE run_id = ? AND dispatch_state = 'POSTING'
+                UPDATE dify_workflow_run SET workflow_run_id = ?, task_id = ?,
+                    dispatch_state = CASE WHEN dispatch_state = 'POSTING' THEN 'BOUND' ELSE dispatch_state END,
+                    updated_at = now()
+                WHERE run_id = ? AND dispatch_state IN ('POSTING', 'UNKNOWN')
                 """, workflowRunId, taskId, runId);
         jdbcTemplate.update("""
                 UPDATE agent_workflow_run SET status = 'DIFY_WORKING', stage = 'DIFY_WORKING', updated_at = now()
@@ -100,16 +103,18 @@ public class WorkflowRepository {
     }
 
     @Transactional
-    public void unknownDifyDispatch(String runId) {
+    public boolean unknownDifyDispatch(String runId) {
         jdbcTemplate.update("UPDATE dify_workflow_run SET dispatch_state = 'UNKNOWN', updated_at = now() WHERE run_id = ? AND dispatch_state = 'POSTING'", runId);
         int changed = jdbcTemplate.update("""
                 UPDATE agent_workflow_run SET status = 'DISPATCH_UNKNOWN', stage = 'DISPATCH_UNKNOWN',
+                    cancel_requested = true,
                     error_code = 'DIFY_DISPATCH_UNKNOWN',
                     error_message = 'Dify 派发结果未知，需按 java_run_id 人工对账；禁止自动重试',
-                    updated_at = now()
+                    updated_at = now(), version = version + 1
                 WHERE run_id = ? AND status = 'DIFY_DISPATCHING'
                 """, runId);
         if (changed == 1) revokeGrantForRun(runId);
+        return changed == 1;
     }
 
     @Transactional
@@ -121,17 +126,22 @@ public class WorkflowRepository {
                   AND (d.updated_at < now() - interval '5 minutes' OR r.deadline_at <= now())
                 RETURNING d.run_id
                 """, (rs, n) -> rs.getString(1));
+        List<String> transitioned = new java.util.ArrayList<>();
         for (String id : ids) {
             int changed = jdbcTemplate.update("""
                     UPDATE agent_workflow_run SET status = 'DISPATCH_UNKNOWN', stage = 'DISPATCH_UNKNOWN',
+                        cancel_requested = true,
                         error_code = 'DIFY_DISPATCH_UNKNOWN',
                         error_message = 'Dify 派发结果未知，需按 java_run_id 人工对账；禁止自动重试',
-                        updated_at = now()
+                        updated_at = now(), version = version + 1
                     WHERE run_id = ? AND status = 'DIFY_DISPATCHING'
                     """, id);
-            if (changed == 1) revokeGrantForRun(id);
+            if (changed == 1) {
+                revokeGrantForRun(id);
+                transitioned.add(id);
+            }
         }
-        return ids;
+        return transitioned;
     }
 
     public Optional<DifyMapping> difyMapping(String runId) {
@@ -139,12 +149,27 @@ public class WorkflowRepository {
                 (rs, n) -> new DifyMapping(rs.getString(1), rs.getString(2), rs.getString(3)), runId).stream().findFirst();
     }
 
-    public List<String> boundDifyRuns() {
+    /**
+     * Rotates the oldest bound runs to the back of the polling queue while claiming them.
+     * The timestamp is a short database lease that outlives the statement-level row lock,
+     * so another application instance cannot immediately claim the same remote detail call.
+     */
+    public List<String> claimBoundDifyRuns(int limit) {
+        if (limit < 1) return List.of();
         return jdbcTemplate.query("""
-                SELECT d.run_id FROM dify_workflow_run d JOIN agent_workflow_run r ON r.run_id = d.run_id
-                WHERE d.dispatch_state = 'BOUND' AND r.status = 'DIFY_WORKING'
-                ORDER BY d.updated_at LIMIT 20
-                """, (rs, n) -> rs.getString(1));
+                WITH candidates AS (
+                    SELECT d.run_id FROM dify_workflow_run d
+                    JOIN agent_workflow_run r ON r.run_id = d.run_id
+                    WHERE d.dispatch_state = 'BOUND' AND r.status = 'DIFY_WORKING'
+                      AND d.updated_at <= now() - interval '10 seconds'
+                    ORDER BY d.updated_at, d.run_id
+                    FOR UPDATE OF d SKIP LOCKED
+                    LIMIT ?
+                )
+                UPDATE dify_workflow_run d SET updated_at = now()
+                FROM candidates c WHERE d.run_id = c.run_id
+                RETURNING d.run_id
+                """, (rs, n) -> rs.getString(1), limit);
     }
 
     public List<String> expiredDifyRuns() {
@@ -159,7 +184,8 @@ public class WorkflowRepository {
     public boolean timeoutDify(String runId) {
         int changed = jdbcTemplate.update("""
                 UPDATE agent_workflow_run SET status = 'TIMED_OUT', stage = 'TIMED_OUT',
-                    cancel_requested = true, error_code = 'DIFY_DEADLINE_EXCEEDED', updated_at = now()
+                    cancel_requested = true, error_code = 'DIFY_DEADLINE_EXCEEDED',
+                    updated_at = now(), version = version + 1
                 WHERE run_id = ? AND status = 'DIFY_WORKING' AND deadline_at <= now()
                 """, runId);
         if (changed != 1) return false;

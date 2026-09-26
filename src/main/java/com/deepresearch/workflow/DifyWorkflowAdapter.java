@@ -16,6 +16,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,7 +32,10 @@ public class DifyWorkflowAdapter {
     private final String engine;
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
     private final ExecutorService controlExecutor = Executors.newFixedThreadPool(2);
+    private final ExecutorService reconcileExecutor = Executors.newFixedThreadPool(4);
     private final Semaphore dispatchSlots = new Semaphore(2);
+    private final Semaphore reconcileSlots = new Semaphore(4);
+    private final Set<String> reconciling = ConcurrentHashMap.newKeySet();
 
     public DifyWorkflowAdapter(WorkflowRepository repository, DifyWorkflowClient client, ObjectMapper json,
                                @Value("${deepresearch.workflow.engine:langgraph}") String engine) {
@@ -43,7 +48,6 @@ public class DifyWorkflowAdapter {
     @Scheduled(fixedDelay = 3000)
     public void dispatch() {
         if (!"dify".equals(engine)) return;
-        repository.timeoutPendingDify();
         while (dispatchSlots.tryAcquire()) {
             List<String> claimed = repository.claimDifyDispatches(1);
             if (claimed.isEmpty()) {
@@ -67,13 +71,11 @@ public class DifyWorkflowAdapter {
             client.run(inputs, internalUser(row), event -> onEvent(runId, event));
             var mapping = repository.difyMapping(runId).orElseThrow();
             if (mapping.workflowRunId() != null) reconcile(runId);
-            else repository.unknownDifyDispatch(runId);
+            else markDispatchUnknown(runId);
         } catch (Exception failure) {
             var mapping = repository.difyMapping(runId).orElse(null);
             if (mapping == null || mapping.workflowRunId() == null) {
-                repository.unknownDifyDispatch(runId);
-                repository.insertEvent(runId, "dify:dispatch:unknown", "SYSTEM", null, "DISPATCH_UNKNOWN",
-                        "{\"status\":\"DISPATCH_UNKNOWN\"}");
+                markDispatchUnknown(runId);
             }
         }
     }
@@ -101,7 +103,9 @@ public class DifyWorkflowAdapter {
 
     @Scheduled(fixedDelay = 10000)
     public void reconcileBound() {
-        if (!"dify".equals(engine)) return;
+        // Existing Dify runs remain authoritative even after new traffic is switched
+        // back to LangGraph. Keep timing them out and reconciling their remote state.
+        repository.timeoutPendingDify();
         for (String runId : repository.abandonStaleDifyDispatches()) {
             repository.insertEvent(runId, "dify:dispatch:unknown", "SYSTEM", null,
                     "DISPATCH_UNKNOWN", "{\"status\":\"DISPATCH_UNKNOWN\"}");
@@ -111,8 +115,32 @@ public class DifyWorkflowAdapter {
                 stop(runId);
             }
         }
-        for (String runId : repository.boundDifyRuns()) {
-            try { reconcile(runId); } catch (Exception ignored) { /* next reconciliation tick */ }
+        int available = reconcileSlots.availablePermits();
+        if (available == 0) return;
+        for (String runId : repository.claimBoundDifyRuns(available)) {
+            if (!reconciling.add(runId) || !reconcileSlots.tryAcquire()) continue;
+            try {
+                reconcileExecutor.submit(() -> {
+                    try {
+                        reconcile(runId);
+                    } catch (Exception ignored) {
+                        // A bounded detail request is retried on a later rotation.
+                    } finally {
+                        reconciling.remove(runId);
+                        reconcileSlots.release();
+                    }
+                });
+            } catch (RejectedExecutionException rejected) {
+                reconciling.remove(runId);
+                reconcileSlots.release();
+            }
+        }
+    }
+
+    private void markDispatchUnknown(String runId) {
+        if (repository.unknownDifyDispatch(runId)) {
+            repository.insertEvent(runId, "dify:dispatch:unknown", "SYSTEM", null,
+                    "DISPATCH_UNKNOWN", "{\"status\":\"DISPATCH_UNKNOWN\"}");
         }
     }
 
@@ -197,5 +225,9 @@ public class DifyWorkflowAdapter {
     }
 
     @PreDestroy
-    void shutdown() { executor.shutdownNow(); controlExecutor.shutdownNow(); }
+    void shutdown() {
+        executor.shutdownNow();
+        controlExecutor.shutdownNow();
+        reconcileExecutor.shutdownNow();
+    }
 }
