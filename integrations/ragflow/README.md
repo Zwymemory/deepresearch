@@ -88,9 +88,13 @@ To apply the reviewed contract to a compatible older capture without modifying i
 ```sh
 python3 integrations/ragflow/paired_eval.py score \
   --capture integrations/ragflow/project_paired_capture_2026-09-22.json \
-  --manifest integrations/ragflow/project_cases.json \
+  --manifest integrations/ragflow/project_cases_baseline_2026-09-26.json \
   --output /tmp/ragflow-project-reviewed-report.json
 ```
+
+The baseline manifest preserves the source hashes used by the historical
+capture. Use `project_cases.json` for new runs after the case-closure source
+edits.
 
 ## Reading the report
 
@@ -105,3 +109,5 @@ diagnostic results under recorded local conditions. Neither report supports
 changing the default route yet. The reviewed contract's offline application to
 the original project capture is recorded in
 [the 2026-09-26 rescore](PROJECT_EVAL_CONTRACT_RESCORING_2026-09-26.md).
+The subsequent source-evidence repair and live paired rerun are in the
+[2026-09-26 case-closure report](PROJECT_CASE_CLOSURE_2026-09-26.md).

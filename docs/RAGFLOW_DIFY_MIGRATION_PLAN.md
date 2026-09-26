@@ -165,5 +165,12 @@ Dify 工作流的输入以 `question`、Java `runId`、允许工具列表、限�
 - **配置：** `deepresearch.retrieval.provider=legacy|ragflow` 控制数据面；`deepresearch.ragflow.*` 提供 endpoint、API Key、dataset 白名单、超时、阈值和候选规模。默认值仍为 `legacy`。
 - **映射与同步：** V13 的 `kb_ragflow_document` 提供 legacy 文档到 RAGFlow dataset/document 的映射；V14 的 `kb_ragflow_sync_job` 与 `RagflowIngestionService` 提供可恢复的上传、解析、更新、删除和对账状态。任务 B 只能消费已完成且在允许集合中的映射。
 - **诊断：** `/api/research/hybrid/debug` 的 `stageTimingMs` 提供上述固定阶段名，可用于 Dify 真链定位 Java、registry 与 RAGFlow 上游耗时，不应当作业务响应契约。
-- 当前 `readyToSwitch=false`。项目 `case019` 和 `neg001` 仍未通过对应门禁，且 Dify 真链与故障语义尚未完成；因此不得把默认检索改为 RAGFlow，也不得宣称 Dify 端到端迁移完成。
+- 本次原始配对评测的 `readyToSwitch=false`：当时项目 `case019` 和 `neg001` 尚未通过对应门禁，Dify 真链与故障语义也尚未完成。后续补齐与复验见 7.5；默认检索仍不得切换。
 - 当前知识库仍是共享项目语料，没有文档级 tenant ACL。Dify 工具必须按 Java run、调用者和 tool scope 重新授权；若未来需要多租户，须新增 tenant→dataset/文档映射和越权测试。
+
+### 7.5 项目 Gold 缺口补齐与复验
+
+- 已把 `case019` 所需的确定性 ID 限制及下游去重条件并入同一源段落，把 `neg001` 的联系方式边界放入知识包首页首段。新一轮真实 Java 双路径配对评测中，`case019` 四组必要事实在两路、三次重复中全部命中；`neg001` 在两路、三次重复中均有边界证据与带引用的安全拒答。
+- Gold 评分补入 Java 脱敏后仍可见的边界证据短语，以及两种语义等价的拒答措辞；采样后的这次 Gold 调整没有改变问题、必要事实、禁止断言或源文件哈希。旧版 Gold 已单独归档，新评分对同一份原始采样重放，具体变更、哈希和复现命令见 [项目缺口补齐报告](../integrations/ragflow/PROJECT_CASE_CLOSURE_2026-09-26.md)。
+- 复验结果：legacy 锚点 23/25、完整事实 22/25、安全拒答 4/4、p95 2348.632 ms；RAGFlow 锚点 25/25、完整事实 25/25、安全拒答 4/4、p95 414.202 ms。86/86 个展示引用回查通过，8/8 个映射为 `DONE`，重复采样排序稳定。
+- 项目语料评测刻意没有混入合成 fixture，因此自动门禁仅 `fixtureParsedBoth=false`，`readyToSwitch` 仍为 `false`。检索默认继续 `legacy`；Dify 真链及故障语义留给任务 B 验证。
