@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * Set RAGFLOW_TEST_POSTGRES_URL to a disposable PostgreSQL database to run these SQL-backed tests.
- * The test installs V1, V12 and V13 and truncates kb_document between cases.
+ * The test installs V1, V13 and V14 and truncates kb_document between cases.
  */
 class RagflowIngestionServiceTest {
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -44,8 +44,8 @@ class RagflowIngestionServiceTest {
                 System.getenv().getOrDefault("RAGFLOW_TEST_POSTGRES_USER", "test"),
                 System.getenv().getOrDefault("RAGFLOW_TEST_POSTGRES_PASSWORD", "test"));
         try (Connection connection = source.getConnection()) {
-            for (String migration : List.of("V1__kb_ingestion.sql", "V12__ragflow_document_mapping.sql",
-                    "V13__ragflow_sync_recovery.sql"))
+            for (String migration : List.of("V1__kb_ingestion.sql", "V13__ragflow_document_mapping.sql",
+                    "V14__ragflow_sync_recovery.sql"))
                 ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/" + migration));
         }
         db = new JdbcTemplate(source);
