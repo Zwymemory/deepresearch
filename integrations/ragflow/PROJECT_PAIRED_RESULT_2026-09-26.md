@@ -96,6 +96,12 @@ upstream RAGFlow API dominates the measured time.
 The compact [performance profile](PERFORMANCE_PROFILE_2026-09-26.json)
 preserves configuration, aggregate latency, stage summaries, quality counts,
 failure IDs, and source hashes without copying per-sample previews or answers.
+The five per-sample optimization sources are committed beside it:
+[synthetic Java default](synthetic_java_default_profile_2026-09-26.json),
+[synthetic Java optimized](synthetic_java_optimized_profile_2026-09-26.json),
+[project Java optimized](project_java_optimized_profile_2026-09-26.json),
+[synthetic direct](synthetic_direct_profiles_2026-09-26.json), and
+[project direct](project_direct_profiles_2026-09-26.json).
 The main evidence is:
 
 | Profile | p95 | Quality result |
@@ -161,11 +167,11 @@ python3 integrations/ragflow/paired_eval.py score \
 | --- | --- |
 | [Raw paired capture](project_paired_capture_2026-09-26.json) | `d2fb711153949e75c18585c2c0e37cdd95c73eb6b172a0611d31c1b3eadd18d6` |
 | [Reviewed score](project_paired_score_2026-09-26.json) | `642737bf9620cca65087afb4509d4c6ae300c536bb2de11cdabb2d618262609a` |
-| [Compact performance profile](PERFORMANCE_PROFILE_2026-09-26.json) | `eb7376d2767c0581184cfdcd1ee6dbd6a0aa8d8e26bc11c5c8b1bfc77073d1cb` |
+| [Compact performance profile](PERFORMANCE_PROFILE_2026-09-26.json) | `aafb4af25df1ccda2af4298103ad038005f538043d32a9d546d8d01f58ec1517` |
 
 ## Sensitive-value scan
 
-The four committed artifacts were scanned against the exact configured
+All committed evaluation artifacts were scanned against the exact configured
 RAGFlow and Zhipu credentials and both saved benchmark tokens: no match was
 found. Bearer-header, JWT-shaped, common secret-prefix, and credential-assignment
 pattern scans also found no match. No credential value was printed during the
