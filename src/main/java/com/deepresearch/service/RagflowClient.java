@@ -39,9 +39,9 @@ public class RagflowClient {
             @Value("${deepresearch.ragflow.dataset-ids:}") List<String> datasets,
             @Value("${deepresearch.ragflow.connect-timeout:3s}") Duration connectTimeout,
             @Value("${deepresearch.ragflow.read-timeout:15s}") Duration timeout,
-            @Value("${deepresearch.ragflow.knn-top-k:256}") int knnTopK,
-            @Value("${deepresearch.ragflow.knn-num-candidates:2048}") int knnNumCandidates,
-            @Value("${deepresearch.ragflow.rerank-candidates-count:64}") int rerankCandidatesCount,
+            @Value("${deepresearch.ragflow.knn-top-k:32}") int knnTopK,
+            @Value("${deepresearch.ragflow.knn-num-candidates:128}") int knnNumCandidates,
+            @Value("${deepresearch.ragflow.rerank-candidates-count:20}") int rerankCandidatesCount,
             @Value("${deepresearch.ragflow.query-expansion-enabled:false}") boolean queryExpansionEnabled,
             @Value("${deepresearch.ragflow.ingestion-mode:builtin}") String ingestionMode) {
         this.json = json;

@@ -80,14 +80,14 @@ deepresearch:
     connect-timeout: 3s
     read-timeout: 15s
     max-results: 20
-    knn-top-k: ${RAGFLOW_KNN_TOP_K:256}
-    knn-num-candidates: ${RAGFLOW_KNN_NUM_CANDIDATES:2048}
-    rerank-candidates-count: ${RAGFLOW_RERANK_CANDIDATES_COUNT:64}
+    knn-top-k: ${RAGFLOW_KNN_TOP_K:32}
+    knn-num-candidates: ${RAGFLOW_KNN_NUM_CANDIDATES:128}
+    rerank-candidates-count: ${RAGFLOW_RERANK_CANDIDATES_COUNT:20}
     # RAGFlow keyword=true invokes a separate LLM query-expansion call. Its native
     # lexical + dense hybrid retrieval remains enabled when query expansion is off.
     query-expansion-enabled: ${RAGFLOW_QUERY_EXPANSION_ENABLED:false}
     ingestion-mode: builtin  # pipeline 数据集改为 pipeline
-    similarity-threshold: 0.2
+    similarity-threshold: ${RAGFLOW_SIMILARITY_THRESHOLD:0.22}
   default-temperature: 0.3
   search-top-k: 5            # RAG 检索条数
   hybrid-candidate-top-k: 80  # W5.5：混合检索初召回候选数；公开评测需要更大的候选池
