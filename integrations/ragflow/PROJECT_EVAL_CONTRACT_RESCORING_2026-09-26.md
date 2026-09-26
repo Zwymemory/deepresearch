@@ -1,7 +1,7 @@
 # Project retrieval contract and offline rescoring — 2026-09-26
 
 This report applies the reviewed logical-label contract in
-`project_cases.json` to the unchanged 2026-09-22 project capture. It is an
+`project_cases_baseline_2026-09-26.json` to the unchanged 2026-09-22 project capture. It is an
 offline rescore: no endpoint was called and no answer sample was invented.
 The result does **not** support changing the default retrieval provider.
 
@@ -11,7 +11,7 @@ The result does **not** support changing the default retrieval provider.
 - Original capture SHA-256: `3270d132bc368a7c6c43cf3b9e5f0d864c86e8b5e306c0217f0083debe0392e1`
 - Rescored result SHA-256: `a7a67bbc576e6622a04433d68b209a9a0bc4218eea6ea5ecd4ec8623051ea707`
 - Canonical corpus: the eight files and hashes recorded under `review.canonicalSources`
-  in `project_cases.json`; they exactly match the capture's corpus conditions.
+  in `project_cases_baseline_2026-09-26.json`; they exactly match the capture's corpus conditions.
 - Review date: 2026-09-26. `goldLabelsReviewed=true` now means the logical
   labels and source hashes were reviewed. It does not imply that retrieval,
   answerability, latency, or safe-denial gates passed.
@@ -25,7 +25,7 @@ Reproduction command:
 ```sh
 python3 integrations/ragflow/paired_eval.py score \
   --capture integrations/ragflow/project_paired_capture_2026-09-22.json \
-  --manifest integrations/ragflow/project_cases.json \
+  --manifest integrations/ragflow/project_cases_baseline_2026-09-26.json \
   --output integrations/ragflow/project_paired_score_contract_2026-09-26.json
 ```
 

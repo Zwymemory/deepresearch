@@ -142,7 +142,7 @@ project mappings, and ranking stability. The remaining false gates keep
 The raw capture retains its acquisition-time manifest and records manifest
 SHA-256 `e74e506bef24fa6b5edd250463453fefa56268ce7d46c8774fd129b88b3fe0e4`
 in the collection conditions. The final score was reproduced byte-for-byte by
-scoring that capture with the current reviewed `project_cases.json`, whose file
+scoring that capture with the archived reviewed `project_cases_baseline_2026-09-26.json`, whose file
 SHA-256 is `d6b7d698575b5449c8831411af95b766d3ab8c4600b387768511d09726c2ce18`.
 
 During finalization, the manifest changes were limited to safe-equivalent
@@ -157,7 +157,7 @@ Reproduction command:
 ```sh
 python3 integrations/ragflow/paired_eval.py score \
   --capture integrations/ragflow/project_paired_capture_2026-09-26.json \
-  --manifest integrations/ragflow/project_cases.json \
+  --manifest integrations/ragflow/project_cases_baseline_2026-09-26.json \
   --output /tmp/project_paired_score_reproduced.json
 ```
 

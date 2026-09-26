@@ -8,7 +8,7 @@
 
 HTTP 或 MCP 超时只说明调用方没有收到确定结果，不说明远端动作没有发生。若客户端盲目 POST 第二次，可能重复搜索、扣费或产生副作用。因此当前链路先生成确定性 `call_id`，把它同时作为 Python receipt 主键和 MCP `Idempotency-Key`。
 
-**事实 R1｜状态：已实现并有测试。** `call_id` 由 `run_id`、`task_id`、tool 和 query 的规范 JSON 做 SHA-256 后生成，重试同一逻辑任务得到同一 ID。
+**事实 R1｜状态：已实现并有测试。** `call_id` 由 `run_id`、`task_id`、tool 和 query 的规范 JSON 做 SHA-256 后生成，重试同一逻辑任务得到同一 ID。确定性 ID 只提供关联键；只有下游真正持久化并消费该键，才有去重效果。
 
 - 代码证据：`domain.py::deterministic_call_id`；`HttpMcpToolClient._request_headers`。
 - 测试证据：`test_mcp_execution_binds_run_and_task_headers`。
