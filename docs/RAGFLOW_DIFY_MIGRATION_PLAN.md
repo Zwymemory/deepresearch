@@ -174,3 +174,9 @@ Dify 工作流的输入以 `question`、Java `runId`、允许工具列表、限�
 - Gold 评分补入 Java 脱敏后仍可见的边界证据短语，以及两种语义等价的拒答措辞；采样后的这次 Gold 调整没有改变问题、必要事实、禁止断言或源文件哈希。旧版 Gold 已单独归档，新评分对同一份原始采样重放，具体变更、哈希和复现命令见 [项目缺口补齐报告](../integrations/ragflow/PROJECT_CASE_CLOSURE_2026-09-26.md)。
 - 复验结果：legacy 锚点 23/25、完整事实 22/25、安全拒答 4/4、p95 2348.632 ms；RAGFlow 锚点 25/25、完整事实 25/25、安全拒答 4/4、p95 414.202 ms。86/86 个展示引用回查通过，8/8 个映射为 `DONE`，重复采样排序稳定。
 - 项目语料评测刻意没有混入合成 fixture，因此自动门禁仅 `fixtureParsedBoth=false`，`readyToSwitch` 仍为 `false`。检索默认继续 `legacy`；Dify 真链及故障语义留给任务 B 验证。
+
+### 7.6 合成 fixture 独立复验
+
+- 在只含合成文档的隔离语料中，legacy 与 RAGFlow 均通过真实 Java 上传和解析，分别得到 26 个与 7 个 chunk，`fixtureParsedBoth=true`。两路 25/25 个正例都在三次重复中命中；RAGFlow 的三道纯无依据题全部返回零证据，7/7 个引用回查通过。条件与原始采样见 [合成门禁复验报告](../integrations/ragflow/SYNTHETIC_GATE_RECHECK_2026-09-26.md)。
+- legacy 在这三道纯无依据题的九次采样里每次都返回五条片段，故严格的双路 `zeroEvidenceNegativesSatisfied=false`。这是真实的旧链路无依据截断缺口，不能用项目语料中 4/4 的带边界安全拒答替代，也不应根据这三题单独调出一个分数阈值。
+- 项目评测与合成评测保持语料隔离；前者的原始 `fixtureParsedBoth=false` 不回填或改写。综合两份证据，解析缺口已关闭，但完整数据面切换门禁仍未通过，默认检索继续 `legacy`。

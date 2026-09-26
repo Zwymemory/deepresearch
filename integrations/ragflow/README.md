@@ -111,3 +111,7 @@ the original project capture is recorded in
 [the 2026-09-26 rescore](PROJECT_EVAL_CONTRACT_RESCORING_2026-09-26.md).
 The subsequent source-evidence repair and live paired rerun are in the
 [2026-09-26 case-closure report](PROJECT_CASE_CLOSURE_2026-09-26.md).
+The isolated synthetic fixture rerun is in the
+[2026-09-26 synthetic gate recheck](SYNTHETIC_GATE_RECHECK_2026-09-26.md):
+both parsers reached `DONE`, while the legacy route still returned evidence
+for all three zero-evidence negatives.

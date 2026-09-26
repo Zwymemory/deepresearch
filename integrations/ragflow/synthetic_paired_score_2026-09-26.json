@@ -1,0 +1,5457 @@
+{
+  "schemaVersion": 2,
+  "fixtureSha256": "3f142361f5f03c6bd1101643cb45d544dca090eda10632706c6383a368288202",
+  "contractReview": null,
+  "conditions": {
+    "legacyConfig": {
+      "provider": "legacy",
+      "baseUrl": "http://127.0.0.1:18081",
+      "embeddingModel": "embedding-2",
+      "reranker": "BAAI/bge-reranker-base",
+      "rerankerUrl": "http://127.0.0.1:19002/rerank",
+      "retrievalTopK": 5,
+      "elasticsearchUrl": "http://127.0.0.1:19201",
+      "queryRewrite": false,
+      "gitCommit": "31576f0782321b80c3670597dce156bd3139b6ae"
+    },
+    "ragflowConfig": {
+      "provider": "ragflow",
+      "baseUrl": "http://127.0.0.1:18080",
+      "apiUrl": "http://127.0.0.1:9380",
+      "datasetId": "4b43ea48b67111f1811e952527b08ce2",
+      "chunkTokenNum": 128,
+      "similarityThreshold": 0.22,
+      "retrievalTopK": 5,
+      "knnTopK": 32,
+      "knnNumCandidates": 128,
+      "rerankCandidatesCount": 20,
+      "queryExpansion": false,
+      "queryRewrite": false,
+      "gitCommit": "31576f0782321b80c3670597dce156bd3139b6ae"
+    },
+    "host": {
+      "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+      "machine": "arm64",
+      "dockerMemoryGiB": 7.75,
+      "executionNote": "Dify stayed running. RAGFlow was paused during legacy collection; temporary Elasticsearch and reranker were removed before RAGFlow collection. One disposable PostgreSQL held the Java registry for both routes."
+    },
+    "corpus": {
+      "files": [
+        {
+          "path": "integrations/ragflow/synthetic_knowledge.md",
+          "sha256": "3f142361f5f03c6bd1101643cb45d544dca090eda10632706c6383a368288202"
+        }
+      ],
+      "documentCount": 1,
+      "databaseIsolation": "Disposable PostgreSQL and legacy Elasticsearch; existing empty dedicated RAGFlow synthetic-eval dataset; no project knowledge files."
+    },
+    "projectDocumentIds": [],
+    "testWindow": "2026-09-26T14:28:52.805731+00:00",
+    "goldLabelsReviewed": false,
+    "manifestSha256": "61bbdb70655dd50356472c9256afae2dbcd87fc9b903fefb864fce0d9533d594"
+  },
+  "metrics": {
+    "legacy": {
+      "positiveCount": 25,
+      "zeroEvidenceNegativeCount": 3,
+      "safeDenialCount": 0,
+      "negativeCount": 3,
+      "answerableCaseCount": 0,
+      "hitRateAtK": 1.0,
+      "everySampleHitRateAtK": 1.0,
+      "rankingAnchorCoverageAtK": 1.0,
+      "everySampleRankingAnchorCoverageAtK": 1.0,
+      "recallAtK": 1.0,
+      "mrrAtK": 0.98,
+      "ndcgAtK": 0.9852371901428583,
+      "answerableAtK": null,
+      "everySampleAnswerableAtK": null,
+      "negativeCleanRate": 0.0,
+      "everySampleNegativeCleanRate": 0.0,
+      "safeDenialPassRate": null,
+      "everySampleSafeDenialPassRate": null,
+      "p95Ms": 1271.474,
+      "latencySamples": 84,
+      "stageTimingMs": {},
+      "unstableCases": 0
+    },
+    "ragflow": {
+      "positiveCount": 25,
+      "zeroEvidenceNegativeCount": 3,
+      "safeDenialCount": 0,
+      "negativeCount": 3,
+      "answerableCaseCount": 0,
+      "hitRateAtK": 1.0,
+      "everySampleHitRateAtK": 1.0,
+      "rankingAnchorCoverageAtK": 1.0,
+      "everySampleRankingAnchorCoverageAtK": 1.0,
+      "recallAtK": 1.0,
+      "mrrAtK": 0.9733333333333333,
+      "ndcgAtK": 0.98,
+      "answerableAtK": null,
+      "everySampleAnswerableAtK": null,
+      "negativeCleanRate": 1.0,
+      "everySampleNegativeCleanRate": 1.0,
+      "safeDenialPassRate": null,
+      "everySampleSafeDenialPassRate": null,
+      "p95Ms": 424.202,
+      "latencySamples": 84,
+      "stageTimingMs": {
+        "queryRewrite": {
+          "sampleCount": 84,
+          "meanMs": 0.0,
+          "p95Ms": 0
+        },
+        "registry": {
+          "sampleCount": 84,
+          "meanMs": 0.14285714285714285,
+          "p95Ms": 1
+        },
+        "upstreamApi": {
+          "sampleCount": 84,
+          "meanMs": 337.7857142857143,
+          "p95Ms": 419
+        },
+        "evidenceNormalization": {
+          "sampleCount": 84,
+          "meanMs": 0.32142857142857145,
+          "p95Ms": 1
+        },
+        "responseAssembly": {
+          "sampleCount": 84,
+          "meanMs": 0.0,
+          "p95Ms": 0
+        },
+        "total": {
+          "sampleCount": 84,
+          "meanMs": 339.3690476190476,
+          "p95Ms": 420
+        }
+      },
+      "unstableCases": 0
+    }
+  },
+  "cases": [
+    {
+      "id": "p01",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1285.934,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1285.934,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1323.073,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1267.836,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1285.934,
+          1323.073,
+          1267.836
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 361.838,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 1,
+            "upstreamApi": 354,
+            "evidenceNormalization": 1,
+            "responseAssembly": 0,
+            "total": 357
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 361.838,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 1,
+              "upstreamApi": 354,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 357
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 384.797,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 375,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 378
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 357.761,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 349,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 351
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          361.838,
+          384.797,
+          357.761
+        ]
+      }
+    },
+    {
+      "id": "p02",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1219.18,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1219.18,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1146.852,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1107.953,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1219.18,
+          1146.852,
+          1107.953
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 345.639,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 337,
+            "evidenceNormalization": 1,
+            "responseAssembly": 0,
+            "total": 339
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 345.639,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 337,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 339
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 359.771,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 350,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 352
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 366.091,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 359,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 361
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          345.639,
+          359.771,
+          366.091
+        ]
+      }
+    },
+    {
+      "id": "p03",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 985.784,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 985.784,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1052.359,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1041.988,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          985.784,
+          1052.359,
+          1041.988
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 357.266,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 348,
+            "evidenceNormalization": 1,
+            "responseAssembly": 0,
+            "total": 351
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 357.266,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 348,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 351
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 329.46,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 320,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 322
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 351.447,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 342,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 344
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          357.266,
+          329.46,
+          351.447
+        ]
+      }
+    },
+    {
+      "id": "p04",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1053.831,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1053.831,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1045.56,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1012.279,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1053.831,
+          1045.56,
+          1012.279
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 319.595,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 311,
+            "evidenceNormalization": 1,
+            "responseAssembly": 0,
+            "total": 313
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 319.595,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 311,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 313
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 487.524,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 481,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 483
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 424.202,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 419,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 420
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          319.595,
+          487.524,
+          424.202
+        ]
+      }
+    },
+    {
+      "id": "p05",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1077.577,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1077.577,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1014.039,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1220.484,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1077.577,
+          1014.039,
+          1220.484
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 363.57,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 354,
+            "evidenceNormalization": 1,
+            "responseAssembly": 0,
+            "total": 356
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 363.57,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 354,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 356
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 358.048,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 349,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 351
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 372.652,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 365,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 367
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          363.57,
+          358.048,
+          372.652
+        ]
+      }
+    },
+    {
+      "id": "p06",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1040.923,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1040.923,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1048.786,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1071.392,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1040.923,
+          1048.786,
+          1071.392
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 324.824,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 317,
+            "evidenceNormalization": 1,
+            "responseAssembly": 0,
+            "total": 319
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 324.824,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 317,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 319
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 343.062,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 335,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 337
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 343.099,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 336,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 337
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          324.824,
+          343.062,
+          343.099
+        ]
+      }
+    },
+    {
+      "id": "p07",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 971.637,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 971.637,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1187.477,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1057.78,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          971.637,
+          1187.477,
+          1057.78
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          3
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 337.004,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 329,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 330
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 3
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 0.3333333333333333,
+          "ndcgAtK": 0.5,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 337.004,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 329,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 330
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 3
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 0.3333333333333333,
+            "ndcgAtK": 0.5,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 337.874,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 331,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 333
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 3
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 0.3333333333333333,
+            "ndcgAtK": 0.5,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 338.269,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 330,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 332
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 3
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 0.3333333333333333,
+            "ndcgAtK": 0.5,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          337.004,
+          337.874,
+          338.269
+        ]
+      }
+    },
+    {
+      "id": "p08",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1045.64,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1045.64,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1038.643,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1103.852,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1045.64,
+          1038.643,
+          1103.852
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 339.144,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 332,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 333
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 339.144,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 332,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 333
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 337.623,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 330,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 332
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 321.349,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 314,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 315
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          339.144,
+          337.623,
+          321.349
+        ]
+      }
+    },
+    {
+      "id": "p09",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1162.093,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1162.093,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1161.553,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1138.027,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1162.093,
+          1161.553,
+          1138.027
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 337.206,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 331,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 332
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 337.206,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 331,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 332
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 324.753,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 318,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 320
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 354.679,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 346,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 348
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          337.206,
+          324.753,
+          354.679
+        ]
+      }
+    },
+    {
+      "id": "p10",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1110.234,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1110.234,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1039.934,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1163.959,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1110.234,
+          1039.934,
+          1163.959
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 338.368,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 330,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 331
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 338.368,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 330,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 331
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 333.895,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 326,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 328
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 370.907,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 364,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 366
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          338.368,
+          333.895,
+          370.907
+        ]
+      }
+    },
+    {
+      "id": "p11",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1056.409,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1056.409,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1226.476,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1060.943,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1056.409,
+          1226.476,
+          1060.943
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 327.796,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 322,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 323
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 327.796,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 322,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 323
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 327.174,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 320,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 322
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 349.091,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 343,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 344
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          327.796,
+          327.174,
+          349.091
+        ]
+      }
+    },
+    {
+      "id": "p12",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1039.941,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1039.941,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1158.885,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1106.27,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1039.941,
+          1158.885,
+          1106.27
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 334.059,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 327,
+            "evidenceNormalization": 1,
+            "responseAssembly": 0,
+            "total": 329
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 334.059,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 327,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 329
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 334.684,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 328,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 329
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 330.602,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 326,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 327
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          334.059,
+          334.684,
+          330.602
+        ]
+      }
+    },
+    {
+      "id": "p13",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1051.702,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1051.702,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1041.617,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1584.051,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1051.702,
+          1041.617,
+          1584.051
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 450.696,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 1,
+            "upstreamApi": 443,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 445
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 450.696,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 1,
+              "upstreamApi": 443,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 445
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 422.613,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 417,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 419
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 400.9,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 397,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 398
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          450.696,
+          422.613,
+          400.9
+        ]
+      }
+    },
+    {
+      "id": "p14",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1199.673,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1199.673,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1087.116,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1150.588,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1199.673,
+          1087.116,
+          1150.588
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 323.797,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 320,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 321
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 323.797,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 320,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 321
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 319.797,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 315,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 316
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 319.354,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 313,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 315
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          323.797,
+          319.797,
+          319.354
+        ]
+      }
+    },
+    {
+      "id": "p15",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1206.229,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1206.229,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1090.3,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1131.242,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1206.229,
+          1090.3,
+          1131.242
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 332.017,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 1,
+            "upstreamApi": 326,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 327
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 332.017,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 1,
+              "upstreamApi": 326,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 327
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 332.059,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 328,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 329
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 333.064,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 328,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 329
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          332.017,
+          332.059,
+          333.064
+        ]
+      }
+    },
+    {
+      "id": "p16",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1109.639,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1109.639,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1248.845,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1063.317,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1109.639,
+          1248.845,
+          1063.317
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 338.237,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 334,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 335
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 338.237,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 334,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 335
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 346.487,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 339,
+              "evidenceNormalization": 1,
+              "responseAssembly": 0,
+              "total": 341
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 294.371,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 288,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 290
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          338.237,
+          346.487,
+          294.371
+        ]
+      }
+    },
+    {
+      "id": "p17",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 922.606,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 922.606,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 894.961,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 922.333,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          922.606,
+          894.961,
+          922.333
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 319.86,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 312,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 314
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 319.86,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 312,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 314
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 306.273,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 300,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 301
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 297.272,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 293,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 294
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          319.86,
+          306.273,
+          297.272
+        ]
+      }
+    },
+    {
+      "id": "p18",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 890.567,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 890.567,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 893.95,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1138.044,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          890.567,
+          893.95,
+          1138.044
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 344.618,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 340,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 341
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 344.618,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 340,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 341
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 319.593,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 315,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 316
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 325.341,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 320,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 321
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          344.618,
+          319.593,
+          325.341
+        ]
+      }
+    },
+    {
+      "id": "p19",
+      "kind": "positive",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          2
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1090.621,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 2
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 0.5,
+          "ndcgAtK": 0.6309297535714575,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1090.621,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 2
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 0.5,
+            "ndcgAtK": 0.6309297535714575,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1139.186,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 2
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 0.5,
+            "ndcgAtK": 0.6309297535714575,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1112.926,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 2
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 0.5,
+            "ndcgAtK": 0.6309297535714575,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1090.621,
+          1139.186,
+          1112.926
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 300.864,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 296,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 297
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 300.864,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 296,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 297
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 307.832,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 1,
+              "upstreamApi": 303,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 305
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 316.094,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 312,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 313
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          300.864,
+          307.832,
+          316.094
+        ]
+      }
+    },
+    {
+      "id": "p20",
+      "kind": "positive",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1056.748,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1056.748,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 995.835,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1271.474,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1056.748,
+          995.835,
+          1271.474
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 329.211,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 323,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 324
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 329.211,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 323,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 324
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 378.087,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 373,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 374
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 358.031,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 351,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 352
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          329.211,
+          378.087,
+          358.031
+        ]
+      }
+    },
+    {
+      "id": "p21",
+      "kind": "positive",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1028.317,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1028.317,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 964.969,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1066.11,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1028.317,
+          964.969,
+          1066.11
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 325.461,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 318,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 320
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 325.461,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 318,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 320
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 294.686,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 1,
+              "upstreamApi": 287,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 289
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 272.995,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 265,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 266
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          325.461,
+          294.686,
+          272.995
+        ]
+      }
+    },
+    {
+      "id": "p22",
+      "kind": "positive",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1087.819,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1087.819,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1044.734,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1066.429,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1087.819,
+          1044.734,
+          1066.429
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 412.199,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 405,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 406
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 412.199,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 405,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 406
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 549.485,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 1,
+              "upstreamApi": 535,
+              "evidenceNormalization": 7,
+              "responseAssembly": 0,
+              "total": 544
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 444.433,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 1,
+              "upstreamApi": 437,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 439
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          412.199,
+          549.485,
+          444.433
+        ]
+      }
+    },
+    {
+      "id": "p23",
+      "kind": "positive",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1198.125,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1198.125,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1109.154,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1183.357,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1198.125,
+          1109.154,
+          1183.357
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 337.609,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 330,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 332
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 337.609,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 330,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 332
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 295.5,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 288,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 290
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 336.794,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 1,
+              "upstreamApi": 329,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 330
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          337.609,
+          295.5,
+          336.794
+        ]
+      }
+    },
+    {
+      "id": "p24",
+      "kind": "positive",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1157.188,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1157.188,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1229.642,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1247.584,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1157.188,
+          1229.642,
+          1247.584
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 298.967,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 1,
+            "upstreamApi": 291,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 292
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 298.967,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 1,
+              "upstreamApi": 291,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 292
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 307.595,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 300,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 301
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 333.59,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 326,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 327
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          298.967,
+          307.595,
+          333.59
+        ]
+      }
+    },
+    {
+      "id": "p25",
+      "kind": "positive",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 1232.057,
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 1232.057,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1168.283,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 1116.453,
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1232.057,
+          1168.283,
+          1116.453
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": null,
+        "firstSample": {
+          "latencyMs": 291.722,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 285,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 286
+          },
+          "rankingAnchorRanks": {
+            "legacy-anchor-1": 1
+          },
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "rankingAnchorCoverage": 1.0,
+          "recallAtK": 1.0,
+          "mrrAtK": 1.0,
+          "ndcgAtK": 1.0,
+          "requiredFactRanks": {},
+          "answerableAtK": null
+        },
+        "samples": [
+          {
+            "latencyMs": 291.722,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 285,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 286
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 342.795,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 336,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 338
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          },
+          {
+            "latencyMs": 344.589,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 1,
+              "upstreamApi": 337,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 339
+            },
+            "rankingAnchorRanks": {
+              "legacy-anchor-1": 1
+            },
+            "rankingHit": true,
+            "rankingAnchorsCovered": true,
+            "rankingAnchorCoverage": 1.0,
+            "recallAtK": 1.0,
+            "mrrAtK": 1.0,
+            "ndcgAtK": 1.0,
+            "requiredFactRanks": {},
+            "answerableAtK": null
+          }
+        ],
+        "everySample": {
+          "rankingHit": true,
+          "rankingAnchorsCovered": true,
+          "requiredFactsCovered": null
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          291.722,
+          342.795,
+          344.589
+        ]
+      }
+    },
+    {
+      "id": "n01",
+      "kind": "zero-evidence",
+      "critical": false,
+      "positive": false,
+      "legacy": {
+        "relevantRanks": [],
+        "hit": null,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": false,
+        "firstSample": {
+          "latencyMs": 1184.597,
+          "negativeClean": false,
+          "negativeContractPassed": false
+        },
+        "samples": [
+          {
+            "latencyMs": 1184.597,
+            "negativeClean": false,
+            "negativeContractPassed": false
+          },
+          {
+            "latencyMs": 1154.298,
+            "negativeClean": false,
+            "negativeContractPassed": false
+          },
+          {
+            "latencyMs": 1234.322,
+            "negativeClean": false,
+            "negativeContractPassed": false
+          }
+        ],
+        "everySample": {
+          "negativeContractPassed": false
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1184.597,
+          1154.298,
+          1234.322
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [],
+        "hit": null,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": true,
+        "firstSample": {
+          "latencyMs": 347.147,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 1,
+            "upstreamApi": 342,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 343
+          },
+          "negativeClean": true,
+          "negativeContractPassed": true
+        },
+        "samples": [
+          {
+            "latencyMs": 347.147,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 1,
+              "upstreamApi": 342,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 343
+            },
+            "negativeClean": true,
+            "negativeContractPassed": true
+          },
+          {
+            "latencyMs": 344.721,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 339,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 340
+            },
+            "negativeClean": true,
+            "negativeContractPassed": true
+          },
+          {
+            "latencyMs": 309.123,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 304,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 305
+            },
+            "negativeClean": true,
+            "negativeContractPassed": true
+          }
+        ],
+        "everySample": {
+          "negativeContractPassed": true
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          347.147,
+          344.721,
+          309.123
+        ]
+      }
+    },
+    {
+      "id": "n02",
+      "kind": "zero-evidence",
+      "critical": false,
+      "positive": false,
+      "legacy": {
+        "relevantRanks": [],
+        "hit": null,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": false,
+        "firstSample": {
+          "latencyMs": 1182.961,
+          "negativeClean": false,
+          "negativeContractPassed": false
+        },
+        "samples": [
+          {
+            "latencyMs": 1182.961,
+            "negativeClean": false,
+            "negativeContractPassed": false
+          },
+          {
+            "latencyMs": 1151.762,
+            "negativeClean": false,
+            "negativeContractPassed": false
+          },
+          {
+            "latencyMs": 1220.288,
+            "negativeClean": false,
+            "negativeContractPassed": false
+          }
+        ],
+        "everySample": {
+          "negativeContractPassed": false
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1182.961,
+          1151.762,
+          1220.288
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [],
+        "hit": null,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": true,
+        "firstSample": {
+          "latencyMs": 325.963,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 0,
+            "upstreamApi": 321,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 322
+          },
+          "negativeClean": true,
+          "negativeContractPassed": true
+        },
+        "samples": [
+          {
+            "latencyMs": 325.963,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 321,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 322
+            },
+            "negativeClean": true,
+            "negativeContractPassed": true
+          },
+          {
+            "latencyMs": 315.962,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 311,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 312
+            },
+            "negativeClean": true,
+            "negativeContractPassed": true
+          },
+          {
+            "latencyMs": 349.667,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 342,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 343
+            },
+            "negativeClean": true,
+            "negativeContractPassed": true
+          }
+        ],
+        "everySample": {
+          "negativeContractPassed": true
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          325.963,
+          315.962,
+          349.667
+        ]
+      }
+    },
+    {
+      "id": "n03",
+      "kind": "zero-evidence",
+      "critical": false,
+      "positive": false,
+      "legacy": {
+        "relevantRanks": [],
+        "hit": null,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": false,
+        "firstSample": {
+          "latencyMs": 1272.696,
+          "negativeClean": false,
+          "negativeContractPassed": false
+        },
+        "samples": [
+          {
+            "latencyMs": 1272.696,
+            "negativeClean": false,
+            "negativeContractPassed": false
+          },
+          {
+            "latencyMs": 1112.481,
+            "negativeClean": false,
+            "negativeContractPassed": false
+          },
+          {
+            "latencyMs": 1116.632,
+            "negativeClean": false,
+            "negativeContractPassed": false
+          }
+        ],
+        "everySample": {
+          "negativeContractPassed": false
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          1272.696,
+          1112.481,
+          1116.632
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [],
+        "hit": null,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "negativeClean": true,
+        "firstSample": {
+          "latencyMs": 350.042,
+          "stageTimingMs": {
+            "queryRewrite": 0,
+            "registry": 1,
+            "upstreamApi": 344,
+            "evidenceNormalization": 0,
+            "responseAssembly": 0,
+            "total": 345
+          },
+          "negativeClean": true,
+          "negativeContractPassed": true
+        },
+        "samples": [
+          {
+            "latencyMs": 350.042,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 1,
+              "upstreamApi": 344,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 345
+            },
+            "negativeClean": true,
+            "negativeContractPassed": true
+          },
+          {
+            "latencyMs": 327.935,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 322,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 322
+            },
+            "negativeClean": true,
+            "negativeContractPassed": true
+          },
+          {
+            "latencyMs": 351.622,
+            "stageTimingMs": {
+              "queryRewrite": 0,
+              "registry": 0,
+              "upstreamApi": 346,
+              "evidenceNormalization": 0,
+              "responseAssembly": 0,
+              "total": 347
+            },
+            "negativeClean": true,
+            "negativeContractPassed": true
+          }
+        ],
+        "everySample": {
+          "negativeContractPassed": true
+        },
+        "unstable": false,
+        "coverageUnstable": false,
+        "latenciesMs": [
+          350.042,
+          327.935,
+          351.622
+        ]
+      }
+    }
+  ],
+  "newMisses": [],
+  "criticalNewMisses": [],
+  "newAnswerabilityMisses": [],
+  "criticalNewAnswerabilityMisses": [],
+  "citationVerification": {
+    "total": 7,
+    "verified": 7,
+    "checks": [
+      {
+        "sourceId": "kb:ragflow:4b43ea48b67111f1811e952527b08ce2:abd04b92b9b711f1905411999d836601:438367a3fdff5fb7",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:4b43ea48b67111f1811e952527b08ce2:abd04b92b9b711f1905411999d836601:565b894824484ffc",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:4b43ea48b67111f1811e952527b08ce2:abd04b92b9b711f1905411999d836601:6a33c4b92e54bdc6",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:4b43ea48b67111f1811e952527b08ce2:abd04b92b9b711f1905411999d836601:73b31c0ef114a0c0",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:4b43ea48b67111f1811e952527b08ce2:abd04b92b9b711f1905411999d836601:7968e464793f9275",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:4b43ea48b67111f1811e952527b08ce2:abd04b92b9b711f1905411999d836601:ae96fbf3397aa051",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:4b43ea48b67111f1811e952527b08ce2:abd04b92b9b711f1905411999d836601:b6370fe6a617d895",
+        "verified": true
+      }
+    ],
+    "attempted": true
+  },
+  "ingestion": {
+    "legacy": {
+      "docId": "doc-ea1d4e5c-79a7-4259-961e-2f689f1fe2e7",
+      "status": "DONE",
+      "chunkCount": 26,
+      "error": null
+    },
+    "ragflow": {
+      "docId": "doc-ea1d4e5c-79a7-4259-961e-2f689f1fe2e7",
+      "status": "DONE",
+      "chunkCount": null,
+      "error": null
+    }
+  },
+  "projectMappings": [],
+  "parseCompletionRate": 1.0,
+  "gates": {
+    "atLeast25ProjectPositives": false,
+    "goldLabelsReviewed": false,
+    "positiveHitsBoth": true,
+    "newMissesAtMostOne": true,
+    "criticalNoNewMisses": true,
+    "ragflowRequiredFactsEverySample": false,
+    "negativeCasesPresent": true,
+    "negativeContractsSatisfied": false,
+    "zeroEvidenceNegativesSatisfied": false,
+    "safeDenialsSatisfied": true,
+    "citationVerified": true,
+    "p95Within1_5x": true,
+    "fixtureParsedBoth": true,
+    "projectMappingsDone": false,
+    "stableRanking": true
+  },
+  "readyToSwitch": false
+}
