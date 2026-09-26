@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Paired, retrieval-only legacy/RAGFlow migration measurement (stdlib only)."""
+"""Collect and score paired legacy/RAGFlow retrieval evidence (stdlib only)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,9 @@ import hashlib
 import json
 import math
 import os
+import re
 import time
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -17,6 +19,8 @@ from pathlib import Path
 
 ROUTES = {"legacy": "rerankResult", "ragflow": "compressedContext"}
 MAX_RESPONSE = 4 * 1024 * 1024
+CITATION = re.compile(r"\[来源(\d+)]")
+STAGE_TIMING_KEYS = ("queryRewrite", "registry", "upstreamApi", "evidenceNormalization", "responseAssembly", "total")
 
 
 def read_json(path: Path):
@@ -26,6 +30,13 @@ def read_json(path: Path):
 def write_json(path: Path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def normalize_text(value):
+    """Apply the reviewed label contract without weakening case sensitivity."""
+    if not isinstance(value, str):
+        return ""
+    return " ".join(unicodedata.normalize("NFKC", value).replace("`", "").split())
 
 
 def request_json(url: str, token: str | None = None, payload=None, method: str | None = None,
@@ -47,6 +58,40 @@ def request_json(url: str, token: str | None = None, payload=None, method: str |
         raise RuntimeError(f"HTTP {error.code} at {urllib.parse.urlsplit(url).path}") from None
 
 
+def case_kind(case):
+    explicit = case.get("kind")
+    if explicit:
+        return explicit
+    return "positive" if case.get("rankingAnchors") or case.get("relevantAnchors") else "zero-evidence"
+
+
+def labels(case, name):
+    value = case.get(name, [])
+    if name == "rankingAnchors" and not value and "relevantAnchors" in case:
+        return [{"id": f"legacy-anchor-{index}", "evidencePhrases": [phrase]}
+                for index, phrase in enumerate(case.get("relevantAnchors", []), 1)]
+    return value
+
+
+def validate_labels(case_id, name, value, required=False):
+    if not isinstance(value, list) or (required and not value):
+        raise ValueError(f"{case_id}: {name} must be a nonempty list")
+    ids = []
+    for label in value:
+        if not isinstance(label, dict):
+            raise ValueError(f"{case_id}: each {name} label must be an object")
+        label_id = label.get("id")
+        phrases = label.get("evidencePhrases")
+        if not isinstance(label_id, str) or not label_id.strip() or not isinstance(phrases, list) or not phrases:
+            raise ValueError(f"{case_id}: each {name} label needs an ID and evidence phrases")
+        normalized = [normalize_text(phrase) for phrase in phrases]
+        if any(not phrase for phrase in normalized) or len(set(normalized)) != len(normalized):
+            raise ValueError(f"{case_id}: {name} evidence phrases must be nonempty and unique")
+        ids.append(label_id)
+    if len(set(ids)) != len(ids):
+        raise ValueError(f"{case_id}: {name} IDs must be unique")
+
+
 def validate_manifest(manifest):
     cases = manifest.get("cases")
     if not isinstance(cases, list) or not cases:
@@ -55,31 +100,36 @@ def validate_manifest(manifest):
     if any(not isinstance(case_id, str) or not case_id for case_id in ids) or len(set(ids)) != len(ids):
         raise ValueError("case IDs must be nonempty and unique")
     for case in cases:
+        case_id = case["id"]
         if not isinstance(case.get("question"), str) or not case["question"].strip():
-            raise ValueError(f"{case['id']}: question required")
-        anchors = case.get("relevantAnchors")
-        if not isinstance(anchors, list) or len(set(anchors)) != len(anchors) or any(
-                not isinstance(anchor, str) or not anchor for anchor in anchors):
-            raise ValueError(f"{case['id']}: relevantAnchors must be unique strings")
-        if case.get("critical", False) and not anchors:
-            raise ValueError(f"{case['id']}: a negative case cannot be critical")
-        facts = case.get("requiredFacts", [])
-        if not isinstance(facts, list) or (facts and not anchors):
-            raise ValueError(f"{case['id']}: requiredFacts must be a list on a positive case")
-        fact_ids = []
-        for fact in facts:
-            if not isinstance(fact, dict):
-                raise ValueError(f"{case['id']}: each required fact must be an object")
-            fact_id = fact.get("id")
-            phrases = fact.get("evidencePhrases")
-            if not isinstance(fact_id, str) or not fact_id.strip() or not isinstance(phrases, list) \
-                    or not phrases or any(not isinstance(phrase, str) or not phrase.strip() for phrase in phrases):
-                raise ValueError(f"{case['id']}: each required fact needs an ID and unique evidence phrases")
-            if len(set(phrases)) != len(phrases):
-                raise ValueError(f"{case['id']}: evidence phrases must be unique within a fact")
-            fact_ids.append(fact_id)
-        if len(set(fact_ids)) != len(fact_ids):
-            raise ValueError(f"{case['id']}: requiredFacts must have unique IDs")
+            raise ValueError(f"{case_id}: question required")
+        kind = case_kind(case)
+        if kind not in ("positive", "zero-evidence", "evidence-backed-safe-denial"):
+            raise ValueError(f"{case_id}: unsupported kind {kind!r}")
+        if "relevantAnchors" in case:
+            legacy = case["relevantAnchors"]
+            if not isinstance(legacy, list) or any(not isinstance(anchor, str) or not anchor for anchor in legacy) \
+                    or len(set(legacy)) != len(legacy):
+                raise ValueError(f"{case_id}: relevantAnchors must be unique strings")
+        ranking = labels(case, "rankingAnchors")
+        if kind == "positive":
+            validate_labels(case_id, "rankingAnchors", ranking, required=True)
+            validate_labels(case_id, "requiredFacts", labels(case, "requiredFacts"))
+        elif ranking or labels(case, "requiredFacts") or case.get("critical", False):
+            raise ValueError(f"{case_id}: negative cases cannot have ranking anchors or be critical")
+        if kind == "evidence-backed-safe-denial":
+            validate_labels(case_id, "denialEvidence", labels(case, "denialEvidence"), required=True)
+            contract = case.get("answerContract")
+            if not isinstance(contract, dict):
+                raise ValueError(f"{case_id}: answerContract required")
+            allowed = contract.get("mustContainAny")
+            forbidden = contract.get("mustNotContain")
+            if not isinstance(allowed, list) or not allowed or not isinstance(forbidden, list):
+                raise ValueError(f"{case_id}: answer contract needs mustContainAny and mustNotContain")
+            if any(not normalize_text(item) for item in allowed + forbidden):
+                raise ValueError(f"{case_id}: answer contract phrases must be nonempty strings")
+            if contract.get("citationRequired") is not True:
+                raise ValueError(f"{case_id}: safe denial citations must be required")
     if not isinstance(manifest.get("topK"), int) or manifest["topK"] < 1:
         raise ValueError("positive topK required")
 
@@ -106,7 +156,7 @@ def wait_for_ingestion(base, token, document_id, route, timeout_seconds=180):
     while True:
         path = "/api/kb/documents/" + urllib.parse.quote(document_id, safe="")
         if route == "ragflow":
-            path += "/ragflow-sync"  # polls/reconciles the mapping; kb_document DONE alone is insufficient
+            path += "/ragflow-sync"
         detail = request_json(base + path, token)
         document = detail if route == "ragflow" else detail.get("document", {})
         status = document.get("status")
@@ -122,8 +172,17 @@ def fetch_entries(base, token, case, top_k):
     start = time.perf_counter_ns()
     response = request_json(base + "/api/research/hybrid/debug", token,
                             {"question": case["question"], "topK": top_k, "history": []})
-    duration_ms = (time.perf_counter_ns() - start) / 1_000_000
-    return response, round(duration_ms, 3)
+    return response, round((time.perf_counter_ns() - start) / 1_000_000, 3)
+
+
+def fetch_answer(base, token, case, top_k):
+    start = time.perf_counter_ns()
+    response = request_json(base + "/api/research/hybrid", token,
+                            {"question": case["question"], "topK": top_k, "history": []})
+    elapsed = round((time.perf_counter_ns() - start) / 1_000_000, 3)
+    if not isinstance(response.get("answer"), str) or not isinstance(response.get("sources"), list):
+        raise ValueError("answer endpoint must return answer and sources")
+    return {"latencyMs": elapsed, "answer": response["answer"], "sources": response["sources"]}
 
 
 def citation_check(ragflow_base, api_key, chunk_key):
@@ -183,7 +242,6 @@ def collect(args):
     runs = []
     top_k = manifest["topK"]
     for case in manifest["cases"]:
-        # Alternate order to reduce route-order bias. Each query and topK are identical.
         order = list(ROUTES) if len(runs) % 2 == 0 else list(reversed(ROUTES))
         for route in order:
             for _ in range(args.warmup):
@@ -200,18 +258,28 @@ def collect(args):
                 scores = response.get("similarityScores")
                 if not isinstance(scores, dict):
                     raise ValueError(f"{route} response missing similarityScores")
-                samples.append({"latencyMs": elapsed, "entries": [
+                sample = {"latencyMs": elapsed, "entries": [
                     {**{key: entry.get(key) for key in ("chunkKey", "docId", "chunkId", "title", "preview", "route")},
                      "similarityScore": scores.get(entry.get("chunkKey"))}
-                    for entry in entries[:top_k]]})
+                    for entry in entries[:top_k]]}
+                stage_timings = response.get("stageTimingMs")
+                if isinstance(stage_timings, dict):
+                    sample["stageTimingMs"] = {key: stage_timings[key] for key in STAGE_TIMING_KEYS
+                                               if isinstance(stage_timings.get(key), (int, float))
+                                               and not isinstance(stage_timings.get(key), bool)}
+                if case_kind(case) == "evidence-backed-safe-denial":
+                    sample["answerSample"] = fetch_answer(bases[route], tokens[route], case, top_k)
+                samples.append(sample)
             runs.append({"caseId": case["id"], "route": route, "samples": samples})
     verification = []
     if args.ragflow_api_url and os.getenv("RAGFLOW_API_KEY"):
         keys = {entry["chunkKey"] for run in runs if run["route"] == "ragflow"
-                for entry in run["samples"][0]["entries"] if isinstance(entry["chunkKey"], str)}
+                for sample in run["samples"] for entry in sample["entries"]
+                if isinstance(entry.get("chunkKey"), str)}
         verification = [citation_check(base_url(args.ragflow_api_url), os.environ["RAGFLOW_API_KEY"], key)
                         for key in sorted(keys)]
-    capture = {"schemaVersion": 1, "manifest": manifest, "fixtureSha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
+    capture = {"schemaVersion": 2, "manifest": manifest,
+               "fixtureSha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
                "conditions": conditions, "ingestion": ingestion or None,
                "projectMappings": project_mappings, "runs": runs,
                "citationChecks": verification,
@@ -227,112 +295,257 @@ def percentile95(values):
     return ordered[math.ceil(0.95 * len(ordered)) - 1]
 
 
-def score(capture):
-    manifest = capture["manifest"]
+def label_ranks(entries, logical_labels, top_k):
+    normalized = [normalize_text(entry.get("preview")) for entry in entries[:top_k]]
+    return {label["id"]: next((position for position, preview in enumerate(normalized, 1)
+                               if any(normalize_text(phrase) in preview
+                                      for phrase in label["evidencePhrases"])), None)
+            for label in logical_labels}
+
+
+def answer_contract_score(answer_sample, contract):
+    if not isinstance(answer_sample, dict):
+        return {"captured": False, "allowedPhrase": False, "forbiddenPhrase": False,
+                "citationValid": False, "passed": False, "failureReasons": ["answer sample missing"]}
+    answer = normalize_text(answer_sample.get("answer"))
+    sources = answer_sample.get("sources")
+    sources = sources if isinstance(sources, list) else []
+    allowed = any(normalize_text(phrase) in answer for phrase in contract["mustContainAny"])
+    forbidden = any(normalize_text(phrase) in answer for phrase in contract["mustNotContain"])
+    indices = {source.get("index") for source in sources if isinstance(source, dict)
+               and isinstance(source.get("index"), int)}
+    markers = [int(value) for value in CITATION.findall(answer_sample.get("answer") or "")]
+    citation_valid = bool(markers) and bool(indices) and all(marker in indices for marker in markers)
+    reasons = []
+    if not allowed:
+        reasons.append("allowed denial phrase missing")
+    if forbidden:
+        reasons.append("forbidden phrase present")
+    if contract.get("citationRequired") and not citation_valid:
+        reasons.append("valid citation missing")
+    return {"captured": True, "allowedPhrase": allowed, "forbiddenPhrase": forbidden,
+            "citationValid": citation_valid, "passed": not reasons, "failureReasons": reasons}
+
+
+def score_sample(case, sample, top_k):
+    kind = case_kind(case)
+    entries = sample.get("entries")
+    if not isinstance(entries, list) or not isinstance(sample.get("latencyMs"), (int, float)):
+        raise ValueError("every sample needs entries and numeric latencyMs")
+    result = {"latencyMs": sample["latencyMs"]}
+    if isinstance(sample.get("stageTimingMs"), dict):
+        result["stageTimingMs"] = {key: sample["stageTimingMs"][key] for key in STAGE_TIMING_KEYS
+                                   if isinstance(sample["stageTimingMs"].get(key), (int, float))
+                                   and not isinstance(sample["stageTimingMs"].get(key), bool)}
+    if kind == "positive":
+        anchor_ranks = label_ranks(entries, labels(case, "rankingAnchors"), top_k)
+        fact_ranks = label_ranks(entries, labels(case, "requiredFacts"), top_k)
+        relevant_ranks = sorted(set(rank for rank in anchor_ranks.values() if rank is not None))
+        ideal = sum(1 / math.log2(rank + 1)
+                    for rank in range(1, min(top_k, len(anchor_ranks)) + 1))
+        dcg = sum(1 / math.log2(rank + 1) for rank in relevant_ranks)
+        result.update({"rankingAnchorRanks": anchor_ranks,
+                       "rankingHit": any(rank is not None for rank in anchor_ranks.values()),
+                       "rankingAnchorsCovered": all(rank is not None for rank in anchor_ranks.values()),
+                       "rankingAnchorCoverage": sum(rank is not None for rank in anchor_ranks.values()) / len(anchor_ranks),
+                       "recallAtK": sum(rank is not None for rank in anchor_ranks.values()) / len(anchor_ranks),
+                       "mrrAtK": 1 / relevant_ranks[0] if relevant_ranks else 0.0,
+                       "ndcgAtK": dcg / ideal if ideal else None,
+                       "requiredFactRanks": fact_ranks,
+                       "answerableAtK": all(rank is not None for rank in fact_ranks.values()) if fact_ranks else None})
+    elif kind == "zero-evidence":
+        result.update({"negativeClean": len(entries[:top_k]) == 0,
+                       "negativeContractPassed": len(entries[:top_k]) == 0})
+    else:
+        evidence_ranks = label_ranks(entries, labels(case, "denialEvidence"), top_k)
+        evidence_covered = all(rank is not None for rank in evidence_ranks.values())
+        answer = answer_contract_score(sample.get("answerSample"), case["answerContract"])
+        result.update({"denialEvidenceRanks": evidence_ranks, "denialEvidenceCovered": evidence_covered,
+                       "answerContract": answer, "negativeContractPassed": evidence_covered and answer["passed"]})
+    return result
+
+
+def reviewed_labels_match(manifest, conditions):
+    if manifest.get("kind") != "project":
+        return conditions.get("goldLabelsReviewed") is True
+    review = manifest.get("review") or {}
+    expected = {item.get("path"): item.get("sha256") for item in review.get("canonicalSources", [])
+                if isinstance(item, dict)}
+    corpus = conditions.get("corpus") or {}
+    actual = {item.get("path"): item.get("sha256") for item in corpus.get("files", [])
+              if isinstance(item, dict)}
+    return review.get("reviewed") is True and bool(expected) and expected == actual
+
+
+def timing_aggregate(samples_by_stage):
+    result = {}
+    for stage in STAGE_TIMING_KEYS:
+        values = samples_by_stage.get(stage, [])
+        if values:
+            result[stage] = {"sampleCount": len(values), "meanMs": sum(values) / len(values),
+                             "p95Ms": percentile95(values)}
+    return result
+
+
+def score(capture, manifest=None):
+    manifest = manifest or capture["manifest"]
     validate_manifest(manifest)
     top_k = manifest["topK"]
     indexed = {(run["caseId"], run["route"]): run for run in capture["runs"]}
     if len(indexed) != len(manifest["cases"]) * 2 or len(indexed) != len(capture["runs"]):
         raise ValueError("capture must have exactly one run per case and route")
     per_case = []
-    aggregate = {route: {"hits": [], "recall": [], "mrr": [], "ndcg": [], "answerable": [], "latencies": [],
-                         "negativeClean": [], "unstable": []} for route in ROUTES}
+    aggregate = {route: {"firstHits": [], "everyHits": [], "firstCoverage": [], "everyCoverage": [],
+                         "firstRecall": [], "firstMrr": [], "firstNdcg": [],
+                         "firstAnswerable": [], "everyAnswerable": [], "latencies": [],
+                         "zeroFirst": [], "zeroEvery": [], "safeFirst": [], "safeEvery": [],
+                         "unstable": [], "stages": {}} for route in ROUTES}
     for case in manifest["cases"]:
-        anchors = case["relevantAnchors"]
-        required_facts = case.get("requiredFacts", [])
-        result = {"id": case["id"], "critical": bool(case.get("critical")), "positive": bool(anchors)}
+        kind = case_kind(case)
+        result = {"id": case["id"], "kind": kind, "critical": bool(case.get("critical")),
+                  "positive": kind == "positive"}
         for route in ROUTES:
-            samples = indexed[(case["id"], route)]["samples"]
+            samples = indexed[(case["id"], route)].get("samples")
             if not samples:
                 raise ValueError("every run needs measured samples")
-            ranks_by_sample = []
+            scored = [score_sample(case, sample, top_k) for sample in samples]
             for sample in samples:
-                entries = sample["entries"][:top_k]
-                ranks = []
-                for anchor in anchors:
-                    rank = next((position for position, entry in enumerate(entries, 1)
-                                 if anchor in (entry.get("preview") or "")), None)
-                    ranks.append(rank)
-                ranks_by_sample.append(ranks)
                 aggregate[route]["latencies"].append(sample["latencyMs"])
-            ranks = ranks_by_sample[0]
-            relevant_ranks = sorted(set(rank for rank in ranks if rank is not None))
-            hit = bool(relevant_ranks)
-            recall = sum(rank is not None for rank in ranks) / len(anchors) if anchors else None
-            mrr = 1 / relevant_ranks[0] if hit else 0.0
-            ideal = sum(1 / math.log2(rank + 1) for rank in range(1, min(top_k, len(anchors)) + 1))
-            dcg = sum(1 / math.log2(rank + 1) for rank in relevant_ranks)
-            ndcg = dcg / ideal if ideal else None
-            negative_clean = len(samples[0]["entries"]) == 0 if not anchors else None
-            unstable = any(other != ranks for other in ranks_by_sample[1:])
-            fact_ranks = {fact["id"]: next((position for position, entry in
-                                            enumerate(samples[0]["entries"][:top_k], 1)
-                                            if any(phrase in (entry.get("preview") or "")
-                                                   for phrase in fact["evidencePhrases"])), None)
-                          for fact in required_facts}
-            answerable = all(rank is not None for rank in fact_ranks.values()) if required_facts else None
-            result[route] = {"relevantRanks": ranks, "hit": hit if anchors else None,
-                             "negativeClean": negative_clean, "unstable": unstable,
-                             "requiredFactRanks": fact_ranks, "answerableAtK": answerable,
-                             "latenciesMs": [sample["latencyMs"] for sample in samples]}
-            if anchors:
-                aggregate[route]["hits"].append(int(hit))
-                aggregate[route]["recall"].append(recall)
-                aggregate[route]["mrr"].append(mrr)
-                aggregate[route]["ndcg"].append(ndcg)
-                if required_facts:
-                    aggregate[route]["answerable"].append(int(answerable))
+                for stage in STAGE_TIMING_KEYS:
+                    value = (sample.get("stageTimingMs") or {}).get(stage)
+                    if isinstance(value, (int, float)) and not isinstance(value, bool):
+                        aggregate[route]["stages"].setdefault(stage, []).append(value)
+            first = scored[0]
+            if kind == "positive":
+                first_ranks = list(first["rankingAnchorRanks"].values())
+                first_recall = first["rankingAnchorCoverage"]
+                first_mrr = first["mrrAtK"]
+                first_ndcg = first["ndcgAtK"]
+                every_hit = all(item["rankingHit"] for item in scored)
+                every_coverage = all(item["rankingAnchorsCovered"] for item in scored)
+                required = bool(labels(case, "requiredFacts"))
+                every_answerable = all(item["answerableAtK"] is True for item in scored) if required else None
+                rank_signatures = [tuple(item["rankingAnchorRanks"].values()) for item in scored]
+                coverage_signatures = [(tuple(item["rankingAnchorRanks"].values()),
+                                        tuple(item["requiredFactRanks"].values())) for item in scored]
+                aggregate[route]["firstHits"].append(int(first["rankingHit"]))
+                aggregate[route]["everyHits"].append(int(every_hit))
+                aggregate[route]["firstCoverage"].append(first_recall)
+                aggregate[route]["everyCoverage"].append(int(every_coverage))
+                aggregate[route]["firstRecall"].append(first_recall)
+                aggregate[route]["firstMrr"].append(first_mrr)
+                aggregate[route]["firstNdcg"].append(first_ndcg)
+                if required:
+                    aggregate[route]["firstAnswerable"].append(int(first["answerableAtK"]))
+                    aggregate[route]["everyAnswerable"].append(int(every_answerable))
+                unstable = any(signature != rank_signatures[0] for signature in rank_signatures[1:])
+                coverage_unstable = any(signature != coverage_signatures[0] for signature in coverage_signatures[1:])
+                result[route] = {"relevantRanks": first_ranks, "hit": first["rankingHit"],
+                                 "requiredFactRanks": first["requiredFactRanks"],
+                                 "answerableAtK": first["answerableAtK"], "negativeClean": None,
+                                 "firstSample": first, "samples": scored,
+                                 "everySample": {"rankingHit": every_hit,
+                                                 "rankingAnchorsCovered": every_coverage,
+                                                 "requiredFactsCovered": every_answerable},
+                                 "unstable": unstable, "coverageUnstable": coverage_unstable,
+                                 "latenciesMs": [item["latencyMs"] for item in scored]}
             else:
-                aggregate[route]["negativeClean"].append(int(negative_clean))
-            aggregate[route]["unstable"].append(unstable)
+                contract_values = [item["negativeContractPassed"] for item in scored]
+                every_contract = all(contract_values)
+                if kind == "zero-evidence":
+                    aggregate[route]["zeroFirst"].append(int(first["negativeClean"]))
+                    aggregate[route]["zeroEvery"].append(int(every_contract))
+                    negative_clean = first["negativeClean"]
+                else:
+                    aggregate[route]["safeFirst"].append(int(first["negativeContractPassed"]))
+                    aggregate[route]["safeEvery"].append(int(every_contract))
+                    negative_clean = None
+                signatures = [json.dumps({key: value for key, value in item.items()
+                                          if key not in ("latencyMs", "stageTimingMs")},
+                                         sort_keys=True, ensure_ascii=False) for item in scored]
+                unstable = any(signature != signatures[0] for signature in signatures[1:])
+                result[route] = {"relevantRanks": [], "hit": None, "requiredFactRanks": {},
+                                 "answerableAtK": None, "negativeClean": negative_clean,
+                                 "firstSample": first, "samples": scored,
+                                 "everySample": {"negativeContractPassed": every_contract},
+                                 "unstable": unstable, "coverageUnstable": unstable,
+                                 "latenciesMs": [item["latencyMs"] for item in scored]}
+            aggregate[route]["unstable"].append(result[route]["unstable"])
         per_case.append(result)
     metrics = {}
     for route, values in aggregate.items():
-        positive_count = len(values["hits"])
-        negative_count = len(values["negativeClean"])
-        metrics[route] = {"positiveCount": positive_count, "negativeCount": negative_count,
-                          "answerableCaseCount": len(values["answerable"]),
-                          "answerableAtK": sum(values["answerable"]) / len(values["answerable"])
-                              if values["answerable"] else None,
-                          "hitRateAtK": sum(values["hits"]) / positive_count if positive_count else None,
-                          "recallAtK": sum(values["recall"]) / positive_count if positive_count else None,
-                          "mrrAtK": sum(values["mrr"]) / positive_count if positive_count else None,
-                          "ndcgAtK": sum(values["ndcg"]) / positive_count if positive_count else None,
-                          "negativeCleanRate": sum(values["negativeClean"]) / negative_count if negative_count else None,
-                          "p95Ms": percentile95(values["latencies"]), "latencySamples": len(values["latencies"]),
-                          "unstableCases": sum(values["unstable"])}
+        positives = len(values["firstHits"])
+        answerable = len(values["firstAnswerable"])
+        zero_count = len(values["zeroFirst"])
+        safe_count = len(values["safeFirst"])
+        metrics[route] = {
+            "positiveCount": positives, "zeroEvidenceNegativeCount": zero_count,
+            "safeDenialCount": safe_count, "negativeCount": zero_count + safe_count,
+            "answerableCaseCount": answerable,
+            "hitRateAtK": sum(values["firstHits"]) / positives if positives else None,
+            "everySampleHitRateAtK": sum(values["everyHits"]) / positives if positives else None,
+            "rankingAnchorCoverageAtK": sum(values["firstCoverage"]) / positives if positives else None,
+            "everySampleRankingAnchorCoverageAtK": sum(values["everyCoverage"]) / positives if positives else None,
+            "recallAtK": sum(values["firstRecall"]) / positives if positives else None,
+            "mrrAtK": sum(values["firstMrr"]) / positives if positives else None,
+            "ndcgAtK": sum(values["firstNdcg"]) / positives if positives else None,
+            "answerableAtK": sum(values["firstAnswerable"]) / answerable if answerable else None,
+            "everySampleAnswerableAtK": sum(values["everyAnswerable"]) / answerable if answerable else None,
+            "negativeCleanRate": sum(values["zeroFirst"]) / zero_count if zero_count else None,
+            "everySampleNegativeCleanRate": sum(values["zeroEvery"]) / zero_count if zero_count else None,
+            "safeDenialPassRate": sum(values["safeFirst"]) / safe_count if safe_count else None,
+            "everySampleSafeDenialPassRate": sum(values["safeEvery"]) / safe_count if safe_count else None,
+            "p95Ms": percentile95(values["latencies"]), "latencySamples": len(values["latencies"]),
+            "stageTimingMs": timing_aggregate(values["stages"]),
+            "unstableCases": sum(values["unstable"])}
     regressions = [case["id"] for case in per_case if case["positive"] and case["legacy"]["hit"]
                    and not case["ragflow"]["hit"]]
     critical_regressions = [case["id"] for case in per_case if case["critical"] and case["id"] in regressions]
     answerability_regressions = [case["id"] for case in per_case
-                                if case["legacy"]["answerableAtK"] is True
-                                and case["ragflow"]["answerableAtK"] is False]
+                                 if case["legacy"]["answerableAtK"] is True
+                                 and case["ragflow"]["answerableAtK"] is False]
     critical_answerability_regressions = [case["id"] for case in per_case
-                                         if case["critical"] and case["id"] in answerability_regressions]
+                                          if case["critical"] and case["id"] in answerability_regressions]
     checks = capture.get("citationChecks") or []
     source_ids = {"kb:" + entry["chunkKey"] for run in capture["runs"] if run["route"] == "ragflow"
-                  for entry in run["samples"][0]["entries"] if isinstance(entry.get("chunkKey"), str)}
+                  for sample in (run["samples"] if capture.get("schemaVersion", 1) >= 2 else run["samples"][:1])
+                  for entry in sample.get("entries", [])
+                  if isinstance(entry.get("chunkKey"), str)}
     verified = {check["sourceId"] for check in checks if check.get("verified")}
     ingestion = capture.get("ingestion") or {}
     project_mappings = capture.get("projectMappings") or []
-    old_p95 = metrics["legacy"]["p95Ms"]
-    new_p95 = metrics["ragflow"]["p95Ms"]
-    gates = {"atLeast25ProjectPositives": manifest.get("kind") == "project" and metrics["legacy"]["positiveCount"] >= 25,
-             "goldLabelsReviewed": capture.get("conditions", {}).get("goldLabelsReviewed") is True,
-             "positiveHitsBoth": all(metrics[route]["hitRateAtK"] is not None and metrics[route]["hitRateAtK"] > 0
-                                      for route in ROUTES),
-             "newMissesAtMostOne": len(regressions) <= 1,
-             "criticalNoNewMisses": not critical_regressions,
-             "negativeCasesPresent": metrics["legacy"]["negativeCount"] > 0,
-             "negativeNoEvidence": all(case[route]["negativeClean"] for case in per_case if not case["positive"] for route in ROUTES),
-             "citationVerified": bool(source_ids) and source_ids <= verified,
-             "p95Within1_5x": old_p95 is not None and new_p95 is not None and new_p95 <= old_p95 * 1.5,
-             "fixtureParsedBoth": all(ingestion.get(route, {}).get("status") == "DONE" for route in ROUTES),
-             "projectMappingsDone": manifest.get("kind") == "project" and bool(project_mappings)
-                 and all(mapping.get("status") == "DONE" for mapping in project_mappings),
-             "stableRanking": all(not case[route]["unstable"] for case in per_case for route in ROUTES)}
-    return {"schemaVersion": 1, "fixtureSha256": capture.get("fixtureSha256"),
-            "conditions": capture.get("conditions"), "metrics": metrics, "cases": per_case,
+    old_p95, new_p95 = metrics["legacy"]["p95Ms"], metrics["ragflow"]["p95Ms"]
+    negatives = [case for case in per_case if not case["positive"]]
+    safe_denials = [case for case in per_case if case["kind"] == "evidence-backed-safe-denial"]
+    zero_evidence = [case for case in per_case if case["kind"] == "zero-evidence"]
+    annotated = [case for case in per_case if case["positive"]
+                 and any(route_case["answerableAtK"] is not None for route_case in
+                         (case["legacy"], case["ragflow"]))]
+    gates = {
+        "atLeast25ProjectPositives": manifest.get("kind") == "project" and metrics["legacy"]["positiveCount"] >= 25,
+        "goldLabelsReviewed": reviewed_labels_match(manifest, capture.get("conditions", {})),
+        "positiveHitsBoth": all(metrics[route]["hitRateAtK"] is not None and metrics[route]["hitRateAtK"] > 0
+                                for route in ROUTES),
+        "newMissesAtMostOne": len(regressions) <= 1,
+        "criticalNoNewMisses": not critical_regressions,
+        "ragflowRequiredFactsEverySample": bool(annotated) and all(
+            case["ragflow"]["everySample"]["requiredFactsCovered"] is True for case in annotated),
+        "negativeCasesPresent": bool(negatives),
+        "negativeContractsSatisfied": bool(negatives) and all(
+            case[route]["everySample"]["negativeContractPassed"] for case in negatives for route in ROUTES),
+        "zeroEvidenceNegativesSatisfied": not zero_evidence or all(
+            case[route]["everySample"]["negativeContractPassed"] for case in zero_evidence for route in ROUTES),
+        "safeDenialsSatisfied": not safe_denials or all(
+            case[route]["everySample"]["negativeContractPassed"] for case in safe_denials for route in ROUTES),
+        "citationVerified": bool(source_ids) and source_ids <= verified,
+        "p95Within1_5x": old_p95 is not None and new_p95 is not None and new_p95 <= old_p95 * 1.5,
+        "fixtureParsedBoth": all(ingestion.get(route, {}).get("status") == "DONE" for route in ROUTES),
+        "projectMappingsDone": manifest.get("kind") == "project" and bool(project_mappings)
+            and all(mapping.get("status") == "DONE" for mapping in project_mappings),
+        "stableRanking": all(not case[route]["unstable"] for case in per_case for route in ROUTES)}
+    return {"schemaVersion": 2, "fixtureSha256": capture.get("fixtureSha256"),
+            "contractReview": manifest.get("review"), "conditions": capture.get("conditions"),
+            "metrics": metrics, "cases": per_case,
             "newMisses": regressions, "criticalNewMisses": critical_regressions,
             "newAnswerabilityMisses": answerability_regressions,
             "criticalNewAnswerabilityMisses": critical_answerability_regressions,
@@ -359,6 +572,7 @@ def main():
     collect_cmd.add_argument("--warmup", type=int, default=1)
     score_cmd = commands.add_parser("score")
     score_cmd.add_argument("--capture", required=True)
+    score_cmd.add_argument("--manifest", help="reviewed contract to apply to an older compatible capture")
     score_cmd.add_argument("--output", required=True)
     args = parser.parse_args()
     if args.command == "collect":
@@ -366,7 +580,8 @@ def main():
             parser.error("repetitions must be positive and warmup nonnegative")
         collect(args)
     else:
-        report = score(read_json(Path(args.capture)))
+        manifest = read_json(Path(args.manifest)) if args.manifest else None
+        report = score(read_json(Path(args.capture)), manifest)
         write_json(Path(args.output), report)
         print(json.dumps({"readyToSwitch": report["readyToSwitch"], "gates": report["gates"]}, ensure_ascii=False))
 
