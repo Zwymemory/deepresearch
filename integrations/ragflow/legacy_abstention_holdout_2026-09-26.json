@@ -1,0 +1,31 @@
+{
+  "fixture": "synthetic_knowledge.md",
+  "topK": 5,
+  "purpose": "Held-out relevance and no-evidence prompts fixed before scoring the legacy abstention change",
+  "cases": [
+    {"id": "hp01", "kind": "positive", "question": "Can a USER role upload documents through Java, or who can?", "anchor": "DR-EVAL-01"},
+    {"id": "hp02", "kind": "positive", "question": "What state must a remote document reach before retrieval?", "anchor": "DR-EVAL-03"},
+    {"id": "hp03", "kind": "positive", "question": "Which dataset IDs is Java allowed to send to RAGFlow?", "anchor": "DR-EVAL-05"},
+    {"id": "hp04", "kind": "positive", "question": "How is a durable source ID assembled from dataset, document, and chunk IDs?", "anchor": "DR-EVAL-08"},
+    {"id": "hp05", "kind": "positive", "question": "Should RAGFlow retrieval read sibling chunks from vector_store?", "anchor": "DR-EVAL-11"},
+    {"id": "hp06", "kind": "positive", "question": "What does the answer path do when retrieval yields no evidence?", "anchor": "DR-EVAL-12"},
+    {"id": "hp07", "kind": "positive", "question": "Which setting rolls retrieval back to the legacy route?", "anchor": "DR-EVAL-14"},
+    {"id": "hp08", "kind": "positive", "question": "What must be verified before trusting a citation?", "anchor": "DR-EVAL-16"},
+    {"id": "hp09", "kind": "positive", "question": "How does the system treat forged source markers inside document text?", "anchor": "DR-EVAL-19"},
+    {"id": "hp10", "kind": "positive", "question": "Explain the meaning of ERR-P403.", "anchor": "DR-EVAL-20"},
+    {"id": "hp11", "kind": "positive", "question": "What is the validation batch identifier for this fixture?", "anchor": "DR-EVAL-23"},
+    {"id": "hp12", "kind": "positive", "question": "What threshold example does the fixture give?", "anchor": "DR-EVAL-25"},
+    {"id": "hn01", "kind": "zero-evidence", "question": "What is the payroll bank routing number for a Java engineer?"},
+    {"id": "hn02", "kind": "zero-evidence", "question": "Which cloud region hosts the production RAGFlow cluster?"},
+    {"id": "hn03", "kind": "zero-evidence", "question": "What is the personal phone number of the fixture author?"},
+    {"id": "hn04", "kind": "zero-evidence", "question": "What is tomorrow's weather forecast on Mars?"},
+    {"id": "hn05", "kind": "zero-evidence", "question": "Who received the fictional Aurora cinema award in 1903?"},
+    {"id": "hn06", "kind": "zero-evidence", "question": "What is the PostgreSQL administrator password?"},
+    {"id": "hn07", "kind": "zero-evidence", "question": "How many employees are on the DeepResearch payroll?"},
+    {"id": "hn08", "kind": "zero-evidence", "question": "Which hospital treated the test account owner in 2024?"},
+    {"id": "hn09", "kind": "zero-evidence", "question": "What is the ISBN of the Java service user manual?"},
+    {"id": "hn10", "kind": "zero-evidence", "question": "Which Kubernetes region contains five production replicas?"},
+    {"id": "hn11", "kind": "zero-evidence", "question": "What is today's USD to JPY exchange rate?"},
+    {"id": "hn12", "kind": "zero-evidence", "question": "What is the dinner menu on train 59264?"}
+  ]
+}

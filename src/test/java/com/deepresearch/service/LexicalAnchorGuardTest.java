@@ -1,5 +1,6 @@
 package com.deepresearch.service;
 
+import com.deepresearch.model.RerankResult;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 
@@ -10,13 +11,15 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 
 class LexicalAnchorGuardTest {
 
     private final LexicalAnchorGuard guard = new LexicalAnchorGuard();
 
     @Test
-    void keepsExactKeywordAnchorThroughCandidateAndFinalTopKCutsWhenRerankerIsDisabled() {
+    void keepsExactKeywordAnchorThroughCandidateAndFinalTopKCutsWhenRerankerConfirmsIt() {
         Document semanticA = document("semantic-a", "general checkpoint overview");
         Document semanticB = document("semantic-b", "crash recovery overview");
         Document anchored = document("anchored", "graph.ainvoke uses durability=\"sync\" at node boundaries");
@@ -28,12 +31,15 @@ class LexicalAnchorGuardTest {
         assertThat(candidates).extracting(chunk -> chunk.document().getId())
                 .containsExactly("semantic-a", "anchored");
 
-        RerankService disabled = mock(RerankService.class);
-        when(disabled.enabled()).thenReturn(false);
-        List<HybridChunk> fallbackOrder = new RerankCoordinator(disabled)
+        RerankService reranker = mock(RerankService.class);
+        when(reranker.enabled()).thenReturn(true);
+        when(reranker.rerank(eq("durability=sync"), anyList())).thenReturn(List.of(
+                new RerankResult("anchored", 0.5), new RerankResult("semantic-a", -9.0)));
+        List<HybridChunk> verifiedOrder = new RerankCoordinator(
+                reranker, new LegacyRelevanceGate(-5.0, -6.5, 1.0 / 3))
                 .rerank("durability=sync", candidates)
                 .chunks();
-        List<HybridChunk> direct = guard.ensureTopK(fallbackOrder, 1, selected);
+        List<HybridChunk> direct = guard.ensureTopK(verifiedOrder, 1, selected);
 
         assertThat(direct).extracting(chunk -> chunk.document().getId()).containsExactly("anchored");
         assertThat(direct.get(0).routeSummary()).contains("keyword#2");
@@ -79,6 +85,18 @@ class LexicalAnchorGuardTest {
         assertThat(guard.ensureCandidate(List.of(chunk(first)), 2, selected))
                 .extracting(chunk -> chunk.document().getId())
                 .containsExactly("first", "anchored");
+    }
+
+    @Test
+    void doesNotReinsertAnAnchorRemovedByRelevanceGate() {
+        Document unrelated = document("unrelated", "A verified unrelated fact");
+        Document anchor = document("anchor", "ERR-P403 is a recorded failure code");
+        Optional<LexicalAnchorGuard.Anchor> selected = guard.select("ERR-P403 payroll owner", List.of(anchor));
+        assertThat(selected).isPresent();
+
+        List<HybridChunk> direct = guard.ensureTopK(List.of(chunk(unrelated)), 1, selected);
+
+        assertThat(direct).extracting(value -> value.document().getId()).containsExactly("unrelated");
     }
 
     private HybridChunk chunk(Document document) {

@@ -17,18 +17,19 @@ import static org.mockito.Mockito.when;
 class RerankCoordinatorTest {
 
     private final RerankService rerankService = mock(RerankService.class);
-    private final RerankCoordinator coordinator = new RerankCoordinator(rerankService);
+    private final RerankCoordinator coordinator = new RerankCoordinator(
+            rerankService, new LegacyRelevanceGate(-5.0, -6.5, 1.0 / 3));
 
     @Test
     void appliesReturnedOrderScoresAndDiagnostics() {
         when(rerankService.enabled()).thenReturn(true);
-        when(rerankService.rerank(eq("query"), anyList())).thenReturn(List.of(
+        when(rerankService.rerank(eq("body"), anyList())).thenReturn(List.of(
                 new RerankResult("b", 0.95),
                 new RerankResult("a", 0.70)
         ));
         List<HybridChunk> input = List.of(chunk("a"), chunk("b"));
 
-        RerankCoordinator.Outcome outcome = coordinator.rerank("query", input);
+        RerankCoordinator.Outcome outcome = coordinator.rerank("body", input);
 
         assertThat(outcome.chunks()).extracting(chunk -> chunk.document().getId()).containsExactly("b", "a");
         assertThat(outcome.chunks().get(0).rerankScore()).isEqualTo(0.95);
@@ -37,7 +38,7 @@ class RerankCoordinatorTest {
     }
 
     @Test
-    void fallsBackWithoutLeakingRerankerException() {
+    void returnsNoEvidenceWithoutLeakingRerankerException() {
         when(rerankService.enabled()).thenReturn(true);
         when(rerankService.rerank(eq("query"), anyList()))
                 .thenThrow(new IllegalStateException("https://admin:password@reranker.internal"));
@@ -45,18 +46,19 @@ class RerankCoordinatorTest {
 
         RerankCoordinator.Outcome outcome = coordinator.rerank("query", input);
 
-        assertThat(outcome.chunks()).isSameAs(input);
+        assertThat(outcome.chunks()).isEmpty();
         assertThat(outcome.diagnostics().fallback()).isTrue();
         assertThat(outcome.diagnostics().reason())
-                .isEqualTo("execution_failed")
+                .isEqualTo("execution_failed_no_evidence")
                 .doesNotContain("password", "internal");
     }
 
     @Test
     void skipsExternalCallWhenDisabledOrEmpty() {
         when(rerankService.enabled()).thenReturn(false);
-        assertThat(coordinator.rerank("query", List.of(chunk("a"))).diagnostics().status())
-                .isEqualTo("disabled");
+        RerankCoordinator.Outcome disabled = coordinator.rerank("query", List.of(chunk("a")));
+        assertThat(disabled.chunks()).isEmpty();
+        assertThat(disabled.diagnostics().status()).isEqualTo("disabled");
 
         when(rerankService.enabled()).thenReturn(true);
         assertThat(coordinator.rerank("query", List.of()).diagnostics().status()).isEqualTo("skipped");
@@ -81,6 +83,23 @@ class RerankCoordinatorTest {
         assertThat(candidates.getValue().get(0).content())
                 .isEqualTo("Chapter 1\nUseful body")
                 .doesNotContain("A title");
+    }
+
+    @Test
+    void rejectsUnscoredAndUnrelatedCandidatesEvenWhenRerankerReturnsThem() {
+        when(rerankService.enabled()).thenReturn(true);
+        when(rerankService.rerank(eq("dinner menu on train 59264"), anyList())).thenReturn(List.of(
+                new RerankResult("number-only", -4.8),
+                new RerankResult("unscored", Double.NaN)
+        ));
+        List<HybridChunk> input = List.of(
+                new HybridChunk(new Document("number-only", "Run 59264 is reserved for replay", Map.of())),
+                chunk("unscored"));
+
+        RerankCoordinator.Outcome outcome = coordinator.rerank("dinner menu on train 59264", input);
+
+        assertThat(outcome.chunks()).isEmpty();
+        assertThat(outcome.diagnostics().reason()).isEqualTo("no_verified_relevance");
     }
 
     private HybridChunk chunk(String id) {
