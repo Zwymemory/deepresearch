@@ -2,6 +2,8 @@ package com.deepresearch.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +22,7 @@ import java.util.ArrayList;
 /** Bounded, server-side RAGFlow HTTP adapter. */
 @Component
 public class RagflowClient {
+    private static final Logger log = LoggerFactory.getLogger(RagflowClient.class);
     private static final int MAX_BODY = 4 * 1024 * 1024;
     private final HttpClient http;
     private final ObjectMapper json;
@@ -187,7 +190,10 @@ public class RagflowClient {
                 throw new IllegalStateException("RAGFlow HTTP " + response.statusCode());
             JsonNode root = json.readTree(bytes);
             int code = root.path("code").asInt(-1);
-            if (code != 0) throw new RagflowApiException(code);
+            if (code != 0) {
+                log.warn("RAGFlow business error code={} path={}", code, request.uri().getPath());
+                throw new RagflowApiException(code);
+            }
             return root.path("data");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
