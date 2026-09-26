@@ -7,7 +7,7 @@ The result does **not** support changing the default retrieval provider.
 
 ## Inputs and provenance
 
-- Reviewed contract SHA-256: `8322f94f86f2842281a7241bf7bd370f06dde4b41a61c520b7f41c60a4d32eef`
+- Reviewed contract SHA-256: `d6b7d698575b5449c8831411af95b766d3ab8c4600b387768511d09726c2ce18`
 - Original capture SHA-256: `3270d132bc368a7c6c43cf3b9e5f0d864c86e8b5e306c0217f0083debe0392e1`
 - Rescored result SHA-256: `a7a67bbc576e6622a04433d68b209a9a0bc4218eea6ea5ecd4ec8623051ea707`
 - Canonical corpus: the eight files and hashes recorded under `review.canonicalSources`
@@ -15,6 +15,10 @@ The result does **not** support changing the default retrieval provider.
 - Review date: 2026-09-26. `goldLabelsReviewed=true` now means the logical
   labels and source hashes were reviewed. It does not imply that retrieval,
   answerability, latency, or safe-denial gates passed.
+- The final contract also accepts equivalent explicit refusal wording observed
+  in the later live run and rejects additional assertive metric/deployment
+  phrases. No retrieval label or canonical source changed; the old capture has
+  no answer samples, so its machine score is byte-for-byte unchanged.
 
 Reproduction command:
 
