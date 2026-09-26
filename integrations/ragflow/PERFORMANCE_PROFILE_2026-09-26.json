@@ -1,0 +1,566 @@
+{
+  "schemaVersion": 1,
+  "evaluationDate": "2026-09-26",
+  "scope": "Summary-only RAGFlow performance and quality evidence; raw per-sample previews and answers remain in the source artifacts.",
+  "execution": {
+    "mode": "time-sliced local evaluation",
+    "difyContainersStayedRunning": true,
+    "firstConcurrentAttempt": "RAGFlow Elasticsearch restarted under memory pressure.",
+    "subsequentScheduling": "All RAGFlow containers were paused for the legacy route; temporary legacy dependencies were stopped before RAGFlow was resumed. Dify stayed running throughout.",
+    "dockerMemoryGiB": 7.75
+  },
+  "acceptanceReference": {
+    "historicalSyntheticLegacyP95Ms": 304.158,
+    "maximumRagflowP95Multiplier": 1.5,
+    "maximumRagflowP95Ms": 456.237
+  },
+  "historicalSyntheticPaired": {
+    "legacy": {
+      "positiveCount": 25,
+      "negativeCount": 3,
+      "hitRateAtK": 1.0,
+      "negativeCleanRate": 0.0,
+      "p95Ms": 304.158,
+      "latencySamples": 84
+    },
+    "ragflow": {
+      "positiveCount": 25,
+      "negativeCount": 3,
+      "hitRateAtK": 1.0,
+      "negativeCleanRate": 1.0,
+      "p95Ms": 1196.707,
+      "latencySamples": 84
+    },
+    "failedGates": [
+      "atLeast25ProjectPositives",
+      "goldLabelsReviewed",
+      "negativeNoEvidence",
+      "p95Within1_5x",
+      "projectMappingsDone"
+    ]
+  },
+  "syntheticDirectProfiles": {
+    "keyword_true_256_2048_64": {
+      "configuration": {
+        "keyword": true,
+        "knn_top_k": 256,
+        "knn_num_candidates": 2048,
+        "rerank_candidates_count": 64
+      },
+      "metrics": {
+        "samples": 84,
+        "medianMs": 915.373,
+        "p95Ms": 1286.856,
+        "meanMs": 945.203,
+        "minMs": 576.097,
+        "maxMs": 1535.183,
+        "positiveHits": 25,
+        "positiveCount": 25,
+        "negativeClean": 3,
+        "negativeCount": 3
+      }
+    },
+    "keyword_false_256_2048_64": {
+      "configuration": {
+        "keyword": false,
+        "knn_top_k": 256,
+        "knn_num_candidates": 2048,
+        "rerank_candidates_count": 64
+      },
+      "metrics": {
+        "samples": 84,
+        "medianMs": 313.337,
+        "p95Ms": 403.709,
+        "meanMs": 322.739,
+        "minMs": 261.679,
+        "maxMs": 601.293,
+        "positiveHits": 25,
+        "positiveCount": 25,
+        "negativeClean": 3,
+        "negativeCount": 3
+      }
+    },
+    "keyword_false_64_256_20": {
+      "configuration": {
+        "keyword": false,
+        "knn_top_k": 64,
+        "knn_num_candidates": 256,
+        "rerank_candidates_count": 20
+      },
+      "metrics": {
+        "samples": 84,
+        "medianMs": 314.783,
+        "p95Ms": 437.752,
+        "meanMs": 332.891,
+        "minMs": 232.46,
+        "maxMs": 719.692,
+        "positiveHits": 25,
+        "positiveCount": 25,
+        "negativeClean": 3,
+        "negativeCount": 3
+      }
+    },
+    "keyword_false_32_128_20": {
+      "configuration": {
+        "keyword": false,
+        "knn_top_k": 32,
+        "knn_num_candidates": 128,
+        "rerank_candidates_count": 20
+      },
+      "metrics": {
+        "samples": 84,
+        "medianMs": 311.587,
+        "p95Ms": 378.366,
+        "meanMs": 318.921,
+        "minMs": 248.357,
+        "maxMs": 484.104,
+        "positiveHits": 25,
+        "positiveCount": 25,
+        "negativeClean": 3,
+        "negativeCount": 3
+      }
+    }
+  },
+  "syntheticJavaProfiles": {
+    "defaultCandidatePool": {
+      "profile": "java-default-no-query-expansion-256-2048-64",
+      "configuration": {
+        "queryExpansion": false,
+        "knnTopK": 256,
+        "knnNumCandidates": 2048,
+        "rerankCandidatesCount": 64,
+        "topK": 5,
+        "warmupPerCase": 1,
+        "repetitions": 3
+      },
+      "latency": {
+        "n": 84,
+        "medianMs": 323.07920799939893,
+        "p95Ms": 466.72820799722103,
+        "meanMs": 333.6647544523917,
+        "minMs": 263.66833300562575,
+        "maxMs": 534.8919160023797
+      },
+      "stages": {
+        "queryRewrite": {
+          "n": 84,
+          "medianMs": 0.0,
+          "p95Ms": 0,
+          "meanMs": 0.0,
+          "minMs": 0,
+          "maxMs": 0
+        },
+        "registry": {
+          "n": 84,
+          "medianMs": 0.0,
+          "p95Ms": 0,
+          "meanMs": 0.011904761904761904,
+          "minMs": 0,
+          "maxMs": 1
+        },
+        "upstreamApi": {
+          "n": 84,
+          "medianMs": 317.0,
+          "p95Ms": 463,
+          "meanMs": 328.3452380952381,
+          "minMs": 261,
+          "maxMs": 530
+        },
+        "evidenceNormalization": {
+          "n": 84,
+          "medianMs": 0.0,
+          "p95Ms": 1,
+          "meanMs": 0.25,
+          "minMs": 0,
+          "maxMs": 1
+        },
+        "responseAssembly": {
+          "n": 84,
+          "medianMs": 0.0,
+          "p95Ms": 0,
+          "meanMs": 0.0,
+          "minMs": 0,
+          "maxMs": 0
+        },
+        "total": {
+          "n": 84,
+          "medianMs": 318.5,
+          "p95Ms": 464,
+          "meanMs": 329.6309523809524,
+          "minMs": 262,
+          "maxMs": 531
+        }
+      },
+      "quality": {
+        "positiveEverySampleHits": 25,
+        "positiveTotal": 25,
+        "negativeEverySampleEmpty": 2,
+        "negativeTotal": 3,
+        "failedPositiveIds": [],
+        "failedNegativeIds": [
+          "n01"
+        ]
+      }
+    },
+    "optimizedCandidatePool": {
+      "profile": "java-optimized-no-query-expansion-32-128-20-threshold-0.22",
+      "configuration": {
+        "queryExpansion": false,
+        "knnTopK": 32,
+        "knnNumCandidates": 128,
+        "rerankCandidatesCount": 20,
+        "similarityThreshold": 0.22,
+        "topK": 5,
+        "warmupPerCase": 1,
+        "repetitions": 3
+      },
+      "latency": {
+        "n": 84,
+        "medianMs": 322.78893700276967,
+        "p95Ms": 374.76929200056475,
+        "meanMs": 329.73392311890035,
+        "minMs": 247.62029200064717,
+        "maxMs": 642.020915998728
+      },
+      "stages": {
+        "queryRewrite": {
+          "n": 84,
+          "medianMs": 0.0,
+          "p95Ms": 0,
+          "meanMs": 0.0,
+          "minMs": 0,
+          "maxMs": 0
+        },
+        "registry": {
+          "n": 84,
+          "medianMs": 0.0,
+          "p95Ms": 1,
+          "meanMs": 0.09523809523809523,
+          "minMs": 0,
+          "maxMs": 2
+        },
+        "upstreamApi": {
+          "n": 84,
+          "medianMs": 317.0,
+          "p95Ms": 370,
+          "meanMs": 323.4047619047619,
+          "minMs": 242,
+          "maxMs": 637
+        },
+        "evidenceNormalization": {
+          "n": 84,
+          "medianMs": 0.0,
+          "p95Ms": 1,
+          "meanMs": 0.30952380952380953,
+          "minMs": 0,
+          "maxMs": 1
+        },
+        "responseAssembly": {
+          "n": 84,
+          "medianMs": 0.0,
+          "p95Ms": 0,
+          "meanMs": 0.0,
+          "minMs": 0,
+          "maxMs": 0
+        },
+        "total": {
+          "n": 84,
+          "medianMs": 319.0,
+          "p95Ms": 371,
+          "meanMs": 325.0833333333333,
+          "minMs": 243,
+          "maxMs": 637
+        }
+      },
+      "quality": {
+        "positiveEverySampleHits": 25,
+        "positiveTotal": 25,
+        "negativeEverySampleEmpty": 3,
+        "negativeTotal": 3,
+        "failedPositiveIds": [],
+        "failedNegativeIds": []
+      }
+    }
+  },
+  "projectDirectProfiles": {
+    "keyword_false_256_2048_64": {
+      "configuration": {
+        "keyword": false,
+        "knn_top_k": 256,
+        "knn_num_candidates": 2048,
+        "rerank_candidates_count": 64
+      },
+      "metrics": {
+        "samples": 87,
+        "medianMs": 371.154,
+        "p95Ms": 446.615,
+        "meanMs": 377.869,
+        "anchorHitsEverySample": 25,
+        "answerableEverySample": 24,
+        "positiveCount": 25,
+        "safeDenialEvidenceEverySample": 3,
+        "safeDenialCount": 4,
+        "rankingUnstableCases": [],
+        "answerabilityUnstableCases": []
+      }
+    },
+    "keyword_false_32_128_20": {
+      "configuration": {
+        "keyword": false,
+        "knn_top_k": 32,
+        "knn_num_candidates": 128,
+        "rerank_candidates_count": 20
+      },
+      "metrics": {
+        "samples": 87,
+        "medianMs": 326.384,
+        "p95Ms": 399.65,
+        "meanMs": 330.383,
+        "anchorHitsEverySample": 25,
+        "answerableEverySample": 24,
+        "positiveCount": 25,
+        "safeDenialEvidenceEverySample": 3,
+        "safeDenialCount": 4,
+        "rankingUnstableCases": [],
+        "answerabilityUnstableCases": []
+      }
+    }
+  },
+  "projectJavaOptimized": {
+    "profile": "java-project-optimized-no-query-expansion-32-128-20-threshold-0.22",
+    "configuration": {
+      "queryExpansion": false,
+      "knnTopK": 32,
+      "knnNumCandidates": 128,
+      "rerankCandidatesCount": 20,
+      "similarityThreshold": 0.22,
+      "topK": 5,
+      "warmupPerCase": 1,
+      "repetitions": 3
+    },
+    "latency": {
+      "n": 87,
+      "medianMs": 338.43399999750545,
+      "p95Ms": 438.6384169993107,
+      "meanMs": 348.6363338156009,
+      "minMs": 258.0281249975087,
+      "maxMs": 614.3313749998924
+    },
+    "stages": {
+      "queryRewrite": {
+        "n": 87,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "meanMs": 0.0,
+        "minMs": 0,
+        "maxMs": 0
+      },
+      "registry": {
+        "n": 87,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "meanMs": 0.05747126436781609,
+        "minMs": 0,
+        "maxMs": 2
+      },
+      "upstreamApi": {
+        "n": 87,
+        "medianMs": 332,
+        "p95Ms": 432,
+        "meanMs": 342.18390804597703,
+        "minMs": 253,
+        "maxMs": 605
+      },
+      "evidenceNormalization": {
+        "n": 87,
+        "medianMs": 0,
+        "p95Ms": 1,
+        "meanMs": 0.16091954022988506,
+        "minMs": 0,
+        "maxMs": 2
+      },
+      "responseAssembly": {
+        "n": 87,
+        "medianMs": 0,
+        "p95Ms": 0,
+        "meanMs": 0.0,
+        "minMs": 0,
+        "maxMs": 0
+      },
+      "total": {
+        "n": 87,
+        "medianMs": 333,
+        "p95Ms": 434,
+        "meanMs": 343.735632183908,
+        "minMs": 254,
+        "maxMs": 608
+      }
+    },
+    "quality": {
+      "anchorHitsEverySample": 25,
+      "answerableEverySample": 24,
+      "positiveCount": 25,
+      "safeDenialEvidenceEverySample": 3,
+      "safeDenialCount": 4,
+      "rankingUnstableCases": [],
+      "answerabilityUnstableCases": [],
+      "failedFactCaseIds": [
+        "project-kb-019"
+      ],
+      "failedSafeDenialEvidenceCaseIds": [
+        "project-kb-neg-001"
+      ]
+    }
+  },
+  "livePairedProject": {
+    "legacy": {
+      "positiveAnchorHitsEverySample": 23,
+      "positiveTotal": 25,
+      "fullyAnswerableEverySample": 21,
+      "answerableCaseTotal": 25,
+      "atomicFactsCovered": 66,
+      "atomicFactsTotal": 74,
+      "safeDenialsEverySample": 3,
+      "safeDenialTotal": 4,
+      "mrrAtK": 0.92,
+      "ndcgAtK": 0.92,
+      "p95Ms": 2705.123,
+      "latencySamples": 87,
+      "stageTimingMs": {},
+      "failedAnchorCaseIds": [
+        "project-kb-005",
+        "project-kb-006"
+      ],
+      "failedFactCaseIds": [
+        "project-kb-005",
+        "project-kb-006",
+        "project-kb-012",
+        "project-kb-019"
+      ],
+      "failedSafeDenialCaseIds": [
+        "project-kb-neg-001"
+      ],
+      "unstableCaseIds": []
+    },
+    "ragflow": {
+      "positiveAnchorHitsEverySample": 25,
+      "positiveTotal": 25,
+      "fullyAnswerableEverySample": 24,
+      "answerableCaseTotal": 25,
+      "atomicFactsCovered": 72,
+      "atomicFactsTotal": 74,
+      "safeDenialsEverySample": 3,
+      "safeDenialTotal": 4,
+      "mrrAtK": 0.9233333333333333,
+      "ndcgAtK": 0.942464252465794,
+      "p95Ms": 436.25,
+      "latencySamples": 87,
+      "stageTimingMs": {
+        "queryRewrite": {
+          "sampleCount": 87,
+          "meanMs": 0.0,
+          "p95Ms": 0
+        },
+        "registry": {
+          "sampleCount": 87,
+          "meanMs": 0.3448275862068966,
+          "p95Ms": 2
+        },
+        "upstreamApi": {
+          "sampleCount": 87,
+          "meanMs": 353.6666666666667,
+          "p95Ms": 428
+        },
+        "evidenceNormalization": {
+          "sampleCount": 87,
+          "meanMs": 0.14942528735632185,
+          "p95Ms": 1
+        },
+        "responseAssembly": {
+          "sampleCount": 87,
+          "meanMs": 0.0,
+          "p95Ms": 0
+        },
+        "total": {
+          "sampleCount": 87,
+          "meanMs": 355.48275862068965,
+          "p95Ms": 430
+        }
+      },
+      "failedAnchorCaseIds": [],
+      "failedFactCaseIds": [
+        "project-kb-019"
+      ],
+      "failedSafeDenialCaseIds": [
+        "project-kb-neg-001"
+      ],
+      "unstableCaseIds": []
+    },
+    "citationChecks": {
+      "verified": 84,
+      "total": 84
+    },
+    "projectMappings": {
+      "done": 8,
+      "total": 8
+    },
+    "failedGates": [
+      "ragflowRequiredFactsEverySample",
+      "negativeContractsSatisfied",
+      "safeDenialsSatisfied",
+      "fixtureParsedBoth"
+    ],
+    "readyToSwitch": false
+  },
+  "selectedOptInRagflowConfiguration": {
+    "queryExpansion": false,
+    "knnTopK": 32,
+    "knnNumCandidates": 128,
+    "rerankCandidatesCount": 20,
+    "similarityThreshold": 0.22,
+    "topK": 5
+  },
+  "defaultRetrievalProvider": "legacy",
+  "sourceFiles": [
+    {
+      "name": "projectPairedCapture",
+      "path": "/tmp/ragflow-project-paired-live-20260926.json",
+      "sha256": "d2fb711153949e75c18585c2c0e37cdd95c73eb6b172a0611d31c1b3eadd18d6"
+    },
+    {
+      "name": "projectPairedScore",
+      "path": "/tmp/ragflow-project-paired-score-live-20260926.json",
+      "sha256": "642737bf9620cca65087afb4509d4c6ae300c536bb2de11cdabb2d618262609a"
+    },
+    {
+      "name": "syntheticJavaDefault",
+      "path": "/tmp/ragflow-java-default-profile-20260926.json",
+      "sha256": "0fb0f190c9ec8c028ac4b64eb42c066de623f2a53c8c9d3f927a3d6709c4c455"
+    },
+    {
+      "name": "syntheticJavaOptimized",
+      "path": "/tmp/ragflow-java-optimized-profile-20260926.json",
+      "sha256": "6bb9f6b9d58333a82046c43b463a0394558d822341ab6ca91b684e3858ec114e"
+    },
+    {
+      "name": "projectJavaOptimized",
+      "path": "/tmp/ragflow-java-project-optimized-profile-20260926.json",
+      "sha256": "a14719ee97eb5426e4b2631d742a43f413274610e08aa8eae999635d24641caf"
+    },
+    {
+      "name": "syntheticDirect",
+      "path": "/tmp/ragflow-synthetic-direct-profile-20260926.json",
+      "sha256": "4d3dc53de107570ba1f2e11a95c54a7aa6ac0e68e164f83f6d18a129e5191c1e"
+    },
+    {
+      "name": "projectDirect",
+      "path": "/tmp/ragflow-project-direct-profile-20260926.json",
+      "sha256": "ad968354103d895859bae927f6b29e6831b08b997aa91feb4d20cac4744eb7ff"
+    },
+    {
+      "name": "historicalSyntheticPaired",
+      "path": "/Users/zwy/Claude/Projects/deepresearch-ragflow/integrations/ragflow/synthetic_paired_score_2026-09-22.json",
+      "sha256": "c4f7469f154042b08c97e74dc2b06cdfda479a8003cac1aceed6bc0b23f83b99"
+    }
+  ]
+}
