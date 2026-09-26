@@ -28,7 +28,9 @@ public class RagflowClient {
     private final List<String> datasets;
     private final Duration timeout;
     private final int knnTopK;
-    private final boolean keyword;
+    private final int knnNumCandidates;
+    private final int rerankCandidatesCount;
+    private final boolean queryExpansionEnabled;
     private final String ingestionMode;
 
     public RagflowClient(ObjectMapper json,
@@ -38,15 +40,25 @@ public class RagflowClient {
             @Value("${deepresearch.ragflow.connect-timeout:3s}") Duration connectTimeout,
             @Value("${deepresearch.ragflow.read-timeout:15s}") Duration timeout,
             @Value("${deepresearch.ragflow.knn-top-k:256}") int knnTopK,
-            @Value("${deepresearch.ragflow.keyword:true}") boolean keyword,
+            @Value("${deepresearch.ragflow.knn-num-candidates:2048}") int knnNumCandidates,
+            @Value("${deepresearch.ragflow.rerank-candidates-count:64}") int rerankCandidatesCount,
+            @Value("${deepresearch.ragflow.query-expansion-enabled:false}") boolean queryExpansionEnabled,
             @Value("${deepresearch.ragflow.ingestion-mode:builtin}") String ingestionMode) {
         this.json = json;
         this.baseUrl = baseUrl.replaceAll("/+$", "");
         this.apiKey = apiKey;
         this.datasets = datasets.stream().filter(s -> !s.isBlank()).toList();
         this.timeout = timeout;
-        this.knnTopK = Math.max(1, Math.min(knnTopK, 2048));
-        this.keyword = keyword;
+        if (knnTopK < 1 || knnTopK > 2048)
+            throw new IllegalStateException("RAGFlow knn-top-k must be between 1 and 2048");
+        if (knnNumCandidates < knnTopK || knnNumCandidates > 65536)
+            throw new IllegalStateException("RAGFlow knn-num-candidates must be between knn-top-k and 65536");
+        if (rerankCandidatesCount < 1 || rerankCandidatesCount > 2048)
+            throw new IllegalStateException("RAGFlow rerank-candidates-count must be between 1 and 2048");
+        this.knnTopK = knnTopK;
+        this.knnNumCandidates = knnNumCandidates;
+        this.rerankCandidatesCount = rerankCandidatesCount;
+        this.queryExpansionEnabled = queryExpansionEnabled;
         if (!List.of("builtin", "pipeline").contains(ingestionMode))
             throw new IllegalStateException("Invalid RAGFlow ingestion mode");
         this.ingestionMode = ingestionMode;
@@ -66,12 +78,17 @@ public class RagflowClient {
         requireConfigured();
         if (documentIds.isEmpty()) throw new IllegalArgumentException("No active RAGFlow documents");
         int candidates = Math.max(limit, knnTopK);
-        return request("POST", "/api/v1/retrieval", Map.of("question", question, "dataset_ids", datasets,
-                "document_ids", documentIds,
-                "page", 1, "page_size", limit, "knn_top_k", candidates,
-                "knn_num_candidates", Math.max(2048, candidates),
-                "rerank_candidates_count", Math.max(64, limit), "keyword", keyword,
-                "similarity_threshold", threshold));
+        return request("POST", "/api/v1/retrieval", Map.ofEntries(
+                Map.entry("question", question), Map.entry("dataset_ids", datasets),
+                Map.entry("document_ids", documentIds), Map.entry("page", 1),
+                Map.entry("page_size", limit), Map.entry("knn_top_k", candidates),
+                Map.entry("knn_num_candidates", Math.max(knnNumCandidates, candidates)),
+                Map.entry("rerank_candidates_count", Math.max(rerankCandidatesCount, limit)),
+                // RAGFlow's keyword flag invokes an extra LLM query-expansion step. Its
+                // native lexical + dense hybrid retrieval remains active when this is false.
+                Map.entry("keyword", queryExpansionEnabled),
+                Map.entry("include_knowledge_compilation", false),
+                Map.entry("similarity_threshold", threshold)));
     }
 
     public JsonNode chunk(String datasetId, String documentId, String chunkId) {

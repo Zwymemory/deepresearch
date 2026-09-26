@@ -1,5 +1,7 @@
 package com.deepresearch.web.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.List;
 import java.util.Map;
 
@@ -30,8 +32,28 @@ public record HybridDebugResponse(
         ContextPackingDiagnostics contextPackingDiagnostics,
         RerankDiagnostics rerankDiagnostics,
         String provider,
-        Map<String, Double> similarityScores
+        Map<String, Double> similarityScores,
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, Long> stageTimingMs
 ) {
+    public HybridDebugResponse {
+        stageTimingMs = stageTimingMs == null ? Map.of() : Map.copyOf(stageTimingMs);
+    }
+
+    /** Compatibility constructor for callers created before stage timings were exposed. */
+    public HybridDebugResponse(String question, int recallK, int finalK, String originalQuestion,
+                               String rewrittenQuestion, boolean rewriteUsed, List<Entry> vectorOnly,
+                               List<Entry> keywordOnly, List<Entry> noRrfMerge, List<Entry> rrfFusion,
+                               List<Entry> rrfDocFusion, List<Entry> rerankResult, List<Entry> rerankDocResult,
+                               List<Entry> expandedContext, List<Entry> compressedContext, int contextChunkCount,
+                               int compressedContextCount, ContextPackingDiagnostics contextPackingDiagnostics,
+                               RerankDiagnostics rerankDiagnostics, String provider,
+                               Map<String, Double> similarityScores) {
+        this(question, recallK, finalK, originalQuestion, rewrittenQuestion, rewriteUsed, vectorOnly,
+                keywordOnly, noRrfMerge, rrfFusion, rrfDocFusion, rerankResult, rerankDocResult,
+                expandedContext, compressedContext, contextChunkCount, compressedContextCount,
+                contextPackingDiagnostics, rerankDiagnostics, provider, similarityScores, Map.of());
+    }
+
     public HybridDebugResponse(String question, int recallK, int finalK, String originalQuestion,
                                String rewrittenQuestion, boolean rewriteUsed, List<Entry> vectorOnly,
                                List<Entry> keywordOnly, List<Entry> noRrfMerge, List<Entry> rrfFusion,
@@ -42,7 +64,7 @@ public record HybridDebugResponse(
         this(question, recallK, finalK, originalQuestion, rewrittenQuestion, rewriteUsed, vectorOnly,
                 keywordOnly, noRrfMerge, rrfFusion, rrfDocFusion, rerankResult, rerankDocResult,
                 expandedContext, compressedContext, contextChunkCount, compressedContextCount,
-                contextPackingDiagnostics, rerankDiagnostics, "legacy", Map.of());
+                contextPackingDiagnostics, rerankDiagnostics, "legacy", Map.of(), Map.of());
     }
 
     public record Entry(

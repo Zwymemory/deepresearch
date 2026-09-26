@@ -116,6 +116,12 @@ DEEPRESEARCH_DEV_TOKEN_ALLOW_ADMIN=true
 
 四个安全值必须互不相同；不要提交 `.env`。
 
+RAGFlow 数据面保持为显式选择。`RAGFLOW_QUERY_EXPANSION_ENABLED=false`
+关闭的是 RAGFlow 额外的 LLM 查询扩展，RAGFlow 自带的词法与向量混合检索仍然启用。
+候选池默认值为 `RAGFLOW_KNN_TOP_K=256`、
+`RAGFLOW_KNN_NUM_CANDIDATES=2048` 和
+`RAGFLOW_RERANK_CANDIDATES_COUNT=64`；应用启动时会校验这些边界。
+
 ### 3. 启动完整栈
 
 ```bash

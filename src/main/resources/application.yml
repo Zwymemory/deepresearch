@@ -80,8 +80,12 @@ deepresearch:
     connect-timeout: 3s
     read-timeout: 15s
     max-results: 20
-    knn-top-k: 256
-    keyword: true
+    knn-top-k: ${RAGFLOW_KNN_TOP_K:256}
+    knn-num-candidates: ${RAGFLOW_KNN_NUM_CANDIDATES:2048}
+    rerank-candidates-count: ${RAGFLOW_RERANK_CANDIDATES_COUNT:64}
+    # RAGFlow keyword=true invokes a separate LLM query-expansion call. Its native
+    # lexical + dense hybrid retrieval remains enabled when query expansion is off.
+    query-expansion-enabled: ${RAGFLOW_QUERY_EXPANSION_ENABLED:false}
     ingestion-mode: builtin  # pipeline 数据集改为 pipeline
     similarity-threshold: 0.2
   default-temperature: 0.3

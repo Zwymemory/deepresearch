@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /** One evidence contract for Java answers, MCP tools and the later Dify facade. */
@@ -36,14 +38,29 @@ public class KnowledgeRetrievalGateway {
     public boolean ragflow() { return "ragflow".equals(provider); }
 
     public List<RetrievedEvidence> retrieve(String question, Integer topK) {
+        return retrieveWithDiagnostics(question, topK).evidence();
+    }
+
+    RetrievalResult retrieveWithDiagnostics(String question, Integer topK) {
         if (!ragflow()) throw new IllegalStateException("Gateway retrieval requires ragflow mode");
-        if (question == null || question.isBlank()) return List.of();
+        if (question == null || question.isBlank()) return RetrievalResult.empty();
         int limit = topK == null || topK < 1 ? 5 : Math.min(topK, maxResults);
-        List<String> activeIds = registry.activeDocumentIds(client.datasets());
-        if (activeIds.isEmpty()) return List.of();
+        List<String> datasets = client.datasets();
+        Set<String> allowedDatasets = Set.copyOf(datasets);
+        long registryStarted = System.nanoTime();
+        RagflowDocumentRegistry.Snapshot snapshot = registry.snapshot(datasets);
+        long registryMs = elapsedMs(registryStarted);
+        Set<RagflowDocumentRegistry.DocumentKey> activeKeys = snapshot.activeKeys();
+        List<String> activeIds = List.copyOf(snapshot.documentIds());
+        if (activeIds.isEmpty()) return new RetrievalResult(List.of(), timings(registryMs, 0, 0));
+
+        long upstreamStarted = System.nanoTime();
         JsonNode data = client.retrieve(question, limit, threshold, activeIds);
+        long upstreamMs = elapsedMs(upstreamStarted);
         JsonNode chunks = data.path("chunks");
         if (!chunks.isArray()) throw new IllegalStateException("RAGFlow retrieval chunks missing");
+
+        long normalizationStarted = System.nanoTime();
         List<RetrievedEvidence> output = new ArrayList<>();
         Set<String> seen = new HashSet<>();
         int totalChars = 0;
@@ -51,8 +68,10 @@ public class KnowledgeRetrievalGateway {
             String datasetId = required(chunk, "dataset_id");
             String docId = required(chunk, "document_id");
             String chunkId = required(chunk, "id");
-            if (!client.datasets().contains(datasetId)) throw new IllegalStateException("RAGFlow returned disallowed dataset");
-            if (!activeIds.contains(docId) || !registry.active(datasetId, docId))
+            if (!allowedDatasets.contains(datasetId)) throw new IllegalStateException("RAGFlow returned disallowed dataset");
+            RagflowDocumentRegistry.DocumentKey documentKey =
+                    new RagflowDocumentRegistry.DocumentKey(datasetId, docId);
+            if (!activeKeys.contains(documentKey))
                 throw new IllegalStateException("RAGFlow returned inactive document");
             String key = "ragflow:" + datasetId + ":" + docId + ":" + chunkId;
             String content = clean(chunk.path("content").asText(""), 700);
@@ -62,7 +81,7 @@ public class KnowledgeRetrievalGateway {
             if (content.length() > remaining) content = content.substring(0, remaining);
             totalChars += content.length();
             int n = output.size() + 1;
-            String title = registry.title(datasetId, docId);
+            String title = snapshot.title(documentKey);
             output.add(new RetrievedEvidence("来源" + n, "[来源" + n + "]", key, datasetId, docId,
                     chunkId, clean(title.isBlank() ? chunk.path("document_keyword").asText("") : title, 180),
                     ToolOutputSanitizer.markUntrusted("knowledge-base", content),
@@ -70,7 +89,8 @@ public class KnowledgeRetrievalGateway {
                     "ragflow", true, null, null));
             if (output.size() == limit) break;
         }
-        return List.copyOf(output);
+        return new RetrievalResult(List.copyOf(output),
+                timings(registryMs, upstreamMs, elapsedMs(normalizationStarted)));
     }
 
     /** Resolves a persistent citation against the real RAGFlow chunk API. */
@@ -100,5 +120,28 @@ public class KnowledgeRetrievalGateway {
         String value = ToolOutputSanitizer.neutralizeCitationMarkers(raw).replaceAll("(?i)(api[_-]?key|password|token)\\s*[:=]\\s*\\S+", "$1=[REDACTED]")
                 .replaceAll("[\\p{Cntrl}&&[^\\n\\t]]", " ").trim();
         return value.length() <= max ? value : value.substring(0, max);
+    }
+
+    private static long elapsedMs(long started) {
+        return Math.max(0, (System.nanoTime() - started) / 1_000_000);
+    }
+
+    private static Map<String, Long> timings(long registryMs, long upstreamMs, long normalizationMs) {
+        LinkedHashMap<String, Long> result = new LinkedHashMap<>();
+        result.put("registry", registryMs);
+        result.put("upstreamApi", upstreamMs);
+        result.put("evidenceNormalization", normalizationMs);
+        return Map.copyOf(result);
+    }
+
+    record RetrievalResult(List<RetrievedEvidence> evidence, Map<String, Long> stageTimingMs) {
+        RetrievalResult {
+            evidence = List.copyOf(evidence);
+            stageTimingMs = Map.copyOf(stageTimingMs);
+        }
+
+        static RetrievalResult empty() {
+            return new RetrievalResult(List.of(), timings(0, 0, 0));
+        }
     }
 }
