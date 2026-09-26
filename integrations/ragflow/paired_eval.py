@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import math
@@ -221,34 +222,54 @@ def collect(args):
     if manifest.get("kind") == "project" and (not isinstance(project_doc_ids, list) or not project_doc_ids
                                                 or any(not isinstance(doc_id, str) or not doc_id for doc_id in project_doc_ids)):
         raise ValueError("project conditions require every projectDocumentId for mapping checks")
-    bases = {"legacy": base_url(args.legacy_url), "ragflow": base_url(args.ragflow_url)}
+    route_arg = getattr(args, "route", "both")
+    if route_arg not in ("both", *ROUTES):
+        raise ValueError(f"unsupported collection route {route_arg!r}")
+    selected_routes = tuple(ROUTES) if route_arg == "both" else (route_arg,)
+    route_urls = {"legacy": getattr(args, "legacy_url", None),
+                  "ragflow": getattr(args, "ragflow_url", None)}
+    missing_urls = [route for route in selected_routes if not route_urls[route]]
+    if missing_urls:
+        raise ValueError("missing URL for selected route(s): " + ", ".join(missing_urls))
+    bases = {route: base_url(route_urls[route]) for route in selected_routes}
     tokens = {"legacy": os.getenv("EVAL_LEGACY_TOKEN"), "ragflow": os.getenv("EVAL_RAGFLOW_TOKEN")}
-    if args.ingest_fixture and any(not value for value in tokens.values()):
-        raise ValueError("both EVAL_LEGACY_TOKEN and EVAL_RAGFLOW_TOKEN are required for ingestion")
-    if manifest.get("kind") == "project" and not tokens["ragflow"]:
+    missing_ingestion_tokens = [route for route in selected_routes if not tokens[route]]
+    if args.ingest_fixture and missing_ingestion_tokens:
+        names = ", ".join("EVAL_" + route.upper() + "_TOKEN" for route in missing_ingestion_tokens)
+        raise ValueError(f"fixture ingestion requires {names}")
+    if manifest.get("kind") == "project" and "ragflow" in selected_routes and not tokens["ragflow"]:
         raise ValueError("EVAL_RAGFLOW_TOKEN is required to verify project document mappings")
     ingestion = {}
     if args.ingest_fixture:
-        for route in ROUTES:
+        for route in selected_routes:
             upload = upload_fixture(bases[route], tokens[route], fixture)
             doc_id = upload.get("docId")
             if not doc_id:
                 raise ValueError(f"{route} upload did not return docId")
             ingestion[route] = wait_for_ingestion(bases[route], tokens[route], doc_id, route)
     project_mappings = []
-    if manifest.get("kind") == "project":
+    if manifest.get("kind") == "project" and "ragflow" in selected_routes:
         for doc_id in project_doc_ids:
             project_mappings.append(wait_for_ingestion(bases["ragflow"], tokens["ragflow"], doc_id, "ragflow"))
     runs = []
     top_k = manifest["topK"]
-    for case in manifest["cases"]:
-        order = list(ROUTES) if len(runs) % 2 == 0 else list(reversed(ROUTES))
+    for case_index, case in enumerate(manifest["cases"]):
+        order = list(selected_routes)
+        if len(order) > 1 and case_index % 2:
+            order.reverse()
         for route in order:
             for _ in range(args.warmup):
-                fetch_entries(bases[route], tokens[route], case, top_k)
+                try:
+                    fetch_entries(bases[route], tokens[route], case, top_k)
+                except (OSError, ValueError, RuntimeError) as error:
+                    raise RuntimeError(f"{case['id']} {route} warmup failed: {error}") from error
             samples = []
-            for _ in range(args.repetitions):
-                response, elapsed = fetch_entries(bases[route], tokens[route], case, top_k)
+            for repetition in range(1, args.repetitions + 1):
+                try:
+                    response, elapsed = fetch_entries(bases[route], tokens[route], case, top_k)
+                except (OSError, ValueError, RuntimeError) as error:
+                    raise RuntimeError(
+                        f"{case['id']} {route} repetition {repetition} failed: {error}") from error
                 if response.get("provider") != route:
                     raise ValueError(f"{route} endpoint reported provider={response.get('provider')!r}")
                 field = ROUTES[route]
@@ -272,20 +293,139 @@ def collect(args):
                 samples.append(sample)
             runs.append({"caseId": case["id"], "route": route, "samples": samples})
     verification = []
-    if args.ragflow_api_url and os.getenv("RAGFLOW_API_KEY"):
+    ragflow_api_url = getattr(args, "ragflow_api_url", None)
+    citation_attempted = bool("ragflow" in selected_routes and ragflow_api_url
+                              and os.getenv("RAGFLOW_API_KEY"))
+    if citation_attempted:
         keys = {entry["chunkKey"] for run in runs if run["route"] == "ragflow"
                 for sample in run["samples"] for entry in sample["entries"]
                 if isinstance(entry.get("chunkKey"), str)}
-        verification = [citation_check(base_url(args.ragflow_api_url), os.environ["RAGFLOW_API_KEY"], key)
+        verification = [citation_check(base_url(ragflow_api_url), os.environ["RAGFLOW_API_KEY"], key)
                         for key in sorted(keys)]
-    capture = {"schemaVersion": 2, "manifest": manifest,
+    capture = {"schemaVersion": 2, "collectedRoutes": list(selected_routes), "manifest": manifest,
                "fixtureSha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
                "conditions": conditions, "ingestion": ingestion or None,
                "projectMappings": project_mappings, "runs": runs,
                "citationChecks": verification,
-               "citationCheckAttempted": bool(args.ragflow_api_url and os.getenv("RAGFLOW_API_KEY"))}
+               "citationCheckAttempted": citation_attempted}
     write_json(Path(args.output), capture)
     return capture
+
+
+def run_index(capture, expected_routes):
+    manifest = capture.get("manifest")
+    if not isinstance(manifest, dict):
+        raise ValueError("capture manifest is missing")
+    validate_manifest(manifest)
+    runs = capture.get("runs")
+    if not isinstance(runs, list):
+        raise ValueError("capture runs must be a list")
+    expected = {(case["id"], route) for case in manifest["cases"] for route in expected_routes}
+    indexed = {}
+    for run in runs:
+        if not isinstance(run, dict):
+            raise ValueError("every capture run must be an object")
+        if not isinstance(run.get("caseId"), str) or not isinstance(run.get("route"), str):
+            raise ValueError("every capture run needs string caseId and route")
+        identity = (run.get("caseId"), run.get("route"))
+        if identity in indexed:
+            raise ValueError(f"duplicate run for case={identity[0]!r} route={identity[1]!r}")
+        indexed[identity] = run
+    if set(indexed) != expected:
+        missing = sorted(expected - set(indexed), key=repr)
+        extra = sorted(set(indexed) - expected, key=repr)
+        raise ValueError(f"capture run set mismatch; missing={missing!r}, extra={extra!r}")
+    return indexed
+
+
+def validate_partial_capture(capture, route):
+    collected = capture.get("collectedRoutes")
+    if collected != [route]:
+        raise ValueError(f"{route} partial must declare collectedRoutes=[{route!r}]")
+    if capture.get("schemaVersion") != 2:
+        raise ValueError(f"{route} partial must use capture schemaVersion 2")
+    fixture_sha = capture.get("fixtureSha256")
+    if not isinstance(fixture_sha, str) or not fixture_sha:
+        raise ValueError(f"{route} partial must record fixtureSha256")
+    if not isinstance(capture.get("conditions"), dict) or not capture["conditions"]:
+        raise ValueError(f"{route} partial must record conditions")
+    ingestion = capture.get("ingestion") or {}
+    if not isinstance(ingestion, dict) or any(key != route for key in ingestion):
+        raise ValueError(f"{route} partial ingestion may only contain the selected route")
+    if any(not isinstance(status, dict) for status in ingestion.values()):
+        raise ValueError(f"{route} partial ingestion records must be objects")
+    if not isinstance(capture.get("citationCheckAttempted"), bool):
+        raise ValueError(f"{route} partial must record citationCheckAttempted")
+    indexed = run_index(capture, (route,))
+    cases = {case["id"]: case for case in capture["manifest"]["cases"]}
+    for (case_id, _), run in indexed.items():
+        samples = run.get("samples")
+        if not isinstance(samples, list) or not samples:
+            raise ValueError(f"{case_id} {route} run needs measured samples")
+        for sample in samples:
+            score_sample(cases[case_id], sample, capture["manifest"]["topK"])
+    return indexed
+
+
+def merge_keyed_records(name, key, captures):
+    merged = []
+    by_key = {}
+    for capture in captures:
+        records = capture.get(name) or []
+        if not isinstance(records, list):
+            raise ValueError(f"{name} must be a list")
+        for record in records:
+            if not isinstance(record, dict) or not isinstance(record.get(key), str) or not record[key]:
+                raise ValueError(f"every {name} record needs a nonempty {key}")
+            identity = record[key]
+            if identity in by_key:
+                if by_key[identity] != record:
+                    raise ValueError(f"conflicting {name} records for {identity!r}")
+                continue
+            cloned = copy.deepcopy(record)
+            by_key[identity] = cloned
+            merged.append(cloned)
+    return merged
+
+
+def merge_captures(legacy_capture, ragflow_capture):
+    captures = (legacy_capture, ragflow_capture)
+    indexes = {
+        "legacy": validate_partial_capture(legacy_capture, "legacy"),
+        "ragflow": validate_partial_capture(ragflow_capture, "ragflow"),
+    }
+    for field in ("manifest", "fixtureSha256", "conditions"):
+        if legacy_capture.get(field) != ragflow_capture.get(field):
+            raise ValueError(f"partial captures have different {field}")
+    sample_counts = {len(run["samples"]) for index in indexes.values() for run in index.values()}
+    if len(sample_counts) != 1:
+        raise ValueError("partial captures must use the same repetition count for every case and route")
+
+    ingestion = {}
+    for capture in captures:
+        for route, status in (capture.get("ingestion") or {}).items():
+            if route in ingestion and ingestion[route] != status:
+                raise ValueError(f"conflicting ingestion records for {route!r}")
+            ingestion[route] = copy.deepcopy(status)
+
+    manifest = legacy_capture["manifest"]
+    runs = [copy.deepcopy(indexes[route][(case["id"], route)])
+            for case in manifest["cases"] for route in ROUTES]
+    merged = {
+        "schemaVersion": 2,
+        "collectedRoutes": list(ROUTES),
+        "manifest": copy.deepcopy(manifest),
+        "fixtureSha256": legacy_capture["fixtureSha256"],
+        "conditions": copy.deepcopy(legacy_capture["conditions"]),
+        "ingestion": ingestion or None,
+        "projectMappings": merge_keyed_records("projectMappings", "docId", captures),
+        "runs": runs,
+        "citationChecks": merge_keyed_records("citationChecks", "sourceId", captures),
+        "citationCheckAttempted": any(capture.get("citationCheckAttempted") is True
+                                      for capture in captures),
+    }
+    run_index(merged, tuple(ROUTES))
+    return merged
 
 
 def percentile95(values):
@@ -391,9 +531,11 @@ def score(capture, manifest=None):
     manifest = manifest or capture["manifest"]
     validate_manifest(manifest)
     top_k = manifest["topK"]
-    indexed = {(run["caseId"], run["route"]): run for run in capture["runs"]}
-    if len(indexed) != len(manifest["cases"]) * 2 or len(indexed) != len(capture["runs"]):
-        raise ValueError("capture must have exactly one run per case and route")
+    collected = capture.get("collectedRoutes")
+    if collected is not None and collected != list(ROUTES):
+        raise ValueError("partial capture cannot be scored directly; merge legacy and ragflow captures first")
+    scoring_capture = capture if manifest is capture.get("manifest") else {**capture, "manifest": manifest}
+    indexed = run_index(scoring_capture, tuple(ROUTES))
     per_case = []
     aggregate = {route: {"firstHits": [], "everyHits": [], "firstCoverage": [], "everyCoverage": [],
                          "firstRecall": [], "firstMrr": [], "firstNdcg": [],
@@ -563,13 +705,18 @@ def main():
     collect_cmd = commands.add_parser("collect")
     collect_cmd.add_argument("--manifest", required=True)
     collect_cmd.add_argument("--conditions", required=True)
-    collect_cmd.add_argument("--legacy-url", required=True)
-    collect_cmd.add_argument("--ragflow-url", required=True)
+    collect_cmd.add_argument("--route", choices=("both", *ROUTES), default="both")
+    collect_cmd.add_argument("--legacy-url")
+    collect_cmd.add_argument("--ragflow-url")
     collect_cmd.add_argument("--ragflow-api-url", help="direct RAGFlow API base URL for citation backchecks")
     collect_cmd.add_argument("--output", required=True)
     collect_cmd.add_argument("--ingest-fixture", action="store_true")
     collect_cmd.add_argument("--repetitions", type=int, default=3)
     collect_cmd.add_argument("--warmup", type=int, default=1)
+    merge_cmd = commands.add_parser("merge")
+    merge_cmd.add_argument("--legacy-capture", required=True)
+    merge_cmd.add_argument("--ragflow-capture", required=True)
+    merge_cmd.add_argument("--output", required=True)
     score_cmd = commands.add_parser("score")
     score_cmd.add_argument("--capture", required=True)
     score_cmd.add_argument("--manifest", help="reviewed contract to apply to an older compatible capture")
@@ -579,6 +726,11 @@ def main():
         if args.repetitions < 1 or args.warmup < 0:
             parser.error("repetitions must be positive and warmup nonnegative")
         collect(args)
+    elif args.command == "merge":
+        merged = merge_captures(read_json(Path(args.legacy_capture)), read_json(Path(args.ragflow_capture)))
+        write_json(Path(args.output), merged)
+        print(json.dumps({"collectedRoutes": merged["collectedRoutes"],
+                          "caseCount": len(merged["manifest"]["cases"])}, ensure_ascii=False))
     else:
         manifest = read_json(Path(args.manifest)) if args.manifest else None
         report = score(read_json(Path(args.capture)), manifest)

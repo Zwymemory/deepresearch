@@ -45,7 +45,43 @@ python3 integrations/ragflow/paired_eval.py score \
   --output /tmp/ragflow-synthetic-report.json
 ```
 
-Repeat `collect` and `score` with `project_cases.json` and separate output names. Synchronize the project corpus on both routes first. You can use `--ingest-fixture` to prove synthetic parse completion during that run, but the extra fixture then enters the retrieval corpus and must be recorded in the conditions. The 2026-09-22 project run kept the eight-document project corpus clean and measured fixture parsing in a separate synthetic run. Its project score therefore has `fixtureParsedBoth=false`; read both reports together. `projectDocumentIds` are checked through `GET /api/kb/documents/{docId}/ragflow-sync`, which reconciles the remote job and reports mapping status. A `kb_document` row marked DONE without a DONE RAGFlow mapping does not pass. Each route is warmed once per query, then measured three times. Route order alternates by query. Every repetition is scored; the report exposes first-sample and every-sample coverage plus rank instability. Retrieval p95 uses only debug-call durations and the nearest observed rank, `ceil(0.95 × n)`. If debug returns `stageTimingMs`, the collector allowlists `queryRewrite`, `registry`, `upstreamApi`, `evidenceNormalization`, `responseAssembly`, and `total`; the scorer reports sample count, mean, and p95 for each available stage.
+### Sequential collection on a resource-constrained host
+
+Use `--route` when only one Java retrieval route can run at a time. Reuse the exact same manifest, fixture bytes, and conditions file; declare one test window that covers both collections. The merge command rejects any manifest, fixture hash, or conditions drift. A one-route capture records `collectedRoutes` and cannot be scored until it is merged with its counterpart.
+
+```sh
+# Run while the Java instance is configured with provider=legacy.
+python3 integrations/ragflow/paired_eval.py collect \
+  --route legacy \
+  --manifest integrations/ragflow/synthetic_cases.json \
+  --conditions /tmp/ragflow-eval-conditions.json \
+  --legacy-url http://127.0.0.1:8080 \
+  --ingest-fixture --warmup 1 --repetitions 3 \
+  --output /tmp/ragflow-synthetic-legacy-partial.json
+
+# Stop only that Java instance, restore the equivalent isolated DB snapshot,
+# and restart Java with provider=ragflow before collecting the second route.
+python3 integrations/ragflow/paired_eval.py collect \
+  --route ragflow \
+  --manifest integrations/ragflow/synthetic_cases.json \
+  --conditions /tmp/ragflow-eval-conditions.json \
+  --ragflow-url http://127.0.0.1:8080 \
+  --ragflow-api-url http://127.0.0.1:9380 \
+  --ingest-fixture --warmup 1 --repetitions 3 \
+  --output /tmp/ragflow-synthetic-ragflow-partial.json
+
+python3 integrations/ragflow/paired_eval.py merge \
+  --legacy-capture /tmp/ragflow-synthetic-legacy-partial.json \
+  --ragflow-capture /tmp/ragflow-synthetic-ragflow-partial.json \
+  --output /tmp/ragflow-synthetic-capture.json
+python3 integrations/ragflow/paired_eval.py score \
+  --capture /tmp/ragflow-synthetic-capture.json \
+  --output /tmp/ragflow-synthetic-report.json
+```
+
+The merged capture contains exactly one run for every case and route. It combines the route-specific ingestion evidence, RAGFlow project mapping checks, and citation backchecks. This permits Java and database resources to be time-sliced while RAGFlow and Dify remain running.
+
+Repeat `collect` and `score` with `project_cases.json` and separate output names. Synchronize the project corpus on both routes first. You can use `--ingest-fixture` to prove synthetic parse completion during that run, but the extra fixture then enters the retrieval corpus and must be recorded in the conditions. The 2026-09-22 project run kept the eight-document project corpus clean and measured fixture parsing in a separate synthetic run. Its project score therefore has `fixtureParsedBoth=false`; read both reports together. `projectDocumentIds` are checked through `GET /api/kb/documents/{docId}/ragflow-sync`, which reconciles the remote job and reports mapping status. A `kb_document` row marked DONE without a DONE RAGFlow mapping does not pass. Each route is warmed once per query, then measured three times. When both routes are collected together, route order alternates by query. Every repetition is scored; the report exposes first-sample and every-sample coverage plus rank instability. Retrieval p95 uses only debug-call durations and the nearest observed rank, `ceil(0.95 × n)`. If debug returns `stageTimingMs`, the collector allowlists `queryRewrite`, `registry`, `upstreamApi`, `evidenceNormalization`, `responseAssembly`, and `total`; the scorer reports sample count, mean, and p95 for each available stage.
 
 To apply the reviewed contract to a compatible older capture without modifying it, pass `--manifest` to `score`. Missing safe-denial answer samples fail closed:
 

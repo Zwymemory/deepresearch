@@ -1,4 +1,5 @@
 import importlib.util
+import copy
 import hashlib
 import json
 import tempfile
@@ -174,7 +175,7 @@ class PairedEvalTest(unittest.TestCase):
             args = SimpleNamespace(manifest=str(base / "manifest.json"), conditions=str(base / "conditions.json"),
                                    legacy_url="http://legacy", ragflow_url="http://ragflow",
                                    ragflow_api_url=None, ingest_fixture=False, warmup=0,
-                                   repetitions=2, output=str(base / "capture.json"))
+                                   repetitions=2, route="both", output=str(base / "capture.json"))
 
             def fetch(url, *_):
                 route = "legacy" if url == "http://legacy" else "ragflow"
@@ -193,6 +194,107 @@ class PairedEvalTest(unittest.TestCase):
             self.assertEqual(capture["runs"][0]["samples"][0]["stageTimingMs"], {"upstreamApi": 7})
             report = paired_eval.score(capture)
             self.assertEqual(report["metrics"]["legacy"]["p95Ms"], 12.5)
+
+    def test_collector_can_capture_one_route_and_partial_cannot_be_scored(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            (base / "fixture.md").write_text("FACT-A DETAIL", encoding="utf-8")
+            manifest = {"fixture": "fixture.md", "topK": 1, "cases": [positive()]}
+            (base / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+            (base / "conditions.json").write_text(json.dumps({
+                "legacyConfig": {"provider": "legacy"}, "ragflowConfig": {"provider": "ragflow"},
+                "host": "test", "corpus": "fixture", "testWindow": "shared-window"}), encoding="utf-8")
+            args = SimpleNamespace(manifest=str(base / "manifest.json"), conditions=str(base / "conditions.json"),
+                                   legacy_url="http://legacy", ragflow_url=None, ragflow_api_url=None,
+                                   ingest_fixture=False, warmup=0, repetitions=1, route="legacy",
+                                   output=str(base / "legacy.json"))
+
+            response = {"provider": "legacy", "similarityScores": {"legacy:key": 0.8},
+                        "rerankResult": [{"chunkKey": "legacy:key", "preview": "FACT-A DETAIL"}]}
+            with patch.object(paired_eval, "fetch_entries", return_value=(response, 8.5)) as fetch:
+                capture = paired_eval.collect(args)
+
+            self.assertEqual(capture["collectedRoutes"], ["legacy"])
+            self.assertEqual([(run["caseId"], run["route"]) for run in capture["runs"]],
+                             [("positive", "legacy")])
+            self.assertEqual(fetch.call_count, 1)
+            with self.assertRaisesRegex(ValueError, "partial capture cannot be scored directly"):
+                paired_eval.score(capture)
+
+    def test_merge_combines_strict_route_partials_into_scoreable_capture(self):
+        case = positive()
+        manifest = {"kind": "project", "fixture": "fixture.md", "topK": 1, "cases": [case]}
+        conditions = {"legacyConfig": {"provider": "legacy"},
+                      "ragflowConfig": {"provider": "ragflow"},
+                      "host": "same-host", "corpus": {"files": []}, "testWindow": "shared-window"}
+
+        def partial(route, entry_value):
+            return {"schemaVersion": 2, "collectedRoutes": [route], "manifest": copy.deepcopy(manifest),
+                    "fixtureSha256": "abc123", "conditions": copy.deepcopy(conditions),
+                    "ingestion": {route: {"status": "DONE"}},
+                    "projectMappings": ([{"docId": "project-doc", "status": "DONE"}]
+                                        if route == "ragflow" else []),
+                    "runs": [{"caseId": case["id"], "route": route,
+                              "samples": [{"latencyMs": 10, "entries": [entry_value]}]}],
+                    "citationChecks": ([{"sourceId": "kb:ragflow:ds:doc:chunk", "verified": True}]
+                                       if route == "ragflow" else []),
+                    "citationCheckAttempted": route == "ragflow"}
+
+        legacy = partial("legacy", entry("FACT-A DETAIL"))
+        ragflow = partial("ragflow", entry("FACT-A DETAIL", "ragflow:ds:doc:chunk"))
+        merged = paired_eval.merge_captures(legacy, ragflow)
+
+        self.assertEqual(merged["collectedRoutes"], ["legacy", "ragflow"])
+        self.assertEqual(set(merged["ingestion"]), {"legacy", "ragflow"})
+        self.assertEqual(merged["projectMappings"], [{"docId": "project-doc", "status": "DONE"}])
+        self.assertEqual(merged["citationChecks"],
+                         [{"sourceId": "kb:ragflow:ds:doc:chunk", "verified": True}])
+        self.assertTrue(merged["citationCheckAttempted"])
+        report = paired_eval.score(merged)
+        self.assertEqual(report["metrics"]["legacy"]["positiveCount"], 1)
+        self.assertEqual(report["metrics"]["ragflow"]["positiveCount"], 1)
+
+    def test_merge_rejects_contract_drift_and_non_unique_route_runs(self):
+        case = positive()
+        manifest = {"fixture": "fixture.md", "topK": 1, "cases": [case]}
+        base = {"schemaVersion": 2, "manifest": manifest, "fixtureSha256": "same-fixture",
+                "conditions": {"testWindow": "same-window"}, "ingestion": None,
+                "projectMappings": [], "citationChecks": [], "citationCheckAttempted": False}
+
+        def partial(route):
+            return {**copy.deepcopy(base), "collectedRoutes": [route],
+                    "runs": [{"caseId": case["id"], "route": route,
+                              "samples": [{"latencyMs": 1, "entries": [entry("FACT-A DETAIL")]}]}]}
+
+        legacy = partial("legacy")
+        ragflow = partial("ragflow")
+        mismatches = {
+            "manifest": {**manifest, "topK": 2},
+            "fixtureSha256": "different-fixture",
+            "conditions": {"testWindow": "different-window"},
+        }
+        for field, changed in mismatches.items():
+            with self.subTest(field=field):
+                drifted = copy.deepcopy(ragflow)
+                drifted[field] = changed
+                with self.assertRaisesRegex(ValueError, f"different {field}"):
+                    paired_eval.merge_captures(legacy, drifted)
+
+        duplicate = copy.deepcopy(ragflow)
+        duplicate["runs"].append(copy.deepcopy(duplicate["runs"][0]))
+        with self.assertRaisesRegex(ValueError, "duplicate run"):
+            paired_eval.merge_captures(legacy, duplicate)
+
+        missing = copy.deepcopy(ragflow)
+        missing["runs"] = []
+        with self.assertRaisesRegex(ValueError, "capture run set mismatch"):
+            paired_eval.merge_captures(legacy, missing)
+
+        unequal_repetitions = copy.deepcopy(ragflow)
+        unequal_repetitions["runs"][0]["samples"].append(
+            copy.deepcopy(unequal_repetitions["runs"][0]["samples"][0]))
+        with self.assertRaisesRegex(ValueError, "same repetition count"):
+            paired_eval.merge_captures(legacy, unequal_repetitions)
 
     def test_old_relevant_anchor_manifest_remains_scoreable(self):
         case = {"id": "old", "question": "fact?", "relevantAnchors": ["FACT-A"]}
