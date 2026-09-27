@@ -199,7 +199,7 @@ public class DifyWorkflowAdapter {
     }
 
     private boolean validCitations(String runId, String answer, List<String> citations) {
-        if (answer.isBlank() || answer.length() > 32768 || citations.isEmpty() || citations.size() > 5
+        if (answer.isBlank() || answer.length() > 32768 || citations.isEmpty() || citations.size() > 8
                 || citations.stream().anyMatch(value -> value == null || value.length() > 2048)
                 || citations.stream().distinct().count() != citations.size()
                 || citations.stream().anyMatch(value -> !SOURCE.matcher(value).matches())) return false;

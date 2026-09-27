@@ -34,7 +34,7 @@ class DifyCitationValidatorTest {
     @Test
     void rejectsOversizedCitationSetWithoutNetworkCalls() {
         try {
-            assertThat(validator.available(List.of("a", "b", "c", "d", "e", "f"))).isFalse();
+            assertThat(validator.available(List.of("a", "b", "c", "d", "e", "f", "g", "h", "i"))).isFalse();
             verify(gateway, never()).citationExists(anyString());
         } finally {
             validator.shutdown();

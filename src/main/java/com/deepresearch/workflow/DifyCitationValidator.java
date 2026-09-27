@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 /** Rechecks current RAGFlow document and chunk state before publishing a Dify answer. */
 @Component
 class DifyCitationValidator {
-    private static final int MAX_CITATIONS = 5;
+    private static final int MAX_CITATIONS = 8;
     private static final int DEADLINE_SECONDS = 8;
     private final KnowledgeRetrievalGateway gateway;
     private final ThreadPoolExecutor checks = new ThreadPoolExecutor(2, 2, 0, TimeUnit.SECONDS,
