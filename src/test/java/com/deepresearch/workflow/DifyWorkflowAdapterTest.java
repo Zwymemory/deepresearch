@@ -87,6 +87,22 @@ class DifyWorkflowAdapterTest {
     }
 
     @Test
+    void acceptsSixReindexedEvidenceCitationsWithinBoundedSourceCheck() throws Exception {
+        String[] sources = new String[6];
+        for (int index = 0; index < sources.length; index++) {
+            sources[index] = "kb:ragflow:dataset:doc:chunk-" + (index + 1);
+        }
+        setup("succeeded", "SUCCEEDED", "facts [来源1][来源2][来源3][来源4][来源5][来源6]", sources);
+        when(repository.difySources("wf-1")).thenReturn(Set.of(sources));
+        when(citationValidator.available(any())).thenReturn(true);
+
+        adapter.reconcile("wf-1");
+
+        verify(repository).finishDify(eq("wf-1"), eq(WorkflowStatus.SUCCEEDED), any(), any(),
+                eq(null), eq("facts [来源1][来源2][来源3][来源4][来源5][来源6]"));
+    }
+
+    @Test
     void remoteFailureCannotPublishAppClaimedSuccess() throws Exception {
         setup("failed", "SUCCEEDED", "answer [来源1]", "kb:ragflow:dataset:doc:one");
         adapter.reconcile("wf-1");
