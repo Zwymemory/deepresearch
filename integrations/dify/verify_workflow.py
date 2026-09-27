@@ -116,6 +116,13 @@ def verify_contract() -> None:
     assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Unknown [来源4].", "citations": [citation_c]}), context=deduplicated["context"])["status"] == "FAILED"
     assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Duplicate [来源1] [来源2].", "citations": [citation_c, citation_c]}), context=deduplicated["context"])["status"] == "FAILED"
     assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Foreign [来源1] [来源2].", "citations": [citation_c, "kb:ragflow:foreign:document:chunk"]}), context=deduplicated["context"])["status"] == "FAILED"
+    literal_example = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED",
+            "answer": "The literal [来源N] is a format example; evidence A [来源1].", "citations": [citation_a]}),
+            context=deduplicated["context"])
+    assert literal_example["status"] == "SUCCEEDED" and literal_example["answer"] == "The literal 来源编号 is a format example; evidence A [来源1]."
+    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED",
+            "answer": "Malformed [来源X] beside evidence A [来源1].", "citations": [citation_a]}),
+            context=deduplicated["context"])["status"] == "FAILED"
     assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "No source [来源1].", "citations": [citation_a]}), context=empty_initial["context"])["status"] == "INSUFFICIENT_EVIDENCE"
 
     nine = [{"sourceId": "来源" + str(index), "citationId": "kb:ragflow:ds:doc:chunk" + str(index)}
@@ -133,6 +140,17 @@ def verify_contract() -> None:
             "citations": [nine[index - 1]["citationId"] for index in reversed(first_used)]}),
             context=json.dumps({"evidences": nine}))
     assert unordered_shape == live_shape
+    source_label_shape = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED",
+            "answer": "A [来源1] B [来源2] C [来源2] D [来源6] E [来源7] F [来源3] G [来源5]",
+            "citations": ["来源" + str(index) for index in reversed(first_used)]}),
+            context=json.dumps({"evidences": nine}))
+    assert source_label_shape == live_shape
+    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED",
+            "answer": "A [来源1] B [来源2]", "citations": ["来源1", nine[1]["citationId"]]}),
+            context=json.dumps({"evidences": nine}))["status"] == "FAILED"
+    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED",
+            "answer": "A [来源1] B [来源2]", "citations": ["来源1", "来源10"]}),
+            context=json.dumps({"evidences": nine}))["status"] == "FAILED"
 
     review = call("review", review_text=json.dumps({"verdict": "REVISE", "followups": [{"tool": "kb_search", "input": "more"}]}), context=initial["context"], initial_count=1, java_run_id=run_id, allowed_tools="kb_search")
     assert review["status"] == "READY" and len(review["requests"]) == 1

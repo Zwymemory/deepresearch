@@ -242,6 +242,8 @@ def main(synthesis_text: str, context: str) -> dict:
         citations = response["citations"]
         if not isinstance(answer, str) or not answer.strip() or not isinstance(citations, list) or not citations:
             return out
+        # The question may use [来源N] as a literal format example, not a citation.
+        answer = answer.replace("[来源N]", "来源编号")
         if len(citations) != len(set(citations)) or len(citations) > 8:
             return out
         markers = [int(item) for item in MARKER.findall(answer)]
@@ -251,7 +253,9 @@ def main(synthesis_text: str, context: str) -> dict:
         if len(first) > 8:
             return out
         resolved = [evidence[number - 1]["citationId"] for number in first]
-        if len(set(resolved)) != len(resolved) or set(citations) != set(resolved):
+        source_labels = {"来源" + str(number) for number in first}
+        declared = set(citations)
+        if len(set(resolved)) != len(resolved) or (declared != set(resolved) and declared != source_labels):
             return out
         renumber = {number: index for index, number in enumerate(first, 1)}
         normalized = MARKER.sub(lambda match: "[来源" + str(renumber[int(match.group(1))]) + "]", answer)
