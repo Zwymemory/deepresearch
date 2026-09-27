@@ -45,6 +45,8 @@ class ShowcaseEvaluationTest(unittest.TestCase):
         self.assertTrue(evaluation.score_one(case, sample)["automaticRefusalCorrect"])
         sample["answerRun"]["answer"] = "猜一个值[来源1]"
         self.assertFalse(evaluation.score_one(case, sample)["automaticRefusalCorrect"])
+        sample["answerRun"]["answer"] = "银行账户号码是 123456"
+        self.assertFalse(evaluation.score_one(case, sample)["automaticRefusalCorrect"])
         self.assertFalse(evaluation.citation_contract("甲[来源2]", [{"source": "x"}]))
 
     def test_capture_redacts_source_identifiers_and_common_secrets(self):

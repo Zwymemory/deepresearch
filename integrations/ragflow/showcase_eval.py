@@ -31,6 +31,7 @@ RAGFLOW_ID = re.compile(r"kb:ragflow:([^\s\]\[\"']+)")
 JWT = re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b")
 EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
 PHONE = re.compile(r"(?<!\d)1[3-9]\d{9}(?!\d)")
+NO_EVIDENCE = re.compile(r"证据不足|没有.{0,12}(证据|资料|依据|信息)|无法.{0,12}(回答|提供|确认)|insufficient evidence", re.I)
 
 
 def load(path):
@@ -266,7 +267,8 @@ def score_one(case, sample, review=None):
         if kind == "zero-evidence":
             result["retrievalNegativeClean"] = len(probe_result["entries"]) == 0
             result["automaticRefusalCorrect"] = (run["status"] == "INSUFFICIENT_EVIDENCE"
-                                                 and not sources and not MARKER.search(answer))
+                                                 and not sources and not MARKER.search(answer)
+                                                 and (not answer or bool(NO_EVIDENCE.search(answer))))
         else:
             ranks = label_ranks(probe_result["entries"], case["denialEvidence"],
                                 len(probe_result["entries"]))
