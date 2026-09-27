@@ -130,7 +130,7 @@ collector timeout, not the Java service or a quality gate.
 
 采集器支持旧演示工作流 `legacy-langgraph`、新路径 `ragflow-dify`、用于隔离编排变量的 `ragflow-langgraph`，以及简单问答对照 `legacy-hybrid`。每种模式从独立 Java 配置采样，可在一台内存受限机器上依次运行。对每题先发一次 `/api/research/hybrid/debug` 检索探针，再运行答案接口或 Java workflow。**工作流探针是另一请求，不是该次 Dify/LangGraph 的内部工具回执**；其事实覆盖只能说明同配置检索能力，不能证明工作流实际用了这些 chunk。报告分别列出检索事实覆盖、答案短语匹配下界、人工核定答案事实覆盖、引用编号映射、RAGFlow 来源存在性、人工核定引用支持性，以及拒答正确性。人工审阅留空时相应结果为 `null`，不会被自动算作通过。
 
-先从 [条件模板](showcase_conditions.example.json)为每种模式各建一份私有 JSON，填写统一代码 SHA、模型、项目语料哈希、topK、预算、主机和测试窗口；不要存入密钥、token、dataset ID 或私有路径。`SHOWCASE_EVAL_TOKEN` 是从演示页签发的 USER Token，仅放在环境变量中。RAGFlow 直接 chunk 回查还需要 `SHOWCASE_RAGFLOW_URL` 与 `RAGFLOW_API_KEY`，缺少它们时来源存在性保持未知；回查成功时采集最多 3000 字的来源正文，供引用支持性人工审阅。采集输出会将 RAGFlow 来源 ID 做稳定哈希，并遮蔽常见 JWT、邮箱和手机号；公开前仍须人工检查答案与证据正文中是否有其他敏感内容。
+先从 [条件模板](showcase_conditions.example.json)为每种模式各建一份私有 JSON，填写统一代码 SHA、模型、项目语料哈希、topK、预算、主机和测试窗口；不要存入密钥、token、dataset ID 或私有路径。`SHOWCASE_EVAL_TOKEN` 是从演示页签发的 USER Token，仅放在环境变量中。RAGFlow 直接 chunk 回查还需要 `SHOWCASE_RAGFLOW_URL` 与 `RAGFLOW_API_KEY`，缺少它们时来源存在性保持未知；回查成功时采集最多 3000 字的来源正文，供引用支持性人工审阅。采集输出会将最终引用与 debug 检索中的 RAGFlow 来源 ID 做稳定哈希，并遮蔽常见 JWT、邮箱和手机号；公开前仍须人工检查答案与证据正文中是否有其他敏感内容。
 
 ```sh
 export SHOWCASE_EVAL_TOKEN='从本地演示页签发的 USER Token'
@@ -159,3 +159,5 @@ python3 integrations/ragflow/showcase_eval.py score \
 ```
 
 两个模式的审阅模板按模式名合并为一个 JSON 后再 `score`。可另跑 `legacy-hybrid` 作为简单 RAG 问答对照；它不代表旧版多 Agent 演示。审阅者须对照实际引用证据填每个 `factChecks`、`citationSupport` 和 `refusalCorrect`，留下判断理由。`--case-id` 可重复指定关键题，`--repetitions 3` 用于复测；首次完整集合仍需所有 37 题。`answerP95Ms` 使用最近秩次法并附 `answerP95SampleCount`。同模型、同语料、同预算与同主机条件由报告 `comparability` 标志检查；有混杂因素时不归因于 Dify 或 RAGFlow。`usageObserved` 原样保留 API 返回值；缺项表示未知，不推算费用。旧检索修复后的完整 29 题必须用最终代码重新采样，不能沿用历史 46.9 秒 p95。
+
+已完成的[统一 Dify 基线](../../docs/showcase/LIVE_BASELINE_2026-09-28.md)和[Evidence v4 候选版现场验收](../../docs/showcase/LIVE_CANDIDATE_2026-09-28.md)提供去敏样本、审阅、计分和浏览器观察。候选版完整 37 题为 33 成功、3 证据不足、1 失败；两道有边界证据的安全拒答仍缺引用，默认路由没有切换。

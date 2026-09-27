@@ -27,7 +27,7 @@ HERE = Path(__file__).resolve().parent
 TERMINAL = {"SUCCEEDED", "INSUFFICIENT_EVIDENCE", "FAILED", "CANCELLED",
             "TIMED_OUT", "BUDGET_EXCEEDED", "DISPATCH_UNKNOWN"}
 MARKER = re.compile(r"\[来源(\d+)]")
-RAGFLOW_ID = re.compile(r"kb:ragflow:([^\s\]\[\"']+)")
+RAGFLOW_ID = re.compile(r"\b(?:kb:)?ragflow:[^\s\]\[\"']+")
 JWT = re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b")
 EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
 PHONE = re.compile(r"(?<!\d)1[3-9]\d{9}(?!\d)")
@@ -51,8 +51,11 @@ def digest(data):
 def redacted_source(source):
     if not isinstance(source, str):
         return ""
-    if source.startswith("kb:ragflow:"):
-        return "kb:ragflow:sha256-" + digest(source.encode())[:16]
+    for prefix in ("kb:ragflow:", "ragflow:"):
+        if source.startswith(prefix):
+            if source.startswith(prefix + "sha256-"):
+                return source
+            return prefix + "sha256-" + digest(source.encode())[:16]
     return source
 
 

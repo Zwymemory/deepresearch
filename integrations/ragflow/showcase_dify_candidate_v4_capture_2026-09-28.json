@@ -1227,7 +1227,7 @@
   },
   "conditions": {
     "mode": "ragflow-dify",
-    "codeSha": "d6b9d5b2b422555493b6143e656538126247b509",
+    "codeSha": "8677dfdf46db5d28f5224db3255878b15d0109c0",
     "retrievalProvider": "ragflow",
     "workflowEngine": "dify",
     "model": {
@@ -1284,8 +1284,8 @@
       "class": "local Docker Desktop macOS",
       "memoryGiB": 7.75
     },
-    "testWindow": "2026-09-27T16:45:39.719131+00:00",
-    "notes": "Project RAGFlow dataset selected from the eight DONE local mappings; ignored .env points to a different dataset and is not used for this evaluation process."
+    "testWindow": "2026-09-27T17:56:12.117799+00:00",
+    "notes": "Project RAGFlow dataset selected from eight DONE local mappings; ignored .env points to another dataset. Dify published Evidence v4 workflow 67e2b92c-02f2-475d-9e2a-83ab53ef7c30 (2026-09-28 01:55 CST)."
   },
   "mode": "ragflow-dify",
   "samples": [
@@ -1294,7 +1294,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 389.886,
+        "latencyMs": 343.057,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## Java 控制面与 Python LangGraph 执行面\nDeepResearch 的 Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态；Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -1319,39 +1319,13 @@
         ]
       },
       "answerRun": {
-        "status": "SUCCEEDED",
-        "runId": "wf-634e9dc6-d0c7-4f50-9dac-5113bde2b192",
-        "latencyMs": 19095.934,
-        "answer": "DeepResearch 的 Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态 [来源1]。Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态 [来源1]。更概括地，Java 是安全控制面与安全数据面，Python sidecar 负责图内 Planner、Worker、Reviewer、Synthesizer 和 checkpoint 执行 [来源2]；Java 持有公网 REST/SSE、用户归属、任务状态、授权、MCP 工具和最终终态，Python 只在私网 claim 任务 [来源3]。LangGraph checkpoint 解决图执行到哪个节点、恢复时下一步是什么 [来源4]。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明 [来源1]；若 Java 控制面不可用，run 会停留在非终态或 FINALIZING 等待后续 claim 重试，而不是跨服务原子完成 [来源5]。",
-        "citations": [
-          {
-            "source": "kb:ragflow:sha256-fba3af4ea981c15b",
-            "exists": true,
-            "evidencePreview": "## Java 控制面与 Python LangGraph 执行面\nDeepResearch 的 Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态；Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明。"
-          },
-          {
-            "source": "kb:ragflow:sha256-858ac55a4e38b44c",
-            "exists": true,
-            "evidencePreview": "## 1. 双运行时职责分离\n**事实 A1｜状态：已实现并有分层测试。** Java/Spring Boot 是公网控制面与安全数据面，负责创建 workflow、用户归属、状态、持久事件、授权、取消、SSE 和最终结果；Python sidecar 负责图内 Planner、Worker、Reviewer、Synthesizer 和 checkpoint 执行。"
-          },
-          {
-            "source": "kb:ragflow:sha256-af2ca761513b6450",
-            "exists": true,
-            "evidencePreview": "## 可引用的总括表述\nDeepResearch 当前采用 Java 安全控制面与 Python/LangGraph 图执行面的双运行时架构。Java 持有公网 REST/SSE、用户归属、任务状态、授权、MCP 工具和最终终态；Python 只在私网 claim 任务，执行 Planner、并行 Worker、Reviewer、Synthesizer，并用 PostgreSQL checkpoint 保存节点状态。claim token、lease、数据库条件写和触发器阻止旧 runner 写入；确定性工具 call ID 与双层 receipt 能重放已完成结果，对无法判断是否已执行的旧 `EXECUTING` 调用返回 `MCP_RESULT_UNKNOWN` 并拒绝盲目重试。"
-          },
-          {
-            "source": "kb:ragflow:sha256-b7d12c1ec6f0e6d1",
-            "exists": true,
-            "evidencePreview": "<table>\n<thead>\n<tr>\n<th>对象</th>\n<th>解决的问题</th>\n<th>当前事实来源</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>LangGraph checkpoint</td>\n<td>图执行到哪个节点、恢复时下一步是什么</td>\n<td>Python sidecar 与 <code>langgraph</code> schema</td>\n</tr>\n<tr>\n<td><code>agent_workflow_event</code></td>\n<td>用户可见的安全进度、SSE 游标与审计轨迹</td>\n<td>Java/Python 共用的业务事件表</td>\n</tr>\n<tr>\n<td><code>agent_workflow_tool_receipt</code></td>\n<td>某个确定性工具调用是否开始、完成或处于模糊态</td>\n<td>Python receipt + Java MCP execution receipt</td>\n</tr>\n</tbody>\n</table>"
-          },
-          {
-            "source": "kb:ragflow:sha256-a0a79a86c6476c91",
-            "exists": true,
-            "evidencePreview": "- 测试证据：`WorkflowServiceTest.finalizeReplayRequiresSameClaimAndRequestFingerprint`、`DeepResearchApplicationIT.workflowIdempotencyAndDurableEventKeysAreEnforcedByPostgres`。\n- 限制：如果 Java 控制面不可用，run 会停留在非终态或 `FINALIZING` 等待后续 claim 重试，而不是跨服务原子完成。\n## 4. 当前不能越界的说法"
-          }
-        ],
+        "status": "FAILED",
+        "runId": "wf-b214e4c1-92fd-41b3-9a91-a06c4b729fb0",
+        "latencyMs": 3088.091,
+        "answer": "",
+        "citations": [],
         "usage": {
-          "totalTokens": 7451
+          "totalTokens": 235
         }
       }
     },
@@ -1360,7 +1334,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 346.375,
+        "latencyMs": 396.134,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## Compose workflow 端口与云上网络隔离\n本地 Compose 中只有 Java `app` 映射宿主机 8080，Python `workflow` 没有宿主机端口映射，只通过 Compose 网络访问 Java 和 PostgreSQL；这不能证明云上 NetworkPolicy、防火墙或零信任网络已经实现。本地“没有宿主机端口”和云上“已完成网络隔离”是两个不同结论。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -1386,14 +1360,19 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-acd48997-13aa-4967-86da-db33976ce161",
-        "latencyMs": 11363.943,
-        "answer": "本地 Compose 中 workflow sidecar 不直接暴露宿主机端口：只有 Java `app` 映射宿主机 8080，Python `workflow` 没有宿主机端口映射，只通过 Compose 网络访问 Java 和 PostgreSQL [来源1]。由此并不能证明云上网络隔离：本地“未映射端口”不等于云环境的 NetworkPolicy、防火墙或零信任网络已经完成，本地“没有宿主机端口”与云上“已完成网络隔离”是两个不同结论 [来源1][来源2]。架构文档也把云上网络隔离列为未验证状态 [来源3]。",
+        "runId": "wf-e0136840-0f52-41e3-8fe0-4770aa2fbba6",
+        "latencyMs": 12324.11,
+        "answer": "本地 Compose 中 workflow sidecar 不直接暴露宿主机端口：只有 Java app 映射宿主机 8080，Python workflow 没有宿主机端口映射，只通过 Compose 网络访问 Java 和 PostgreSQL [来源1][来源2]。这不能证明云上网络隔离：本地“没有宿主机端口”与云上“已完成网络隔离”是两个不同结论，未映射端口不等于云环境 NetworkPolicy、防火墙或零信任网络已经实现/完成 [来源1][来源3]。架构状态也明确标注云上网络隔离未验证 [来源4]。",
         "citations": [
           {
             "source": "kb:ragflow:sha256-405e6537056b45f1",
             "exists": true,
             "evidencePreview": "## Compose workflow 端口与云上网络隔离\n本地 Compose 中只有 Java `app` 映射宿主机 8080，Python `workflow` 没有宿主机端口映射，只通过 Compose 网络访问 Java 和 PostgreSQL；这不能证明云上 NetworkPolicy、防火墙或零信任网络已经实现。本地“没有宿主机端口”和云上“已完成网络隔离”是两个不同结论。"
+          },
+          {
+            "source": "kb:ragflow:sha256-2562f406023f27f4",
+            "exists": true,
+            "evidencePreview": "- 限制：双运行时不是跨语言分布式事务。checkpoint、业务状态、事件和 receipt 之间仍依赖幂等、fencing 与对账收敛。\n**事实 A2｜状态：已实现。** Compose 中只有 Java `app` 映射宿主机 8080；Python `workflow` 没有宿主机端口，只通过 Compose 网络访问 Java 和 PostgreSQL。"
           },
           {
             "source": "kb:ragflow:sha256-f87b7293ba2d2477",
@@ -1407,7 +1386,7 @@
           }
         ],
         "usage": {
-          "totalTokens": 5440
+          "totalTokens": 6461
         }
       }
     },
@@ -1416,7 +1395,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 351.673,
+        "latencyMs": 310.169,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## Python 为什么不能写 SUCCEEDED\nPython sidecar 使用受限数据库角色，只能在当前 claim 与有效 lease 下写非终态进度、事件、预算和 receipt；数据库触发器拒绝它直接写 `SUCCEEDED` 等终态。最终终态必须由 Java 控制面的 fenced `finalize` 写入，这是最小权限与 stale-claim 防护的一部分；它不表示 Java 控制面本身已经完成生产凭据和运维审计。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -1442,19 +1421,24 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-ffaec1a4-0d77-401e-81dd-7a40120cb14b",
-        "latencyMs": 11845.372,
-        "answer": "Python sidecar 使用受限数据库角色，只能在当前 claim 与有效 lease 下写非终态进度、事件、预算和 receipt；数据库触发器拒绝 sidecar 直接写 `SUCCEEDED` 等终态 [来源1]。这是最小权限与 stale-claim 防护的一部分 [来源2]。最终终态必须由 Java 控制面的 fenced `finalize` 写入 [来源1][来源2]。进入 `FINALIZING` 后，Java 只接受当前且未过期 claim 的 finalize [来源3]。因此，最终终态由 Java 控制面/fenced finalize 写，而不是 Python sidecar [来源1][来源2][来源3]。",
+        "runId": "wf-5409ed5a-70b9-4f53-8f24-0ae90f9e3498",
+        "latencyMs": 10292.696,
+        "answer": "Python sidecar 不能直接把 workflow 写成 `SUCCEEDED`，是因为它使用受限数据库角色，只能在当前 claim 与有效 lease 下写非终态进度、事件、预算和 receipt；数据库触发器拒绝它直接写 `SUCCEEDED` 等终态，这属于最小权限与 stale-claim 防护的一部分 [来源1][来源2]。最终终态必须由 Java 控制面的 fenced `finalize` 写入 [来源1][来源2]；Java/Spring Boot 是公网控制面与安全数据面，负责创建 workflow、状态、持久事件、取消、SSE 和最终结果，Python sidecar 负责图内 Planner、Worker、Reviewer、Synthesizer 和 checkpoint 执行 [来源3]。进入 `FINALIZING` 后，Java 只接受当前且未过期 claim 的 finalize，相同 claim 与相同请求指纹可幂等重放，不同终态或不同请求返回冲突 [来源4]。",
         "citations": [
+          {
+            "source": "kb:ragflow:sha256-06c1359307a244f4",
+            "exists": true,
+            "evidencePreview": "## Python 为什么不能写 SUCCEEDED\nPython sidecar 使用受限数据库角色，只能在当前 claim 与有效 lease 下写非终态进度、事件、预算和 receipt；数据库触发器拒绝它直接写 `SUCCEEDED` 等终态。最终终态必须由 Java 控制面的 fenced `finalize` 写入，这是最小权限与 stale-claim 防护的一部分；它不表示 Java 控制面本身已经完成生产凭据和运维审计。"
+          },
           {
             "source": "kb:ragflow:sha256-f72895fb0212a105",
             "exists": true,
             "evidencePreview": "## 2. 谁能写终态\n**事实 A3｜状态：已实现并有真实 PostgreSQL 集成测试。** Python 使用受限数据库角色，只能在当前 claim 与有效 lease 下更新非终态进度、事件、预算记录和 receipt；数据库触发器拒绝 sidecar 直接写 `SUCCEEDED` 等终态。最终终态必须由 Java 的 fenced finalize 写入。"
           },
           {
-            "source": "kb:ragflow:sha256-06c1359307a244f4",
+            "source": "kb:ragflow:sha256-858ac55a4e38b44c",
             "exists": true,
-            "evidencePreview": "## Python 为什么不能写 SUCCEEDED\nPython sidecar 使用受限数据库角色，只能在当前 claim 与有效 lease 下写非终态进度、事件、预算和 receipt；数据库触发器拒绝它直接写 `SUCCEEDED` 等终态。最终终态必须由 Java 控制面的 fenced `finalize` 写入，这是最小权限与 stale-claim 防护的一部分；它不表示 Java 控制面本身已经完成生产凭据和运维审计。"
+            "evidencePreview": "## 1. 双运行时职责分离\n**事实 A1｜状态：已实现并有分层测试。** Java/Spring Boot 是公网控制面与安全数据面，负责创建 workflow、用户归属、状态、持久事件、授权、取消、SSE 和最终结果；Python sidecar 负责图内 Planner、Worker、Reviewer、Synthesizer 和 checkpoint 执行。"
           },
           {
             "source": "kb:ragflow:sha256-6fe5a9f3849d70bb",
@@ -1463,7 +1447,7 @@
           }
         ],
         "usage": {
-          "totalTokens": 5514
+          "totalTokens": 6060
         }
       }
     },
@@ -1472,7 +1456,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 365.058,
+        "latencyMs": 404.31,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 3. 身份与任务级委派\n**事实 A4｜状态：已实现并有单元/传输集成测试。** Python 不把用户原始 API Bearer [REDACTED] 转发给 MCP。它用最长 60 秒的内部服务 JWT 请求 Java 换取最长 90 秒的任务级 MCP delegation JWT。\n- 代码证据：`WorkflowTokenService.issueServiceToken`、`WorkflowTokenService.issueDelegation`、`HttpGrantTokenProvider.exchange`。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -1498,9 +1482,9 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-1df0ec0d-9dc6-4af4-b303-b28d741f0505",
-        "latencyMs": 9284.073,
-        "answer": "不会转发：Python 不把用户原始 API Bearer Token 转发给 MCP，而是先用最长 60 秒的内部服务 JWT 请求 Java，换取最长 90 秒的任务级 MCP delegation JWT。[来源1] 因此，内部服务 JWT 的最长有效期为 60 秒，任务级 MCP delegation JWT 的最长有效期为 90 秒。[来源1]",
+        "runId": "wf-aaf281b8-3e07-43c2-b8e1-cc645ba14d7f",
+        "latencyMs": 8232.645,
+        "answer": "不会。Python 不把用户原始 API Bearer Token 转发给 MCP；它改为用最长 60 秒的内部服务 JWT 向 Java 换取任务级 MCP delegation JWT [来源1]。因此内部 JWT 的最长有效期为 60 秒，任务级 delegation JWT 的最长有效期为 90 秒 [来源1]。该机制已实现并有单元/传输集成测试，相关代码证据包括 `WorkflowTokenService.issueServiceToken`、`WorkflowTokenService.issueDelegation` 和 `HttpGrantTokenProvider.exchange` [来源1]。",
         "citations": [
           {
             "source": "kb:ragflow:sha256-60a23204a5db15c0",
@@ -1509,7 +1493,7 @@
           }
         ],
         "usage": {
-          "totalTokens": 6323
+          "totalTokens": 7288
         }
       }
     },
@@ -1518,7 +1502,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 335.324,
+        "latencyMs": 323.927,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n**事实 A5｜状态：已实现并有安全测试。** 每个 Worker 只能绑定一个 scope，且必须同时属于 Java 持久 grant、workflow 只读工具白名单和当前任务请求；run、grant、task、claim token 与租户主体都要匹配。\n- 代码证据：`WorkflowAccessService.exchange`、`WorkflowAccessService.authenticateDelegation`、`WorkflowRepository.activeTaskGrant`。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -1544,9 +1528,9 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-de59592f-e0c0-4876-b7d2-f4bfd3f64c26",
-        "latencyMs": 16958.411,
-        "answer": "一个 Worker 的 MCP scope 受三重交集约束：每个 Worker 只能绑定一个 scope，且该 scope 必须同时属于 Java 持久 grant、workflow 只读工具白名单和当前任务请求；同时 run、grant、task、claim token 与租户主体都要匹配 [来源1]。如果 Planner 选择的工具不在 run scope 中，会在执行前被程序拒绝 [来源2]。MCP 执行还会绑定 run 和 task headers [来源3]。因此，持久 grant 提供授权范围，工具白名单限定可调用的只读工具，任务请求与 run/task/claim/租户匹配把 scope 绑定到具体任务执行上下文 [来源1][来源2][来源3]。",
+        "runId": "wf-8d944624-a19e-411e-bca0-a5fa54a938c4",
+        "latencyMs": 15884.437,
+        "answer": "一个 Worker 的 MCP scope 不是单一白名单，而是持久 grant、工具白名单与任务绑定共同约束下的可执行范围：每个 Worker 只能绑定一个 scope，且必须同时属于 Java 持久 grant、workflow 只读工具白名单和当前任务请求；run、grant、task、claim token 与租户主体都要匹配 [来源1]。在任务绑定上，Python 不把用户原始 API Bearer 转发给 MCP，而是用最长 60 秒的内部服务 JWT 向 Java 换取最长 90 秒的任务级 MCP delegation JWT [来源2]，并且 MCP 执行会绑定 run 与 task headers [来源3]。工具白名单方面，Durable Workflow 当前只允许 Worker 调用 `kb_search`、`web_search`、`calculator` 三种只读工具；不支持 `file_read`、文件操作、写操作、付费操作或管理员工具 [来源4]。执行前还会检查越界：模型只能在严格 Pydantic schema 内提出计划等输出，Planner 选择的工具如果不在 run scope 中，执行前会被程序拒绝 [来源5]。因此，任一约束不匹配都会使 Worker 的 MCP scope 无法执行。",
         "citations": [
           {
             "source": "kb:ragflow:sha256-b7643584ba540bf3",
@@ -1554,18 +1538,28 @@
             "evidencePreview": "**事实 A5｜状态：已实现并有安全测试。** 每个 Worker 只能绑定一个 scope，且必须同时属于 Java 持久 grant、workflow 只读工具白名单和当前任务请求；run、grant、task、claim token 与租户主体都要匹配。\n- 代码证据：`WorkflowAccessService.exchange`、`WorkflowAccessService.authenticateDelegation`、`WorkflowRepository.activeTaskGrant`。"
           },
           {
-            "source": "kb:ragflow:sha256-2b979dad8aa30c0f",
+            "source": "kb:ragflow:sha256-60a23204a5db15c0",
             "exists": true,
-            "evidencePreview": "## 4. 模型与工具的信任边界\n**事实 A7｜状态：已实现并有图测试。** 模型只能提出严格 Pydantic schema 内的计划、Worker 准备、Reviewer 结论和 Synthesizer 输出；Planner 选择的工具如果不在 run scope 中，执行前会被程序拒绝。"
+            "evidencePreview": "## 3. 身份与任务级委派\n**事实 A4｜状态：已实现并有单元/传输集成测试。** Python 不把用户原始 API Bearer Token 转发给 MCP。它用最长 60 秒的内部服务 JWT 请求 Java 换取最长 90 秒的任务级 MCP delegation JWT。\n- 代码证据：`WorkflowTokenService.issueServiceToken`、`WorkflowTokenService.issueDelegation`、`HttpGrantTokenProvider.exchange`。"
           },
           {
             "source": "kb:ragflow:sha256-0a3066e692916941",
             "exists": true,
             "evidencePreview": "- 测试证据：`test_mcp_execution_binds_run_and_task_headers`。\n- 限制：确定性 ID 只提供关联键；只有下游真正持久化并消费该键，才有去重效果。"
+          },
+          {
+            "source": "kb:ragflow:sha256-be1c43e0aa75547c",
+            "exists": true,
+            "evidencePreview": "## Durable Workflow 的 Worker 工具白名单\nDurable Workflow 当前只允许 Worker 调用 `kb_search`、`web_search`、`calculator` 三种只读工具；不支持 `file_read`、文件操作、写操作、付费操作或管理员工具。这里的“只读”描述 workflow 能力边界，不表示外部网页或模型调用没有延迟与费用。"
+          },
+          {
+            "source": "kb:ragflow:sha256-2b979dad8aa30c0f",
+            "exists": true,
+            "evidencePreview": "## 4. 模型与工具的信任边界\n**事实 A7｜状态：已实现并有图测试。** 模型只能提出严格 Pydantic schema 内的计划、Worker 准备、Reviewer 结论和 Synthesizer 输出；Planner 选择的工具如果不在 run scope 中，执行前会被程序拒绝。"
           }
         ],
         "usage": {
-          "totalTokens": 7613
+          "totalTokens": 8317
         }
       }
     },
@@ -1574,7 +1568,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 302.601,
+        "latencyMs": 326.014,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n**事实 A6｜状态：已实现。** workflow 启用时 API、内部服务和 MCP 三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同。\n- 代码证据：`security/JwtTokenService` 的 API 密钥长度校验；`WorkflowTokenService` 构造函数和 `secret` 校验；`Settings.validate_runtime`。\n- 测试证据：`WorkflowTokenServiceTest.enabledWorkflowRequiresThreeDistinctSecrets`。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -1600,23 +1594,18 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-50a9facd-ce02-43ba-a109-cdc3ab50b6f7",
-        "latencyMs": 14890.918,
-        "answer": "workflow 启用时，API、内部服务和 MCP 三把 JWT 密钥必须至少 32 UTF-8 字节，且彼此不同 [来源1]。对应校验包括 `JwtTokenService` 的 API 密钥长度校验、`WorkflowTokenService` 构造函数和 `secret` 校验、`Settings.validate_runtime`，并有测试 `WorkflowTokenServiceTest.enabledWorkflowRequiresThreeDistinctSecrets` [来源1]。需要注意，长度和分离校验本身不等于密钥已由安全随机源生成、定期轮换或存放在专用 Secret Manager [来源2]。",
+        "runId": "wf-082fa232-b693-4b83-b079-a01f921e09a0",
+        "latencyMs": 8726.569,
+        "answer": "workflow 启用时，API、内部服务和 MCP 三把 JWT 密钥必须满足：每把密钥至少 32 UTF-8 字节，并且三把密钥彼此不同。[来源1]",
         "citations": [
           {
             "source": "kb:ragflow:sha256-0a611eaea1ceda55",
             "exists": true,
             "evidencePreview": "**事实 A6｜状态：已实现。** workflow 启用时 API、内部服务和 MCP 三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同。\n- 代码证据：`security/JwtTokenService` 的 API 密钥长度校验；`WorkflowTokenService` 构造函数和 `secret` 校验；`Settings.validate_runtime`。\n- 测试证据：`WorkflowTokenServiceTest.enabledWorkflowRequiresThreeDistinctSecrets`。"
-          },
-          {
-            "source": "kb:ragflow:sha256-927bbe7c0d8bf7eb",
-            "exists": true,
-            "evidencePreview": "- 限制：长度和分离校验不等于密钥已经由安全随机源生成、定期轮换或存放在专用 Secret Manager。"
           }
         ],
         "usage": {
-          "totalTokens": 5383
+          "totalTokens": 5066
         }
       }
     },
@@ -1625,7 +1614,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 326.778,
+        "latencyMs": 317.003,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## Durable Workflow 的 Worker 工具白名单\nDurable Workflow 当前只允许 Worker 调用 `kb_search`、`web_search`、`calculator` 三种只读工具；不支持 `file_read`、文件操作、写操作、付费操作或管理员工具。这里的“只读”描述 workflow 能力边界，不表示外部网页或模型调用没有延迟与费用。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -1651,9 +1640,9 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-8458a89b-47b0-4845-97e4-32fce5c78134",
-        "latencyMs": 11857.848,
-        "answer": "Durable Workflow 当前只允许 Worker 调用三种只读工具：`kb_search`、`web_search`、`calculator` [来源1]。它不支持 `file_read`、文件操作、写操作、付费操作或管理员工具 [来源1]。这里的“只读”是 workflow 的能力边界描述，并不表示外部网页或模型调用没有延迟与费用 [来源1]。此外，每个 Worker 只能绑定一个 scope，且必须同时属于 Java 持久 grant、workflow 只读工具白名单和当前任务请求 [来源2]；测试中也存在在创建任何业务状态前就拒绝文件工具的用例（`WorkflowServiceTest.rejectsFileToolBeforeCreatingAnyBusinessState`），与不支持文件工具的边界一致 [来源3]。",
+        "runId": "wf-e379836d-4fdd-4cbb-a9cc-70b0f137bb28",
+        "latencyMs": 8753.038,
+        "answer": "Durable Workflow 当前只允许 Worker 调用 `kb_search`、`web_search`、`calculator` 三种只读工具 [来源1][来源2]；不支持 `file_read`、文件操作、写操作、付费操作或管理员工具 [来源1][来源2]。测试证据也显示文件工具会在创建任何业务状态之前被拒绝 [来源3]。",
         "citations": [
           {
             "source": "kb:ragflow:sha256-be1c43e0aa75547c",
@@ -1661,9 +1650,9 @@
             "evidencePreview": "## Durable Workflow 的 Worker 工具白名单\nDurable Workflow 当前只允许 Worker 调用 `kb_search`、`web_search`、`calculator` 三种只读工具；不支持 `file_read`、文件操作、写操作、付费操作或管理员工具。这里的“只读”描述 workflow 能力边界，不表示外部网页或模型调用没有延迟与费用。"
           },
           {
-            "source": "kb:ragflow:sha256-b7643584ba540bf3",
+            "source": "kb:ragflow:sha256-aa634aeb6391477d",
             "exists": true,
-            "evidencePreview": "**事实 A5｜状态：已实现并有安全测试。** 每个 Worker 只能绑定一个 scope，且必须同时属于 Java 持久 grant、workflow 只读工具白名单和当前任务请求；run、grant、task、claim token 与租户主体都要匹配。\n- 代码证据：`WorkflowAccessService.exchange`、`WorkflowAccessService.authenticateDelegation`、`WorkflowRepository.activeTaskGrant`。"
+            "evidencePreview": "- 测试证据：`WorkflowAccessServiceTest.exchangesOnlyIntersectionOfDurableGrantAndTaskRequest`、`rejectsRevokedCrossRunCrossTenantAndTokenScopeMismatch`、`McpKnowledgeLoopIT.rejectsDelegationUsedWithoutItsRunAndTaskBinding`。\n- 限制：当前只开放 `kb_search`、`web_search`、`calculator`，不支持文件、写操作、付费操作或管理员工具的委派实现。"
           },
           {
             "source": "kb:ragflow:sha256-36adaa551135c1ec",
@@ -1672,7 +1661,7 @@
           }
         ],
         "usage": {
-          "totalTokens": 5238
+          "totalTokens": 5253
         }
       }
     },
@@ -1681,7 +1670,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 346.632,
+        "latencyMs": 334.454,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## LangGraph checkpoint schema 与 thread_id\nLangGraph checkpoint 存在独立的 `langgraph` schema；运行时用 `graph_thread_id` 作为 `thread_id`，Java 创建 run 时默认令 `graph_thread_id` 等于 `run_id`，因此默认关系是 `thread_id = run_id`。这是当前默认映射，不应外推为 LangGraph 框架要求所有项目都这样设置。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -1707,9 +1696,9 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-4be5e79e-e69d-4a74-af27-ae18db069c3e",
-        "latencyMs": 10278.639,
-        "answer": "LangGraph checkpoint 存放在独立的 `langgraph` schema 中（即项目所称的 langgraph schema），由 Python sidecar 使用 `AsyncPostgresSaver` 写入该 schema [来源1][来源2]。在 thread_id 与 runId 的关系上，运行时以 `graph_thread_id` 作为 `thread_id`，Java 创建 run 时默认令 `graph_thread_id` 等于 `run_id`，因此默认关系是 `thread_id = run_id` [来源1][来源2]。需要说明的是，这只是当前项目的默认映射，不应外推为 LangGraph 框架要求所有项目都这样设置 [来源1]。",
+        "runId": "wf-ddfb6f70-7a3d-4cd7-b658-222c6d7d67ee",
+        "latencyMs": 11258.462,
+        "answer": "LangGraph checkpoint 存在独立的 `langgraph` schema；sidecar 使用 `AsyncPostgresSaver`，checkpoint 放在该独立 schema 中 [来源1][来源2]。运行时以 `graph_thread_id` 作为 `thread_id`，Java 创建 run 时默认令 `graph_thread_id` 等于 `run_id`，因此当前默认关系是 `thread_id = run_id`；这是当前默认映射，不应外推为 LangGraph 框架要求所有项目都这样设置 [来源1][来源2]。",
         "citations": [
           {
             "source": "kb:ragflow:sha256-d740a4d24c7a4780",
@@ -1723,7 +1712,7 @@
           }
         ],
         "usage": {
-          "totalTokens": 4967
+          "totalTokens": 5815
         }
       }
     },
@@ -1732,7 +1721,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 332.464,
+        "latencyMs": 362.884,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## durability=sync 的保证边界\n`durability=\"sync\"` 保证 LangGraph 在节点或超步边界同步持久化图状态；它不能把第三方模型调用或远端工具动作纳入同一个数据库事务。它增强的是 checkpoint 的持久化时机，不是外部调用的 exactly-once 保证。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -1757,13 +1746,54 @@
         ]
       },
       "answerRun": {
-        "status": "FAILED",
-        "runId": "wf-28013108-b199-456f-8aa1-1b49a35990de",
-        "latencyMs": 19449.035,
-        "answer": "",
-        "citations": [],
+        "status": "SUCCEEDED",
+        "runId": "wf-88618722-1e06-4168-846e-ceedf6ee1315",
+        "latencyMs": 19524.456,
+        "answer": "保证什么：在当前项目中，`durability=sync` 让 LangGraph 在节点/超步边界同步持久化图状态[来源1][来源2]。被持久化的状态包括计划、任务、证据、usage、review、修订轮次和最终结果，不包含用户 access token[来源2]。实现上，`WorkflowRunner._execute` 调用 `graph.ainvoke(..., durability=sync)`，并使用 `AsyncPostgresSaver` 把 checkpoint 写入独立 `langgraph` schema；运行时以 `graph_thread_id` 作为 `thread_id`，Java 创建 run 时默认令其等于 `run_id`[来源2][来源3]。因此它保证的是框架状态边界的同步 checkpoint 落盘时机/可读性[来源1][来源4]。\n不能保证什么：它不能把第三方模型调用或远端工具动作纳入同一个数据库事务，所以不是外部调用的 exactly-once 保证；它增强的是 checkpoint 持久化时机，不是外部调用 exactly-once[来源1][来源4]。工具链选择 at-most-once 优先：模糊态宁可返回未知，也不自动重复动作[来源5]。工具动作完成但 Java receipt 在落盘前崩溃时，系统只能返回结果未知，不能凭 checkpoint 重建丢失结果[来源6][来源7]。外部 provider 仍会受限流、响应截断、schema 偏差和版本变化影响，数据库 attempt 也不能证明 provider 账单没有重复[来源8]。",
+        "citations": [
+          {
+            "source": "kb:ragflow:sha256-df6e2f63379e788b",
+            "exists": true,
+            "evidencePreview": "## durability=sync 的保证边界\n`durability=\"sync\"` 保证 LangGraph 在节点或超步边界同步持久化图状态；它不能把第三方模型调用或远端工具动作纳入同一个数据库事务。它增强的是 checkpoint 的持久化时机，不是外部调用的 exactly-once 保证。"
+          },
+          {
+            "source": "kb:ragflow:sha256-455a8f527ed9ca90",
+            "exists": true,
+            "evidencePreview": "**事实 C2｜状态：已实现并有测试。** 图调用使用 `durability=\"sync\"`，在 LangGraph 节点/超步边界同步持久化状态；状态包括计划、任务、证据、usage、review、修订轮次和最终结果，不包含用户 access token。\n- 代码证据：`WorkflowRunner._execute` 的 `graph.ainvoke(..., durability=\"sync\")`；`domain.py::WorkflowState`。"
+          },
+          {
+            "source": "kb:ragflow:sha256-669562fc6f5bbc11",
+            "exists": true,
+            "evidencePreview": "## 1. checkpoint 如何落盘\n**事实 C1｜状态：已实现并有真实 PostgreSQL 测试。** sidecar 使用 `AsyncPostgresSaver`，checkpoint 放在独立 `langgraph` schema（即项目所称的 langgraph schema）；运行时以 `graph_thread_id` 作为 `thread_id`，Java 创建 run 时默认让它等于 `run_id`。"
+          },
+          {
+            "source": "kb:ragflow:sha256-9861d5da3ae67d7b",
+            "exists": true,
+            "evidencePreview": "- 测试证据：`test_langgraph_sync_checkpoint_is_persisted_and_readable`；`test_graph_fans_out_validates_citations_and_succeeds`。\n- 限制：同步 checkpoint 只保证框架状态边界，不能把第三方模型或远端工具动作纳入同一个数据库事务。\n**事实 C3｜状态：已实现。** checkpoint 反序列化启用严格 msgpack，并显式传入 LangGraph 的安全类型 allowlist。"
+          },
+          {
+            "source": "kb:ragflow:sha256-3b649a7306753a0c",
+            "exists": true,
+            "evidencePreview": "## 4. at-most-once 优先，而不是 exactly-once\n**事实 R6｜状态：设计已实现，边界明确。** 当前只读工具链选择 at-most-once 优先：模糊态宁可返回未知，也不自动重复动作。这降低重复执行风险，但可能牺牲结果可用性。"
+          },
+          {
+            "source": "kb:ragflow:sha256-071b0d108f48ed5f",
+            "exists": true,
+            "evidencePreview": "- 测试证据：`test_durable_budget_recovery_charges_unknown_model_and_reuses_tool_call`、`WorkflowMcpReceiptServiceTest.replaysCompletedJavaResultWithoutExecutingAgain`。\n- 限制：工具动作完成但 Java receipt 落盘前崩溃时，系统只能返回结果未知，不能凭 checkpoint 重建丢失结果。\n## 4. 当前不能越界的说法"
+          },
+          {
+            "source": "kb:ragflow:sha256-b214dbc4e765b443",
+            "exists": true,
+            "evidencePreview": "- 代码证据：`V9__workflow_mcp_execution_receipt.sql`、`WorkflowMcpReceiptService`、`WorkflowRepository.beginMcpToolExecution` 与 `completeMcpToolExecution`。\n- 测试证据：`DeepResearchApplicationIT.javaMcpReceiptReplaysCompletedResultAndFencesStaleClaims`。\n- 限制：Java receipt 与真实第三方动作仍不是单个事务；动作成功但 `COMPLETED` 落盘前崩溃仍存在模糊窗口。"
+          },
+          {
+            "source": "kb:ragflow:sha256-332cbc9c1080809a",
+            "exists": true,
+            "evidencePreview": "**事实 V4｜状态：失败语义已测试，在线质量稳定性未验证。** 结构化输出和模型失败分类已有代码与测试。SDK `max_retries=0`，应用以持久 attempt 控制重试，默认最多 2 次；失败 attempt 先转 `UNKNOWN` 并保守计入模型调用次数预算，事件使用 `MODEL_RETRY_SCHEDULED` 或 `MODEL_CALL_FAILED` 的安全 reason code。外部 provider 仍会受限流、响应截断、schema 偏差和版本变化影响，数据库 attempt 也不能证明 provider 账单没有重复。单次成功演示不能替代多 trial Harness 与置信区间。"
+          }
+        ],
         "usage": {
-          "totalTokens": 8749
+          "totalTokens": 8824
         }
       }
     },
@@ -1772,7 +1802,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 403.559,
+        "latencyMs": 344.68,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 未完成与已完成 checkpoint 的恢复分支\nrunner 调用 `aget_state` 后，若 checkpoint 的 `snapshot.next` 非空，就以 `None` 恢复未完成图；若 checkpoint 已完成但 Java `finalize` 响应可能丢失，就读取最终 state 并重试幂等 `finalize`，不重复模型合成。checkpoint 只记录图状态，不能单独保证远端副作用 exactly-once。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -1798,23 +1828,23 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-1fe9f017-7a6d-445e-9fd3-1bf8c619e027",
-        "latencyMs": 14895.211,
-        "answer": "runner 在执行前调用 `aget_state` [来源1]。如果存在 checkpoint 且 `snapshot.next` 非空，说明图未完成，runner 会以 `None` 恢复未完成图 [来源1]。如果 checkpoint 已完成但 Java `finalize` 响应可能丢失，runner 会直接读取最终 state，并重试幂等的 `finalize`，而不重复模型合成 [来源1][来源2]。需要注意，checkpoint 只记录图状态，不能单独保证远端副作用 exactly-once [来源2]。",
+        "runId": "wf-8de6c79b-b651-4a1e-9557-18f80f3f52e3",
+        "latencyMs": 10744.918,
+        "answer": "runner 在执行前调用 `aget_state`；若发现未完成 checkpoint（`snapshot.next` 非空），就以 `None` 恢复未完成图 [来源1][来源2]。若 checkpoint 已完成但 Java `finalize` 响应可能丢失，则读取最终 state 并重试幂等 `finalize`，不重复模型合成 [来源1][来源2]。checkpoint 只记录图状态，不能单独保证远端副作用 exactly-once [来源1]。",
         "citations": [
-          {
-            "source": "kb:ragflow:sha256-e004c7e015b412bd",
-            "exists": true,
-            "evidencePreview": "## 2. runner 如何决定恢复位置\n**事实 C4｜状态：已实现并有单元测试。** runner 在执行前调用 `aget_state`。没有历史值时传入初始 state；有 checkpoint 且 `snapshot.next` 非空时以 `None` 恢复未完成图；checkpoint 已完成但 Java finalize 响应可能丢失时，直接读取最终 state 并重试幂等 finalize，而不重复模型合成。"
-          },
           {
             "source": "kb:ragflow:sha256-3c72005c9145dc93",
             "exists": true,
             "evidencePreview": "## 未完成与已完成 checkpoint 的恢复分支\nrunner 调用 `aget_state` 后，若 checkpoint 的 `snapshot.next` 非空，就以 `None` 恢复未完成图；若 checkpoint 已完成但 Java `finalize` 响应可能丢失，就读取最终 state 并重试幂等 `finalize`，不重复模型合成。checkpoint 只记录图状态，不能单独保证远端副作用 exactly-once。"
+          },
+          {
+            "source": "kb:ragflow:sha256-e004c7e015b412bd",
+            "exists": true,
+            "evidencePreview": "## 2. runner 如何决定恢复位置\n**事实 C4｜状态：已实现并有单元测试。** runner 在执行前调用 `aget_state`。没有历史值时传入初始 state；有 checkpoint 且 `snapshot.next` 非空时以 `None` 恢复未完成图；checkpoint 已完成但 Java finalize 响应可能丢失时，直接读取最终 state 并重试幂等 finalize，而不重复模型合成。"
           }
         ],
         "usage": {
-          "totalTokens": 6398
+          "totalTokens": 4443
         }
       }
     },
@@ -1823,7 +1853,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 352.496,
+        "latencyMs": 323.084,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 3. checkpoint 与外部调用之间的崩溃窗口\n**事实 C6｜状态：已实现并有分层测试。** 模型调用在真正请求 provider 前，按确定性 operation key 和 attempt 在 PostgreSQL 预占。已经 `SETTLED` 的 typed 结果可重放；旧 claim 留下的 `RESERVED` 会转成 `UNKNOWN` 并继续计入调用预算，再决定是否允许新尝试。同一当前 claim 的 provider 失败也先把该 attempt 持久化为 `UNKNOWN`，然后才可能创建下一条 attempt。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -1849,9 +1879,9 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-4e79366e-250b-4cde-9ded-55010ee60084",
-        "latencyMs": 12834.315,
-        "answer": "模型调用在真正请求 provider 前，会按确定性 operation key 和 attempt 在 PostgreSQL 预占，因此崩溃恢复要区分两种记录 [来源1]：\n\n- **已 SETTLED 的调用**：已经 `SETTLED` 的 typed 结果可以重放，不需要重新向 provider 发起调用 [来源1]。\n- **旧 claim 留下的 RESERVED**：会转成 `UNKNOWN`，并继续计入调用预算（保守计入调用次数），然后才决定是否允许新尝试 [来源1][来源2]。\n\n此外，同一当前 claim 上 provider 失败时，也会先把该 attempt 持久化为 `UNKNOWN`，之后才可能创建下一条 attempt [来源1]；相应地，未知 attempt 只保守计入调用次数预算，不对未知 token 和 provider 账单做虚假估计 [来源3]。",
+        "runId": "wf-e76edd50-943a-47ff-a585-71a07a1fa7ef",
+        "latencyMs": 8229.761,
+        "answer": "在 checkpoint 间隙崩溃后：已经 SETTLED 的 typed 模型结果可重放 [来源1]；旧 claim 留下的 RESERVED 会转为 UNKNOWN，并继续计入调用预算/保守计入调用次数，然后再决定是否允许新尝试 [来源1][来源2]。",
         "citations": [
           {
             "source": "kb:ragflow:sha256-0d001437f4b24693",
@@ -1862,15 +1892,10 @@
             "source": "kb:ragflow:sha256-739ef2a7b3e25e52",
             "exists": true,
             "evidencePreview": "## 5. 与模型调用未知态的区别\n模型调用使用 V10 `agent_workflow_budget_reservation` 的 `RESERVED/SETTLED/UNKNOWN` 记录。旧 claim 的未结算模型调用转为 `UNKNOWN` 并保守计入调用次数；工具调用则优先复用确定性 receipt，并对 Java `EXECUTING` 模糊态拒绝重跑。二者都承认网络中的“请求可能已被接受但本地没有结果”，但恢复策略不同。"
-          },
-          {
-            "source": "kb:ragflow:sha256-7aa7ed484e499d4d",
-            "exists": true,
-            "evidencePreview": "> 我实现了 PostgreSQL checkpoint、30 秒 lease/10 秒 heartbeat、claim fencing、持久 SSE event log 和双层工具 receipt，并用 Python 单测、真实 PostgreSQL 测试和 Java Testcontainers 分层验证。模型 SDK 内部重试关闭，sidecar 默认最多用 2 个持久 attempt 做有限重试，未知 attempt 只保守计入调用次数预算，未知 token 和 provider 账单不做虚假估计；已完成的 MCP 结果可以重放，旧 claim 留下的执行中调用会返回结果未知并拒绝盲重试。真实外部模型参与的进程 kill/restart、浏览器 SSE 故障注入和容量压测仍待验收，因此我不把它包装成 exactly-once 或生产 SLA。"
           }
         ],
         "usage": {
-          "totalTokens": 6727
+          "totalTokens": 7108
         }
       }
     },
@@ -1879,7 +1904,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 341.057,
+        "latencyMs": 324.419,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n- 限制：`SKIP LOCKED` 解决数据库领取竞争，不提供跨区域共识或任务优先级公平性证明。\n**事实 F2｜状态：已实现。** 默认 lease 为 30 秒，heartbeat 为 10 秒；配置校验要求 heartbeat 小于 lease。heartbeat 只有在 runner 实例、claim token、未过期 lease 和非终态状态全部匹配时才续租。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -1905,9 +1930,9 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-fc82da29-b95d-497d-81da-eae464149c3e",
-        "latencyMs": 9239.568,
-        "answer": "workflow runner 默认 lease 为 30 秒，heartbeat 为 10 秒 [来源1]；配置校验要求 heartbeat 小于 lease [来源1]。续租只有在 runner 实例、claim token、未过期 lease 和非终态状态全部匹配时才生效 [来源1]。30/10 秒是当前默认值，不是经过延迟、GC pause、网络抖动和大规模压力实验得出的生产参数 [来源2]。",
+        "runId": "wf-abd7e4bb-3f97-4330-a6cb-a31a8fcd1abd",
+        "latencyMs": 6654.384,
+        "answer": "workflow runner 的默认 lease 是 30 秒、默认 heartbeat 是 10 秒 [来源1]；配置校验要求 heartbeat 必须小于 lease [来源1]。这两个值是当前默认值，而非经过延迟、GC pause、网络抖动和大规模压力实验得出的生产参数 [来源2]。注意不要与 SSE 机制混淆：workflow SSE 在连续 15 秒无业务事件时发送 comment heartbeat，用于连接保活，与 runner 的 10 秒 lease heartbeat 不是同一种机制 [来源3]。",
         "citations": [
           {
             "source": "kb:ragflow:sha256-81089d6990c4069c",
@@ -1918,10 +1943,15 @@
             "source": "kb:ragflow:sha256-69d7df17ce584891",
             "exists": true,
             "evidencePreview": "- 代码证据：`settings.py::Settings`；`PostgresWorkflowRepository.heartbeat`。\n- 测试证据：`test_expired_lease_reclaims_with_fencing_and_session_lock` 覆盖过期后换 claim。\n- 限制：30/10 秒是当前默认值，不是经过延迟、GC pause、网络抖动和大规模压力实验得出的生产参数。"
+          },
+          {
+            "source": "kb:ragflow:sha256-5d2e7b6b7b250d6f",
+            "exists": true,
+            "evidencePreview": "## SSE 空闲心跳与连接关闭\nworkflow SSE 在连续 15 秒没有业务事件时发送 comment heartbeat；run 进入终态且数据库没有待发送事件后关闭连接，单个 emitter 的超时为 3 分钟。SSE heartbeat 用于连接保活，与 runner 的 10 秒 lease heartbeat 不是同一种机制。"
           }
         ],
         "usage": {
-          "totalTokens": 4644
+          "totalTokens": 3877
         }
       }
     },
@@ -1930,7 +1960,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 349.08,
+        "latencyMs": 336.531,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n- 限制：`SKIP LOCKED` 解决数据库领取竞争，不提供跨区域共识或任务优先级公平性证明。\n**事实 F2｜状态：已实现。** 默认 lease 为 30 秒，heartbeat 为 10 秒；配置校验要求 heartbeat 小于 lease。heartbeat 只有在 runner 实例、claim token、未过期 lease 和非终态状态全部匹配时才续租。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -1955,13 +1985,39 @@
         ]
       },
       "answerRun": {
-        "status": "FAILED",
-        "runId": "wf-1e2b8228-8baa-4ecb-9786-4727953825e7",
-        "latencyMs": 24054.944,
-        "answer": "",
-        "citations": [],
+        "status": "SUCCEEDED",
+        "runId": "wf-a5f4bb6a-eaf9-45ff-83d8-a52286a26ff1",
+        "latencyMs": 22029.658,
+        "answer": "多个 runner 从 PostgreSQL 领取任务时，runner 用 `FOR UPDATE SKIP LOCKED` 选择一个可领取 run，并生成新的随机 UUID `claim_token`；`SKIP LOCKED` 解决数据库领取竞争，但不提供跨区域共识或任务优先级公平性证明 [来源1][来源2]。只有未领取或 lease 已过期的非终态 run 才能被重新 claim；因此过期任务被重新领取时会生成新的随机 UUID `claim_token`，claim token 发生变化，旧 claim token 不再是当前 token [来源1]。为避免旧 runner 继续执行，runner 在图执行期间持有以 `run_id` 哈希得到的 PostgreSQL session advisory lock；新 claim 即使已经出现，也要等旧执行连接释放锁后才能进入图执行，随后再次检查当前 claim [来源3]。真正阻止旧 runner 写入的是 fencing：每次写操作携带当前 claim token 并校验 lease；进度、事件、预算、receipt、token exchange 和 finalize 都必须携带当前 claim token 并同时检查 lease [来源4]。advisory lock 按 `run_id` 串行化同一 run 的图执行，接管者要等待旧执行连接释放锁并再次检查 claim；advisory lock 不能替代 fencing，阻止 stale claim 写入的是 claim token + lease 校验的 fencing 条件 [来源5]。heartbeat 只有在 runner 实例、claim token、未过期 lease 和非终态状态全部匹配时才续租 [来源2]。",
+        "citations": [
+          {
+            "source": "kb:ragflow:sha256-55ce54abd49ae0f2",
+            "exists": true,
+            "evidencePreview": "## 1. claim 与 lease\n**事实 F1｜状态：已实现并有真实 PostgreSQL 测试。** runner 用 `FOR UPDATE SKIP LOCKED` 选择一个可领取 run，并生成新的随机 UUID `claim_token`。只有未领取或 lease 已过期的非终态 run 才能被重新 claim。\n- 代码证据：`PostgresWorkflowRepository.claim_next`。\n- 测试证据：`test_expired_lease_reclaims_with_fencing_and_session_lock`。"
+          },
+          {
+            "source": "kb:ragflow:sha256-81089d6990c4069c",
+            "exists": true,
+            "evidencePreview": "- 限制：`SKIP LOCKED` 解决数据库领取竞争，不提供跨区域共识或任务优先级公平性证明。\n**事实 F2｜状态：已实现。** 默认 lease 为 30 秒，heartbeat 为 10 秒；配置校验要求 heartbeat 小于 lease。heartbeat 只有在 runner 实例、claim token、未过期 lease 和非终态状态全部匹配时才续租。"
+          },
+          {
+            "source": "kb:ragflow:sha256-8dc337ccd9031114",
+            "exists": true,
+            "evidencePreview": "**事实 F4｜状态：已实现并有真实 PostgreSQL 测试。** runner 在图执行期间持有以 `run_id` 哈希得到的 PostgreSQL session advisory lock。新 claim 即使已经出现，也要等旧执行连接释放锁后才能进入图执行；随后再次检查当前 claim。\n- 代码证据：`PostgresWorkflowRepository.run_lock`、`WorkflowRunner._execute`。"
+          },
+          {
+            "source": "kb:ragflow:sha256-f74f309c5f4cdf92",
+            "exists": true,
+            "evidencePreview": "## 2. fencing 为什么比 lease 更关键\n**事实 F3｜状态：已实现并有测试。** lease 只能决定何时允许新 runner 接管；真正阻止旧 runner 写入的是 fencing。进度、事件、预算、receipt、token exchange 和 finalize 都必须携带当前 claim token，并同时检查 lease。"
+          },
+          {
+            "source": "kb:ragflow:sha256-1015ddbb60b6797c",
+            "exists": true,
+            "evidencePreview": "## advisory lock 与 fencing 的不同职责\nPostgreSQL session advisory lock 按 `run_id` 串行化同一 run 的图执行，接管者要等待旧执行连接释放锁并再次检查 claim；advisory lock 不能替代 fencing。真正阻止 stale claim 写进度、预算、事件、receipt、授权和终态的是每次写操作携带当前 claim token 并校验 lease 的 fencing 条件。"
+          }
+        ],
         "usage": {
-          "totalTokens": 11012
+          "totalTokens": 9523
         }
       }
     },
@@ -1970,7 +2026,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 370.026,
+        "latencyMs": 320.158,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## advisory lock 与 fencing 的不同职责\nPostgreSQL session advisory lock 按 `run_id` 串行化同一 run 的图执行，接管者要等待旧执行连接释放锁并再次检查 claim；advisory lock 不能替代 fencing。真正阻止 stale claim 写进度、预算、事件、receipt、授权和终态的是每次写操作携带当前 claim token 并校验 lease 的 fencing 条件。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -1996,19 +2052,19 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-a2d11b1e-7376-4476-9f93-45a91f22bfb3",
-        "latencyMs": 25132.217,
-        "answer": "PostgreSQL advisory lock 在 workflow 恢复中的作用是串行化同一 run 的图执行，避免恢复/接管时两个 runner 并发跑同一 run：runner 在图执行期间持有按 `run_id` 哈希得到的 session advisory lock；新 claim 即使已经出现，也要等旧执行连接释放锁后才能进入图执行，随后再次检查当前 claim[来源1][来源2]。它只是并发收敛辅助，不能替代 fencing：advisory lock 依赖数据库会话，进程崩溃时通过连接关闭释放，并不构成每次写操作的 claim 条件[来源3]。lease 只决定何时允许新 runner 接管；真正阻止旧 runner（stale claim）写入的是 fencing——进度、预算、事件、receipt、授权、token exchange 和 finalize 等每次写操作都必须携带当前 claim token 并校验 lease[来源1][来源4]。因此恢复时除了用 advisory lock 收敛图执行，还必须用 fencing 拒绝旧 claim token 的写入；新 claim 会生成新的随机 UUID `claim_token`，只有未领取或 lease 已过期的非终态 run 才能被重新 claim[来源5]。",
+        "runId": "wf-a61cd340-087e-494c-aa2d-e6508faf5557",
+        "latencyMs": 21539.566,
+        "answer": "PostgreSQL advisory lock 的作用：runner 在图执行期间持有以 run_id 哈希得到的 PostgreSQL session advisory lock，用于按 run_id 串行化同一 run 的图执行；恢复/接管时，即使新 claim 已出现，也必须等旧执行连接释放该锁后才能进入图执行，随后再次检查当前 claim[来源1][来源2]。它主要帮助并发收敛：锁依赖数据库会话，进程崩溃时通过连接关闭释放，属于并发收敛辅助，不能替代每次写操作的 claim 条件[来源3]。仍需要 fencing：lease 只决定何时允许新 runner 接管，真正阻止旧 runner 写入的是 fencing；进度、事件、预算、receipt、token exchange 和 finalize 等写操作都必须携带当前 claim token，并同时检查 lease[来源4]。终态写入也由 Java 只接受当前且未过期 claim 的 finalize；同 claim 与同请求指纹可幂等重放，不同终态或不同请求冲突，从而防止 stale claim 写终态[来源5]。此外 checkpoint 只记录图状态，不能单独保证远端副作用 exactly-once，所以还需 fencing、幂等与对账收敛[来源6]。",
         "citations": [
-          {
-            "source": "kb:ragflow:sha256-1015ddbb60b6797c",
-            "exists": true,
-            "evidencePreview": "## advisory lock 与 fencing 的不同职责\nPostgreSQL session advisory lock 按 `run_id` 串行化同一 run 的图执行，接管者要等待旧执行连接释放锁并再次检查 claim；advisory lock 不能替代 fencing。真正阻止 stale claim 写进度、预算、事件、receipt、授权和终态的是每次写操作携带当前 claim token 并校验 lease 的 fencing 条件。"
-          },
           {
             "source": "kb:ragflow:sha256-8dc337ccd9031114",
             "exists": true,
             "evidencePreview": "**事实 F4｜状态：已实现并有真实 PostgreSQL 测试。** runner 在图执行期间持有以 `run_id` 哈希得到的 PostgreSQL session advisory lock。新 claim 即使已经出现，也要等旧执行连接释放锁后才能进入图执行；随后再次检查当前 claim。\n- 代码证据：`PostgresWorkflowRepository.run_lock`、`WorkflowRunner._execute`。"
+          },
+          {
+            "source": "kb:ragflow:sha256-1015ddbb60b6797c",
+            "exists": true,
+            "evidencePreview": "## advisory lock 与 fencing 的不同职责\nPostgreSQL session advisory lock 按 `run_id` 串行化同一 run 的图执行，接管者要等待旧执行连接释放锁并再次检查 claim；advisory lock 不能替代 fencing。真正阻止 stale claim 写进度、预算、事件、receipt、授权和终态的是每次写操作携带当前 claim token 并校验 lease 的 fencing 条件。"
           },
           {
             "source": "kb:ragflow:sha256-09cbff845942963a",
@@ -2021,13 +2077,18 @@
             "evidencePreview": "## 2. fencing 为什么比 lease 更关键\n**事实 F3｜状态：已实现并有测试。** lease 只能决定何时允许新 runner 接管；真正阻止旧 runner 写入的是 fencing。进度、事件、预算、receipt、token exchange 和 finalize 都必须携带当前 claim token，并同时检查 lease。"
           },
           {
-            "source": "kb:ragflow:sha256-55ce54abd49ae0f2",
+            "source": "kb:ragflow:sha256-6fe5a9f3849d70bb",
             "exists": true,
-            "evidencePreview": "## 1. claim 与 lease\n**事实 F1｜状态：已实现并有真实 PostgreSQL 测试。** runner 用 `FOR UPDATE SKIP LOCKED` 选择一个可领取 run，并生成新的随机 UUID `claim_token`。只有未领取或 lease 已过期的非终态 run 才能被重新 claim。\n- 代码证据：`PostgresWorkflowRepository.claim_next`。\n- 测试证据：`test_expired_lease_reclaims_with_fencing_and_session_lock`。"
+            "evidencePreview": "**事实 F6｜状态：已实现并有测试。** Python 无权写终态；进入 `FINALIZING` 后，Java 只接受当前且未过期 claim 的 finalize。相同 claim 与相同请求指纹可以幂等重放，不同终态或不同请求返回冲突。\n- 代码证据：`WorkflowService.finalizeRun`、`WorkflowRepository.finalizeClaim`、V8 trigger。"
+          },
+          {
+            "source": "kb:ragflow:sha256-3c72005c9145dc93",
+            "exists": true,
+            "evidencePreview": "## 未完成与已完成 checkpoint 的恢复分支\nrunner 调用 `aget_state` 后，若 checkpoint 的 `snapshot.next` 非空，就以 `None` 恢复未完成图；若 checkpoint 已完成但 Java `finalize` 响应可能丢失，就读取最终 state 并重试幂等 `finalize`，不重复模型合成。checkpoint 只记录图状态，不能单独保证远端副作用 exactly-once。"
           }
         ],
         "usage": {
-          "totalTokens": 9345
+          "totalTokens": 9791
         }
       }
     },
@@ -2036,7 +2097,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 339.114,
+        "latencyMs": 325.665,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 3. 数据库最小权限与触发器\n**事实 F5｜状态：已实现并有 Testcontainers 证据。** V8 对 sidecar 使用列级授权，并用触发器验证父 run 的 claim、lease、取消状态和阶段；V11 固定函数 `search_path` 并显式查询 `public.agent_workflow_run`，阻止临时同名表绕过 child-row fencing。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2062,9 +2123,9 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-562105f7-1916-45c2-a7fc-eb8f30fe4de1",
-        "latencyMs": 12829.623,
-        "answer": "V11 固定数据库 trigger 的 `search_path` 并显式查询 `public.agent_workflow_run`，是为了阻止通过临时同名表绕过 child-row fencing。具体来说，V8 的触发器需要验证父 run 的 claim、lease、取消状态和阶段；V11 通过固定函数 `search_path` 并显式指定 `public.agent_workflow_run`，避免名称解析被临时同名表劫持，从而防止 child-row fencing 被绕过 [来源1]。对应代码证据是 `V11__workflow_trigger_search_path_hardening.sql`，测试证据是 `DeepResearchApplicationIT.workflowSidecarCannotBypassChildFenceWithTemporaryShadowTable` [来源2]。",
+        "runId": "wf-d1485954-a560-4e44-b90e-2c0a9a49beca",
+        "latencyMs": 10273.273,
+        "answer": "V11 固定数据库 trigger 的 search_path，并显式查询 public.agent_workflow_run，是为了阻止通过临时同名表劫持触发器内未限定表名的解析，从而绕过 child-row fencing（父子 run 的安全围栏）[来源1]。该加固对应迁移文件 V11__workflow_trigger_search_path_hardening.sql，并有集成测试 workflowSidecarCannotBypassChildFenceWithTemporaryShadowTable 验证 [来源2]。",
         "citations": [
           {
             "source": "kb:ragflow:sha256-a6d7b54458ff2541",
@@ -2078,7 +2139,7 @@
           }
         ],
         "usage": {
-          "totalTokens": 6219
+          "totalTokens": 5779
         }
       }
     },
@@ -2087,7 +2148,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 343.233,
+        "latencyMs": 337.162,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## DeepResearch 的 SSE Last-Event-ID 契约\n在 DeepResearch 项目中，SSE 的 `Last-Event-ID` 值采用 `<runId>:<eventId>`，这是本项目的游标契约；服务端验证 run 前缀和数字游标后，从 PostgreSQL 查询 `event_id > cursor`，并按 `event_id` 升序重放后续事件。该事实卡回答项目实现，不把 `<runId>:<eventId>` 冒充 WHATWG 对所有 SSE 应用规定的通用格式。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2112,13 +2173,29 @@
         ]
       },
       "answerRun": {
-        "status": "FAILED",
-        "runId": "wf-96f713fa-f68d-483e-a73e-dd13c9b56e99",
-        "latencyMs": 7669.946,
-        "answer": "",
-        "citations": [],
+        "status": "SUCCEEDED",
+        "runId": "wf-50ce8cc6-6d88-46d5-9dcc-66b8b126d262",
+        "latencyMs": 10755.508,
+        "answer": "在 DeepResearch 项目中，SSE 的 `Last-Event-ID` 游标格式为 `<runId>:<eventId>` [来源1][来源2]。服务端重放流程是：先验证游标，要求前缀属于当前 run 且游标为数字；错误 run 返回冲突，负数或非法数字返回参数错误 [来源2]。随后服务端从 PostgreSQL 按 `event_id > cursor` 查询，并按 `event_id` 升序（`event_id ASC`）重放后续事件；每次最多读取 200 条 [来源1][来源2][来源3]。该重放不依赖 Java 进程内缓存 [来源3]。",
+        "citations": [
+          {
+            "source": "kb:ragflow:sha256-0041107d498399ff",
+            "exists": true,
+            "evidencePreview": "## DeepResearch 的 SSE Last-Event-ID 契约\n在 DeepResearch 项目中，SSE 的 `Last-Event-ID` 值采用 `<runId>:<eventId>`，这是本项目的游标契约；服务端验证 run 前缀和数字游标后，从 PostgreSQL 查询 `event_id > cursor`，并按 `event_id` 升序重放后续事件。该事实卡回答项目实现，不把 `<runId>:<eventId>` 冒充 WHATWG 对所有 SSE 应用规定的通用格式。"
+          },
+          {
+            "source": "kb:ragflow:sha256-b1624b3045a82faf",
+            "exists": true,
+            "evidencePreview": "## 2. Last-Event-ID 契约\n**事实 S3｜状态：已实现。** SSE ID 采用 `<runId>:<eventId>`。客户端重连时发送 `Last-Event-ID`；服务端验证游标后使用 `event_id > cursor` 并按 `event_id` 升序重放后续事件。服务端还要求前缀属于当前 run，错误 run 返回冲突，负数或非法数字返回参数错误。"
+          },
+          {
+            "source": "kb:ragflow:sha256-cdf1febe0439b26e",
+            "exists": true,
+            "evidencePreview": "**事实 S2｜状态：已实现。** SSE 查询使用 `event_id > cursor`、按 `event_id ASC` 排序，每次最多读取 200 条；也就是按 `event_id` 升序重放，因此断线后能从已确认游标继续，而不是依赖 Java 进程内缓存。\n- 代码证据：`WorkflowRepository.eventsAfter`、`WorkflowController.stream`。"
+          }
+        ],
         "usage": {
-          "totalTokens": 4668
+          "totalTokens": 4854
         }
       }
     },
@@ -2127,7 +2204,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 405.947,
+        "latencyMs": 301.055,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## SSE 空闲心跳与连接关闭\nworkflow SSE 在连续 15 秒没有业务事件时发送 comment heartbeat；run 进入终态且数据库没有待发送事件后关闭连接，单个 emitter 的超时为 3 分钟。SSE heartbeat 用于连接保活，与 runner 的 10 秒 lease heartbeat 不是同一种机制。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2153,9 +2230,9 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-51b0c8f5-ab61-4b16-b574-5dd620b71959",
-        "latencyMs": 16408.25,
-        "answer": "workflow SSE 在连续 15 秒没有业务事件时发送 comment heartbeat [来源1][来源2]。当 run 进入终态且数据库中没有待发送事件后，连接会被关闭 [来源1][来源2]。单个 emitter 的超时时间为 3 分钟，客户端需要重连 [来源1][来源2]。该 SSE heartbeat 用于连接保活，且与 workflow runner 的 10 秒 lease heartbeat 不是同一种机制 [来源1]。",
+        "runId": "wf-9c0a7ec5-fef8-4647-ad6a-897c6685e7fe",
+        "latencyMs": 18999.94,
+        "answer": "workflow SSE 在连续 15 秒没有业务事件时发送一次 comment heartbeat（空闲心跳）[来源1][来源2]。连接关闭条件：run 进入终态且数据库中没有待发送事件后关闭连接 [来源1][来源2]；单个 emitter 超时时间为 3 分钟，超时后客户端需要重连 [来源1][来源2]。",
         "citations": [
           {
             "source": "kb:ragflow:sha256-5d2e7b6b7b250d6f",
@@ -2169,7 +2246,7 @@
           }
         ],
         "usage": {
-          "totalTokens": 4738
+          "totalTokens": 3871
         }
       }
     },
@@ -2178,7 +2255,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 338.088,
+        "latencyMs": 398.557,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 演示页的 SSE 去重与验证边界\n`demo.html` 在当前页面生命周期内用事件 ID 的 `Map` 去重，只允许游标前进，并在重连请求中携带 `Last-Event-ID`；服务端按 `event_id > cursor` 重放。页面完全刷新会重建内存 `Map`，正确性仍依赖保存的游标和服务端重放；当前没有 Playwright 或真实浏览器故障注入测试证明任意断点都不丢不重。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2203,13 +2280,44 @@
         ]
       },
       "answerRun": {
-        "status": "FAILED",
-        "runId": "wf-f41156e4-132a-4339-80b6-d3a3f2120d48",
-        "latencyMs": 18952.755,
-        "answer": "",
-        "citations": [],
+        "status": "SUCCEEDED",
+        "runId": "wf-8cd635e8-2a32-4769-905f-8ce6d807f468",
+        "latencyMs": 17990.993,
+        "answer": "演示页在当前页面生命周期内用事件 ID 的 `Map` 去重，并只允许游标前进，因此重连后再次收到已处理过的事件 ID 时不会重复展示；断线后它通过 fetch streaming 重连并携带 `Last-Event-ID`，服务端按 `event_id > cursor` 升序重放后续事件，从游标之后继续补发。[来源1][来源2][来源3] `Last-Event-ID` 采用 `<runId>:<eventId>`，服务端会验证 run 前缀和数字游标，错误 run 返回冲突，负数或非法数字返回参数错误。[来源3] 当前验证边界是：持久事件、游标协议和演示页自动重连已实现，但真实浏览器故障注入全链待验收；缺少 Playwright 或真实浏览器故障注入测试来证明任意断点都不丢不重，也缺少浏览器自动化在任意事件断线、刷新、服务重启后验证无缺失和无重复展示的测试。[来源4][来源1][来源5] 页面完全刷新会重建内存 `Map`，正确性仍依赖保存的游标和服务端重放。[来源1] 因此不能声称 SSE 提供 exactly-once 交付，客户端仍应按事件 ID 去重；也不能说已经完成浏览器从任意事件断开、刷新、跨实例恢复的完整自动验收。[来源6]",
+        "citations": [
+          {
+            "source": "kb:ragflow:sha256-e65cfbe95dc983b5",
+            "exists": true,
+            "evidencePreview": "## 演示页的 SSE 去重与验证边界\n`demo.html` 在当前页面生命周期内用事件 ID 的 `Map` 去重，只允许游标前进，并在重连请求中携带 `Last-Event-ID`；服务端按 `event_id > cursor` 重放。页面完全刷新会重建内存 `Map`，正确性仍依赖保存的游标和服务端重放；当前没有 Playwright 或真实浏览器故障注入测试证明任意断点都不丢不重。"
+          },
+          {
+            "source": "kb:ragflow:sha256-24c135ef087af750",
+            "exists": true,
+            "evidencePreview": "**事实 S6｜状态：已实现于演示页。** `demo.html` 用事件 ID 的 Map 去重，只允许游标前进；断线后使用 fetch streaming 携带 `Last-Event-ID`，按指数退避重连。\n- 代码证据：`demo.html` 的 `eventKey`、`advanceEventCursor`、`appendEvent`、`consumeEventStream`、`startEventLoop`。"
+          },
+          {
+            "source": "kb:ragflow:sha256-b1624b3045a82faf",
+            "exists": true,
+            "evidencePreview": "## 2. Last-Event-ID 契约\n**事实 S3｜状态：已实现。** SSE ID 采用 `<runId>:<eventId>`。客户端重连时发送 `Last-Event-ID`；服务端验证游标后使用 `event_id > cursor` 并按 `event_id` 升序重放后续事件。服务端还要求前缀属于当前 run，错误 run 返回冲突，负数或非法数字返回参数错误。"
+          },
+          {
+            "source": "kb:ragflow:sha256-3af28fcee03bf565",
+            "exists": true,
+            "evidencePreview": "# SSE 持久事件与断线重放\n> 状态：持久事件、游标协议和演示页自动重连已实现；真实浏览器故障注入全链待验收\n> 版本：Java `0.0.1-SNAPSHOT`；Flyway V7–V11\n> 快照：2026-08-26"
+          },
+          {
+            "source": "kb:ragflow:sha256-f3545080fbcc8f4f",
+            "exists": true,
+            "evidencePreview": "**事实 V2｜状态：代码已实现，浏览器专项验收缺失。** 持久事件、Last-Event-ID、15 秒 heartbeat、前端去重和重连代码已存在；但缺少浏览器自动化在任意事件断线、刷新、服务重启后验证无缺失和无重复展示的测试。\n- 代码证据：`WorkflowController`、`WorkflowRepository.eventsAfter`、`demo.html` 的 SSE 游标与去重函数。"
+          },
+          {
+            "source": "kb:ragflow:sha256-e08b3350496ec398",
+            "exists": true,
+            "evidencePreview": "- 可以说：事件持久化、确定性 event key、Last-Event-ID 查询和前端去重/重连代码已实现。\n- 不可以说：SSE 与 LangGraph checkpoint 是同一个存储或同一事务。\n- 不可以说：已经完成浏览器从任意事件断开、刷新、跨实例恢复的完整自动验收。\n- 不可以说：SSE 提供 exactly-once 交付；客户端仍应按事件 ID 去重。"
+          }
+        ],
         "usage": {
-          "totalTokens": 8546
+          "totalTokens": 8537
         }
       }
     },
@@ -2218,7 +2326,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 339.02,
+        "latencyMs": 352.39,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n**事实 R1｜状态：已实现并有测试。** `call_id` 由 `run_id`、`task_id`、tool 和 query 的规范 JSON 做 SHA-256 后生成，重试同一逻辑任务得到同一 ID。确定性 ID 只提供关联键；只有下游真正持久化并消费该键，才有去重效果。\n- 代码证据：`domain.py::deterministic_call_id`；`HttpMcpToolClient._request_headers`。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2244,9 +2352,9 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-7564f2b8-db9e-4962-9534-da73360a6135",
-        "latencyMs": 10283.681,
-        "answer": "确定性 `call_id` 由 `run_id`、`task_id`、tool 和 query 的规范 JSON 做 SHA-256 后生成，重试同一逻辑任务会得到同一 ID [来源1]。该确定性 ID 被同时用作 Python receipt 的主键和 MCP 的 `Idempotency-Key` [来源2]。但它本身只提供关联键；只有下游真正持久化并消费该键，才会产生去重效果 [来源1]。因此，单靠确定性 `call_id` 并不足以保证幂等：checkpoint 不能自动提供工具的 exactly-once 语义 [来源3]；并且当 Python 在调用 Java 之后、写入 Python `COMPLETED` 之前崩溃时，仅靠这一层无法判断 Java 是否已经执行 [来源4]。",
+        "runId": "wf-d373ebca-db12-43fa-9f9d-84be7551e497",
+        "latencyMs": 10226.951,
+        "answer": "`call_id` 由 `run_id`、`task_id`、tool 和 query 的规范 JSON 一起做 SHA-256 生成，因此重试同一逻辑任务会得到同一 ID [来源1]。但它本身不足以单独保证幂等：确定性 ID 只提供关联键，只有下游真正持久化并消费该键，才有去重效果 [来源1]。实现上它会同时作为 Python receipt 主键和 MCP `Idempotency-Key`，从而可依赖 receipt 重放；模糊态则拒绝盲目重试 [来源2][来源3]。此外，checkpoint 不能自动提供工具 exactly-once，当前设计把 checkpoint、event log 与工具调用分开，并通过 `run_id`、确定性 `call_id` 和当前 `claim_token` 关联 [来源4]。",
         "citations": [
           {
             "source": "kb:ragflow:sha256-335a7f2b9b1dece0",
@@ -2259,18 +2367,18 @@
             "evidencePreview": "## 1. 为什么超时不能直接重试\nHTTP 或 MCP 超时只说明调用方没有收到确定结果，不说明远端动作没有发生。若客户端盲目 POST 第二次，可能重复搜索、扣费或产生副作用。因此当前链路先生成确定性 `call_id`，把它同时作为 Python receipt 主键和 MCP `Idempotency-Key`。"
           },
           {
+            "source": "kb:ragflow:sha256-d6328c6bc937eac2",
+            "exists": true,
+            "evidencePreview": "**事实 C7｜状态：已实现并有分层测试。** 工具调用使用确定性 `call_id` 和 receipt。Python 已完成 receipt 或 Java 已完成 MCP execution receipt 可以重放；模糊态拒绝盲目重试。\n- 代码证据：`domain.py::deterministic_call_id`、`mcp.py::ReceiptCachingToolClient`、`WorkflowMcpReceiptService`。"
+          },
+          {
             "source": "kb:ragflow:sha256-5f169ab720091105",
             "exists": true,
             "evidencePreview": "checkpoint 不能自动提供工具 exactly-once；event log 也不能代替 checkpoint。当前设计把三者分开，并通过 `run_id`、确定性 `call_id` 和当前 `claim_token` 关联。"
-          },
-          {
-            "source": "kb:ragflow:sha256-5e190062fa76f554",
-            "exists": true,
-            "evidencePreview": "- 测试证据：`test_python_receipt_replay_rejects_same_call_id_with_new_arguments`。\n- 限制：Python 在调用 Java 后、写 Python `COMPLETED` 前崩溃时，仅靠这一层无法判断 Java 是否已经执行。"
           }
         ],
         "usage": {
-          "totalTokens": 5302
+          "totalTokens": 5119
         }
       }
     },
@@ -2279,7 +2387,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 393.111,
+        "latencyMs": 275.089,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 3. 四种恢复结果\n**事实 R4｜状态：已实现并有单元测试。** 恢复时按持久状态区分：\n1. Java `COMPLETED`：直接重放安全结果，不再次调用工具；\n2. 同一当前 claim 的 `EXECUTING`：返回 `MCP_CALL_IN_PROGRESS`；\n3. 旧 claim 遗留的 `EXECUTING`：返回 `MCP_RESULT_UNKNOWN`；\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2305,9 +2413,9 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-ef6fa8de-5794-4c35-9c8a-8fafec9ac1f2",
-        "latencyMs": 11282.47,
-        "answer": "Java MCP receipt 的三类恢复结果如下：COMPLETED 会直接重放安全结果，不再次调用工具 [来源1]；同一当前 claim 的 EXECUTING 返回 `MCP_CALL_IN_PROGRESS` [来源1]；旧 claim 遗留的 EXECUTING 返回 `MCP_RESULT_UNKNOWN` [来源1]，并且系统不会自动重跑该工具 [来源2]。",
+        "runId": "wf-80106e3b-a0a9-4ad7-a048-337f53688f74",
+        "latencyMs": 7168.63,
+        "answer": "三者的返回按持久状态区分，均属“四种恢复结果”中由单元测试覆盖的实现行为 [来源1]：\n\n1. Java receipt 为 `COMPLETED`：直接重放已落盘的安全结果，不再次调用工具 [来源1]；该状态由 Java 在工具结果落盘后写入 `COMPLETED` 与安全结果，Python sidecar 只能读取、不能伪造或修改 [来源2]。\n2. 同一当前 claim 的 `EXECUTING`：返回 `MCP_CALL_IN_PROGRESS` [来源1]。\n3. 旧 claim 遗留的 `EXECUTING`：返回 `MCP_RESULT_UNKNOWN` [来源1]，即稳定错误码，系统不会自动重跑该工具；这是 at-most-once 优先选择，会牺牲结果可用性，并不是 exactly-once，也不承诺零重复或零丢失 [来源3]。测试证据为 `WorkflowMcpReceiptServiceTest.rejectsAmbiguousExecutionFromPreviousClaimAsResultUnknown`，且 Python 将该错误列为不可缓存控制状态 [来源4]。",
         "citations": [
           {
             "source": "kb:ragflow:sha256-e60ca5a78cea926f",
@@ -2315,13 +2423,23 @@
             "evidencePreview": "## 3. 四种恢复结果\n**事实 R4｜状态：已实现并有单元测试。** 恢复时按持久状态区分：\n1. Java `COMPLETED`：直接重放安全结果，不再次调用工具；\n2. 同一当前 claim 的 `EXECUTING`：返回 `MCP_CALL_IN_PROGRESS`；\n3. 旧 claim 遗留的 `EXECUTING`：返回 `MCP_RESULT_UNKNOWN`；"
           },
           {
+            "source": "kb:ragflow:sha256-b8bfdd6d215c5448",
+            "exists": true,
+            "evidencePreview": "**事实 R3｜状态：已实现并有 Java/Testcontainers 证据。** V9 在同一 receipt 行增加 Java MCP execution 状态。Java 在执行工具前原子写 `EXECUTING`，工具结果落盘后写 `COMPLETED` 与安全结果；Python sidecar 只能读取这些列，不能伪造或修改。"
+          },
+          {
             "source": "kb:ragflow:sha256-7975a2d582dce1ee",
             "exists": true,
             "evidencePreview": "## 旧 claim 工具调用的未知结果\n旧 claim 遗留的 Java `EXECUTING` receipt 返回稳定错误码 `MCP_RESULT_UNKNOWN`，系统不会自动重跑该工具。这个 at-most-once 优先选择降低了重复执行风险，但会牺牲结果可用性；它不是 exactly-once，也不能承诺零重复或零丢失。"
+          },
+          {
+            "source": "kb:ragflow:sha256-0236212935d927c5",
+            "exists": true,
+            "evidencePreview": "- 代码证据：Java `WorkflowMcpReceiptService` 对旧 claim `EXECUTING` 返回 `MCP_RESULT_UNKNOWN`；Python 将该错误列为不可缓存控制状态。\n- 测试证据：`WorkflowMcpReceiptServiceTest.rejectsAmbiguousExecutionFromPreviousClaimAsResultUnknown`。"
           }
         ],
         "usage": {
-          "totalTokens": 5259
+          "totalTokens": 5355
         }
       }
     },
@@ -2330,7 +2448,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 340.059,
+        "latencyMs": 299.584,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 旧 claim 工具调用的未知结果\n旧 claim 遗留的 Java `EXECUTING` receipt 返回稳定错误码 `MCP_RESULT_UNKNOWN`，系统不会自动重跑该工具。这个 at-most-once 优先选择降低了重复执行风险，但会牺牲结果可用性；它不是 exactly-once，也不能承诺零重复或零丢失。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2356,9 +2474,9 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-3480d11b-4aaf-46a2-875c-02bbd2c8d53a",
-        "latencyMs": 28210.119,
-        "answer": "当前工具恢复语义应描述为 at-most-once 优先：在模糊态宁可返回未知，也不自动重复动作，以降低重复执行风险[来源1]。它不是 exactly-once，不能承诺零重复或零丢失，checkpoint 也不能自动提供工具 exactly-once[来源2][来源3]。旧 claim 遗留的 Java `EXECUTING` receipt 会返回稳定错误码 `MCP_RESULT_UNKNOWN`，系统不会自动重跑该工具[来源2]。这个选择主要牺牲的是结果可用性[来源1][来源2]；同时需要说明，`MCP_RESULT_UNKNOWN` 并不表示工具没有执行[来源4]。",
+        "runId": "wf-ba7495e4-0796-4e53-9468-b05d79f78a3c",
+        "latencyMs": 17980.373,
+        "answer": "当前工具恢复语义应描述为 at-most-once 优先，而不是 exactly-once：因为对模糊态系统宁可返回未知，也不自动重复动作，这降低重复执行风险；它并不是 exactly-once，也不能承诺零重复或零丢失。[来源1][来源2] 旧 claim 遗留的 Java `EXECUTING` receipt 会返回稳定错误码 `MCP_RESULT_UNKNOWN`，系统不会自动重跑该工具；代码证据也表明 Java `WorkflowMcpReceiptService` 对该模糊态返回 `MCP_RESULT_UNKNOWN`，且 Python 将其列为不可缓存控制状态。[来源2][来源3][来源4] 这个选择牺牲的是结果可用性：降低重复执行风险的同时，可能牺牲结果可用性，使调用方只能得到“结果未知”。[来源1][来源2]",
         "citations": [
           {
             "source": "kb:ragflow:sha256-3b649a7306753a0c",
@@ -2371,18 +2489,18 @@
             "evidencePreview": "## 旧 claim 工具调用的未知结果\n旧 claim 遗留的 Java `EXECUTING` receipt 返回稳定错误码 `MCP_RESULT_UNKNOWN`，系统不会自动重跑该工具。这个 at-most-once 优先选择降低了重复执行风险，但会牺牲结果可用性；它不是 exactly-once，也不能承诺零重复或零丢失。"
           },
           {
-            "source": "kb:ragflow:sha256-5f169ab720091105",
+            "source": "kb:ragflow:sha256-e60ca5a78cea926f",
             "exists": true,
-            "evidencePreview": "checkpoint 不能自动提供工具 exactly-once；event log 也不能代替 checkpoint。当前设计把三者分开，并通过 `run_id`、确定性 `call_id` 和当前 `claim_token` 关联。"
+            "evidencePreview": "## 3. 四种恢复结果\n**事实 R4｜状态：已实现并有单元测试。** 恢复时按持久状态区分：\n1. Java `COMPLETED`：直接重放安全结果，不再次调用工具；\n2. 同一当前 claim 的 `EXECUTING`：返回 `MCP_CALL_IN_PROGRESS`；\n3. 旧 claim 遗留的 `EXECUTING`：返回 `MCP_RESULT_UNKNOWN`；"
           },
           {
-            "source": "kb:ragflow:sha256-0e3da06296f47b48",
+            "source": "kb:ragflow:sha256-0236212935d927c5",
             "exists": true,
-            "evidencePreview": "禁止说法：\n- “LangGraph 保证每个工具 exactly-once。”\n- “任何崩溃点都不会丢结果。”\n- “已经完成真实生产流量与高可用验证。”\n- “SSE 每条消息绝不会重复。”\n- “MCP_RESULT_UNKNOWN 表示工具没有执行。”\n- “默认两次持久重试证明 provider 只执行或只计费一次。”"
+            "evidencePreview": "- 代码证据：Java `WorkflowMcpReceiptService` 对旧 claim `EXECUTING` 返回 `MCP_RESULT_UNKNOWN`；Python 将该错误列为不可缓存控制状态。\n- 测试证据：`WorkflowMcpReceiptServiceTest.rejectsAmbiguousExecutionFromPreviousClaimAsResultUnknown`。"
           }
         ],
         "usage": {
-          "totalTokens": 9216
+          "totalTokens": 8560
         }
       }
     },
@@ -2391,7 +2509,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 320.791,
+        "latencyMs": 351.947,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 真实外部模型 kill/restart 的验证边界\nDeepResearch 没有完成真实外部模型参与的进程 kill/restart 全链验收；准确的简历表述是“checkpoint、receipt、claim fencing 恢复机制已实现并通过分层测试，在线 kill/restart 待验收”。不能把单元测试、PostgreSQL/Testcontainers 测试或单条在线烟测写成真实 provider 的恢复成功率。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2417,9 +2535,9 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-abdee0da-de05-4b48-9d9f-b9dfbcd9a1df",
-        "latencyMs": 13862.683,
-        "answer": "否，DeepResearch 没有完成真实外部模型参与的进程 kill/restart 全链验收。[来源1] 准确的简历表述是“checkpoint、receipt、claim fencing 恢复机制已实现并通过分层测试，在线 kill/restart 待验收”。[来源1] 仓库已有分层测试和真实 PostgreSQL/Testcontainers 证据，但真实外部模型参与的进程 kill/restart、浏览器 SSE 断线全链、容量与生产高可用仍待单独验收，因此不能宣称 exactly-once、零丢失或生产级 SLA。[来源2]",
+        "runId": "wf-a6213d2a-baba-4662-935b-0ddf2388d7b2",
+        "latencyMs": 14885.556,
+        "answer": "否，DeepResearch 尚未完成真实外部模型参与的进程 kill/restart 全链验收[来源1]。事实边界是：runner 已能从 checkpoint 继续，并有 settlement/receipt/fencing 测试，但当前仓库没有一条自动化测试真正启动 Java、Python、真实外部模型和 MCP 后，在指定节点 kill runner 再验证最终答案，因此在线验收缺失[来源2]；也不能说已经完成真实 DeepSeek/外部 provider 的全链 kill/restart 验收[来源3]。正确的简历表述是：“checkpoint、receipt、claim fencing 恢复机制已实现并通过分层测试，在线 kill/restart 待验收”[来源1]；也可写成“恢复机制已实现并通过分层测试，在线 kill/restart 待验收”[来源2]。不能把单元测试、PostgreSQL/Testcontainers 测试或单条在线烟测写成真实 provider 的恢复成功率[来源1]。",
         "citations": [
           {
             "source": "kb:ragflow:sha256-12137093df75fcda",
@@ -2427,13 +2545,18 @@
             "evidencePreview": "## 真实外部模型 kill/restart 的验证边界\nDeepResearch 没有完成真实外部模型参与的进程 kill/restart 全链验收；准确的简历表述是“checkpoint、receipt、claim fencing 恢复机制已实现并通过分层测试，在线 kill/restart 待验收”。不能把单元测试、PostgreSQL/Testcontainers 测试或单条在线烟测写成真实 provider 的恢复成功率。"
           },
           {
-            "source": "kb:ragflow:sha256-718f5d7da192429c",
+            "source": "kb:ragflow:sha256-8104ae3debdf7879",
             "exists": true,
-            "evidencePreview": "该表述的限制是：仓库已有分层测试和真实 PostgreSQL/Testcontainers 证据，但真实外部模型参与的进程 kill/restart、浏览器 SSE 断线全链、容量与生产高可用仍待单独验收，因此不能宣称 exactly-once、零丢失或生产级 SLA。"
+            "evidencePreview": "## 2. 已实现代码，但仍待专项在线验收\n**事实 V1｜状态：机制已实现，在线验收缺失。** runner 已能从 checkpoint 继续，并有 settlement/receipt/fencing 测试；但当前仓库没有一条自动化测试真正启动 Java、Python、真实外部模型和 MCP 后，在指定节点 kill runner 再验证最终答案。因此简历应写“恢复机制已实现并通过分层测试，在线 kill/restart 待验收”。"
+          },
+          {
+            "source": "kb:ragflow:sha256-c94f2091cc8be437",
+            "exists": true,
+            "evidencePreview": "- 可以说：节点 checkpoint、恢复分支、已结算模型结果重放、claim fencing 和工具 receipt 已实现，并有单元及 PostgreSQL/Testcontainers 证据。\n- 不可以说：已经完成真实 DeepSeek/外部 provider 的全链 kill/restart 验收。\n- 不可以说：checkpoint 自动保证 exactly-once。\n- 不可以说：任意崩溃点都不会丢失结果。"
           }
         ],
         "usage": {
-          "totalTokens": 6542
+          "totalTokens": 7342
         }
       }
     },
@@ -2442,7 +2565,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 369.812,
+        "latencyMs": 308.891,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## HITL、Kafka、Temporal 与 Kubernetes 范围\n当前项目没有实现 HITL interrupt、Kafka、Temporal 或完整 Kubernetes 集群，也没有写工具和高风险审批流。它们属于后续路线，不得表述成已实现、已上线 Kubernetes 或已具备生产集群经验。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2468,23 +2591,23 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-4b535159-1606-46d5-afc4-d330fca7d7e5",
-        "latencyMs": 8734.436,
-        "answer": "没有实现。当前项目未实现 HITL interrupt、Kafka、Temporal，也没有完整 Kubernetes 集群，同时也没有写工具和高风险审批流，这些属于后续路线，不得表述为已实现、已上线 Kubernetes 或已具备生产集群经验[来源1]。在「当前未实现或不在范围内」清单中同样明确列出：没有 HITL（Human-in-the-loop）interrupt，没有 Kafka、Temporal 或完整 Kubernetes 集群，也没有跨区域容灾、自动扩缩容、压测报告或值班运行记录[来源2]。",
+        "runId": "wf-a0801d80-f36c-4bb9-9e91-243b5a2871de",
+        "latencyMs": 8213.316,
+        "answer": "否，项目没有实现 HITL（Human-in-the-loop）interrupt、Kafka、Temporal 或完整 Kubernetes 集群 [来源1][来源2]。这些能力属于后续路线，不得表述成已实现、已上线 Kubernetes 或已具备生产集群经验 [来源2]。",
         "citations": [
-          {
-            "source": "kb:ragflow:sha256-ee6c65eb373ad801",
-            "exists": true,
-            "evidencePreview": "## HITL、Kafka、Temporal 与 Kubernetes 范围\n当前项目没有实现 HITL interrupt、Kafka、Temporal 或完整 Kubernetes 集群，也没有写工具和高风险审批流。它们属于后续路线，不得表述成已实现、已上线 Kubernetes 或已具备生产集群经验。"
-          },
           {
             "source": "kb:ragflow:sha256-d6dc08c5bc06bdcc",
             "exists": true,
             "evidencePreview": "## 3. 当前未实现或不在范围内\n- 没有写工具、支付、文件系统写入、管理员工具或高风险审批流；\n- 没有 HITL（Human-in-the-loop）interrupt；\n- 没有 Kafka、Temporal 或完整 Kubernetes 集群；\n- 没有跨区域容灾、自动扩缩容、压测报告或值班运行记录；"
+          },
+          {
+            "source": "kb:ragflow:sha256-ee6c65eb373ad801",
+            "exists": true,
+            "evidencePreview": "## HITL、Kafka、Temporal 与 Kubernetes 范围\n当前项目没有实现 HITL interrupt、Kafka、Temporal 或完整 Kubernetes 集群，也没有写工具和高风险审批流。它们属于后续路线，不得表述成已实现、已上线 Kubernetes 或已具备生产集群经验。"
           }
         ],
         "usage": {
-          "totalTokens": 5538
+          "totalTokens": 7068
         }
       }
     },
@@ -2493,7 +2616,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 329.739,
+        "latencyMs": 324.315,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 引用契约能证明与不能证明的内容\n引用契约能证明正文中的引用编号可以确定映射到公开 citations 数组中的 `source ID`，并拒绝未知来源、越界或需要猜测的映射；引用契约不能自动证明来源权威性，也不能自动证明事实真实性。来源质量和论断支持关系仍需要检索质量、Reviewer、grounding 评测或人工审核。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2519,9 +2642,9 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-b7f03989-d9a3-4ddf-96e6-2079a54e86d3",
-        "latencyMs": 15367.778,
-        "answer": "引用契约校验能证明的是：正文中的引用编号可以确定地映射到公开 citations 数组中的 source ID，并会拒绝未知来源、越界或需要猜测的映射 [来源1]。在最终答案层面，只有在存在可用证据、模型声明 grounded 且 [来源N] 与 citations 满足确定映射时，答案才能成为 SUCCEEDED；引用不合法会以独立错误码失败且不发布候选答案 [来源2]。但它不能自动证明来源权威性，也不能自动证明事实真实性 [来源1]。原因是引用契约校验的是引用编号到 source ID 的映射/形状，而不是证据的语义质量、来源可信度或论断支持关系；这些仍需检索质量、Reviewer、grounding 评测或人工审核 [来源1][来源3]。类似地，schema 只保证形状和枚举，不保证语义正确，仍需 Reviewer、证据校验和 Harness 评测 [来源4]。",
+        "runId": "wf-79358d38-2182-40a2-b339-a756fe376a11",
+        "latencyMs": 11813.767,
+        "answer": "引用契约校验能证明：正文中的引用编号可以确定映射到公开 citations 数组中的 source ID，并会拒绝未知来源、越界或需要猜测的映射。[来源1] 换言之，它验证的是“编号能映射到检索证据”。[来源2] 它不能自动证明来源权威性，也不能自动证明事实真实性；来源质量和论断支持关系仍需要检索质量、Reviewer、grounding 评测或人工审核。[来源1] 原因是引用契约只检查编号到证据的映射关系，并不判断证据本身是否真实、来源是否权威，或论断是否完全正确。[来源2]",
         "citations": [
           {
             "source": "kb:ragflow:sha256-50a9017ab71ccc9d",
@@ -2529,23 +2652,13 @@
             "evidencePreview": "## 引用契约能证明与不能证明的内容\n引用契约能证明正文中的引用编号可以确定映射到公开 citations 数组中的 `source ID`，并拒绝未知来源、越界或需要猜测的映射；引用契约不能自动证明来源权威性，也不能自动证明事实真实性。来源质量和论断支持关系仍需要检索质量、Reviewer、grounding 评测或人工审核。"
           },
           {
-            "source": "kb:ragflow:sha256-d4c6c81d270d6a21",
-            "exists": true,
-            "evidencePreview": "**事实 A8｜状态：已实现并有测试。** 最终答案只有在存在可用证据、模型声明 grounded 且 `[来源N]` 与 citations 满足确定映射时才能成为 `SUCCEEDED`；引用不合法会以独立错误码失败且不发布候选答案。若模型返回的 citation 位置表重复同一个精确 source ID，且正文按首次出现顺序完整使用全部位置，服务会先按原位置解引用，再去重为公开的紧凑编号；未知来源、位置未完整使用、越界或需要猜测的映射仍然拒绝。"
-          },
-          {
             "source": "kb:ragflow:sha256-fa9407e8c3440b69",
             "exists": true,
             "evidencePreview": "- 限制：引用契约验证“编号能映射到检索证据”；引用契约不能自动证明证据本身真实、来源权威或论断完全正确。"
-          },
-          {
-            "source": "kb:ragflow:sha256-09b93a99c2f3582f",
-            "exists": true,
-            "evidencePreview": "- 限制：schema 保证形状和枚举，不保证模型计划在语义上正确；仍需 Reviewer、证据校验和 Harness 评测。"
           }
         ],
         "usage": {
-          "totalTokens": 7825
+          "totalTokens": 5098
         }
       }
     },
@@ -2554,7 +2667,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 316.636,
+        "latencyMs": 325.067,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n**事实 V4｜状态：失败语义已测试，在线质量稳定性未验证。** 结构化输出和模型失败分类已有代码与测试。SDK `max_retries=0`，应用以持久 attempt 控制重试，默认最多 2 次；失败 attempt 先转 `UNKNOWN` 并保守计入模型调用次数预算，事件使用 `MODEL_RETRY_SCHEDULED` 或 `MODEL_CALL_FAILED` 的安全 reason code。外部 provider 仍会受限流、响应截断、schema 偏差和版本变化影响，数据库 attempt 也不能证明 provider 账单没有重复。单次成功演示不能替代多 trial Harness 与置信区间。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2579,13 +2692,39 @@
         ]
       },
       "answerRun": {
-        "status": "FAILED",
-        "runId": "wf-de4b3d56-b1ee-4b80-a270-ba236ea312bd",
-        "latencyMs": 33240.869,
-        "answer": "",
-        "citations": [],
+        "status": "SUCCEEDED",
+        "runId": "wf-621c5de9-fb7d-4c72-9819-bd6e45830303",
+        "latencyMs": 26624.154,
+        "answer": "关闭 SDK 内部重试是为了提高计数可解释性：SDK 明确设置 `max_retries=0`，使一个数据库 reservation 对应至多一次由应用发起的 provider 请求，由应用以持久化 attempt 控制重试 [来源1][来源2]。应用默认总尝试次数上限为 `MODEL_MAX_ATTEMPTS=2`，即默认最多 2 个持久化 attempt，配置允许 1–3 [来源3]；因此按“总尝试包含首次调用”的口径，最多额外重试 1 次，而不是 2 次额外重试。失败或结果不确定的 attempt 会先标记为 `UNKNOWN`，并保守计入模型调用次数预算 [来源4][来源2]；同一当前 claim 的 provider 失败也先持久化为 `UNKNOWN`，然后才可能创建下一条 attempt，旧 claim 的 `RESERVED`/未结算调用同样转 `UNKNOWN` 并继续计入调用预算 [来源5]。总模型调用仍受持久化的 `maxModelCalls` 约束 [来源3]。未知 token、准确成本和 provider 是否重复计费不能由本地记录恢复 [来源2]。",
+        "citations": [
+          {
+            "source": "kb:ragflow:sha256-20134b6f430de6ae",
+            "exists": true,
+            "evidencePreview": "- 测试证据：`workflow-service/tests/test_model.py` 对普通 provider 与 DeepSeek 配置都断言 `max_retries == 0`。\n- 限制：关闭 SDK 内部重试提高计数可解释性，但网络中仍可能出现“provider 已接受、客户端未收到”的未知结果；数据库 attempt 计数不等于 provider 最终账单明细。"
+          },
+          {
+            "source": "kb:ragflow:sha256-08d4bbb419279e8f",
+            "exists": true,
+            "evidencePreview": "## 模型重试、UNKNOWN 与预算\nLangChain/OpenAI SDK 明确设置 `max_retries=0`，使一个数据库 reservation 对应至多一次由应用发起的 provider 请求；应用默认最多 2 个持久化 attempt。失败或结果不确定的 attempt 先标记为 `UNKNOWN`，并保守计入模型调用次数预算，但未知 token、准确成本和 provider 是否重复计费不能由本地记录恢复。"
+          },
+          {
+            "source": "kb:ragflow:sha256-6703cec02ed73c43",
+            "exists": true,
+            "evidencePreview": "**事实 C6.1｜状态：已实现并有单元测试。** 当前 sidecar 默认 `MODEL_MAX_ATTEMPTS=2`，即默认最多 2 个持久化 attempt，配置允许 1–3；只有 timeout、rate limit、schema 失败或被分类为瞬态的 provider/transport 错误才会有限重试。第一次可重试失败发出安全事件 `MODEL_RETRY_SCHEDULED`，最终失败发出 `MODEL_CALL_FAILED`，事件只保存 operation、attempt、稳定 reason code 和 retryable，不保存 prompt 或原始响应。这个重试上限属于 sidecar 启动配置，并未写入每个 run 的不可变 `RunBudget` 快照；总模型调用仍受持久化的 `maxModelCalls` 约束。"
+          },
+          {
+            "source": "kb:ragflow:sha256-332cbc9c1080809a",
+            "exists": true,
+            "evidencePreview": "**事实 V4｜状态：失败语义已测试，在线质量稳定性未验证。** 结构化输出和模型失败分类已有代码与测试。SDK `max_retries=0`，应用以持久 attempt 控制重试，默认最多 2 次；失败 attempt 先转 `UNKNOWN` 并保守计入模型调用次数预算，事件使用 `MODEL_RETRY_SCHEDULED` 或 `MODEL_CALL_FAILED` 的安全 reason code。外部 provider 仍会受限流、响应截断、schema 偏差和版本变化影响，数据库 attempt 也不能证明 provider 账单没有重复。单次成功演示不能替代多 trial Harness 与置信区间。"
+          },
+          {
+            "source": "kb:ragflow:sha256-0d001437f4b24693",
+            "exists": true,
+            "evidencePreview": "## 3. checkpoint 与外部调用之间的崩溃窗口\n**事实 C6｜状态：已实现并有分层测试。** 模型调用在真正请求 provider 前，按确定性 operation key 和 attempt 在 PostgreSQL 预占。已经 `SETTLED` 的 typed 结果可重放；旧 claim 留下的 `RESERVED` 会转成 `UNKNOWN` 并继续计入调用预算，再决定是否允许新尝试。同一当前 claim 的 provider 失败也先把该 attempt 持久化为 `UNKNOWN`，然后才可能创建下一条 attempt。"
+          }
+        ],
         "usage": {
-          "totalTokens": 11405
+          "totalTokens": 9786
         }
       }
     },
@@ -2594,7 +2733,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 318.567,
+        "latencyMs": 297.932,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n# DeepResearch 项目实现知识包\n> 信息边界：这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。\n> 快照日期：2026-08-26\n> 文档版本：KB-PROJECT-1.1\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2620,12 +2759,12 @@
       },
       "answerRun": {
         "status": "INSUFFICIENT_EVIDENCE",
-        "runId": "wf-0a02c348-aa88-4f1e-8a5a-6fbe32b13b3e",
-        "latencyMs": 9213.732,
+        "runId": "wf-ae7f5fe4-414a-4b6d-a2f0-75ae7379037e",
+        "latencyMs": 3593.426,
         "answer": "",
         "citations": [],
         "usage": {
-          "totalTokens": 2484
+          "totalTokens": 238
         }
       }
     },
@@ -2634,7 +2773,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 343.094,
+        "latencyMs": 329.215,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n**事实 A6｜状态：已实现。** workflow 启用时 API、内部服务和 MCP 三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同。\n- 代码证据：`security/JwtTokenService` 的 API 密钥长度校验；`WorkflowTokenService` 构造函数和 `secret` 校验；`Settings.validate_runtime`。\n- 测试证据：`WorkflowTokenServiceTest.enabledWorkflowRequiresThreeDistinctSecrets`。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2660,12 +2799,12 @@
       },
       "answerRun": {
         "status": "INSUFFICIENT_EVIDENCE",
-        "runId": "wf-50330da2-0854-48fb-917a-c72dfd46edea",
-        "latencyMs": 11254.661,
+        "runId": "wf-b1207cd3-e084-49b5-9696-4e19112a4bb8",
+        "latencyMs": 3069.826,
         "answer": "",
         "citations": [],
         "usage": {
-          "totalTokens": 3896
+          "totalTokens": 299
         }
       }
     },
@@ -2674,7 +2813,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 342.231,
+        "latencyMs": 337.242,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n- 测试证据：持久 event key 有数据库测试；浏览器断线恢复测试不存在。\n- 限制：不能宣称 SSE exactly-once 或任意断点均已验证。\n**事实 V3｜状态：未验证。** 当前没有给出并发用户规模、队列吞吐、P95/P99、长时间 soak、数据库故障恢复时间或生产 SLA 的有效实验。不得编造这些数字。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2699,13 +2838,29 @@
         ]
       },
       "answerRun": {
-        "status": "INSUFFICIENT_EVIDENCE",
-        "runId": "wf-103eaf40-8999-4df5-b1bf-0f13dedea558",
-        "latencyMs": 16884.902,
-        "answer": "",
-        "citations": [],
+        "status": "SUCCEEDED",
+        "runId": "wf-5a5f4091-dd96-483a-b985-a61b46a643d3",
+        "latencyMs": 9232.191,
+        "answer": "现有知识证据中没有 DeepResearch 生产环境的月活用户（MAU）、P99 延迟或 SLA 的精确数字，且证据明确说明这些数字不存在/未验证，因此无法给出任何具体数值。\n\n- 月活用户（并发/用户规模）：未提供。验证边界文档指出，当前没有给出并发用户规模、队列吞吐、P95/P99 等的有效实验，并明确「不得编造这些数字」[来源1]；另一处也列明「没有生产用户量、线上准确率、商业收入或 SLA 数据」[来源2]。\n- P99 延迟：同样未提供；P95/P99 属于上述未给出有效实验的指标范围[来源1]，且文档强调任何容量数字都必须来自独立、可复现的压测，不能从配置上限推算[来源3]。\n- SLA：未提供；文档明确没有生产 SLA 数据[来源2]，也未给出生产 SLA 的有效实验[来源1]。\n\n结论：三个子问题均无精确数字可引用，属于有据可查的「缺失/未验证」情形，而非可给出的具体取值。",
+        "citations": [
+          {
+            "source": "kb:ragflow:sha256-3cace3a55f54b1b3",
+            "exists": true,
+            "evidencePreview": "- 测试证据：持久 event key 有数据库测试；浏览器断线恢复测试不存在。\n- 限制：不能宣称 SSE exactly-once 或任意断点均已验证。\n**事实 V3｜状态：未验证。** 当前没有给出并发用户规模、队列吞吐、P95/P99、长时间 soak、数据库故障恢复时间或生产 SLA 的有效实验。不得编造这些数字。"
+          },
+          {
+            "source": "kb:ragflow:sha256-14cc27e664574a32",
+            "exists": true,
+            "evidencePreview": "- 没有聊天大模型的 SFT、DPO、RL 或分布式训练实践；\n- 没有承诺 exactly-once；当前 receipt 明确保留 `MCP_RESULT_UNKNOWN`；\n- 没有证明所有 checkpoint schema 演进都向后兼容；\n- 没有生产用户量、线上准确率、商业收入或 SLA 数据。\n## 4. 面试中的安全表述\n推荐说法："
+          },
+          {
+            "source": "kb:ragflow:sha256-99a2644778cab8bb",
+            "exists": true,
+            "evidencePreview": "- 代码证据：仓库存在并发上限配置，但没有生产容量报告。\n- 测试证据：单元与 Testcontainers 不是负载或 soak test。\n- 限制：任何容量数字都必须来自独立、可复现的压测，而不能从配置上限推算。"
+          }
+        ],
         "usage": {
-          "totalTokens": 5464
+          "totalTokens": 5222
         }
       }
     },
@@ -2714,7 +2869,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 404.692,
+        "latencyMs": 308.25,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 3. 当前未实现或不在范围内\n- 没有写工具、支付、文件系统写入、管理员工具或高风险审批流；\n- 没有 HITL（Human-in-the-loop）interrupt；\n- 没有 Kafka、Temporal 或完整 Kubernetes 集群；\n- 没有跨区域容灾、自动扩缩容、压测报告或值班运行记录；\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2739,13 +2894,29 @@
         ]
       },
       "answerRun": {
-        "status": "INSUFFICIENT_EVIDENCE",
-        "runId": "wf-2aef54c6-6e87-4e42-8256-72f51551d7d3",
-        "latencyMs": 8721.805,
-        "answer": "",
-        "citations": [],
+        "status": "SUCCEEDED",
+        "runId": "wf-e958d95f-7d05-4d21-8b6d-b5acb41c7a95",
+        "latencyMs": 10774.346,
+        "answer": "现有证据不支持“DeepResearch 线上生产 Kubernetes 集群”的存在，因此无法给出云区域与生产副本数：知识库明确列出当前未实现或不在范围内的内容包括“没有完整 Kubernetes 集群”，也没有跨区域容灾 [来源1]；另一份事实卡进一步说明当前项目没有实现完整 Kubernetes 集群，且“不得表述成已实现、已上线 Kubernetes 或已具备生产集群经验” [来源2]；架构文档的状态也标注“云上网络隔离与生产高可用未验证” [来源3]。综上，对“部署在哪个云区域、共有多少个生产副本”这一问题，证据给出的是否定/不在范围的说明，而非具体区域或副本数量，故不作任何数值或区域推测。",
+        "citations": [
+          {
+            "source": "kb:ragflow:sha256-d6dc08c5bc06bdcc",
+            "exists": true,
+            "evidencePreview": "## 3. 当前未实现或不在范围内\n- 没有写工具、支付、文件系统写入、管理员工具或高风险审批流；\n- 没有 HITL（Human-in-the-loop）interrupt；\n- 没有 Kafka、Temporal 或完整 Kubernetes 集群；\n- 没有跨区域容灾、自动扩缩容、压测报告或值班运行记录；"
+          },
+          {
+            "source": "kb:ragflow:sha256-ee6c65eb373ad801",
+            "exists": true,
+            "evidencePreview": "## HITL、Kafka、Temporal 与 Kubernetes 范围\n当前项目没有实现 HITL interrupt、Kafka、Temporal 或完整 Kubernetes 集群，也没有写工具和高风险审批流。它们属于后续路线，不得表述成已实现、已上线 Kubernetes 或已具备生产集群经验。"
+          },
+          {
+            "source": "kb:ragflow:sha256-6c98c1e951725fd7",
+            "exists": true,
+            "evidencePreview": "# DeepResearch 架构与信任边界\n> 状态：核心边界已实现并有分层测试；云上网络隔离与生产高可用未验证\n> 版本：Java `0.0.1-SNAPSHOT`；workflow sidecar `0.1.0`；Spring Boot 3.5.3；LangGraph 1.2.10\n> 快照：2026-08-26"
+          }
+        ],
         "usage": {
-          "totalTokens": 4803
+          "totalTokens": 5464
         }
       }
     },
@@ -2754,7 +2925,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 371.562,
+        "latencyMs": 388.104,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n**事实 V2｜状态：代码已实现，浏览器专项验收缺失。** 持久事件、Last-Event-ID、15 秒 heartbeat、前端去重和重连代码已存在；但缺少浏览器自动化在任意事件断线、刷新、服务重启后验证无缺失和无重复展示的测试。\n- 代码证据：`WorkflowController`、`WorkflowRepository.eventsAfter`、`demo.html` 的 SSE 游标与去重函数。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2780,9 +2951,9 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-6247a8f4-ef4e-44b5-ad14-a344a5ac9011",
-        "latencyMs": 15349.456,
-        "answer": "研究任务断线后，浏览器重连时应在 `Last-Event-ID` 中携带已处理事件的游标，格式为 `<runId>:<eventId>` [来源1]。服务端会先校验游标：run 前缀必须属于当前 run，游标必须是合法数字；错误 run 返回冲突，负数或非法数字返回参数错误 [来源1]。校验通过后，服务端从 PostgreSQL 按 `event_id > cursor` 查询，并按 `event_id` 升序重放后续事件 [来源2]。演示页断线后使用 fetch streaming 携带 `Last-Event-ID`，并按指数退避重连 [来源3]。",
+        "runId": "wf-19fef74f-b153-4a0c-a5d1-625b65d61bdc",
+        "latencyMs": 10746.671,
+        "answer": "断线重连时，`Last-Event-ID` 的值采用 `<runId>:<eventId>`，即“当前 run 的 ID + 事件数字游标”这一游标契约；这是 DeepResearch 项目实现约定 [来源1][来源2]。服务端验证 run 前缀和数字游标后，会从 PostgreSQL 查询 `event_id > cursor`，并按 `event_id` 升序重放后续事件，也就是从该游标之后接着发送事件 [来源1][来源2]。如果前缀不属于当前 run，服务端返回冲突；如果游标为负数或非法数字，返回参数错误 [来源1]。",
         "citations": [
           {
             "source": "kb:ragflow:sha256-b1624b3045a82faf",
@@ -2793,15 +2964,10 @@
             "source": "kb:ragflow:sha256-0041107d498399ff",
             "exists": true,
             "evidencePreview": "## DeepResearch 的 SSE Last-Event-ID 契约\n在 DeepResearch 项目中，SSE 的 `Last-Event-ID` 值采用 `<runId>:<eventId>`，这是本项目的游标契约；服务端验证 run 前缀和数字游标后，从 PostgreSQL 查询 `event_id > cursor`，并按 `event_id` 升序重放后续事件。该事实卡回答项目实现，不把 `<runId>:<eventId>` 冒充 WHATWG 对所有 SSE 应用规定的通用格式。"
-          },
-          {
-            "source": "kb:ragflow:sha256-24c135ef087af750",
-            "exists": true,
-            "evidencePreview": "**事实 S6｜状态：已实现于演示页。** `demo.html` 用事件 ID 的 Map 去重，只允许游标前进；断线后使用 fetch streaming 携带 `Last-Event-ID`，按指数退避重连。\n- 代码证据：`demo.html` 的 `eventKey`、`advanceEventCursor`、`appendEvent`、`consumeEventStream`、`startEventLoop`。"
           }
         ],
         "usage": {
-          "totalTokens": 6953
+          "totalTokens": 5631
         }
       }
     },
@@ -2810,7 +2976,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 317.965,
+        "latencyMs": 331.482,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 旧 claim 工具调用的未知结果\n旧 claim 遗留的 Java `EXECUTING` receipt 返回稳定错误码 `MCP_RESULT_UNKNOWN`，系统不会自动重跑该工具。这个 at-most-once 优先选择降低了重复执行风险，但会牺牲结果可用性；它不是 exactly-once，也不能承诺零重复或零丢失。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2835,13 +3001,34 @@
         ]
       },
       "answerRun": {
-        "status": "FAILED",
-        "runId": "wf-1c0b43e6-02c0-4a81-a414-bfa0ceeee0b0",
-        "latencyMs": 22998.233,
-        "answer": "",
-        "citations": [],
+        "status": "SUCCEEDED",
+        "runId": "wf-12383db6-5b6f-401d-b578-0401623af2a7",
+        "latencyMs": 17940.297,
+        "answer": "不可以换个 call_id 直接再试一次：HTTP/MCP 超时只表示调用方没有收到确定结果，不说明远端动作没有发生；盲目第二次 POST 可能造成重复搜索、扣费或副作用 [来源1]。当前链路使用确定性的 call_id，并把它同时作为 Python receipt 主键和 MCP Idempotency-Key；已完成 receipt 可按确定性 call_id 重放，模糊态则拒绝盲目重试 [来源1][来源2]。旧 claim 的执行中调用：若旧 claim 遗留 Java EXECUTING receipt，会返回稳定错误码 MCP_RESULT_UNKNOWN，系统不会自动重跑该工具；恢复时也按持久状态区分，旧 claim 的 EXECUTING 返回 MCP_RESULT_UNKNOWN [来源3][来源4]。这种 at-most-once 取向降低重复执行风险，但不是 exactly-once，不能承诺零重复或零丢失 [来源3]。",
+        "citations": [
+          {
+            "source": "kb:ragflow:sha256-03e7ab87d0e9dea1",
+            "exists": true,
+            "evidencePreview": "## 1. 为什么超时不能直接重试\nHTTP 或 MCP 超时只说明调用方没有收到确定结果，不说明远端动作没有发生。若客户端盲目 POST 第二次，可能重复搜索、扣费或产生副作用。因此当前链路先生成确定性 `call_id`，把它同时作为 Python receipt 主键和 MCP `Idempotency-Key`。"
+          },
+          {
+            "source": "kb:ragflow:sha256-d6328c6bc937eac2",
+            "exists": true,
+            "evidencePreview": "**事实 C7｜状态：已实现并有分层测试。** 工具调用使用确定性 `call_id` 和 receipt。Python 已完成 receipt 或 Java 已完成 MCP execution receipt 可以重放；模糊态拒绝盲目重试。\n- 代码证据：`domain.py::deterministic_call_id`、`mcp.py::ReceiptCachingToolClient`、`WorkflowMcpReceiptService`。"
+          },
+          {
+            "source": "kb:ragflow:sha256-7975a2d582dce1ee",
+            "exists": true,
+            "evidencePreview": "## 旧 claim 工具调用的未知结果\n旧 claim 遗留的 Java `EXECUTING` receipt 返回稳定错误码 `MCP_RESULT_UNKNOWN`，系统不会自动重跑该工具。这个 at-most-once 优先选择降低了重复执行风险，但会牺牲结果可用性；它不是 exactly-once，也不能承诺零重复或零丢失。"
+          },
+          {
+            "source": "kb:ragflow:sha256-e60ca5a78cea926f",
+            "exists": true,
+            "evidencePreview": "## 3. 四种恢复结果\n**事实 R4｜状态：已实现并有单元测试。** 恢复时按持久状态区分：\n1. Java `COMPLETED`：直接重放安全结果，不再次调用工具；\n2. 同一当前 claim 的 `EXECUTING`：返回 `MCP_CALL_IN_PROGRESS`；\n3. 旧 claim 遗留的 `EXECUTING`：返回 `MCP_RESULT_UNKNOWN`；"
+          }
+        ],
         "usage": {
-          "totalTokens": 9495
+          "totalTokens": 8775
         }
       }
     },
@@ -2850,7 +3037,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 387.485,
+        "latencyMs": 332.336,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 3. 身份与任务级委派\n**事实 A4｜状态：已实现并有单元/传输集成测试。** Python 不把用户原始 API Bearer [REDACTED] 转发给 MCP。它用最长 60 秒的内部服务 JWT 请求 Java 换取最长 90 秒的任务级 MCP delegation JWT。\n- 代码证据：`WorkflowTokenService.issueServiceToken`、`WorkflowTokenService.issueDelegation`、`HttpGrantTokenProvider.exchange`。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2876,9 +3063,9 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-9f7bc6b1-a38f-4e8d-b1cb-99214f2776f7",
-        "latencyMs": 15343.74,
-        "answer": "Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态[来源1]；Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，并用 PostgreSQL checkpoint 保存节点状态[来源1]。Python 调 MCP 时不能带用户原始 API Bearer Token；它不把该原始 Bearer 转发给 MCP，而是用最长 60 秒的内部服务 JWT 请求 Java 换取最长 90 秒的任务级 MCP delegation JWT[来源2]。",
+        "runId": "wf-dda0547c-8cd7-4d83-805a-ac94712f8543",
+        "latencyMs": 17924.28,
+        "answer": "在 workflow 中，Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态 [来源1]；Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态 [来源1]。Python 调 MCP 时不能携带用户原始 Bearer Token：它不把用户原始 API Bearer Token 转发给 MCP，而是用最长 60 秒的内部服务 JWT 请求 Java 换取最长 90 秒的任务级 MCP delegation JWT [来源2]。",
         "citations": [
           {
             "source": "kb:ragflow:sha256-fba3af4ea981c15b",
@@ -2892,7 +3079,7 @@
           }
         ],
         "usage": {
-          "totalTokens": 7471
+          "totalTokens": 8915
         }
       }
     },
@@ -2901,7 +3088,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 394.724,
+        "latencyMs": 333.104,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## SSE 空闲心跳与连接关闭\nworkflow SSE 在连续 15 秒没有业务事件时发送 comment heartbeat；run 进入终态且数据库没有待发送事件后关闭连接，单个 emitter 的超时为 3 分钟。SSE heartbeat 用于连接保活，与 runner 的 10 秒 lease heartbeat 不是同一种机制。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2927,19 +3114,14 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-e6a75e50-93cf-4a71-a66b-31da7c4f81bc",
-        "latencyMs": 19955.624,
-        "answer": "SSE 在连续 15 秒没有业务事件时发送 comment heartbeat [来源1]；run 进入终态且数据库没有待发送事件后关闭连接，单个 emitter 超时为 3 分钟，客户端需要重连 [来源1]。该 SSE 心跳用于连接保活/检测中断，与 workflow runner 的 10 秒 lease heartbeat 不是同一种机制 [来源2]。页面在当前页面生命周期内用事件 ID 的 Map 去重，只允许游标前进，并在重连请求中携带 Last-Event-ID；服务端按 event_id > cursor 重放，因此重复事件靠事件 ID 去重/幂等处理 [来源3]。SSE 不提供 exactly-once 交付，客户端仍应按事件 ID 去重 [来源4]。页面完全刷新会重建内存 Map，去重状态丢失；正确性仍依赖保存的游标和服务端重放 [来源3]。当前没有 Playwright 或真实浏览器故障注入测试证明任意断点都不丢不重，也没有完成浏览器从任意事件断开、刷新、跨实例恢复的完整自动验收 [来源3][来源4]。此外，浏览器端保存的最近 runId 和游标不是授权凭证，服务端仍以当前认证主体为准 [来源5]。",
+        "runId": "wf-73b5111b-5e6a-4840-9ea5-e5472a8ec5eb",
+        "latencyMs": 23021.939,
+        "answer": "SSE 在连续 15 秒没有业务事件时发送一次 comment heartbeat；run 进入终态且数据库没有待发送事件后关闭连接，单个 emitter 超时为 3 分钟；该 SSE 心跳用于连接保活，不等于 runner 的 10 秒 lease heartbeat。[来源1] 页面重连收到重复事件时，demo.html 在当前页面生命周期内用事件 ID 的 Map 去重，只允许游标前进，并在重连请求中携带 Last-Event-ID；服务端按 event_id > cursor 重放。[来源2] 由于 SSE 不提供 exactly-once 交付，客户端仍应按事件 ID 去重。[来源3] 页面完全刷新会重建内存 Map，正确性仍依赖保存的游标和服务端重放；网络协议通常应按至少一次交付思考，客户端必须按 ID 幂等处理。[来源2][来源4] 刷新后的限制包括：持久事件、Last-Event-ID、15 秒 heartbeat、前端去重和重连代码已存在，但缺少浏览器自动化在任意事件断线、刷新、服务重启后验证无缺失和无重复展示的测试。[来源5] 当前没有 Playwright 或真实浏览器故障注入测试证明任意断点都不丢不重，也不能宣称 SSE exactly-once 或任意断点均已验证。[来源2][来源6] 另外，浏览器端保存的最近 runId 和游标不是授权凭证，服务端仍以当前认证主体为准。[来源7]",
         "citations": [
           {
             "source": "kb:ragflow:sha256-5d2e7b6b7b250d6f",
             "exists": true,
             "evidencePreview": "## SSE 空闲心跳与连接关闭\nworkflow SSE 在连续 15 秒没有业务事件时发送 comment heartbeat；run 进入终态且数据库没有待发送事件后关闭连接，单个 emitter 的超时为 3 分钟。SSE heartbeat 用于连接保活，与 runner 的 10 秒 lease heartbeat 不是同一种机制。"
-          },
-          {
-            "source": "kb:ragflow:sha256-418a29e83f0a9ada",
-            "exists": true,
-            "evidencePreview": "- 测试证据：当前没有使用虚拟时钟覆盖 15 秒 heartbeat 和 3 分钟 emitter timeout 的自动测试。\n- 限制：SSE 心跳用于保持连接与检测中断，不等于 workflow runner 的 10 秒 lease heartbeat；二者是不同机制。"
           },
           {
             "source": "kb:ragflow:sha256-e65cfbe95dc983b5",
@@ -2952,13 +3134,28 @@
             "evidencePreview": "- 可以说：事件持久化、确定性 event key、Last-Event-ID 查询和前端去重/重连代码已实现。\n- 不可以说：SSE 与 LangGraph checkpoint 是同一个存储或同一事务。\n- 不可以说：已经完成浏览器从任意事件断开、刷新、跨实例恢复的完整自动验收。\n- 不可以说：SSE 提供 exactly-once 交付；客户端仍应按事件 ID 去重。"
           },
           {
+            "source": "kb:ragflow:sha256-c8372867fc43b97d",
+            "exists": true,
+            "evidencePreview": "- 测试证据：已有 JavaScript 语法检查；没有 Playwright/浏览器故障注入测试证明任意断点都不丢不重。\n- 限制：内存 Map 在页面完全刷新后会重建；正确性仍依赖保存的游标与服务器重放。网络协议通常应按至少一次交付思考，客户端必须按 ID 幂等处理。\n## 4. 当前不能越界的说法"
+          },
+          {
+            "source": "kb:ragflow:sha256-f3545080fbcc8f4f",
+            "exists": true,
+            "evidencePreview": "**事实 V2｜状态：代码已实现，浏览器专项验收缺失。** 持久事件、Last-Event-ID、15 秒 heartbeat、前端去重和重连代码已存在；但缺少浏览器自动化在任意事件断线、刷新、服务重启后验证无缺失和无重复展示的测试。\n- 代码证据：`WorkflowController`、`WorkflowRepository.eventsAfter`、`demo.html` 的 SSE 游标与去重函数。"
+          },
+          {
+            "source": "kb:ragflow:sha256-3cace3a55f54b1b3",
+            "exists": true,
+            "evidencePreview": "- 测试证据：持久 event key 有数据库测试；浏览器断线恢复测试不存在。\n- 限制：不能宣称 SSE exactly-once 或任意断点均已验证。\n**事实 V3｜状态：未验证。** 当前没有给出并发用户规模、队列吞吐、P95/P99、长时间 soak、数据库故障恢复时间或生产 SLA 的有效实验。不得编造这些数字。"
+          },
+          {
             "source": "kb:ragflow:sha256-2952400baac4a5a4",
             "exists": true,
             "evidencePreview": "- 测试证据：workflow access/service 单测覆盖跨主体授权的相邻边界；当前没有真实 SSE 跨租户请求的 MVC 集成测试。\n- 限制：浏览器端保存的最近 runId 和游标不是授权凭证，服务端仍以当前认证主体为准。"
           }
         ],
         "usage": {
-          "totalTokens": 9239
+          "totalTokens": 10576
         }
       }
     },
@@ -2967,7 +3164,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 308.188,
+        "latencyMs": 338.573,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 引用契约能证明与不能证明的内容\n引用契约能证明正文中的引用编号可以确定映射到公开 citations 数组中的 `source ID`，并拒绝未知来源、越界或需要猜测的映射；引用契约不能自动证明来源权威性，也不能自动证明事实真实性。来源质量和论断支持关系仍需要检索质量、Reviewer、grounding 评测或人工审核。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -2993,9 +3190,9 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-9bf6379f-1e29-46de-94f8-63235706422e",
-        "latencyMs": 17439.046,
-        "answer": "不能。所有 [来源N] 都能映射到 chunk，只能通过第一层“引用契约/映射合法性”验证：它能证明正文中的引用编号可以确定映射到公开 citations 数组中的 source ID，并拒绝未知来源、越界或需要猜测的映射 [来源1]。但引用契约不能自动证明来源权威性，也不能自动证明事实真实性 [来源1]。第二层需要验证来源质量和论断支持关系，仍要依靠检索质量、Reviewer、grounding 评测或人工审核 [来源1]。两层边界可概括为：第一层是引用编号能否确定映射到检索证据/公开 citations；第二层是证据本身是否真实、来源是否权威、论断是否被充分支持 [来源1][来源2]。最终答案成为 SUCCEEDED 还需要存在可用证据、模型声明 grounded 且 [来源N] 与 citations 满足确定映射；引用不合法会失败且不发布候选答案 [来源3]。因此，映射成功只是契约/流程门槛，不是来源权威与答案真实的充分证明 [来源1][来源2]。",
+        "runId": "wf-47336564-a1a5-456b-8aca-3257d86c5da6",
+        "latencyMs": 19435.332,
+        "answer": "不能。引用契约/映射校验只能证明答案中的 来源编号 可以确定映射到公开 citations 数组中的 source ID 或检索证据/chunk，并拒绝未知来源、越界或需要猜测的映射 [来源1]。它不能自动证明来源权威性，也不能自动证明事实真实性 [来源1]；同理，引用契约验证的是“编号能映射到检索证据”，不能自动证明证据本身真实、来源权威或论断完全正确 [来源2]。因此两层验证的边界是：第一层（引用/映射层）只保证可追溯与映射合法；第二层（来源权威与事实真实性层）仍需检索质量、Reviewer、grounding 评测或人工审核 [来源1]。另外，事实卡也不是独立的生产证明；若事实卡与代码或原始主题文档冲突，应以 01–06 文档为准并修正重导，不能为评测分数保留失真答案 [来源3]。",
         "citations": [
           {
             "source": "kb:ragflow:sha256-50a9017ab71ccc9d",
@@ -3008,13 +3205,13 @@
             "evidencePreview": "- 限制：引用契约验证“编号能映射到检索证据”；引用契约不能自动证明证据本身真实、来源权威或论断完全正确。"
           },
           {
-            "source": "kb:ragflow:sha256-d4c6c81d270d6a21",
+            "source": "kb:ragflow:sha256-4246a1802b8856d5",
             "exists": true,
-            "evidencePreview": "**事实 A8｜状态：已实现并有测试。** 最终答案只有在存在可用证据、模型声明 grounded 且 `[来源N]` 与 citations 满足确定映射时才能成为 `SUCCEEDED`；引用不合法会以独立错误码失败且不发布候选答案。若模型返回的 citation 位置表重复同一个精确 source ID，且正文按首次出现顺序完整使用全部位置，服务会先按原位置解引用，再去重为公开的紧凑编号；未知来源、位置未完整使用、越界或需要猜测的映射仍然拒绝。"
+            "evidencePreview": "## 使用边界\n本文件把容易跨 chunk 的项目事实压缩为一问一答式事实卡，供 `kb_search`、Reviewer 和引用评测使用。事实卡不是独立的生产证明；代码位置、测试证据和不能越界的表述仍以 01–06 文档为准。若事实卡与代码或原始主题文档发生冲突，应先修正文档并重新导入，不能为了提高评测分数保留失真的答案。"
           }
         ],
         "usage": {
-          "totalTokens": 6865
+          "totalTokens": 6180
         }
       }
     },
@@ -3023,7 +3220,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 394.795,
+        "latencyMs": 288.164,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 5. 与模型调用未知态的区别\n模型调用使用 V10 `agent_workflow_budget_reservation` 的 `RESERVED/SETTLED/UNKNOWN` 记录。旧 claim 的未结算模型调用转为 `UNKNOWN` 并保守计入调用次数；工具调用则优先复用确定性 receipt，并对 Java `EXECUTING` 模糊态拒绝重跑。二者都承认网络中的“请求可能已被接受但本地没有结果”，但恢复策略不同。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -3049,14 +3246,19 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-832194dc-8e60-40cc-999b-9d694e7cc25c",
-        "latencyMs": 29205.966,
-        "answer": "模型请求失败时，SDK 侧明确设置 `max_retries=0`，即关闭 SDK 内部重试，使一个数据库 reservation 至多对应一次由应用发起的 provider 请求 [来源1]。应用/sidecar 侧负责有界持久化重试：默认 `MODEL_MAX_ATTEMPTS=2`，即默认最多 2 个持久化 attempt，配置允许 1–3；只有 timeout、rate limit、schema 失败或被分类为瞬态的 provider/transport 错误才会有限重试；第一次可重试失败发出 `MODEL_RETRY_SCHEDULED`，最终失败发出 `MODEL_CALL_FAILED` [来源2]。实际请求 provider 前，会按确定性 operation key 和 attempt 在 PostgreSQL 预占；同一当前 claim 的 provider 失败也会先把该 attempt 持久化为 `UNKNOWN`，然后才可能创建下一条 attempt [来源3]。旧 claim 下未结算的模型调用：旧 claim 留下的 `RESERVED` 会转为 `UNKNOWN` 并继续计入调用预算，再决定是否允许新尝试 [来源3]；未结算模型调用会转为 `UNKNOWN` 并保守计入模型调用次数预算 [来源4]。这类 `UNKNOWN` 请求可能在 provider 侧已经计费或完成，本地只能保守计入调用次数，未知 token、准确成本和 provider 真实账单无法在本地恢复，也不能证明 provider 账单不会重复 [来源5]。",
+        "runId": "wf-9e738c12-0852-4575-b8f3-5388c1a30b91",
+        "latencyMs": 27618.226,
+        "answer": "模型请求失败时：SDK 侧不重试。LangChain/OpenAI SDK 明确设置 `max_retries=0`，SDK 内部重试关闭，使一个数据库 reservation 至多对应一次由应用发起的 provider 请求。[来源1][来源2] 应用侧由 sidecar 以持久化 attempt 进行有限重试：默认最多 2 个持久化 attempt（`MODEL_MAX_ATTEMPTS=2`，配置允许 1–3），且只有 timeout、rate limit、schema 失败或被分类为瞬态的 provider/transport 错误才会重试。[来源3] 第一次可重试失败发出 `MODEL_RETRY_SCHEDULED`，最终失败发出 `MODEL_CALL_FAILED`，事件只保存 operation、attempt、稳定 reason code 和 retryable，不保存 prompt 或原始响应；该重试上限属于 sidecar 启动配置，不写入每个 run 的不可变 `RunBudget` 快照，但总模型调用仍受持久化 `maxModelCalls` 约束。[来源3] 同一当前 claim 的 provider 失败也先把该 attempt 持久化为 `UNKNOWN`，然后才可能创建下一条 attempt。[来源4] 旧 claim 下未结算的模型调用：旧 claim 留下的 `RESERVED` 会转成 `UNKNOWN` 并继续计入调用预算，再决定是否允许新尝试；已经 `SETTLED` 的 typed 结果可重放。[来源4] 模型调用使用 V10 `agent_workflow_budget_reservation` 的 `RESERVED/SETTLED/UNKNOWN` 记录，旧 claim 的未结算模型调用转为 `UNKNOWN` 并保守计入调用次数；未知 token、准确成本和 provider 是否重复计费不能由本地记录恢复。[来源5][来源1]",
         "citations": [
           {
             "source": "kb:ragflow:sha256-08d4bbb419279e8f",
             "exists": true,
             "evidencePreview": "## 模型重试、UNKNOWN 与预算\nLangChain/OpenAI SDK 明确设置 `max_retries=0`，使一个数据库 reservation 对应至多一次由应用发起的 provider 请求；应用默认最多 2 个持久化 attempt。失败或结果不确定的 attempt 先标记为 `UNKNOWN`，并保守计入模型调用次数预算，但未知 token、准确成本和 provider 是否重复计费不能由本地记录恢复。"
+          },
+          {
+            "source": "kb:ragflow:sha256-332cbc9c1080809a",
+            "exists": true,
+            "evidencePreview": "**事实 V4｜状态：失败语义已测试，在线质量稳定性未验证。** 结构化输出和模型失败分类已有代码与测试。SDK `max_retries=0`，应用以持久 attempt 控制重试，默认最多 2 次；失败 attempt 先转 `UNKNOWN` 并保守计入模型调用次数预算，事件使用 `MODEL_RETRY_SCHEDULED` 或 `MODEL_CALL_FAILED` 的安全 reason code。外部 provider 仍会受限流、响应截断、schema 偏差和版本变化影响，数据库 attempt 也不能证明 provider 账单没有重复。单次成功演示不能替代多 trial Harness 与置信区间。"
           },
           {
             "source": "kb:ragflow:sha256-6703cec02ed73c43",
@@ -3072,15 +3274,10 @@
             "source": "kb:ragflow:sha256-739ef2a7b3e25e52",
             "exists": true,
             "evidencePreview": "## 5. 与模型调用未知态的区别\n模型调用使用 V10 `agent_workflow_budget_reservation` 的 `RESERVED/SETTLED/UNKNOWN` 记录。旧 claim 的未结算模型调用转为 `UNKNOWN` 并保守计入调用次数；工具调用则优先复用确定性 receipt，并对 Java `EXECUTING` 模糊态拒绝重跑。二者都承认网络中的“请求可能已被接受但本地没有结果”，但恢复策略不同。"
-          },
-          {
-            "source": "kb:ragflow:sha256-cff322dc2154fa78",
-            "exists": true,
-            "evidencePreview": "- 限制：`UNKNOWN` 模型请求可能在 provider 侧已经计费或完成；系统只把它保守计入模型调用次数预算，未知的 token、成本和 provider 真实账单无法在本地恢复，也不能证明 provider 账单不会重复。"
           }
         ],
         "usage": {
-          "totalTokens": 10773
+          "totalTokens": 11098
         }
       }
     },
@@ -3089,7 +3286,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 259.577,
+        "latencyMs": 281.437,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 使用边界\n本文件把容易跨 chunk 的项目事实压缩为一问一答式事实卡，供 `kb_search`、Reviewer 和引用评测使用。事实卡不是独立的生产证明；代码位置、测试证据和不能越界的表述仍以 01–06 文档为准。若事实卡与代码或原始主题文档发生冲突，应先修正文档并重新导入，不能为了提高评测分数保留失真的答案。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -3107,12 +3304,12 @@
       },
       "answerRun": {
         "status": "INSUFFICIENT_EVIDENCE",
-        "runId": "wf-8f09764a-2b5e-49d5-bcab-0a992c2c6478",
-        "latencyMs": 11230.865,
+        "runId": "wf-5697f4c5-376e-4aa7-b3d9-8fcf5df6e875",
+        "latencyMs": 7674.923,
         "answer": "",
         "citations": [],
         "usage": {
-          "totalTokens": 2841
+          "totalTokens": 949
         }
       }
     },
@@ -3121,7 +3318,7 @@
       "repetition": 1,
       "retrievalProbe": {
         "provider": "ragflow",
-        "latencyMs": 343.866,
+        "latencyMs": 379.551,
         "entries": [
           {
             "preview": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## HITL、Kafka、Temporal 与 Kubernetes 范围\n当前项目没有实现 HITL interrupt、Kafka、Temporal 或完整 Kubernetes 集群，也没有写工具和高风险审批流。它们属于后续路线，不得表述成已实现、已上线 Kubernetes 或已具备生产集群经验。\n[UNTRUSTED_DATA_END source=knowledge-base]",
@@ -3147,33 +3344,28 @@
       },
       "answerRun": {
         "status": "SUCCEEDED",
-        "runId": "wf-402e7078-bdd9-4ed3-8b56-1fac111db139",
-        "latencyMs": 14372.848,
-        "answer": "无法给出这两个数字：项目资料明确说明当前项目并没有实现完整 Kubernetes 集群[来源1]，也没有已上线的 Kubernetes 或生产集群经验，相关内容属于后续路线，不能表述成“已实现、已上线 Kubernetes 或已具备生产集群经验”[来源2]。因此资料中不存在线上 Kubernetes 集群的云区域（region）字段，也不存在生产副本数（replica）配置值，二者都无法从现有证据中给出具体数字。此外，资料还规定任何容量数字都必须来自独立、可复现的压测，而不能从配置上限推算[来源3]；并且当前未验证项中明确没有并发用户规模、队列吞吐、P95/P99、长时间 soak、数据库故障恢复时间或生产 SLA 的有效实验，并强调不得编造这些数字[来源4]。所以对“云区域”和“生产副本数”的合理回答是：项目资料不支持给出任何具体数字，若需要这些数字须先有真实生产集群与独立压测证据。",
+        "runId": "wf-25d59b68-3371-409d-98b3-31d515bf1f4e",
+        "latencyMs": 8227.511,
+        "answer": "无法给出这两个数字：项目资料明确排除了相关事实，而非遗漏。资料说明当前项目没有实现完整 Kubernetes 集群，也没有跨区域容灾，并且不得表述成“已上线 Kubernetes 或已具备生产集群经验” [来源1]；同一份边界清单也把“完整 Kubernetes 集群”和跨区域容灾列为“当前未实现或不在范围内” [来源2]。因此，“线上 Kubernetes 集群的云区域”和“生产副本数”都没有对应的生产事实可引用。此外资料规定任何容量数字都必须来自独立、可复现的压测，不能从配置上限推算，而仓库只有并发上限配置、没有生产容量报告 [来源3]。结论：既不存在可引用的线上集群云区域，也不存在可引用的生产副本数，不能编造数值。",
         "citations": [
-          {
-            "source": "kb:ragflow:sha256-d6dc08c5bc06bdcc",
-            "exists": true,
-            "evidencePreview": "## 3. 当前未实现或不在范围内\n- 没有写工具、支付、文件系统写入、管理员工具或高风险审批流；\n- 没有 HITL（Human-in-the-loop）interrupt；\n- 没有 Kafka、Temporal 或完整 Kubernetes 集群；\n- 没有跨区域容灾、自动扩缩容、压测报告或值班运行记录；"
-          },
           {
             "source": "kb:ragflow:sha256-ee6c65eb373ad801",
             "exists": true,
             "evidencePreview": "## HITL、Kafka、Temporal 与 Kubernetes 范围\n当前项目没有实现 HITL interrupt、Kafka、Temporal 或完整 Kubernetes 集群，也没有写工具和高风险审批流。它们属于后续路线，不得表述成已实现、已上线 Kubernetes 或已具备生产集群经验。"
           },
           {
+            "source": "kb:ragflow:sha256-d6dc08c5bc06bdcc",
+            "exists": true,
+            "evidencePreview": "## 3. 当前未实现或不在范围内\n- 没有写工具、支付、文件系统写入、管理员工具或高风险审批流；\n- 没有 HITL（Human-in-the-loop）interrupt；\n- 没有 Kafka、Temporal 或完整 Kubernetes 集群；\n- 没有跨区域容灾、自动扩缩容、压测报告或值班运行记录；"
+          },
+          {
             "source": "kb:ragflow:sha256-99a2644778cab8bb",
             "exists": true,
             "evidencePreview": "- 代码证据：仓库存在并发上限配置，但没有生产容量报告。\n- 测试证据：单元与 Testcontainers 不是负载或 soak test。\n- 限制：任何容量数字都必须来自独立、可复现的压测，而不能从配置上限推算。"
-          },
-          {
-            "source": "kb:ragflow:sha256-3cace3a55f54b1b3",
-            "exists": true,
-            "evidencePreview": "- 测试证据：持久 event key 有数据库测试；浏览器断线恢复测试不存在。\n- 限制：不能宣称 SSE exactly-once 或任意断点均已验证。\n**事实 V3｜状态：未验证。** 当前没有给出并发用户规模、队列吞吐、P95/P99、长时间 soak、数据库故障恢复时间或生产 SLA 的有效实验。不得编造这些数字。"
           }
         ],
         "usage": {
-          "totalTokens": 6519
+          "totalTokens": 5216
         }
       }
     }

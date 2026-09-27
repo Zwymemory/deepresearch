@@ -14,7 +14,7 @@ python3 integrations/ragflow/showcase_eval.py score \
   --output /tmp/showcase-dify-score.json
 ```
 
-Token 与 RAGFlow API Key 仅从本机环境传入；条件文件记录代码、模型、语料哈希、预算和主机信息，不含凭据或 dataset ID。采集器在持久化前把来源 ID 稳定哈希，并遮蔽常见 JWT、邮箱、手机号。公开采样仍须人工复查自由文本。
+Token 与 RAGFlow API Key 仅从本机环境传入；条件文件记录代码、模型、语料哈希、预算和主机信息，不含凭据或 dataset ID。公开采样已将最终引用与独立 debug 检索的 RAGFlow 来源 ID 稳定哈希，并遮蔽常见 JWT、邮箱、手机号。2026-09-28 的公开前复查发现最初采集器遗漏了 debug 检索源 ID；该文件已重新去敏并原样重算，质量分数没有变化。公开采样仍须人工复查自由文本。
 
 ## 质量与调用量
 

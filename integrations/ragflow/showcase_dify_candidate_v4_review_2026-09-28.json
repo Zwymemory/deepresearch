@@ -1,0 +1,385 @@
+{
+  "ragflow-dify": {
+    "project-kb-001": {
+      "1": {
+        "citationSupport": null,
+        "note": "Planner emitted two consecutive JSON objects; strict plan parser failed closed, so no answer or citation was published.",
+        "factChecks": {
+          "java-control-plane": false,
+          "python-execution-plane": false
+        }
+      }
+    },
+    "project-kb-002": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "compose-exposure": true,
+          "cloud-boundary": true
+        }
+      }
+    },
+    "project-kb-003": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "restricted-role": true,
+          "terminal-write-denied": true,
+          "java-finalize": true
+        }
+      }
+    },
+    "project-kb-004": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "no-user-token-forwarding": true,
+          "service-jwt-ttl": true,
+          "delegation-jwt-ttl": true
+        }
+      }
+    },
+    "project-kb-005": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "single-scope": true,
+          "scope-intersection": true,
+          "binding-match": true
+        }
+      }
+    },
+    "project-kb-006": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "minimum-length": true,
+          "distinct-secrets": true
+        }
+      }
+    },
+    "project-kb-007": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "read-only-allowlist": true,
+          "unsupported-operations": true
+        }
+      }
+    },
+    "project-kb-008": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "checkpoint-schema": true,
+          "thread-id-source": true,
+          "default-run-mapping": true
+        }
+      }
+    },
+    "project-kb-009": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "sync-boundary": true,
+          "external-call-exclusion": true,
+          "not-exactly-once": true
+        }
+      }
+    },
+    "project-kb-010": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "incomplete-resume": true,
+          "completed-finalize-retry": true,
+          "no-resynthesis": true
+        }
+      }
+    },
+    "project-kb-011": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "settled-replay": true,
+          "stale-reserved-unknown": true,
+          "unknown-budget": true
+        }
+      }
+    },
+    "project-kb-012": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "lease-default": true,
+          "heartbeat-default": true,
+          "heartbeat-less-than-lease": true
+        }
+      }
+    },
+    "project-kb-013": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "claim-locking": true,
+          "reclaim-eligibility": true,
+          "fresh-token": true
+        }
+      }
+    },
+    "project-kb-014": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "serialization": true,
+          "handoff-recheck": true,
+          "fencing-required": true,
+          "fencing-mechanism": true
+        }
+      }
+    },
+    "project-kb-015": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "hardening-change": true,
+          "blocked-bypass": true
+        }
+      }
+    },
+    "project-kb-016": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "cursor-format": true,
+          "cursor-validation": true,
+          "database-replay": true
+        }
+      }
+    },
+    "project-kb-017": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "idle-heartbeat": true,
+          "terminal-close": true
+        }
+      }
+    },
+    "project-kb-018": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase. Browser-test boundary is evaluated against the frozen 2026-08-26 KB snapshot.",
+        "factChecks": {
+          "client-dedup": true,
+          "cursor-replay": true,
+          "refresh-limit": true,
+          "verification-limit": true
+        }
+      }
+    },
+    "project-kb-019": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "call-id-inputs": true,
+          "stable-retry-id": true,
+          "identifier-only": true,
+          "downstream-dedup": true
+        }
+      }
+    },
+    "project-kb-020": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "completed-replay": true,
+          "current-executing": true,
+          "stale-executing": true
+        }
+      }
+    },
+    "project-kb-021": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "at-most-once-choice": true,
+          "stable-unknown-code": true,
+          "no-blind-retry": true,
+          "availability-tradeoff": true,
+          "not-exactly-once": true
+        }
+      }
+    },
+    "project-kb-022": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "not-validated-e2e": true,
+          "implemented-and-layer-tested": true,
+          "online-validation-pending": true
+        }
+      }
+    },
+    "project-kb-023": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "scope-absent": true
+        }
+      }
+    },
+    "project-kb-024": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "deterministic-mapping": true,
+          "invalid-mapping-rejected": true,
+          "authority-not-proven": true,
+          "truth-not-proven": true
+        }
+      }
+    },
+    "project-kb-025": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "sdk-retries-disabled": true,
+          "one-request-per-reservation": true,
+          "default-attempts": true,
+          "unknown-budget-accounting": true
+        }
+      }
+    },
+    "project-kb-neg-001": {
+      "1": {
+        "citationSupport": null,
+        "note": "Planner returned an explicit empty plan before searching the boundary document; safe abstention, but required cited evidence explanation was absent.",
+        "refusalCorrect": false
+      }
+    },
+    "project-kb-neg-002": {
+      "1": {
+        "citationSupport": null,
+        "note": "Planner returned an explicit empty plan before searching the boundary document; safe abstention, but required cited evidence explanation was absent.",
+        "refusalCorrect": false
+      }
+    },
+    "project-kb-neg-003": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manually reviewed cited boundary evidence; answer withheld unsupported private/production value.",
+        "refusalCorrect": true
+      }
+    },
+    "project-kb-neg-004": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manually reviewed cited boundary evidence; answer withheld unsupported private/production value.",
+        "refusalCorrect": true
+      }
+    },
+    "showcase-holdout-001": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "cursor-format": true,
+          "durable-replay": true,
+          "database-order": true
+        }
+      }
+    },
+    "showcase-holdout-002": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "stable-call-id": true,
+          "unknown-result": true,
+          "no-blind-retry": true
+        }
+      }
+    },
+    "showcase-holdout-003": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "java-control": true,
+          "python-execution": true,
+          "no-user-token": true
+        }
+      }
+    },
+    "showcase-holdout-004": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase. Browser-test boundary is evaluated against the frozen 2026-08-26 KB snapshot.",
+        "factChecks": {
+          "heartbeat": true,
+          "browser-dedup": true,
+          "refresh-limit": true
+        }
+      }
+    },
+    "showcase-holdout-005": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "mapping-check": true,
+          "authority-limit": true
+        }
+      }
+    },
+    "showcase-holdout-006": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manual review: required facts are semantically covered and published claims match cited RAGFlow chunk previews; exact phrase score may undercount paraphrase.",
+        "factChecks": {
+          "sdk-disabled": true,
+          "bounded-attempts": true,
+          "unknown-budget": true
+        }
+      }
+    },
+    "showcase-holdout-007": {
+      "1": {
+        "citationSupport": null,
+        "note": "Pure no-evidence prompt abstained with no citation and no fabricated account value.",
+        "refusalCorrect": true
+      }
+    },
+    "showcase-holdout-008": {
+      "1": {
+        "citationSupport": true,
+        "note": "Manually reviewed cited boundary evidence; answer withheld unsupported private/production value.",
+        "refusalCorrect": true
+      }
+    }
+  }
+}

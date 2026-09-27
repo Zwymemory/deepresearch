@@ -52,11 +52,15 @@ class ShowcaseEvaluationTest(unittest.TestCase):
 
     def test_capture_redacts_source_identifiers_and_common_secrets(self):
         source = "kb:ragflow:dataset:document:chunk"
-        redacted = evaluation.redact_text("mail a@example.com " + source + " phone 13800138000")
+        probe_source = "ragflow:dataset:document:chunk"
+        redacted = evaluation.redact_text("mail a@example.com " + source + " " +
+                                          probe_source + " phone 13800138000")
         self.assertNotIn("dataset", redacted)
         self.assertNotIn("a@example.com", redacted)
         self.assertNotIn("13800138000", redacted)
         self.assertIn("kb:ragflow:sha256-", redacted)
+        self.assertIn("ragflow:sha256-", redacted)
+        self.assertEqual(evaluation.redact_text(redacted), redacted)
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "capture.json"
             evaluation.save(path, {"answer": redacted})
