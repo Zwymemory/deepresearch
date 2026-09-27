@@ -11,18 +11,19 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-/** Cross-encoder ranking and evidence admission; unavailable scores fail closed. */
+/** Cross-encoder ranking and answerability admission; unavailable checks fail closed. */
 @Service
 class RerankCoordinator {
 
     private static final Logger log = LoggerFactory.getLogger(RerankCoordinator.class);
     private final RerankService rerankService;
-    private final LegacyRelevanceGate relevanceGate;
+    private final LegacyEvidenceVerifier evidenceVerifier;
 
-    RerankCoordinator(RerankService rerankService, LegacyRelevanceGate relevanceGate) {
+    RerankCoordinator(RerankService rerankService, LegacyEvidenceVerifier evidenceVerifier) {
         this.rerankService = rerankService;
-        this.relevanceGate = relevanceGate;
+        this.evidenceVerifier = evidenceVerifier;
     }
 
     Outcome rerank(String question, List<HybridChunk> candidates) {
@@ -53,17 +54,25 @@ class RerankCoordinator {
                 HybridChunk chunk = remaining.remove(result.id());
                 if (chunk != null && Double.isFinite(result.score())) {
                     chunk.setRerankScore(result.score());
-                    if (relevanceGate.accepts(question, chunk)) reranked.add(chunk);
+                    reranked.add(chunk);
                 }
             }
-            int changed = changedCount(candidates, reranked);
-            return new Outcome(reranked, diagnostics(true, "success", false,
+            if (reranked.isEmpty()) {
+                return new Outcome(List.of(), diagnostics(true, "success", false,
+                        candidates.size(), results.size(), candidates.size(), false, "no_scored_candidates"));
+            }
+            Set<String> verified = evidenceVerifier.verify(question, reranked);
+            List<HybridChunk> admitted = reranked.stream()
+                    .filter(chunk -> verified.contains(HybridDocumentSupport.stableKey(chunk.document())))
+                    .toList();
+            int changed = changedCount(candidates, admitted);
+            return new Outcome(admitted, diagnostics(true, "success", false,
                     candidates.size(), results.size(), changed, true,
-                    reranked.isEmpty() ? "no_verified_relevance"
-                            : reranked.size() < candidates.size() ? "relevance_filtered"
+                    admitted.isEmpty() ? "no_verified_relevance"
+                            : admitted.size() < candidates.size() ? "relevance_filtered"
                             : changed == 0 ? "order_unchanged" : "order_changed"));
         } catch (RuntimeException exception) {
-            log.warn("reranker 调用失败，证据按无依据处理: {}", exception.getClass().getSimpleName());
+            log.warn("旧检索重排或证据核验失败，证据按无依据处理: {}", exception.getClass().getSimpleName());
             return new Outcome(List.of(), diagnostics(true, "fallback", true,
                     candidates.size(), 0, candidates.size(), false, "execution_failed_no_evidence"));
         }

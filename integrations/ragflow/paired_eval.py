@@ -41,7 +41,9 @@ def normalize_text(value):
 
 
 def request_json(url: str, token: str | None = None, payload=None, method: str | None = None,
-                 content_type: str = "application/json", timeout: float = 30):
+                 content_type: str = "application/json", timeout: float | None = None):
+    if timeout is None:
+        timeout = float(os.getenv("EVAL_HTTP_TIMEOUT_SECONDS", "30"))
     data = None if payload is None else (json.dumps(payload).encode() if content_type == "application/json" else payload)
     headers = {"Accept": "application/json"}
     if data is not None:

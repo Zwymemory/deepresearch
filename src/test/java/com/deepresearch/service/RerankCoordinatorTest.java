@@ -6,6 +6,7 @@ import org.springframework.ai.document.Document;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -17,8 +18,8 @@ import static org.mockito.Mockito.when;
 class RerankCoordinatorTest {
 
     private final RerankService rerankService = mock(RerankService.class);
-    private final RerankCoordinator coordinator = new RerankCoordinator(
-            rerankService, new LegacyRelevanceGate(-5.0, -6.5, 1.0 / 3));
+    private final LegacyEvidenceVerifier evidenceVerifier = mock(LegacyEvidenceVerifier.class);
+    private final RerankCoordinator coordinator = new RerankCoordinator(rerankService, evidenceVerifier);
 
     @Test
     void appliesReturnedOrderScoresAndDiagnostics() {
@@ -27,6 +28,7 @@ class RerankCoordinatorTest {
                 new RerankResult("b", 0.95),
                 new RerankResult("a", 0.70)
         ));
+        when(evidenceVerifier.verify(eq("body"), anyList())).thenReturn(Set.of("a", "b"));
         List<HybridChunk> input = List.of(chunk("a"), chunk("b"));
 
         RerankCoordinator.Outcome outcome = coordinator.rerank("body", input);
@@ -86,7 +88,7 @@ class RerankCoordinatorTest {
     }
 
     @Test
-    void rejectsUnscoredAndUnrelatedCandidatesEvenWhenRerankerReturnsThem() {
+    void rejectsUnscoredAndUnsupportedCandidatesEvenWhenRerankerReturnsThem() {
         when(rerankService.enabled()).thenReturn(true);
         when(rerankService.rerank(eq("dinner menu on train 59264"), anyList())).thenReturn(List.of(
                 new RerankResult("number-only", -4.8),
@@ -100,6 +102,20 @@ class RerankCoordinatorTest {
 
         assertThat(outcome.chunks()).isEmpty();
         assertThat(outcome.diagnostics().reason()).isEqualTo("no_verified_relevance");
+    }
+
+    @Test
+    void failsClosedWhenEvidenceVerifierIsUnavailable() {
+        when(rerankService.enabled()).thenReturn(true);
+        when(rerankService.rerank(eq("question"), anyList()))
+                .thenReturn(List.of(new RerankResult("a", 4.0)));
+        when(evidenceVerifier.verify(eq("question"), anyList()))
+                .thenThrow(new IllegalStateException("unavailable"));
+
+        RerankCoordinator.Outcome outcome = coordinator.rerank("question", List.of(chunk("a")));
+
+        assertThat(outcome.chunks()).isEmpty();
+        assertThat(outcome.diagnostics().reason()).isEqualTo("execution_failed_no_evidence");
     }
 
     private HybridChunk chunk(String id) {

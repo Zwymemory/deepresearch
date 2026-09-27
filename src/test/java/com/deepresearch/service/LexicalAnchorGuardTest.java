@@ -7,6 +7,7 @@ import org.springframework.ai.document.Document;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -35,8 +36,10 @@ class LexicalAnchorGuardTest {
         when(reranker.enabled()).thenReturn(true);
         when(reranker.rerank(eq("durability=sync"), anyList())).thenReturn(List.of(
                 new RerankResult("anchored", 0.5), new RerankResult("semantic-a", -9.0)));
+        LegacyEvidenceVerifier verifier = mock(LegacyEvidenceVerifier.class);
+        when(verifier.verify(eq("durability=sync"), anyList())).thenReturn(Set.of("anchored"));
         List<HybridChunk> verifiedOrder = new RerankCoordinator(
-                reranker, new LegacyRelevanceGate(-5.0, -6.5, 1.0 / 3))
+                reranker, verifier)
                 .rerank("durability=sync", candidates)
                 .chunks();
         List<HybridChunk> direct = guard.ensureTopK(verifiedOrder, 1, selected);

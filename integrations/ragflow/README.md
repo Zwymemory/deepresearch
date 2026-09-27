@@ -115,3 +115,11 @@ The isolated synthetic fixture rerun is in the
 [2026-09-26 synthetic gate recheck](SYNTHETIC_GATE_RECHECK_2026-09-26.md):
 both parsers reached `DONE`, while the legacy route still returned evidence
 for all three zero-evidence negatives.
+The follow-up [legacy abstention repair](LEGACY_ABSTENTION_REPAIR_2026-09-27.md)
+records the fail-closed implementation, final-code synthetic and holdout
+captures, and the remaining project latency and full-regression gaps.
+
+For slow external answerability verification during a diagnostic collection,
+`EVAL_HTTP_TIMEOUT_SECONDS=90` raises the collector's per-request HTTP limit
+from 30 seconds. Record that limit in the run conditions; it changes only the
+collector timeout, not the Java service or a quality gate.

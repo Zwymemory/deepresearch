@@ -101,11 +101,7 @@ deepresearch:
     timeout-ms: 30000
     candidate-top-k: 20
     model: BAAI/bge-reranker-base
-    # Legacy evidence is citable only after the pinned cross-encoder verifies it.
-    # The secondary band rescues strong lexical matches; numeric-only matches fail.
-    minimum-evidence-score: ${DEEPRESEARCH_RERANK_MINIMUM_EVIDENCE_SCORE:-5.0}
-    lexical-rescue-score: ${DEEPRESEARCH_RERANK_LEXICAL_RESCUE_SCORE:-6.5}
-    lexical-rescue-coverage: ${DEEPRESEARCH_RERANK_LEXICAL_RESCUE_COVERAGE:0.3333333333333333}
+    # Ranked chunks must also pass an answerability check before becoming evidence.
   context-expansion:
     enabled: true
     sibling-window: 1
