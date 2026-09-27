@@ -9,6 +9,7 @@
 | 2026-09-27 | [Legacy 降级修复](../../integrations/ragflow/LEGACY_ABSTENTION_REPAIR_2026-09-27.md) 在合成与 holdout 拒答上通过定向检查 | reranker 不可用时采用安全的无证据结果 | 修复后尚无最终代码的完整 29 题项目回归；旧 46.9 秒 p95 不可作当前比较基线 |
 | 2026-09-27 至 28 | [RAGFlow → Dify → 前端冒烟](../../integrations/dify/LIVE_RAGFLOW_FRONTEND_SMOKE_2026-09-27.md) 完成两个有引用答案和一个纯无证据问题，修复了并行引用写入死锁和 SSE async 授权问题 | 真实浏览器已走通创建、事件、答案、引用和无证据反馈 | 三次完成的 run 不能证明稳定通过率、成本、p95 或取消/重启恢复 |
 | 2026-09-28 | 追加固定的 [8 题 holdout](../../integrations/ragflow/showcase_holdout_cases.json) 与 [答案采集器](../../integrations/ragflow/showcase_eval.py) | 给出下轮答案验收的输入和独立打分口径 | 采集器与题目本身不是线上质量结果 |
+| 2026-09-28 | [统一版本 37 题 Dify 现场基线](LIVE_BASELINE_2026-09-28.md) | 37 题完整采样，26 成功、6 失败、5 证据不足；SSE 重连、取消、Dify 不可达与工具回执做了定向实测 | 答案事实与引用支持仍需人工审阅；引用重编号、边界拒答和旧路径同口径对照尚未过关 |
 
 ## 新一轮验收的最低记录
 
