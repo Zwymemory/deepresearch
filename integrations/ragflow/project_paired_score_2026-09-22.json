@@ -1,0 +1,1379 @@
+{
+  "schemaVersion": 1,
+  "fixtureSha256": "3f142361f5f03c6bd1101643cb45d544dca090eda10632706c6383a368288202",
+  "conditions": {
+    "legacyConfig": {
+      "provider": "legacy",
+      "baseUrl": "http://127.0.0.1:8082",
+      "embeddingModel": "embedding-2",
+      "reranker": "BAAI/bge-reranker-base",
+      "rerankerUrl": "http://127.0.0.1:19002/rerank",
+      "retrievalTopK": 5
+    },
+    "ragflowConfig": {
+      "provider": "ragflow",
+      "baseUrl": "http://127.0.0.1:8080",
+      "apiUrl": "http://127.0.0.1:9380",
+      "datasetId": "49375886b67411f1811e952527b08ce2",
+      "chunkTokenNum": 128,
+      "similarityThreshold": 0.22,
+      "retrievalTopK": 5
+    },
+    "host": {
+      "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+      "machine": "arm64",
+      "dockerMemoryGiB": 7.75
+    },
+    "corpus": {
+      "files": [
+        {
+          "path": "docs/kb-project/README.md",
+          "sha256": "9bf9b4e98771e5ab6f2df7c60e331e57c382ce9b40634b68ad8dbdd61a7dbebd"
+        },
+        {
+          "path": "docs/kb-project/01-architecture-and-trust-boundaries.md",
+          "sha256": "d281884eff6e581cbd25df1708c2c3ae963901ab0e6b1b17b5e6bc5e49bae92f"
+        },
+        {
+          "path": "docs/kb-project/02-checkpoint-and-crash-recovery.md",
+          "sha256": "7874c363d5be14e1af51964f87cd5e9ee5b2c6bdec0ed1e817bd5cd151800b95"
+        },
+        {
+          "path": "docs/kb-project/03-claim-lease-and-fencing.md",
+          "sha256": "fb7fc01c2c23fd709d1d1100c1bb6cfdd7e2bcd58cab0fd38d91c3f1e1d8fa64"
+        },
+        {
+          "path": "docs/kb-project/04-sse-durable-replay.md",
+          "sha256": "64dc2cd26bf13f0c84eacf26b071f213ac423ef634e4aa0bd49c0926b7fe6090"
+        },
+        {
+          "path": "docs/kb-project/05-tool-receipt-and-unknown-result.md",
+          "sha256": "6b0e232d31b4d0eaf81e6a721a8632d63d921e4c76d85f4c0876dca82b72e04b"
+        },
+        {
+          "path": "docs/kb-project/06-verification-boundaries.md",
+          "sha256": "12df625ce79355fb450e539d1ce74789ec61e6c5193f726d166e7b89fd2c5140"
+        },
+        {
+          "path": "docs/kb-project/07-agent-evaluation-fact-cards.md",
+          "sha256": "ac7601e097a249e790f6d55baeb0a2cf6604e4f74a6b534abe19c9e026c6ebaf"
+        }
+      ],
+      "documentCount": 8,
+      "legacyChunkCount": 57,
+      "ragflowChunkCount": 129,
+      "databaseIsolation": "separate PostgreSQL volumes; shared Elasticsearch contains legacy index only"
+    },
+    "testWindow": "2026-09-22T11:03:35.147978+00:00",
+    "projectDocumentIds": [
+      "doc-7bc89f02-8728-4f4a-b5a7-91d59977841c",
+      "doc-f305e64b-f234-4afe-a69b-7bd97e844246",
+      "doc-bbd6d97f-a4a0-4d67-b395-9a120db1bae9",
+      "doc-b3905f9b-d5da-46f0-9226-a5e6a4b5913a",
+      "doc-25875b0d-e716-4085-b30b-11ff338feebd",
+      "doc-ff5ea984-4a4a-4c31-aafc-45069906a1b4",
+      "doc-60659b75-8cd6-4978-9b56-ce821d6aec25",
+      "doc-680c6620-c018-415f-9016-60e9d906d6fd"
+    ],
+    "goldLabelsReviewed": false
+  },
+  "metrics": {
+    "legacy": {
+      "positiveCount": 25,
+      "negativeCount": 4,
+      "hitRateAtK": 0.88,
+      "recallAtK": 0.88,
+      "mrrAtK": 0.88,
+      "ndcgAtK": 0.88,
+      "negativeCleanRate": 0.0,
+      "p95Ms": 1274.302,
+      "latencySamples": 87,
+      "unstableCases": 0
+    },
+    "ragflow": {
+      "positiveCount": 25,
+      "negativeCount": 4,
+      "hitRateAtK": 1.0,
+      "recallAtK": 1.0,
+      "mrrAtK": 0.9733333333333333,
+      "ndcgAtK": 0.98,
+      "negativeCleanRate": 0.0,
+      "p95Ms": 1456.404,
+      "latencySamples": 87,
+      "unstableCases": 1
+    }
+  },
+  "cases": [
+    {
+      "id": "project-kb-001",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1218.892,
+          1144.464,
+          1163.083
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1007.925,
+          1046.011,
+          1106.477
+        ]
+      }
+    },
+    {
+      "id": "project-kb-002",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1249.573,
+          1154.026,
+          1162.284
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1173.699,
+          1211.889,
+          1891.629
+        ]
+      }
+    },
+    {
+      "id": "project-kb-003",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1158.976,
+          1145.854,
+          1175.931
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1010.347,
+          859.958,
+          1079.219
+        ]
+      }
+    },
+    {
+      "id": "project-kb-004",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1151.076,
+          1168.332,
+          1203.016
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1157.957,
+          1002.89,
+          924.447
+        ]
+      }
+    },
+    {
+      "id": "project-kb-005",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          null
+        ],
+        "hit": false,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1247.477,
+          1154.403,
+          1195.065
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          919.298,
+          1016.696,
+          884.068
+        ]
+      }
+    },
+    {
+      "id": "project-kb-006",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          null
+        ],
+        "hit": false,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1127.026,
+          1154.571,
+          1167.966
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1139.861,
+          999.804,
+          1746.556
+        ]
+      }
+    },
+    {
+      "id": "project-kb-007",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1180.463,
+          1289.611,
+          1163.338
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          726.056,
+          1224.994,
+          1149.264
+        ]
+      }
+    },
+    {
+      "id": "project-kb-008",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1207.869,
+          1163.242,
+          1157.364
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          757.422,
+          963.609,
+          904.578
+        ]
+      }
+    },
+    {
+      "id": "project-kb-009",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          null
+        ],
+        "hit": false,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1120.993,
+          1161.707,
+          1156.851
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          801.535,
+          982.292,
+          1011.788
+        ]
+      }
+    },
+    {
+      "id": "project-kb-010",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1177.28,
+          1174.071,
+          1210.675
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1046.412,
+          1693.187,
+          1111.06
+        ]
+      }
+    },
+    {
+      "id": "project-kb-011",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1236.725,
+          1208.67,
+          1198.288
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1043.964,
+          761.702,
+          916.044
+        ]
+      }
+    },
+    {
+      "id": "project-kb-012",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1251.962,
+          1201.267,
+          1226.771
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1145.272,
+          943.973,
+          1047.674
+        ]
+      }
+    },
+    {
+      "id": "project-kb-013",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1146.886,
+          1202.064,
+          1192.09
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          3
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          904.671,
+          1133.187,
+          887.856
+        ]
+      }
+    },
+    {
+      "id": "project-kb-014",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1231.652,
+          1234.814,
+          1274.302
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1030.019,
+          1011.534,
+          888.743
+        ]
+      }
+    },
+    {
+      "id": "project-kb-015",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1190.414,
+          1180.098,
+          1260.937
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1051.897,
+          932.421,
+          1189.684
+        ]
+      }
+    },
+    {
+      "id": "project-kb-016",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1161.565,
+          1183.515,
+          1240.339
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1067.808,
+          1051.355,
+          905.39
+        ]
+      }
+    },
+    {
+      "id": "project-kb-017",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1182.405,
+          1163.377,
+          1151.054
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          907.135,
+          774.657,
+          1030.205
+        ]
+      }
+    },
+    {
+      "id": "project-kb-018",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1135.004,
+          1166.833,
+          1209.878
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1218.585,
+          899.159,
+          735.774
+        ]
+      }
+    },
+    {
+      "id": "project-kb-019",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1250.044,
+          1231.489,
+          1228.399
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          860.853,
+          1353.519,
+          1099.417
+        ]
+      }
+    },
+    {
+      "id": "project-kb-020",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1211.265,
+          1311.361,
+          1210.14
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": true,
+        "latenciesMs": [
+          912.249,
+          1112.233,
+          1717.537
+        ]
+      }
+    },
+    {
+      "id": "project-kb-021",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1197.915,
+          1283.488,
+          1198.789
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1257.572,
+          1331.178,
+          882.252
+        ]
+      }
+    },
+    {
+      "id": "project-kb-022",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1156.657,
+          1208.57,
+          1191.836
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1001.926,
+          1456.404,
+          1040.975
+        ]
+      }
+    },
+    {
+      "id": "project-kb-023",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1186.993,
+          1185.808,
+          1241.157
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          927.892,
+          939.512,
+          1206.574
+        ]
+      }
+    },
+    {
+      "id": "project-kb-024",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1164.929,
+          1145.339,
+          1285.257
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1216.948,
+          992.905,
+          983.487
+        ]
+      }
+    },
+    {
+      "id": "project-kb-025",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          1126.145,
+          1213.178,
+          1189.624
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "latenciesMs": [
+          823.703,
+          837.342,
+          957.66
+        ]
+      }
+    },
+    {
+      "id": "project-kb-neg-001",
+      "critical": false,
+      "positive": false,
+      "legacy": {
+        "relevantRanks": [],
+        "hit": null,
+        "negativeClean": false,
+        "unstable": false,
+        "latenciesMs": [
+          1165.503,
+          1183.085,
+          1230.813
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [],
+        "hit": null,
+        "negativeClean": false,
+        "unstable": false,
+        "latenciesMs": [
+          1050.737,
+          1210.485,
+          1303.564
+        ]
+      }
+    },
+    {
+      "id": "project-kb-neg-002",
+      "critical": false,
+      "positive": false,
+      "legacy": {
+        "relevantRanks": [],
+        "hit": null,
+        "negativeClean": false,
+        "unstable": false,
+        "latenciesMs": [
+          1131.021,
+          1158.229,
+          1234.195
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [],
+        "hit": null,
+        "negativeClean": false,
+        "unstable": false,
+        "latenciesMs": [
+          895.569,
+          1253.666,
+          779.545
+        ]
+      }
+    },
+    {
+      "id": "project-kb-neg-003",
+      "critical": false,
+      "positive": false,
+      "legacy": {
+        "relevantRanks": [],
+        "hit": null,
+        "negativeClean": false,
+        "unstable": false,
+        "latenciesMs": [
+          1180.14,
+          1183.691,
+          1205.925
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [],
+        "hit": null,
+        "negativeClean": false,
+        "unstable": false,
+        "latenciesMs": [
+          938.401,
+          1216.837,
+          1086.927
+        ]
+      }
+    },
+    {
+      "id": "project-kb-neg-004",
+      "critical": false,
+      "positive": false,
+      "legacy": {
+        "relevantRanks": [],
+        "hit": null,
+        "negativeClean": false,
+        "unstable": false,
+        "latenciesMs": [
+          1167.54,
+          1237.8,
+          1191.163
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [],
+        "hit": null,
+        "negativeClean": false,
+        "unstable": false,
+        "latenciesMs": [
+          860.268,
+          681.117,
+          758.363
+        ]
+      }
+    }
+  ],
+  "newMisses": [],
+  "criticalNewMisses": [],
+  "citationVerification": {
+    "total": 78,
+    "verified": 78,
+    "checks": [
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75c29a0ab67411f1811e952527b08ce2:32ad005b357f3680",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75c29a0ab67411f1811e952527b08ce2:3fa6b2ca0949354d",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75c29a0ab67411f1811e952527b08ce2:83d7d440f8ab9125",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75c29a0ab67411f1811e952527b08ce2:8993b3d6c353da0b",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75c29a0ab67411f1811e952527b08ce2:bc402af4df1406b6",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75c29a0ab67411f1811e952527b08ce2:e0775c13d6523ede",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75c29a0ab67411f1811e952527b08ce2:f0281a47da284429",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75d6dd44b67411f1811e952527b08ce2:14793a22f8de29f8",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75d6dd44b67411f1811e952527b08ce2:207b325750d812d5",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75d6dd44b67411f1811e952527b08ce2:297fbb55e1925560",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75d6dd44b67411f1811e952527b08ce2:3e0f30b4d81cbad3",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75d6dd44b67411f1811e952527b08ce2:608ac1379b750b0f",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75d6dd44b67411f1811e952527b08ce2:8844682488545139",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75d6dd44b67411f1811e952527b08ce2:9f6b1e701454f07b",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75d6dd44b67411f1811e952527b08ce2:ac0acde38937af0b",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75d6dd44b67411f1811e952527b08ce2:afbff8e914a1821b",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75d6dd44b67411f1811e952527b08ce2:e7e6b639990d18ed",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75d6dd44b67411f1811e952527b08ce2:fd54325fbf8873a4",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75d6dd44b67411f1811e952527b08ce2:fdf69afa518e8db1",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75e5a072b67411f1811e952527b08ce2:01a129e669c73b15",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75e5a072b67411f1811e952527b08ce2:202a5e6e0bf4674d",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75e5a072b67411f1811e952527b08ce2:22dbee3e3d5989a5",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75e5a072b67411f1811e952527b08ce2:30f3ad36751be40e",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75e5a072b67411f1811e952527b08ce2:3961c77232b2870b",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75e5a072b67411f1811e952527b08ce2:77b11e404e45f364",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75e5a072b67411f1811e952527b08ce2:7b999500511f6eec",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75e5a072b67411f1811e952527b08ce2:9b9738e39b37c79c",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75e5a072b67411f1811e952527b08ce2:abd8b41b4c92a47a",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75e5a072b67411f1811e952527b08ce2:b7214ba4f27a9162",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75e5a072b67411f1811e952527b08ce2:d4799e1dd609ce16",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75e5a072b67411f1811e952527b08ce2:f786fbf885110b7e",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75f16a2eb67411f1811e952527b08ce2:0682c5bc3587c032",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75f16a2eb67411f1811e952527b08ce2:25df4806315a337d",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75f16a2eb67411f1811e952527b08ce2:40d326172afc5aa2",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75f16a2eb67411f1811e952527b08ce2:50f24f1fb6f5cb32",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75f16a2eb67411f1811e952527b08ce2:574ea6c0ce25844f",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75f16a2eb67411f1811e952527b08ce2:787153666097dd94",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75f16a2eb67411f1811e952527b08ce2:8d5fd3ac1dbfa75f",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75f16a2eb67411f1811e952527b08ce2:9e8b2c34112f03e2",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75f16a2eb67411f1811e952527b08ce2:d1be1f2e64c1c8dd",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75f16a2eb67411f1811e952527b08ce2:f364c44443917ef5",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75fc2dd8b67411f1811e952527b08ce2:004e9cf1c2b3b187",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75fc2dd8b67411f1811e952527b08ce2:374d300e4162dddf",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75fc2dd8b67411f1811e952527b08ce2:43e8caa49428648d",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75fc2dd8b67411f1811e952527b08ce2:81f44dfdf925ee77",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75fc2dd8b67411f1811e952527b08ce2:8dc705ca7f230f34",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:76069304b67411f1811e952527b08ce2:2e5c2954f570313e",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:76069304b67411f1811e952527b08ce2:7c4508247683fe49",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:76069304b67411f1811e952527b08ce2:8793289ff43df595",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:76069304b67411f1811e952527b08ce2:8dba395ae243ba57",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:76069304b67411f1811e952527b08ce2:926de93aa6d28ba1",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:76069304b67411f1811e952527b08ce2:b65be0ef462efe2c",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:76069304b67411f1811e952527b08ce2:b66655eb03e9e283",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:7612728cb67411f1811e952527b08ce2:0a378e1b9a6f0459",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:7612728cb67411f1811e952527b08ce2:10b21cf4e05ae0fe",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:7612728cb67411f1811e952527b08ce2:385a7cc8043aabe3",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:7612728cb67411f1811e952527b08ce2:47252f4abd259db6",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:7612728cb67411f1811e952527b08ce2:68aa469b3ce04cf7",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:7612728cb67411f1811e952527b08ce2:a1095c9df198de8f",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:7612728cb67411f1811e952527b08ce2:c7b20d39d48df50d",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:1274bacf47be704d",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:6033251fc4445c85",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:70a907c4100b0657",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:7c913f2311bf96c6",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:8795e0cd1d8aa9fb",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:88447020e5ac9c00",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:8e2fee07ad453d53",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:95adaf4783b37ff7",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:b00b5c8913448983",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:b2e1a7d9641bc730",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:b77c2d6f8ed0a041",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:b93d663ebda3904f",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:c45d3a6fa9f8ae7b",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:c49cc5fa9981c0d8",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:e39e42abd94b8e68",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:f71aa086ecb2e87d",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:fe62dc03d30eefcc",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:ff5952d59e4df2f3",
+        "verified": true
+      }
+    ],
+    "attempted": true
+  },
+  "ingestion": null,
+  "projectMappings": [
+    {
+      "docId": "doc-7bc89f02-8728-4f4a-b5a7-91d59977841c",
+      "status": "DONE",
+      "chunkCount": null,
+      "error": null
+    },
+    {
+      "docId": "doc-f305e64b-f234-4afe-a69b-7bd97e844246",
+      "status": "DONE",
+      "chunkCount": null,
+      "error": null
+    },
+    {
+      "docId": "doc-bbd6d97f-a4a0-4d67-b395-9a120db1bae9",
+      "status": "DONE",
+      "chunkCount": null,
+      "error": null
+    },
+    {
+      "docId": "doc-b3905f9b-d5da-46f0-9226-a5e6a4b5913a",
+      "status": "DONE",
+      "chunkCount": null,
+      "error": null
+    },
+    {
+      "docId": "doc-25875b0d-e716-4085-b30b-11ff338feebd",
+      "status": "DONE",
+      "chunkCount": null,
+      "error": null
+    },
+    {
+      "docId": "doc-ff5ea984-4a4a-4c31-aafc-45069906a1b4",
+      "status": "DONE",
+      "chunkCount": null,
+      "error": null
+    },
+    {
+      "docId": "doc-60659b75-8cd6-4978-9b56-ce821d6aec25",
+      "status": "DONE",
+      "chunkCount": null,
+      "error": null
+    },
+    {
+      "docId": "doc-680c6620-c018-415f-9016-60e9d906d6fd",
+      "status": "DONE",
+      "chunkCount": null,
+      "error": null
+    }
+  ],
+  "parseCompletionRate": null,
+  "gates": {
+    "atLeast25ProjectPositives": true,
+    "goldLabelsReviewed": false,
+    "positiveHitsBoth": true,
+    "newMissesAtMostOne": true,
+    "criticalNoNewMisses": true,
+    "negativeCasesPresent": true,
+    "negativeNoEvidence": false,
+    "citationVerified": true,
+    "p95Within1_5x": true,
+    "fixtureParsedBoth": false,
+    "projectMappingsDone": true,
+    "stableRanking": false
+  },
+  "readyToSwitch": false
+}

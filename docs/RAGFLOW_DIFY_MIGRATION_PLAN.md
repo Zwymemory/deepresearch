@@ -130,9 +130,64 @@ Dify 工作流的输入以 `question`、Java `runId`、允许工具列表、限�
 
 两边完成后由一个集成对话统一合并与运行第 5 节的四格验证。**开发并行，切流串行**；这是当前能最快推进且最容易定位问题的安排。
 
-## 7. 2026-09-26 下一轮升级
+## 7. 2026-09-26 任务 A 集成与复验结果
 
-- RAGFlow 分支 `feat/ragflow-data-plane` 当前 `6bd5e53`，真实项目知识配对评测为 25/25 正例锚点命中（legacy 22/25）、78/78 来源可回查，项目样本 p95 为 1456 ms（legacy 1274 ms）。合成样本 p95 为 1197 ms（legacy 304 ms），仍未过原定 1.5 倍门槛。第 019 题的完整事实在两路 top 5 均缺失；第 020 题排序有一次交换。详见 `integrations/ragflow/` 中两份配对报告。
-- Dify `ca4a5e5` 已完成 opt-in 控制面、专用工具接口和本机发布；使用隔离 Evidence v1 服务跑通完整 Dify 流程，默认仍为 LangGraph。真实 Java run → Dify → RAGFlow 尚未跑通，取消、重启、断线和重复派发仍需验证。
-- 先让任务 A 在独立 worktree 上基于当前 `main` 处理集成冲突：主仓库已有 Dify 的 Flyway V12，RAGFlow 分支的 V12/V13 要顺延并用干净数据库复验；`application.yml` 也需合并。任务 B 同时补 Dify 对账与故障测试。A 交付稳定 commit 后由 B 完成 gateway 接线与真链验收。
-- 当前知识库是共享项目语料，没有文档级 tenant ACL。Dify 工具仍须按 Java run 和调用者权限授权；本次联调不应宣称已经有租户级文档隔离。若未来需要多租户，须新增 tenant→dataset/文档映射和越权测试。
+### 7.1 集成状态
+
+- 任务 A 已在独立 worktree 中基于当前 `main` 完成 rebase；该基线包含 Dify 提交 `ca4a5e5`。Flyway 版本已按合并后的唯一顺序固定为 Dify V12、RAGFlow 文档映射 V13、RAGFlow 同步恢复 V14。全新 PostgreSQL 已从空库连续应用 V1–V14，14 个迁移全部通过；已有数据库不得通过改写历史或 `repair` 冒充兼容。
+- `application.yml` 同时保留 Dify 和 RAGFlow 配置。检索默认仍为 `legacy`，工作流默认仍为 `langgraph`；本轮没有切换默认流量。
+- 任务 A 已交付 RAGFlow client、检索 gateway、Evidence v1 规范化、文档映射、持久同步恢复和真实 debug 诊断。Dify 控制面已在主线，但真实 Java run → Dify → RAGFlow、取消、重启、断线和重复派发仍属于任务 B 的联合联调范围，本节不把它们记为完成。
+
+### 7.2 Gold 契约与真实项目评测
+
+- 项目 Gold 已人工复核为 25 个正例、74 个原子 required facts 和 4 个 evidence-backed safe-denial 合约。锚点按语义短语组匹配，完整可回答要求每个 required fact 均成立；每次重复样本都单独计分。独立合成集的 3 个负例继续执行 zero-citable-evidence 合约，没有放宽成“只要回答拒绝即可”。
+- 严格分时的 live paired 结果如下；延迟均为 Java 接口端到端口径：
+
+| 路径 | 正例锚点命中 | required facts 完整可回答 | safe denial 边界证据 | p95 |
+|---|---:|---:|---:|---:|
+| legacy | 23/25 | 21/25 | 3/4 | 2705.123 ms |
+| RAGFlow | 25/25 | 24/25 | 3/4 | 436.250 ms |
+
+- RAGFlow 上游 API 阶段 p95 为 428 ms。RAGFlow 的 84/84 个展示引用均可回查，8/8 个项目文档均有有效映射。
+- `case019` 在两条路径中都缺少两个必要事实：确定性 ID 只是 correlation key，以及下游必须持久化并消费该 ID 才能完成去重。因此两路都必须继续判为事实不完整。
+- `case020` 在新配置的重复采样中主锚点均稳定为 rank 1，之前的排序交换没有复现。
+- 四个项目安全拒答题中，两条路径都只有 3/4 取得了支持拒答的边界证据。`neg001` 没有检索到边界证据，虽然两路生成答案都安全拒绝，evidence-backed safe-denial 门禁仍按失败处理。
+
+### 7.3 性能优化与运行条件
+
+- 独立合成 Java 评测在优化后取得 RAGFlow p95 `374.769 ms`，25/25 正例命中，3/3 纯无依据负例保持零可引用证据；该 p95 低于旧链路合成基线 `304.158 ms` 的 1.5 倍上限 `456.237 ms`。
+- 已验证并采用的 RAGFlow 参数为：关闭额外 LLM query expansion（`query-expansion-enabled=false`）、`knn-top-k=32`、`knn-num-candidates=128`、`rerank-candidates-count=20`、`similarity-threshold=0.22`。Java 同时把逐文档 registry 查询改为单次批量快照，并在 debug 响应中暴露 `registry`、`upstreamApi`、`evidenceNormalization`、`queryRewrite`、`responseAssembly` 和 `total` 等阶段耗时。
+- 全栈同时压测时发生了 RAGFlow Elasticsearch 重启；Dify 容器始终保持运行。为避免用停掉 Dify 换取虚假的资源余量，最终项目评测按相同 Gold、配置和重复次数严格分时采集 legacy 与 RAGFlow partial，再合并为 paired 结果；后续复验也应沿用该资源计划并保存每段运行条件。
+
+### 7.4 交给任务 B 的稳定接口与切换结论
+
+- **检索与证据：** `KnowledgeRetrievalGateway` 是统一入口，`RetrievedEvidence` 承载 Evidence v1 字段和稳定 `ragflow:<datasetId>:<documentId>:<chunkId>` chunk key。任务 B 应把 Dify 的受权检索 facade 接到该 gateway，并继续由 Java 校验最终引用。
+- **配置：** `deepresearch.retrieval.provider=legacy|ragflow` 控制数据面；`deepresearch.ragflow.*` 提供 endpoint、API Key、dataset 白名单、超时、阈值和候选规模。默认值仍为 `legacy`。
+- **映射与同步：** V13 的 `kb_ragflow_document` 提供 legacy 文档到 RAGFlow dataset/document 的映射；V14 的 `kb_ragflow_sync_job` 与 `RagflowIngestionService` 提供可恢复的上传、解析、更新、删除和对账状态。任务 B 只能消费已完成且在允许集合中的映射。
+- **诊断：** `/api/research/hybrid/debug` 的 `stageTimingMs` 提供上述固定阶段名，可用于 Dify 真链定位 Java、registry 与 RAGFlow 上游耗时，不应当作业务响应契约。
+- 本次原始配对评测的 `readyToSwitch=false`：当时项目 `case019` 和 `neg001` 尚未通过对应门禁，Dify 真链与故障语义也尚未完成。后续补齐与复验见 7.5；默认检索仍不得切换。
+- 当前知识库仍是共享项目语料，没有文档级 tenant ACL。Dify 工具必须按 Java run、调用者和 tool scope 重新授权；若未来需要多租户，须新增 tenant→dataset/文档映射和越权测试。
+
+### 7.5 项目 Gold 缺口补齐与复验
+
+- 已把 `case019` 所需的确定性 ID 限制及下游去重条件并入同一源段落，把 `neg001` 的联系方式边界放入知识包首页首段。新一轮真实 Java 双路径配对评测中，`case019` 四组必要事实在两路、三次重复中全部命中；`neg001` 在两路、三次重复中均有边界证据与带引用的安全拒答。
+- Gold 评分补入 Java 脱敏后仍可见的边界证据短语，以及两种语义等价的拒答措辞；采样后的这次 Gold 调整没有改变问题、必要事实、禁止断言或源文件哈希。旧版 Gold 已单独归档，新评分对同一份原始采样重放，具体变更、哈希和复现命令见 [项目缺口补齐报告](../integrations/ragflow/PROJECT_CASE_CLOSURE_2026-09-26.md)。
+- 复验结果：legacy 锚点 23/25、完整事实 22/25、安全拒答 4/4、p95 2348.632 ms；RAGFlow 锚点 25/25、完整事实 25/25、安全拒答 4/4、p95 414.202 ms。86/86 个展示引用回查通过，8/8 个映射为 `DONE`，重复采样排序稳定。
+- 项目语料评测刻意没有混入合成 fixture，因此自动门禁仅 `fixtureParsedBoth=false`，`readyToSwitch` 仍为 `false`。检索默认继续 `legacy`；Dify 真链及故障语义留给任务 B 验证。
+
+### 7.6 合成 fixture 独立复验
+
+- 在只含合成文档的隔离语料中，legacy 与 RAGFlow 均通过真实 Java 上传和解析，分别得到 26 个与 7 个 chunk，`fixtureParsedBoth=true`。两路 25/25 个正例都在三次重复中命中；RAGFlow 的三道纯无依据题全部返回零证据，7/7 个引用回查通过。条件与原始采样见 [合成门禁复验报告](../integrations/ragflow/SYNTHETIC_GATE_RECHECK_2026-09-26.md)。
+- legacy 在这三道纯无依据题的九次采样里每次都返回五条片段，故严格的双路 `zeroEvidenceNegativesSatisfied=false`。这是真实的旧链路无依据截断缺口，不能用项目语料中 4/4 的带边界安全拒答替代，也不应根据这三题单独调出一个分数阈值。
+- 项目评测与合成评测保持语料隔离；前者的原始 `fixtureParsedBoth=false` 不回填或改写。综合两份证据，解析缺口已关闭，但完整数据面切换门禁仍未通过，默认检索继续 `legacy`。
+
+### 7.7 旧检索无依据截断修复
+
+- 对旧检索增加逐条证据核验；重排器关闭、失败或证据核验失败时按用户选择返回零证据。最终代码在独立合成语料的原始 25 个正例、3 个纯无依据题，以及发布前留出集的 5 个正例、8 个纯无依据题、1 个带证据拒答上全部通过。详见[修复复验报告](../integrations/ragflow/LEGACY_ABSTENTION_REPAIR_2026-09-27.md)。
+- 项目语料较早版本的完整回归为 23/25 锚点、22/25 完整事实、2/4 严格安全拒答，p95 约 46.9 秒。后来针对拒答措辞的定向复测通过，但最终代码尚未完成 29 题完整项目回归；外部核验带来的延迟与成本也未达上线目标。因此本节只确认原有合成纯负例缺口在所测范围内关闭，不改变 `readyToSwitch=false` 和默认 `legacy` 路由。
+
+### 7.8 RAGFlow 与 Dify 前端本地联调
+
+- Dify 的受权 `kb_search` 已接到 RAGFlow Evidence v1 gateway，Dify 检索 facade 在 RAGFlow 模式返回真实来源字段。项目知识包 8/8 文档在专用评测 dataset 完成解析与 Java 映射。
+- 浏览器正例两次成功，分别有 2/2、5/5 条引用经 RAGFlow chunk API 回查；纯无依据题返回 `INSUFFICIENT_EVIDENCE` 与零引用。联调期间发现并修复并行回执插入引用导致的 PostgreSQL 死锁，以及 SSE 异步派发的授权中断。具体运行 ID、失败诊断与边界见[本地联调记录](../integrations/dify/LIVE_RAGFLOW_FRONTEND_SMOKE_2026-09-27.md)。
+- 本轮仅是 opt-in 本地功能验收；完整 Gold、故障恢复、延迟与成本门禁尚未完成，默认检索和工作流引擎不切换。

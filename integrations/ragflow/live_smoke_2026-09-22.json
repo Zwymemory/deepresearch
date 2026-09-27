@@ -1,0 +1,293 @@
+{
+  "cases": [
+    {
+      "id": "p01",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 4,
+      "latencyMs": 1136.0,
+      "maxScore": 0.3159,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p02",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 3,
+      "latencyMs": 821.6,
+      "maxScore": 0.2751,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p03",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 5,
+      "latencyMs": 828.5,
+      "maxScore": 0.3473,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p04",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 4,
+      "latencyMs": 1370.8,
+      "maxScore": 0.3215,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p05",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 5,
+      "latencyMs": 1240.1,
+      "maxScore": 0.4085,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p06",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 5,
+      "latencyMs": 716.5,
+      "maxScore": 0.4235,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p07",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 5,
+      "latencyMs": 780.1,
+      "maxScore": 0.2941,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p08",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 4,
+      "latencyMs": 882.2,
+      "maxScore": 0.2978,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p09",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 4,
+      "latencyMs": 824.4,
+      "maxScore": 0.2663,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p10",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 5,
+      "latencyMs": 1053.8,
+      "maxScore": 0.3143,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p11",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 4,
+      "latencyMs": 824.9,
+      "maxScore": 0.4323,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p12",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 5,
+      "latencyMs": 893.3,
+      "maxScore": 0.3403,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p13",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 5,
+      "latencyMs": 895.1,
+      "maxScore": 0.3327,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p14",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 5,
+      "latencyMs": 1044.2,
+      "maxScore": 0.2776,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p15",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 5,
+      "latencyMs": 995.0,
+      "maxScore": 0.3618,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p16",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 5,
+      "latencyMs": 855.1,
+      "maxScore": 0.308,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p17",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 1,
+      "latencyMs": 875.5,
+      "maxScore": 0.3076,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p18",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 5,
+      "latencyMs": 1052.4,
+      "maxScore": 0.3474,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p19",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 5,
+      "latencyMs": 723.1,
+      "maxScore": 0.2858,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p20",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 1,
+      "latencyMs": 806.5,
+      "maxScore": 0.2805,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p21",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 1,
+      "latencyMs": 836.1,
+      "maxScore": 0.2835,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p22",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 1,
+      "latencyMs": 867.1,
+      "maxScore": 0.2768,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p23",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 5,
+      "latencyMs": 734.2,
+      "maxScore": 0.3936,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p24",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 1,
+      "latencyMs": 1248.1,
+      "maxScore": 0.3089,
+      "provider": "ragflow"
+    },
+    {
+      "id": "p25",
+      "positive": true,
+      "hits": 1,
+      "anchors": 1,
+      "count": 5,
+      "latencyMs": 1122.2,
+      "maxScore": 0.3171,
+      "provider": "ragflow"
+    },
+    {
+      "id": "n01",
+      "positive": false,
+      "hits": 0,
+      "anchors": 0,
+      "count": 0,
+      "latencyMs": 857.3,
+      "maxScore": 0,
+      "provider": "ragflow"
+    },
+    {
+      "id": "n02",
+      "positive": false,
+      "hits": 0,
+      "anchors": 0,
+      "count": 0,
+      "latencyMs": 847.3,
+      "maxScore": 0,
+      "provider": "ragflow"
+    },
+    {
+      "id": "n03",
+      "positive": false,
+      "hits": 0,
+      "anchors": 0,
+      "count": 0,
+      "latencyMs": 913.3,
+      "maxScore": 0,
+      "provider": "ragflow"
+    }
+  ],
+  "positiveHitCount": 25,
+  "positiveCount": 25,
+  "negativeCleanCount": 3,
+  "negativeCount": 3,
+  "providerSet": [
+    "ragflow"
+  ],
+  "misses": [],
+  "negativeEvidence": []
+}

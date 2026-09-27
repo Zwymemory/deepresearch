@@ -1,5 +1,6 @@
 # DeepResearch 项目实现知识包
 
+> 信息边界：这些文档不包含用户 Bearer Token、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。
 > 快照日期：2026-08-26
 > 文档版本：KB-PROJECT-1.1
 > 证据基线：Java `0.0.1-SNAPSHOT`、Python workflow sidecar `0.1.0`、Flyway V7–V11

@@ -102,7 +102,7 @@ class DeepResearchApplicationIT {
                 LIMIT 1
                 """,
                 String.class);
-        assertThat(latestMigration).isEqualTo("12");
+        assertThat(latestMigration).isEqualTo("14");
 
         Integer coreTableCount = jdbcTemplate.queryForObject("""
                 SELECT count(*)
@@ -114,9 +114,10 @@ class DeepResearchApplicationIT {
                                      'agent_workflow_tool_receipt',
                                      'agent_workflow_budget_reservation',
                                      'dify_workflow_run', 'dify_workflow_source',
-                                     'dify_workflow_tool_call')
+                                     'dify_workflow_tool_call',
+                                     'kb_ragflow_document', 'kb_ragflow_sync_job')
                 """, Integer.class);
-        assertThat(coreTableCount).isEqualTo(13);
+        assertThat(coreTableCount).isEqualTo(15);
 
         assertThat(elasticsearchClient.ping().value()).isTrue();
     }

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <title>DeepResearch · Agent Research Console</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%23119e9d'/%3E%3Cpath d='m11 25 8 8 18-19' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <style>
     :root {
       --canvas: #f2f5fa;
@@ -1348,9 +1349,9 @@
       $("nativeModeButton").setAttribute("aria-selected", String(!workflow));
       $("toolFieldset").hidden = !workflow;
       $("modeNote").textContent = workflow ?
-        "Python/LangGraph 本地编排 · DeepSeek API 推理 · Java/MCP 执行工具 · checkpoint/SSE 可恢复" :
+        "Java 控制的可恢复工作流 · DeepSeek API 推理 · 受权工具调用 · 状态/SSE 可恢复" :
         "Java/Spring AI 单 Agent 编排 · DeepSeek API 推理 · Java 直接执行工具 · 不具备 Workflow 恢复";
-      $("modeValue").textContent = workflow ? "LANGGRAPH" : "SINGLE AGENT";
+      $("modeValue").textContent = workflow ? "WORKFLOW" : "SINGLE AGENT";
       $("startLabel").textContent = workflow ? "开始研究" : "运行基线";
     }
 
@@ -1386,16 +1387,19 @@
       root.replaceChildren();
       $("citationCount").textContent = String(citations.length);
       var indexed = citationContract === "INDEXED_V1";
+      var refusedForMissingEvidence = state.status === "INSUFFICIENT_EVIDENCE" && !citations.length;
       var note = document.createElement("div");
-      note.className = "citation-contract-note" + (indexed ? "" : " unverified");
-      note.textContent = indexed ?
+      note.className = "citation-contract-note" + (indexed || refusedForMissingEvidence ? "" : " unverified");
+      note.textContent = refusedForMissingEvidence ?
+        "系统因证据不足拒答，本次没有可展示的引用。" : indexed ?
         "紫色标记表示“答案编号 ↔ 结构化来源 ID”的映射已通过后端校验；它不等于来源本身一定权威。" :
         "当前结果没有通过结构化引用映射校验。正文中的黄色来源标记仅作历史展示，不能据此猜测链接。";
       root.appendChild(note);
       if (!citations.length) {
         var empty = document.createElement("span");
         empty.className = "muted small";
-        empty.textContent = indexed ?
+        empty.textContent = refusedForMissingEvidence ?
+          "未提供未经证实的来源。" : indexed ?
           "本次回答没有需要展示的外部或知识库来源。" :
           "暂无可验证的结构化引用。旧运行不会被追溯性地标记为已验证。";
         root.appendChild(empty);

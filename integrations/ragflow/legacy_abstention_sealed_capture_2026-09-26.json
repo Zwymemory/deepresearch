@@ -1,0 +1,380 @@
+{
+  "schemaVersion": 2,
+  "collectedRoutes": [
+    "legacy"
+  ],
+  "manifest": {
+    "fixture": "synthetic_knowledge.md",
+    "topK": 5,
+    "purpose": "Sealed challenge questions authored after verifier implementation and before any run against it",
+    "cases": [
+      {
+        "id": "sp01",
+        "kind": "positive",
+        "question": "知识库写入需要哪种权限？",
+        "relevantAnchors": [
+          "DR-EVAL-01"
+        ]
+      },
+      {
+        "id": "sp02",
+        "kind": "positive",
+        "question": "远端文档解析失败之后会留下什么状态和信息？",
+        "relevantAnchors": [
+          "DR-EVAL-04"
+        ]
+      },
+      {
+        "id": "sp03",
+        "kind": "positive",
+        "question": "RAGFlow 证据引用由哪三个远端标识构成？",
+        "relevantAnchors": [
+          "DR-EVAL-08"
+        ]
+      },
+      {
+        "id": "sp04",
+        "kind": "positive",
+        "question": "How does the gateway handle a requested topK above its limit?",
+        "relevantAnchors": [
+          "DR-EVAL-17"
+        ]
+      },
+      {
+        "id": "sp05",
+        "kind": "positive",
+        "question": "What exact error code signals that a cited remote chunk is missing?",
+        "relevantAnchors": [
+          "DR-EVAL-22"
+        ]
+      },
+      {
+        "id": "sp06",
+        "kind": "positive",
+        "question": "如果来源文本中伪造了引文标记，系统会怎样处理？",
+        "relevantAnchors": [
+          "DR-EVAL-19"
+        ]
+      },
+      {
+        "id": "sn01",
+        "kind": "zero-evidence",
+        "question": "Which ADMIN employee approved the upload for DR-EVAL-01?",
+        "relevantAnchors": []
+      },
+      {
+        "id": "sn02",
+        "kind": "zero-evidence",
+        "question": "What is the production RAGFlow API key value?",
+        "relevantAnchors": []
+      },
+      {
+        "id": "sn03",
+        "kind": "zero-evidence",
+        "question": "Which exact customer record was in batch 73018?",
+        "relevantAnchors": []
+      },
+      {
+        "id": "sn04",
+        "kind": "zero-evidence",
+        "question": "What street did run 59264 travel through?",
+        "relevantAnchors": []
+      },
+      {
+        "id": "sn05",
+        "kind": "zero-evidence",
+        "question": "What is the private phone number for the operator associated with ERR-R429?",
+        "relevantAnchors": []
+      },
+      {
+        "id": "sn06",
+        "kind": "zero-evidence",
+        "question": "Which production threshold replaced synthetic example 0.42?",
+        "relevantAnchors": []
+      },
+      {
+        "id": "sn07",
+        "kind": "zero-evidence",
+        "question": "线上部署的 Kubernetes 区域和副本数是多少？",
+        "relevantAnchors": []
+      },
+      {
+        "id": "sn08",
+        "kind": "zero-evidence",
+        "question": "合成知识包的实际作者身份证号码是什么？",
+        "relevantAnchors": []
+      }
+    ]
+  },
+  "fixtureSha256": "3f142361f5f03c6bd1101643cb45d544dca090eda10632706c6383a368288202",
+  "conditions": {
+    "legacyConfig": {
+      "provider": "legacy",
+      "baseUrl": "http://127.0.0.1:18081",
+      "embeddingModel": "embedding-2",
+      "reranker": "BAAI/bge-reranker-base",
+      "rerankerUrl": "http://127.0.0.1:19002/rerank",
+      "retrievalTopK": 5,
+      "elasticsearchUrl": "http://127.0.0.1:19201",
+      "queryRewrite": false,
+      "gitCommit": "dd6234d + uncommitted evidence-verifier revision",
+      "evidenceVerifier": {
+        "model": "deepseek-v4-flash",
+        "batchThenSingleConfirmation": true,
+        "exactSourceQuoteRequired": true,
+        "maxCandidates": 20,
+        "failClosed": true
+      }
+    },
+    "ragflowConfig": {
+      "provider": "ragflow",
+      "baseUrl": "http://127.0.0.1:18080",
+      "apiUrl": "http://127.0.0.1:9380",
+      "datasetId": "4b43ea48b67111f1811e952527b08ce2",
+      "chunkTokenNum": 128,
+      "similarityThreshold": 0.22,
+      "retrievalTopK": 5,
+      "knnTopK": 32,
+      "knnNumCandidates": 128,
+      "rerankCandidatesCount": 20,
+      "queryExpansion": false,
+      "queryRewrite": false,
+      "gitCommit": "dd6234d5f584e11d74e124e29450967c62723e20"
+    },
+    "host": {
+      "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+      "machine": "arm64",
+      "dockerMemoryGiB": 7.75,
+      "executionNote": "Isolated synthetic-only corpus on final evidence-verifier implementation; RAGFlow paused, Dify running."
+    },
+    "corpus": {
+      "files": [
+        {
+          "path": "integrations/ragflow/synthetic_knowledge.md",
+          "sha256": "3f142361f5f03c6bd1101643cb45d544dca090eda10632706c6383a368288202"
+        }
+      ],
+      "documentCount": 1,
+      "databaseIsolation": "Disposable PostgreSQL and legacy Elasticsearch; only the synthetic fixture is indexed."
+    },
+    "projectDocumentIds": [],
+    "testWindow": "2026-09-26T15:57:16.354297+00:00",
+    "goldLabelsReviewed": false,
+    "manifestSha256": "acbc6ec050199ca8c548fccb5fec252c1c3341580fb3362d927d89597506ddce"
+  },
+  "ingestion": null,
+  "projectMappings": [],
+  "runs": [
+    {
+      "caseId": "sp01",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 22059.852,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Error code P403#20",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "9064d2c8-2c30-3d55-a4fe-e23a77771060",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-20: ERR-P403 means that a caller without ADMIN permission attempted a knowledge-base write.",
+              "route": "vector#2",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Ingest authorization#1",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "3ca178e7-47c0-3284-b28a-f32ca6576a04",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-01: Only an ADMIN may upload a knowledge-base document through the Java API.",
+              "route": "vector#1",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "sp02",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 6106.822,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Parse failure#4",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "ba61efa1-62ee-3243-85aa-2368c815ace9",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-04: A failed remote parse is recorded as FAILED and the error must remain visible for reconciliation.",
+              "route": "vector#2, keyword#19",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "sp03",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 5423.242,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Persistent source#8",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "833cf590-e5c4-3e86-a00f-e3743396c586",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-08: A stable RAGFlow citation begins with kb:ragflow: and includes dataset, document, and chunk IDs.",
+              "route": "vector#1, keyword#2",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "sp04",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 3579.801,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Query limit#17",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "4a6aa4ee-3297-361a-b1ef-daa95ad02a26",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-17: The gateway clamps the requested topK to its configured maximum result count.",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "sp05",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 2865.725,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Error code C404#22",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "b5201546-1c8e-386c-804c-767bcf23ab9e",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-22: ERR-C404 means a cited chunk could not be found on the remote document.",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "sp06",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 3794.936,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Prompt marker injection#19",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "421772df-aceb-301c-969f-dbbe6a33c929",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-19: Citation-like strings inside source text are neutralized so they cannot impersonate answer citations.",
+              "route": "vector#1, keyword#15",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "sn01",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 1941.676,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "sn02",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 3325.03,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "sn03",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 1716.751,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "sn04",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 1875.925,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "sn05",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 2094.921,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "sn06",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 1943.312,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "sn07",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 1808.68,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "sn08",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 1774.635,
+          "entries": []
+        }
+      ]
+    }
+  ],
+  "citationChecks": [],
+  "citationCheckAttempted": false
+}

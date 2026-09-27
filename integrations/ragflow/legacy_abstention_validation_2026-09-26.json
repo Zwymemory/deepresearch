@@ -1,0 +1,187 @@
+{
+  "fixture": "synthetic_knowledge.md",
+  "topK": 5,
+  "purpose": "Independent validation prompts fixed after the admission rule and before live validation",
+  "cases": [
+    {
+      "id": "vp01",
+      "kind": "positive",
+      "question": "What does the system do if an uploaded SHA-256 is identical to the stored version?",
+      "anchor": "DR-EVAL-02",
+      "relevantAnchors": [
+        "DR-EVAL-02"
+      ]
+    },
+    {
+      "id": "vp02",
+      "kind": "positive",
+      "question": "How is a failed remote parse recorded for reconciliation?",
+      "anchor": "DR-EVAL-04",
+      "relevantAnchors": [
+        "DR-EVAL-04"
+      ]
+    },
+    {
+      "id": "vp03",
+      "kind": "positive",
+      "question": "Where is the RAGFlow API credential kept?",
+      "anchor": "DR-EVAL-06",
+      "relevantAnchors": [
+        "DR-EVAL-06"
+      ]
+    },
+    {
+      "id": "vp04",
+      "kind": "positive",
+      "question": "What bracketed marker format numbers answer citations?",
+      "anchor": "DR-EVAL-07",
+      "relevantAnchors": [
+        "DR-EVAL-07"
+      ]
+    },
+    {
+      "id": "vp05",
+      "kind": "positive",
+      "question": "Which underlying retrieval value supplies an evidence similarity score?",
+      "anchor": "DR-EVAL-09",
+      "relevantAnchors": [
+        "DR-EVAL-09"
+      ]
+    },
+    {
+      "id": "vp06",
+      "kind": "positive",
+      "question": "What appears when a parser has no page number?",
+      "anchor": "DR-EVAL-10",
+      "relevantAnchors": [
+        "DR-EVAL-10"
+      ]
+    },
+    {
+      "id": "vp07",
+      "kind": "positive",
+      "question": "Is reindex-keyword available in the legacy route or the RAGFlow route?",
+      "anchor": "DR-EVAL-13",
+      "relevantAnchors": [
+        "DR-EVAL-13"
+      ]
+    },
+    {
+      "id": "vp08",
+      "kind": "positive",
+      "question": "How does the mapping join a Java document to its remote RAGFlow document?",
+      "anchor": "DR-EVAL-15",
+      "relevantAnchors": [
+        "DR-EVAL-15"
+      ]
+    },
+    {
+      "id": "vp09",
+      "kind": "positive",
+      "question": "What limits a user-supplied topK value?",
+      "anchor": "DR-EVAL-17",
+      "relevantAnchors": [
+        "DR-EVAL-17"
+      ]
+    },
+    {
+      "id": "vp10",
+      "kind": "positive",
+      "question": "How is retrieved document text marked before it reaches the answer model?",
+      "anchor": "DR-EVAL-18",
+      "relevantAnchors": [
+        "DR-EVAL-18"
+      ]
+    },
+    {
+      "id": "vp11",
+      "kind": "positive",
+      "question": "合成知识包规定的固定验证批次是哪一个？",
+      "anchor": "DR-EVAL-23",
+      "relevantAnchors": [
+        "DR-EVAL-23"
+      ]
+    },
+    {
+      "id": "vp12",
+      "kind": "positive",
+      "question": "哪个角色可以通过 Java 上传知识库文档？",
+      "anchor": "DR-EVAL-01",
+      "relevantAnchors": [
+        "DR-EVAL-01"
+      ]
+    },
+    {
+      "id": "vn01",
+      "kind": "zero-evidence",
+      "question": "Which chef invented a pasta dish in Milan in 1902?",
+      "relevantAnchors": []
+    },
+    {
+      "id": "vn02",
+      "kind": "zero-evidence",
+      "question": "What are the account details for an employee travel card?",
+      "relevantAnchors": []
+    },
+    {
+      "id": "vn03",
+      "kind": "zero-evidence",
+      "question": "What is the flight status of UA 73018 tomorrow?",
+      "relevantAnchors": []
+    },
+    {
+      "id": "vn04",
+      "kind": "zero-evidence",
+      "question": "Which train has carriage 59264?",
+      "relevantAnchors": []
+    },
+    {
+      "id": "vn05",
+      "kind": "zero-evidence",
+      "question": "Where did the fixture author go to university?",
+      "relevantAnchors": []
+    },
+    {
+      "id": "vn06",
+      "kind": "zero-evidence",
+      "question": "What is the tide level in San Francisco next Tuesday?",
+      "relevantAnchors": []
+    },
+    {
+      "id": "vn07",
+      "kind": "zero-evidence",
+      "question": "Who won the 2012 Olympic women's 100-meter race?",
+      "relevantAnchors": []
+    },
+    {
+      "id": "vn08",
+      "kind": "zero-evidence",
+      "question": "What is the exact serial number of the office printer?",
+      "relevantAnchors": []
+    },
+    {
+      "id": "vn09",
+      "kind": "zero-evidence",
+      "question": "Which cryptocurrency had the highest market cap in 2018?",
+      "relevantAnchors": []
+    },
+    {
+      "id": "vn10",
+      "kind": "zero-evidence",
+      "question": "What is an employee's home address?",
+      "relevantAnchors": []
+    },
+    {
+      "id": "vn11",
+      "kind": "zero-evidence",
+      "question": "明天北京到上海的高铁票价是多少？",
+      "relevantAnchors": []
+    },
+    {
+      "id": "vn12",
+      "kind": "zero-evidence",
+      "question": "哪位员工的工资卡尾号是59264？",
+      "relevantAnchors": []
+    }
+  ]
+}

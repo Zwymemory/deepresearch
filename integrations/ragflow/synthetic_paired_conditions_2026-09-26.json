@@ -1,0 +1,48 @@
+{
+  "legacyConfig": {
+    "provider": "legacy",
+    "baseUrl": "http://127.0.0.1:18081",
+    "embeddingModel": "embedding-2",
+    "reranker": "BAAI/bge-reranker-base",
+    "rerankerUrl": "http://127.0.0.1:19002/rerank",
+    "retrievalTopK": 5,
+    "elasticsearchUrl": "http://127.0.0.1:19201",
+    "queryRewrite": false,
+    "gitCommit": "31576f0782321b80c3670597dce156bd3139b6ae"
+  },
+  "ragflowConfig": {
+    "provider": "ragflow",
+    "baseUrl": "http://127.0.0.1:18080",
+    "apiUrl": "http://127.0.0.1:9380",
+    "datasetId": "4b43ea48b67111f1811e952527b08ce2",
+    "chunkTokenNum": 128,
+    "similarityThreshold": 0.22,
+    "retrievalTopK": 5,
+    "knnTopK": 32,
+    "knnNumCandidates": 128,
+    "rerankCandidatesCount": 20,
+    "queryExpansion": false,
+    "queryRewrite": false,
+    "gitCommit": "31576f0782321b80c3670597dce156bd3139b6ae"
+  },
+  "host": {
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "dockerMemoryGiB": 7.75,
+    "executionNote": "Dify stayed running. RAGFlow was paused during legacy collection; temporary Elasticsearch and reranker were removed before RAGFlow collection. One disposable PostgreSQL held the Java registry for both routes."
+  },
+  "corpus": {
+    "files": [
+      {
+        "path": "integrations/ragflow/synthetic_knowledge.md",
+        "sha256": "3f142361f5f03c6bd1101643cb45d544dca090eda10632706c6383a368288202"
+      }
+    ],
+    "documentCount": 1,
+    "databaseIsolation": "Disposable PostgreSQL and legacy Elasticsearch; existing empty dedicated RAGFlow synthetic-eval dataset; no project knowledge files."
+  },
+  "projectDocumentIds": [],
+  "testWindow": "2026-09-26T14:28:52.805731+00:00",
+  "goldLabelsReviewed": false,
+  "manifestSha256": "61bbdb70655dd50356472c9256afae2dbcd87fc9b903fefb864fce0d9533d594"
+}

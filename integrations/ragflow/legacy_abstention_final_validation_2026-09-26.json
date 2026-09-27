@@ -1,0 +1,27 @@
+{
+  "fixture": "synthetic_knowledge.md",
+  "topK": 5,
+  "purpose": "Final untouched challenge set fixed after the cross-language rule and before its live run",
+  "cases": [
+    {"id":"fp01","kind":"positive","question":"如果上传的内容摘要没有变化，系统怎样处理文档版本？","relevantAnchors":["DR-EVAL-02"]},
+    {"id":"fp02","kind":"positive","question":"解析完成到哪一种状态以后文档才可检索？","relevantAnchors":["DR-EVAL-03"]},
+    {"id":"fp03","kind":"positive","question":"服务端凭据是否会进入浏览器响应？","relevantAnchors":["DR-EVAL-06"]},
+    {"id":"fp04","kind":"positive","question":"系统用什么状态表示没有任何检索证据？","relevantAnchors":["DR-EVAL-12"]},
+    {"id":"fp05","kind":"positive","question":"找不到被引用的远程片段时使用什么错误码？","relevantAnchors":["DR-EVAL-22"]},
+    {"id":"fp06","kind":"positive","question":"What exact value does the synthetic threshold example specify?","relevantAnchors":["DR-EVAL-25"]},
+    {"id":"fp07","kind":"positive","question":"Which role can perform a knowledge-base upload?","relevantAnchors":["DR-EVAL-01"]},
+    {"id":"fp08","kind":"positive","question":"What happens to citation-looking text embedded in a retrieved document?","relevantAnchors":["DR-EVAL-19"]},
+    {"id":"fn01","kind":"zero-evidence","question":"What is the private mobile number of the ADMIN who uploaded this document?","relevantAnchors":[]},
+    {"id":"fn02","kind":"zero-evidence","question":"Which real production system uses threshold 0.42 today?","relevantAnchors":[]},
+    {"id":"fn03","kind":"zero-evidence","question":"What was the lunch menu served to the team during batch 73018?","relevantAnchors":[]},
+    {"id":"fn04","kind":"zero-evidence","question":"Who drove run 59264 in a real vehicle?","relevantAnchors":[]},
+    {"id":"fn05","kind":"zero-evidence","question":"What is the employee payroll account for the person who triggered ERR-P403?","relevantAnchors":[]},
+    {"id":"fn06","kind":"zero-evidence","question":"Which hospital treated the RAGFlow operator after ERR-R429?","relevantAnchors":[]},
+    {"id":"fn07","kind":"zero-evidence","question":"Where is the office street address of the Java gateway maintainer?","relevantAnchors":[]},
+    {"id":"fn08","kind":"zero-evidence","question":"What date was the synthetic migration document first published online?","relevantAnchors":[]},
+    {"id":"fn09","kind":"zero-evidence","question":"知识包作者的私人邮箱地址是什么？","relevantAnchors":[]},
+    {"id":"fn10","kind":"zero-evidence","question":"73018 批次的真实客户订单总金额是多少？","relevantAnchors":[]},
+    {"id":"fn11","kind":"zero-evidence","question":"ERR-C404 发生时用户所在地的天气如何？","relevantAnchors":[]},
+    {"id":"fn12","kind":"zero-evidence","question":"哪个真实银行为这个项目提供工资账户？","relevantAnchors":[]}
+  ]
+}

@@ -71,6 +71,16 @@ public class KnowledgeController {
         return kb.reindexDocument(docId);
     }
 
+    @PostMapping("/documents/{docId}/sync-ragflow")
+    public Object syncRagflowDocument(@PathVariable String docId) {
+        return kb.syncRagflowDocument(docId);
+    }
+
+    @GetMapping("/documents/{docId}/ragflow-sync")
+    public Map<String, Object> ragflowSyncStatus(@PathVariable String docId) {
+        return kb.ragflowSyncStatus(docId);
+    }
+
     @GetMapping("/count")
     public Map<String, Object> count() {
         return Map.of("total", kb.count());

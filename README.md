@@ -116,6 +116,12 @@ DEEPRESEARCH_DEV_TOKEN_ALLOW_ADMIN=true
 
 四个安全值必须互不相同；不要提交 `.env`。
 
+RAGFlow 数据面保持为显式选择。`RAGFLOW_QUERY_EXPANSION_ENABLED=false`
+关闭的是 RAGFlow 额外的 LLM 查询扩展，RAGFlow 自带的词法与向量混合检索仍然启用。
+本机 RAGFlow v0.27.2 的成对基准采用 `RAGFLOW_KNN_TOP_K=32`、
+`RAGFLOW_KNN_NUM_CANDIDATES=128`、`RAGFLOW_RERANK_CANDIDATES_COUNT=20`
+和 `RAGFLOW_SIMILARITY_THRESHOLD=0.22` 作为默认值；应用启动时会校验候选池边界。
+
 ### 3. 启动完整栈
 
 ```bash
@@ -124,7 +130,7 @@ docker compose ps
 
 curl -fsS http://localhost:8080/actuator/health
 curl -fsS http://localhost:9201/_cluster/health
-curl -fsS http://localhost:9000/health
+curl -fsS http://localhost:9002/health
 ```
 
 首次启动 reranker 会下载固定 revision 的 BGE 模型，可能需要数分钟。演示页面：<http://localhost:8080/demo.html>。
