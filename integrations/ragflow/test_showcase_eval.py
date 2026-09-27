@@ -76,6 +76,11 @@ class ShowcaseEvaluationTest(unittest.TestCase):
         self.assertNotIn("dataset", detail["source"])
         self.assertNotIn("a@example.com", detail["evidencePreview"])
 
+    def test_no_result_placeholders_are_never_counted_as_sources(self):
+        for source in ("kb_search:missing", "mcp-text-0", "mcp-item-0"):
+            with self.subTest(source=source):
+                self.assertIs(evaluation.source_detail(source, None, None)["exists"], False)
+
 
 if __name__ == "__main__":
     unittest.main()

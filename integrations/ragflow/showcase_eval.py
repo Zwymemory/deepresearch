@@ -112,6 +112,9 @@ def http_json(url, token, payload=None, headers=None, timeout=90):
 
 def source_detail(source, ragflow_url, ragflow_key):
     detail = {"source": redacted_source(source), "exists": None, "evidencePreview": None}
+    if isinstance(source, str) and source.startswith(("kb_search:", "mcp-text-", "mcp-item-")):
+        detail["exists"] = False
+        return detail
     if not isinstance(source, str) or not source.startswith("kb:ragflow:"):
         return detail
     parts = source.split(":")
