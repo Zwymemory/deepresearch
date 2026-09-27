@@ -77,4 +77,18 @@ class McpKnowledgeToolsReceiptTest {
         assertThat(response.code()).isEqualTo("MCP_STALE_CLAIM");
         verify(knowledge).execute("MCP-7788");
     }
+
+    @Test
+    void knowledgeSearchWithoutSourceBlocksDoesNotCreateCitableEvidence() {
+        when(receipts.begin(delegation, "kb_search", Map.of("query", "MCP-7788")))
+                .thenReturn(new WorkflowMcpReceiptService.BeginResult(
+                        WorkflowMcpReceiptService.Action.EXECUTE, "fingerprint", null, null));
+        when(knowledge.execute("MCP-7788")).thenReturn("未找到相关证据");
+        when(receipts.complete(any(), any(), any(), any())).thenReturn(true);
+
+        McpToolResponse response = tools.search("MCP-7788");
+
+        assertThat(response.success()).isTrue();
+        assertThat(response.evidence()).isEmpty();
+    }
 }
