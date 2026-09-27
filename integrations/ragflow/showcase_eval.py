@@ -107,22 +107,28 @@ def http_json(url, token, payload=None, headers=None, timeout=90):
         raise RuntimeError(f"HTTP {error.code} at {urllib.parse.urlsplit(url).path}") from None
 
 
-def source_exists(source, ragflow_url, ragflow_key):
-    if not source.startswith("kb:ragflow:"):
-        return None
+def source_detail(source, ragflow_url, ragflow_key):
+    detail = {"source": redacted_source(source), "exists": None, "evidencePreview": None}
+    if not isinstance(source, str) or not source.startswith("kb:ragflow:"):
+        return detail
     parts = source.split(":")
     if len(parts) != 5 or not ragflow_url or not ragflow_key:
-        return None
+        return detail
     dataset, document, chunk = (urllib.parse.quote(part, safe="") for part in parts[2:])
     endpoint = (ragflow_url.rstrip("/") + "/api/v1/datasets/" + dataset
                 + "/documents/" + document + "/chunks/" + chunk)
     try:
         result = http_json(endpoint, ragflow_key, timeout=15)
     except (OSError, ValueError, RuntimeError):
-        return False
+        detail["exists"] = False
+        return detail
     data = result.get("data") or {}
-    return (result.get("code") == 0 and data.get("id") == parts[4]
-            and (data.get("doc_id") or data.get("document_id")) == parts[3])
+    detail["exists"] = (isinstance(data, dict) and result.get("code") == 0
+                        and data.get("id") == parts[4]
+                        and (data.get("doc_id") or data.get("document_id")) == parts[3])
+    if detail["exists"]:
+        detail["evidencePreview"] = redact_text((data.get("content_with_weight") or data.get("content") or "")[:3000])
+    return detail
 
 
 def probe(base, token, question, top_k):
@@ -173,9 +179,8 @@ def capture_answer(mode, base, token, question, top_k, timeout):
         status = value.get("status")
         final = value.get("finalResponse") or {}
         source_ids = final.get("citations") or []
-        citations = [{"source": redacted_source(source),
-                      "exists": source_exists(source, os.getenv("SHOWCASE_RAGFLOW_URL"),
-                                              os.getenv("RAGFLOW_API_KEY"))}
+        citations = [source_detail(source, os.getenv("SHOWCASE_RAGFLOW_URL"),
+                                   os.getenv("RAGFLOW_API_KEY"))
                      for source in source_ids]
         answer = final.get("answer") or ""
         usage = value.get("usage") or {}

@@ -130,7 +130,7 @@ collector timeout, not the Java service or a quality gate.
 
 采集器支持旧演示工作流 `legacy-langgraph`、新路径 `ragflow-dify`、用于隔离编排变量的 `ragflow-langgraph`，以及简单问答对照 `legacy-hybrid`。每种模式从独立 Java 配置采样，可在一台内存受限机器上依次运行。对每题先发一次 `/api/research/hybrid/debug` 检索探针，再运行答案接口或 Java workflow。**工作流探针是另一请求，不是该次 Dify/LangGraph 的内部工具回执**；其事实覆盖只能说明同配置检索能力，不能证明工作流实际用了这些 chunk。报告分别列出检索事实覆盖、答案短语匹配下界、人工核定答案事实覆盖、引用编号映射、RAGFlow 来源存在性、人工核定引用支持性，以及拒答正确性。人工审阅留空时相应结果为 `null`，不会被自动算作通过。
 
-先从 [条件模板](showcase_conditions.example.json)为每种模式各建一份私有 JSON，填写统一代码 SHA、模型、项目语料哈希、topK、预算、主机和测试窗口；不要存入密钥、token、dataset ID 或私有路径。`SHOWCASE_EVAL_TOKEN` 是从演示页签发的 USER Token，仅放在环境变量中。RAGFlow 直接 chunk 回查还需要 `SHOWCASE_RAGFLOW_URL` 与 `RAGFLOW_API_KEY`，缺少它们时来源存在性保持未知。采集输出会将 RAGFlow 来源 ID 做稳定哈希，并遮蔽常见 JWT、邮箱和手机号；公开前仍须人工检查答案中是否有其他敏感内容。
+先从 [条件模板](showcase_conditions.example.json)为每种模式各建一份私有 JSON，填写统一代码 SHA、模型、项目语料哈希、topK、预算、主机和测试窗口；不要存入密钥、token、dataset ID 或私有路径。`SHOWCASE_EVAL_TOKEN` 是从演示页签发的 USER Token，仅放在环境变量中。RAGFlow 直接 chunk 回查还需要 `SHOWCASE_RAGFLOW_URL` 与 `RAGFLOW_API_KEY`，缺少它们时来源存在性保持未知；回查成功时采集最多 3000 字的来源正文，供引用支持性人工审阅。采集输出会将 RAGFlow 来源 ID 做稳定哈希，并遮蔽常见 JWT、邮箱和手机号；公开前仍须人工检查答案与证据正文中是否有其他敏感内容。
 
 ```sh
 export SHOWCASE_EVAL_TOKEN='从本地演示页签发的 USER Token'

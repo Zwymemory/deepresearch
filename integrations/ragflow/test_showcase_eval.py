@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import showcase_eval as evaluation
 
@@ -60,6 +61,16 @@ class ShowcaseEvaluationTest(unittest.TestCase):
             path = Path(directory) / "capture.json"
             evaluation.save(path, {"answer": redacted})
             self.assertEqual(redacted, evaluation.load(path)["answer"])
+
+    def test_source_backcheck_saves_redacted_evidence_for_review(self):
+        source = "kb:ragflow:dataset:document:chunk"
+        remote = {"code": 0, "data": {"id": "chunk", "doc_id": "document",
+                                       "content_with_weight": "联系 a@example.com 处理"}}
+        with patch.object(evaluation, "http_json", return_value=remote):
+            detail = evaluation.source_detail(source, "http://localhost:9380", "test-key")
+        self.assertTrue(detail["exists"])
+        self.assertNotIn("dataset", detail["source"])
+        self.assertNotIn("a@example.com", detail["evidencePreview"])
 
 
 if __name__ == "__main__":
