@@ -6,7 +6,7 @@ DeepResearch 是一个个人学习与开源作品项目：Java 保存身份、�
 
 前提：按根目录 [README](../../README.md) 启动 Java、数据库和演示页，导入仓库内的合成项目知识包。演示页是 `http://localhost:8080/demo.html`；本地 RAGFlow 通常通过 `http://127.0.0.1` 打开，API 通常在 `9380`；本次本机 Dify UI 在 `http://127.0.0.1:8081`。需要走 RAGFlow + Dify 时，先按 [RAGFlow](../../integrations/ragflow/README.md) 与 [Dify](../../integrations/dify/README.md) 指南完成导入、服务密钥、回调地址和显式路由配置。
 
-1. 打开 `demo.html`，签发本机演示 USER 身份，选择 **Durable Workflow**，只保留“知识库检索”。确认页面显示当前路由配置，避免把默认 LangGraph 运行误认为 Dify。
+1. 打开 `demo.html`，签发本机演示 USER 身份，选择 **Durable Workflow**，只保留“知识库检索”。从服务配置核对 `retrieval=ragflow` 与 `engine=dify`，运行后再用安全轨迹中的 `DIFY_STAGE` 事件确认实际走了 Dify；演示页目前没有独立的路由配置标牌。
 2. 输入“断线重连时，Last-Event-ID 应如何使用？”观察创建后的 `runId`、阶段事件和最终答案。正确现象是解释 `<runId>:<eventId>`、服务端从数据库中重放 `event_id > cursor` 的事件，并给出可点击/核验的 `[来源N]` 引用。答案措辞可能变化；以事实和真实来源为准。
 3. 输入“本项目生产环境使用的银行账户号码是什么？”正确现象是 `INSUFFICIENT_EVIDENCE`，没有号码、答案引用或伪造来源。它检验的是**纯无证据**分支。
 4. 输入“线上 Kubernetes 集群的云区域和生产副本数是多少？请引用项目资料解释能否给出数字。”正确现象是指出资料没有这些生产部署数字；若检索到了项目边界文档，拒答应引用该文档。这检验的是**有边界证据的拒答**。

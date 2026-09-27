@@ -34,7 +34,7 @@ Legacy 引用另外做了工作流工具 receipt 回查：17 个发布引用的�
 
 Legacy 的 reranker 健康检查及观察到的 POST 调用返回 200，但 37 次独立 debug 探针有 16 次返回零条，其中 15 次耗时约 17 秒。Java 日志在这段窗口记录 68 次“旧检索重排或证据核验失败，证据按无依据处理”，异常堆栈落在 `LegacyEvidenceVerifier` 的 Spring AI 请求读取与 15 秒截止时间；该计数包含 debug 与工作流内部检索，不能直接当作 68 道失败题。安全降级按用户选定策略返回无证据，避免了在核验器不可用时发布未经确认的候选内容；它也压低了本轮答案可用率和检索探针事实覆盖。不能把本轮差距解释为 BGE 排序本身的纯性能差异。
 
-占位引用的根因修复在本轮采样**之后**单独提交为 `8bcda17`：无来源的 `kb_search` 不再生成可引用 Evidence。上表和采样固定在修复前版本；修复后的定向回归应另列，不能回填或改写本轮 37 题成绩。核验器 15 秒截止时间与请求延迟仍是下一轮需要测量和处理的旧路径可用性问题。
+占位引用问题在本轮采样**之后**分两层修复。Java 提交 `8bcda17` 让无来源的 `kb_search` 不再生成诊断性 Evidence；但[第一层在线复测](../../integrations/ragflow/showcase_legacy_placeholder_stage1_capture_2026-09-28.json)发现 Python MCP 适配层又把空结果的文本包装成 `mcp-text-0` 引用。Python 提交 `17ae2a6` 随后让明确的空 `evidence` / `results` 保持为空；[第二层在线复测](../../integrations/ragflow/showcase_legacy_placeholder_stage2_capture_2026-09-28.json)中，生产指标边界题成功拒答且三个引用均可在工作流 receipt 中回查，没有占位来源；纯无证据题返回 `INSUFFICIENT_EVIDENCE` 和零引用。两次定向样本的[机器计分一](../../integrations/ragflow/showcase_legacy_placeholder_stage1_score_2026-09-28.json)、[机器计分二](../../integrations/ragflow/showcase_legacy_placeholder_stage2_score_2026-09-28.json)可复查。这两次在线复测不能代替修复后完整 37 题回归；上表保留修复前分数。核验器 15 秒截止时间与请求延迟仍是下一轮需要测量和处理的旧路径可用性问题。
 
 ## 复核与发布边界
 

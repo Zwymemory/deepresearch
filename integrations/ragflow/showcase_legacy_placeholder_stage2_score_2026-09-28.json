@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "suiteHashes": [
+    "b276e82585c471377f1055b52883564ea2c20f3caa33848b3d31dbaee2aa6d96",
+    "2f06a5a2a8e0821e8bf420434853f012ef86660d5f7ded9d2e94eea37581519c"
+  ],
+  "conditionsByMode": {
+    "legacy-langgraph": {
+      "mode": "legacy-langgraph",
+      "codeSha": "9b03d4d10d5508a783737e3c92885be492def2d3",
+      "retrievalProvider": "legacy",
+      "workflowEngine": "langgraph",
+      "model": {
+        "name": "deepseek-v4-flash",
+        "temperature": 0
+      },
+      "corpus": {
+        "name": "project-knowledge",
+        "sourceHashes": [
+          {
+            "path": "docs/kb-project/README.md",
+            "sha256": "15dc37ee805f7c541c33366b06be97443168abdc254b54c36f3ed45e9d5ce3cc"
+          },
+          {
+            "path": "docs/kb-project/01-architecture-and-trust-boundaries.md",
+            "sha256": "d281884eff6e581cbd25df1708c2c3ae963901ab0e6b1b17b5e6bc5e49bae92f"
+          },
+          {
+            "path": "docs/kb-project/02-checkpoint-and-crash-recovery.md",
+            "sha256": "7874c363d5be14e1af51964f87cd5e9ee5b2c6bdec0ed1e817bd5cd151800b95"
+          },
+          {
+            "path": "docs/kb-project/03-claim-lease-and-fencing.md",
+            "sha256": "fb7fc01c2c23fd709d1d1100c1bb6cfdd7e2bcd58cab0fd38d91c3f1e1d8fa64"
+          },
+          {
+            "path": "docs/kb-project/04-sse-durable-replay.md",
+            "sha256": "64dc2cd26bf13f0c84eacf26b071f213ac423ef634e4aa0bd49c0926b7fe6090"
+          },
+          {
+            "path": "docs/kb-project/05-tool-receipt-and-unknown-result.md",
+            "sha256": "5de1bc0c032dddeb5db71c4f1d67f08e6db6cfdd42750b188ce50dc86904e3d1"
+          },
+          {
+            "path": "docs/kb-project/06-verification-boundaries.md",
+            "sha256": "12df625ce79355fb450e539d1ce74789ec61e6c5193f726d166e7b89fd2c5140"
+          },
+          {
+            "path": "docs/kb-project/07-agent-evaluation-fact-cards.md",
+            "sha256": "ac7601e097a249e790f6d55baeb0a2cf6604e4f74a6b534abe19c9e026c6ebaf"
+          }
+        ],
+        "documentCount": 8,
+        "datasetFingerprint": "sha256:4aa81e80e2fd505e9efe3c72566d919fd6953f21423ed64b4bc48e9c14dcdb0f"
+      },
+      "budgets": {
+        "topK": 5,
+        "maxWorkerCalls": 4,
+        "maxRevisionCycles": 1,
+        "javaDeadlineSeconds": 120,
+        "modelCallLimit": 24,
+        "maxToolCalls": 16
+      },
+      "host": {
+        "class": "local Docker Desktop macOS",
+        "memoryGiB": 7.75
+      },
+      "testWindow": "2026-09-27T18:56:18.627359+00:00",
+      "notes": "Post two-layer empty-evidence citation guard, targeted neg003 and pure no-evidence rerun only. Same isolated legacy corpus; not part of the fixed 37-case comparison."
+    }
+  },
+  "summaryByMode": {
+    "legacy-langgraph": {
+      "sampleCount": 2,
+      "caseCount": 2,
+      "full37Once": false,
+      "answerP95Ms": 38674.991,
+      "answerP95SampleCount": 2,
+      "retrievalProbeP95Ms": 17128.076,
+      "retrievalFactCoverageMean": null,
+      "reviewedAnswerFactCoverageMean": null,
+      "reviewedPositiveSampleCount": 0,
+      "reviewedRefusalsCorrect": 0,
+      "reviewedRefusalSampleCount": 0,
+      "reviewedCitationsSupported": 0,
+      "reviewedCitationSampleCount": 0,
+      "citationContractValid": 1,
+      "citationSourceExistenceChecked": 1,
+      "citationSourceExists": 1,
+      "automaticRefusalsCorrect": 2,
+      "negativeSampleCount": 2,
+      "usageObserved": {
+        "totalTokens": [
+          7796,
+          4481
+        ],
+        "modelCalls": [
+          6,
+          5
+        ],
+        "toolCalls": [
+          3,
+          2
+        ],
+        "estimatedCost": [
+          0.008823,
+          0.005303
+        ]
+      }
+    }
+  },
+  "comparability": {
+    "model": true,
+    "corpus": true,
+    "budgets": true,
+    "host": true
+  },
+  "samples": [
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-neg-003",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "SUCCEEDED",
+      "latencyMs": 38674.991,
+      "retrievalLatencyMs": 17128.076,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "inputTokens": 6769,
+        "outputTokens": 1027,
+        "totalTokens": 7796,
+        "modelCalls": 6,
+        "toolCalls": 3,
+        "estimatedCost": 0.008823,
+        "currency": "CNY",
+        "durationMs": 37255
+      },
+      "retrievalDenialEvidenceCoverage": 0.0,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": null,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "showcase-holdout-007",
+      "repetition": 1,
+      "kind": "zero-evidence",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 14945.625,
+      "retrievalLatencyMs": 4522.487,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 3659,
+        "outputTokens": 822,
+        "totalTokens": 4481,
+        "modelCalls": 5,
+        "toolCalls": 2,
+        "estimatedCost": 0.005303,
+        "currency": "CNY",
+        "durationMs": 14522
+      },
+      "retrievalNegativeClean": true,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": null,
+      "reviewedCitationSupport": null
+    }
+  ],
+  "interpretation": "Workflow retrieval probes are separate debug calls. Exact answer phrase scores are lower bounds; semantic fact and factual citation support require recorded review. Compare latency only under matched model, corpus and budgets."
+}
