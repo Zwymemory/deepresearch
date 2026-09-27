@@ -56,6 +56,38 @@ class DifyToolServiceTest {
     }
 
     @Test
+    void rejectsCallIdsNotStrictlyBoundToRunBeforeLookingUpOrClaimingReceipt() {
+        List<String> invalid = List.of(
+                "wf-other-run:initial:1",
+                RUN + ":draft:1",
+                RUN + ":initial:5",
+                RUN + ":initial:01",
+                RUN + ":initial:1:extra");
+
+        for (String callId : invalid) {
+            Request request = new Request(RUN, callId, "query");
+            assertThatThrownBy(() -> service.execute(bearer(), "kb_search", request))
+                    .isInstanceOfSatisfying(ResponseStatusException.class,
+                            error -> assertThat(error.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        }
+
+        verify(repository, never()).find(any());
+        verify(repository, never()).beginDifyToolCall(any(), any(), any(), any());
+    }
+
+    @Test
+    void missingRunFailsClosedBeforeLookingUpMappingOrClaimingReceipt() {
+        when(repository.find(RUN)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.execute(bearer(), "kb_search", request("query")))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        error -> assertThat(error.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+
+        verify(repository, never()).difyMapping(any());
+        verify(repository, never()).beginDifyToolCall(any(), any(), any(), any());
+    }
+
+    @Test
     void reauthorizesScopeAndCancellationFromJavaRun() {
         when(repository.find(RUN)).thenReturn(Optional.of(run(true, List.of("kb_search"))));
         when(repository.difyMapping(RUN)).thenReturn(Optional.of(
@@ -120,18 +152,37 @@ class DifyToolServiceTest {
     }
 
     @Test
-    void completedCallReplaysAndChangedInputIsRejected() throws Exception {
-        activeRun("calculator");
-        String fingerprint = ToolArgumentFingerprint.sha256("calculator\n1+1");
-        Response cached = new Response(true, "OK", "calculator", List.of(), "计算结果: 2");
+    void completedCallReplaysWithoutCallingGatewayAndChangedInputIsRejected() throws Exception {
+        activeRun("kb_search");
+        String fingerprint = ToolArgumentFingerprint.sha256("kb_search\nquery");
+        Response cached = new Response(true, "OK", "kb_search", List.of(), "");
         when(repository.findDifyToolCall(RUN, CALL)).thenReturn(Optional.of(
-                new WorkflowRepository.DifyToolCall("calculator", fingerprint,
+                new WorkflowRepository.DifyToolCall("kb_search", fingerprint,
                         "COMPLETED", json.writeValueAsString(cached))));
 
-        assertThat(service.execute(bearer(), "calculator", request("1+1"))).isEqualTo(cached);
-        assertThat(service.execute(bearer(), "calculator", request("2+2")).code())
+        assertThat(service.execute(bearer(), "kb_search", request("query"))).isEqualTo(cached);
+        assertThat(service.execute(bearer(), "kb_search", request("changed query")).code())
                 .isEqualTo("CALL_ID_CONFLICT");
+        verify(kbGateway, never()).search(any(), any());
         verify(repository, never()).completeDifyToolCall(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void emptyKbEvidenceAfterDisabledOrDeletedFilteringSucceedsAndPersistsEmptySources() {
+        activeRun("kb_search");
+        String fingerprint = ToolArgumentFingerprint.sha256("kb_search\nquery");
+        when(repository.beginDifyToolCall(RUN, CALL, "kb_search", fingerprint)).thenReturn(true);
+        when(kbGateway.search(any(), eq("query"))).thenReturn(List.of());
+        when(repository.completeDifyToolCall(eq(RUN), eq(CALL), eq("kb_search"), eq(fingerprint),
+                any(), eq(List.of()))).thenReturn(true);
+
+        Response result = service.execute(bearer(), "kb_search", request("query"));
+
+        assertThat(result.success()).isTrue();
+        assertThat(result.code()).isEqualTo("OK");
+        assertThat(result.evidences()).isEmpty();
+        verify(repository).completeDifyToolCall(eq(RUN), eq(CALL), eq("kb_search"),
+                eq(fingerprint), any(), eq(List.of()));
     }
 
     @Test

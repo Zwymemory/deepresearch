@@ -21,8 +21,9 @@ public class RagflowDocumentRegistry {
         List<RegisteredDocument> rows = db.query("""
                 SELECT m.dataset_id, m.document_id, COALESCE(d.title, '') AS title
                 FROM kb_ragflow_document m
-                LEFT JOIN kb_document d ON d.doc_id=m.legacy_doc_id
-                WHERE m.sync_status='DONE' AND m.document_id IS NOT NULL AND m.dataset_id = ANY(?)
+                JOIN kb_document d ON d.doc_id=m.legacy_doc_id
+                WHERE m.sync_status='DONE' AND d.status='DONE'
+                  AND m.document_id IS NOT NULL AND m.dataset_id = ANY(?)
                 ORDER BY m.dataset_id, m.document_id
                 """, ps -> ps.setArray(1, ps.getConnection().createArrayOf("text", datasetIds.toArray(String[]::new))),
                 (rs, n) -> new RegisteredDocument(
@@ -32,8 +33,9 @@ public class RagflowDocumentRegistry {
 
     public boolean active(String datasetId, String documentId) {
         Long count = db.queryForObject("""
-                SELECT count(*) FROM kb_ragflow_document
-                WHERE dataset_id=? AND document_id=? AND sync_status='DONE'
+                SELECT count(*) FROM kb_ragflow_document m
+                JOIN kb_document d ON d.doc_id=m.legacy_doc_id
+                WHERE m.dataset_id=? AND m.document_id=? AND m.sync_status='DONE' AND d.status='DONE'
                 """, Long.class, datasetId, documentId);
         return count != null && count > 0;
     }

@@ -55,7 +55,8 @@ class DeepResearchApplicationIT {
     static final ElasticsearchContainer ELASTICSEARCH = new ElasticsearchContainer(
             DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch:8.15.3"))
             .withEnv("xpack.security.enabled", "false")
-            .withEnv("xpack.security.http.ssl.enabled", "false");
+            .withEnv("xpack.security.http.ssl.enabled", "false")
+            .withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m");
 
     @DynamicPropertySource
     static void infrastructureProperties(DynamicPropertyRegistry registry) {
@@ -101,7 +102,7 @@ class DeepResearchApplicationIT {
                 LIMIT 1
                 """,
                 String.class);
-        assertThat(latestMigration).isEqualTo("14");
+        assertThat(latestMigration).isEqualTo("15");
 
         Integer coreTableCount = jdbcTemplate.queryForObject("""
                 SELECT count(*)
@@ -425,6 +426,113 @@ class DeepResearchApplicationIT {
                 .isFalse();
     }
 
+    @Test
+    void difyStateAndToolReceiptFencesAreEnforcedByPostgres() {
+        jdbcTemplate.update("""
+                INSERT INTO agent_session (session_id, user_id, title)
+                VALUES ('sess-dify-it', 'tenant-it:user-it', 'dify state')
+                ON CONFLICT (session_id) DO NOTHING
+                """);
+
+        String pending = "wf-dify-pending-it";
+        insertDifyRun(pending, "idem-dify-pending-it", OffsetDateTime.now().minusSeconds(1));
+        assertThat(workflowRepository.timeoutPendingDify()).contains(pending);
+        assertThat(workflowRepository.find(pending).orElseThrow().status()).isEqualTo("TIMED_OUT");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT revoked_at IS NOT NULL FROM agent_workflow_grant WHERE run_id = ?",
+                Boolean.class, pending)).isTrue();
+
+        String unknown = "wf-dify-unknown-it";
+        insertDifyRun(unknown, "idem-dify-unknown-it", OffsetDateTime.now().plusMinutes(2));
+        jdbcTemplate.update("UPDATE dify_workflow_run SET dispatch_state = 'POSTING' WHERE run_id = ?", unknown);
+        assertThat(workflowRepository.unknownDifyDispatch(unknown)).isTrue();
+        assertThat(workflowRepository.unknownDifyDispatch(unknown)).isFalse();
+        WorkflowRepository.RunRow unknownRow = workflowRepository.find(unknown).orElseThrow();
+        assertThat(unknownRow.status()).isEqualTo("DISPATCH_UNKNOWN");
+        assertThat(unknownRow.cancelRequested()).isTrue();
+        assertThat(workflowRepository.difyMapping(unknown).orElseThrow().dispatchState())
+                .isEqualTo("UNKNOWN");
+        workflowRepository.bindDify(unknown, "remote-unknown-late-it", "task-unknown-late-it");
+        WorkflowRepository.DifyMapping lateUnknown = workflowRepository.difyMapping(unknown).orElseThrow();
+        assertThat(lateUnknown.dispatchState()).isEqualTo("UNKNOWN");
+        assertThat(lateUnknown.taskId()).isEqualTo("task-unknown-late-it");
+        assertThat(workflowRepository.find(unknown).orElseThrow().status()).isEqualTo("DISPATCH_UNKNOWN");
+
+        String expired = "wf-dify-expired-it";
+        insertDifyRun(expired, "idem-dify-expired-it", OffsetDateTime.now().plusMinutes(2));
+        jdbcTemplate.update("UPDATE dify_workflow_run SET dispatch_state = 'POSTING' WHERE run_id = ?", expired);
+        workflowRepository.bindDify(expired, "remote-expired-it", "task-expired-it");
+        jdbcTemplate.update("UPDATE agent_workflow_run SET deadline_at = now() - interval '1 second' WHERE run_id = ?",
+                expired);
+        assertThat(workflowRepository.expiredDifyRuns()).contains(expired);
+        assertThat(workflowRepository.timeoutDify(expired)).isTrue();
+        assertThat(workflowRepository.timeoutDify(expired)).isFalse();
+
+        String active = "wf-dify-receipt-it";
+        insertDifyRun(active, "idem-dify-receipt-it", OffsetDateTime.now().plusMinutes(2));
+        jdbcTemplate.update("UPDATE dify_workflow_run SET dispatch_state = 'POSTING' WHERE run_id = ?", active);
+        workflowRepository.bindDify(active, "remote-receipt-it", "task-receipt-it");
+        String callId = active + ":initial:1";
+        String fingerprint = "f".repeat(64);
+        CompletableFuture<Boolean> firstBegin = CompletableFuture.supplyAsync(
+                () -> workflowRepository.beginDifyToolCall(active, callId, "kb_search", fingerprint));
+        CompletableFuture<Boolean> secondBegin = CompletableFuture.supplyAsync(
+                () -> workflowRepository.beginDifyToolCall(active, callId, "kb_search", fingerprint));
+        assertThat(List.of(firstBegin.join(), secondBegin.join()).stream().filter(Boolean::booleanValue).count())
+                .isEqualTo(1);
+        String source = "kb:ragflow:dataset-it:document-it:chunk-it";
+        String safeResult = "{\"success\":true,\"code\":\"OK\",\"tool\":\"kb_search\",\"evidences\":[]}";
+        assertThat(workflowRepository.completeDifyToolCall(active, callId, "kb_search", fingerprint,
+                safeResult, List.of(source))).isTrue();
+        WorkflowRepository.DifyToolCall completed = workflowRepository
+                .findDifyToolCall(active, callId).orElseThrow();
+        assertThat(completed.status()).isEqualTo("COMPLETED");
+        assertThat(completed.safeResultJson()).contains("\"code\": \"OK\"");
+        assertThat(workflowRepository.difySources(active)).containsExactly(source);
+        assertThat(workflowRepository.completeDifyToolCall(active, callId, "kb_search", fingerprint,
+                safeResult, List.of(source))).isFalse();
+
+        String lateCall = active + ":revision:1";
+        assertThat(workflowRepository.beginDifyToolCall(active, lateCall, "kb_search", fingerprint)).isTrue();
+        assertThat(workflowRepository.cancel(active, "tenant-it:user-it")).isEqualTo(1);
+        assertThat(workflowRepository.difyStopState(active)).contains("PENDING");
+        WorkflowRepository.DifyStopWork stop = workflowRepository.claimDifyStops(10).stream()
+                .filter(work -> active.equals(work.runId())).findFirst().orElseThrow();
+        assertThat(stop.taskId()).isEqualTo("task-receipt-it");
+        assertThat(stop.attempts()).isEqualTo(1);
+        jdbcTemplate.update("UPDATE dify_workflow_run SET stop_lease_until=now()-interval '1 second' WHERE run_id=?",
+                active);
+        WorkflowRepository.DifyStopWork recovered = workflowRepository.claimDifyStops(10).stream()
+                .filter(work -> active.equals(work.runId())).findFirst().orElseThrow();
+        assertThat(recovered.attempts()).isEqualTo(2);
+        assertThat(workflowRepository.completeDifyStop(stop, "REQUESTED", null)).isFalse();
+        assertThat(workflowRepository.completeDifyStop(recovered, "REQUESTED", null)).isTrue();
+        assertThat(workflowRepository.difyStopState(active)).contains("REQUESTED");
+        workflowRepository.revokeGrantForRun(active);
+        assertThat(workflowRepository.completeDifyToolCall(active, lateCall, "kb_search", fingerprint,
+                safeResult, List.of(source))).isFalse();
+        assertThat(workflowRepository.finishDify(active, com.deepresearch.workflow.WorkflowStatus.SUCCEEDED,
+                "{\"answer\":\"late [来源1]\",\"citations\":[\"" + source + "\"]}", "{}", null,
+                "late [来源1]")).isFalse();
+
+        List<String> rotating = new java.util.ArrayList<>();
+        for (int index = 1; index <= 5; index++) {
+            String runId = "wf-dify-rotate-it-" + index;
+            rotating.add(runId);
+            insertDifyRun(runId, "idem-dify-rotate-it-" + index, OffsetDateTime.now().plusMinutes(2));
+            jdbcTemplate.update("UPDATE dify_workflow_run SET dispatch_state = 'POSTING' WHERE run_id = ?", runId);
+            workflowRepository.bindDify(runId, "remote-rotate-it-" + index, "task-rotate-it-" + index);
+            jdbcTemplate.update("UPDATE dify_workflow_run SET updated_at = now() - interval '1 minute' WHERE run_id = ?",
+                    runId);
+        }
+        List<String> claimed = new java.util.ArrayList<>();
+        claimed.addAll(workflowRepository.claimBoundDifyRuns(2));
+        claimed.addAll(workflowRepository.claimBoundDifyRuns(2));
+        claimed.addAll(workflowRepository.claimBoundDifyRuns(2));
+        assertThat(claimed).containsAll(rotating);
+        assertThat(claimed).doesNotHaveDuplicates();
+    }
+
     private int insertRunWithCanonicalGrant(WorkflowRepository.NewRun run) {
         Integer inserted = new TransactionTemplate(transactionManager).execute(status -> {
             int changed = workflowRepository.insertRun(run);
@@ -436,6 +544,16 @@ class DeepResearchApplicationIT {
             return changed;
         });
         return inserted == null ? 0 : inserted;
+    }
+
+    private void insertDifyRun(String runId, String idempotencyKey, OffsetDateTime deadlineAt) {
+        WorkflowRepository.NewRun run = new WorkflowRepository.NewRun(
+                runId, "sess-dify-it", "tenant-it:user-it", "question", "{}",
+                "/api/research/workflows", idempotencyKey, "d".repeat(64), runId,
+                "DIFY_DISPATCHING", "DIFY_DISPATCHING", deadlineAt,
+                List.of("kb_search"), "grant-" + runId);
+        assertThat(insertRunWithCanonicalGrant(run)).isEqualTo(1);
+        workflowRepository.insertDifyMapping(runId);
     }
 
     private void assertThatSqlFails(Connection connection, String sql) {

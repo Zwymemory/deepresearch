@@ -303,7 +303,7 @@ public class WorkflowService {
         return new View(row.runId(), row.sessionId(), row.status(), row.stage(), progress(row.stage()),
                 row.requestedScopes(), repository.eventsAfter(row.runId(), 0, 50),
                 json(row.usageJson()), json(row.finalResponseJson()), row.errorCode(), row.errorMessage(),
-                row.createdAt(), row.updatedAt());
+                row.createdAt(), row.updatedAt(), repository.difyStopState(row.runId()).orElse(null));
     }
 
     private WorkflowRepository.RunRow owned(String runId, String userId) {

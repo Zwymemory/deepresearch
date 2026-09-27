@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -79,6 +80,62 @@ class WorkflowServiceTest {
         verify(repository).insertRun(row.capture());
         assertThat(row.getValue().status()).isEqualTo("DIFY_DISPATCHING");
         verify(repository).insertDifyMapping(accepted.runId());
+    }
+
+    @Test
+    void duplicateDifyIdempotencyKeyReplaysWithoutCreatingSecondState() {
+        WorkflowService dify = new WorkflowService(repository, agentStateService,
+                userContextService, new ObjectMapper(), true, Duration.ofSeconds(120), "dify");
+        when(repository.findByIdempotency(anyString(), anyString(), anyString())).thenReturn(Optional.empty());
+        when(agentStateService.prepareContext(anyString(), anyString(), anyString()))
+                .thenReturn(context("sess-wf-dify-replay"));
+        when(repository.insertRun(any())).thenReturn(1);
+        CreateRequest request = new CreateRequest("question", null, List.of("kb_search"));
+
+        var first = dify.create(request, "request-key-dify-replay");
+        ArgumentCaptor<WorkflowRepository.NewRun> inserted =
+                ArgumentCaptor.forClass(WorkflowRepository.NewRun.class);
+        verify(repository).insertRun(inserted.capture());
+        when(repository.findByIdempotency(anyString(), anyString(), anyString()))
+                .thenReturn(Optional.of(replayRow(inserted.getValue())));
+
+        var replay = dify.create(request, "request-key-dify-replay");
+
+        assertThat(replay.runId()).isEqualTo(first.runId());
+        assertThat(replay.replayed()).isTrue();
+        verify(agentStateService, times(1)).prepareContext(anyString(), anyString(), anyString());
+        verify(repository, times(1)).insertRun(any());
+        verify(repository, times(1)).insertGrant(any());
+        verify(repository, times(1)).insertDifyMapping(first.runId());
+        verify(repository, times(1)).insertEvent(anyString(), anyString(), anyString(),
+                org.mockito.ArgumentMatchers.isNull(), anyString(), anyString());
+    }
+
+    @Test
+    void changedBodyWithSameDifyIdempotencyKeyConflictsWithoutNewState() {
+        WorkflowService dify = new WorkflowService(repository, agentStateService,
+                userContextService, new ObjectMapper(), true, Duration.ofSeconds(120), "dify");
+        when(repository.findByIdempotency(anyString(), anyString(), anyString())).thenReturn(Optional.empty());
+        when(agentStateService.prepareContext(anyString(), anyString(), anyString()))
+                .thenReturn(context("sess-wf-dify-conflict"));
+        when(repository.insertRun(any())).thenReturn(1);
+
+        var first = dify.create(new CreateRequest("question", null, List.of("kb_search")),
+                "request-key-dify-conflict");
+        ArgumentCaptor<WorkflowRepository.NewRun> inserted =
+                ArgumentCaptor.forClass(WorkflowRepository.NewRun.class);
+        verify(repository).insertRun(inserted.capture());
+        when(repository.findByIdempotency(anyString(), anyString(), anyString()))
+                .thenReturn(Optional.of(replayRow(inserted.getValue())));
+
+        assertThatThrownBy(() -> dify.create(
+                new CreateRequest("different question", null, List.of("kb_search")),
+                "request-key-dify-conflict"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Idempotency-Key");
+        verify(repository, times(1)).insertRun(any());
+        verify(repository, times(1)).insertDifyMapping(first.runId());
+        verify(agentStateService, times(1)).prepareContext(anyString(), anyString(), anyString());
     }
 
     @Test
@@ -233,5 +290,14 @@ class WorkflowServiceTest {
                 UUID.fromString("7e65e2c8-4251-41ed-94aa-123147661234"), "runner",
                 now.plusSeconds(30), "{}", "{}", null, null,
                 finalizeFingerprint, finalizedClaimToken, 1, now, now);
+    }
+
+    private WorkflowRepository.RunRow replayRow(WorkflowRepository.NewRun run) {
+        OffsetDateTime now = OffsetDateTime.now();
+        return new WorkflowRepository.RunRow(
+                run.runId(), run.sessionId(), run.userId(), run.question(), run.contextSnapshotJson(),
+                run.endpoint(), run.idempotencyKey(), run.requestFingerprint(), run.graphThreadId(),
+                run.status(), run.stage(), run.deadlineAt(), false, run.requestedScopes(), run.grantId(),
+                null, null, null, null, null, null, null, null, null, 0, now, now);
     }
 }

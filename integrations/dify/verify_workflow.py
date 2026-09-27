@@ -89,7 +89,28 @@ def verify_contract() -> None:
     initial = call("initial", results=[success])
     assert initial["status"] == "READY" and initial["count"] == 1
     assert call("initial", results=[success, tool_fail])["status"] == "FAILED"
-    assert call("initial", results=[json.dumps({"status": "OK", "tool": "kb_search", "evidences": [], "value": ""})])["status"] == "INSUFFICIENT_EVIDENCE"
+    empty_initial = call("initial", results=[json.dumps({"status": "OK", "tool": "kb_search", "evidences": [], "value": ""})])
+    assert empty_initial["status"] == "INSUFFICIENT_EVIDENCE"
+
+    citation_a = "kb:ragflow:dataset-1:document-a:chunk-a"
+    citation_b = "kb:ragflow:dataset-1:document-b:chunk-b"
+    citation_c = "kb:ragflow:dataset-1:document-c:chunk-c"
+    evidence_a = dict(evidence, citationId=citation_a, title="A", content="evidence A")
+    evidence_b = dict(evidence, citationId=citation_b, title="B", content="evidence B")
+    evidence_c = dict(evidence, citationId=citation_c, title="C", content="evidence C")
+    worker_ab = call("workers_result", status_code=200, body=json.dumps({"success": True, "code": "OK", "tool": "kb_search", "evidences": [evidence_a, evidence_b], "value": ""}), tool="kb_search")["result"]
+    worker_bc = call("workers_result", status_code=200, body=json.dumps({"success": True, "code": "OK", "tool": "kb_search", "evidences": [evidence_b, evidence_c], "value": ""}), tool="kb_search")["result"]
+    deduplicated = call("initial", results=[worker_ab, worker_bc])
+    deduplicated_evidence = json.loads(deduplicated["context"])["evidences"]
+    assert deduplicated["status"] == "READY" and deduplicated["count"] == 2
+    assert [item["citationId"] for item in deduplicated_evidence] == [citation_a, citation_b, citation_c]
+    assert [item["sourceId"] for item in deduplicated_evidence] == ["来源1", "来源2", "来源3"]
+
+    selected_ca = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "C first [来源1], then A [来源2].", "citations": [citation_c, citation_a]}), context=deduplicated["context"])
+    assert selected_ca["status"] == "SUCCEEDED" and selected_ca["citations"] == [citation_c, citation_a]
+    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Duplicate [来源1] [来源2].", "citations": [citation_c, citation_c]}), context=deduplicated["context"])["status"] == "FAILED"
+    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Foreign [来源1] [来源2].", "citations": [citation_c, "kb:ragflow:foreign:document:chunk"]}), context=deduplicated["context"])["status"] == "FAILED"
+    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "No source [来源1].", "citations": [citation_a]}), context=empty_initial["context"])["status"] == "INSUFFICIENT_EVIDENCE"
 
     review = call("review", review_text=json.dumps({"verdict": "REVISE", "followups": [{"tool": "kb_search", "input": "more"}]}), context=initial["context"], initial_count=1, java_run_id=run_id, allowed_tools="kb_search")
     assert review["status"] == "READY" and len(review["requests"]) == 1

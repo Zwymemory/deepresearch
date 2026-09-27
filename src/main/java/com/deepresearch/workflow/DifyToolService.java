@@ -60,6 +60,9 @@ public class DifyToolService {
     public Response execute(String authorization, String tool, Request request) {
         authenticate(authorization);
         if (!TOOLS.contains(tool)) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        if (!validCallId(request.runId(), request.callId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Dify callId 与 run 不匹配");
+        }
         String input = request.input() == null ? "" : request.input().trim();
         if (input.isEmpty() || input.length() > ("calculator".equals(tool) ? 256 : 1000)) {
             return Response.failure(tool, "INVALID_ARGUMENT");
@@ -123,13 +126,18 @@ public class DifyToolService {
         WorkflowRepository.RunRow run = repository.find(runId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Dify run 不可用"));
         WorkflowRepository.DifyMapping mapping = repository.difyMapping(runId).orElse(null);
-        if (!"DIFY_WORKING".equals(run.status()) || run.cancelRequested()
+        if (!runId.equals(run.runId()) || !"DIFY_WORKING".equals(run.status()) || run.cancelRequested()
                 || run.deadlineAt() == null || !run.deadlineAt().isAfter(OffsetDateTime.now())
                 || mapping == null || !"BOUND".equals(mapping.dispatchState())
                 || run.requestedScopes() == null || !run.requestedScopes().contains(tool)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Dify run 或工具 scope 不可用");
         }
         return run;
+    }
+
+    private boolean validCallId(String runId, String callId) {
+        if (runId == null || callId == null) return false;
+        return callId.matches(Pattern.quote(runId) + ":(?:initial|revision):[1-4]");
     }
 
     private AuthPrincipal owner(String storageUserId) {

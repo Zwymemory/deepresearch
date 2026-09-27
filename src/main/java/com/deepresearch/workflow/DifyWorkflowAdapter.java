@@ -4,6 +4,7 @@ import com.deepresearch.agent.ToolArgumentFingerprint;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PreDestroy;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -16,6 +17,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,23 +30,30 @@ public class DifyWorkflowAdapter {
     private final WorkflowRepository repository;
     private final DifyWorkflowClient client;
     private final ObjectMapper json;
+    private final DifyCitationValidator citationValidator;
     private final String engine;
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
     private final ExecutorService controlExecutor = Executors.newFixedThreadPool(2);
+    private final ExecutorService reconcileExecutor = Executors.newFixedThreadPool(4);
     private final Semaphore dispatchSlots = new Semaphore(2);
+    private final Semaphore controlSlots = new Semaphore(2);
+    private final Semaphore reconcileSlots = new Semaphore(4);
+    private final Set<String> reconciling = ConcurrentHashMap.newKeySet();
 
+    @Autowired
     public DifyWorkflowAdapter(WorkflowRepository repository, DifyWorkflowClient client, ObjectMapper json,
+                               DifyCitationValidator citationValidator,
                                @Value("${deepresearch.workflow.engine:langgraph}") String engine) {
         this.repository = repository;
         this.client = client;
         this.json = json;
+        this.citationValidator = citationValidator;
         this.engine = engine;
     }
 
     @Scheduled(fixedDelay = 3000)
     public void dispatch() {
         if (!"dify".equals(engine)) return;
-        repository.timeoutPendingDify();
         while (dispatchSlots.tryAcquire()) {
             List<String> claimed = repository.claimDifyDispatches(1);
             if (claimed.isEmpty()) {
@@ -67,13 +77,11 @@ public class DifyWorkflowAdapter {
             client.run(inputs, internalUser(row), event -> onEvent(runId, event));
             var mapping = repository.difyMapping(runId).orElseThrow();
             if (mapping.workflowRunId() != null) reconcile(runId);
-            else repository.unknownDifyDispatch(runId);
+            else markDispatchUnknown(runId);
         } catch (Exception failure) {
             var mapping = repository.difyMapping(runId).orElse(null);
             if (mapping == null || mapping.workflowRunId() == null) {
-                repository.unknownDifyDispatch(runId);
-                repository.insertEvent(runId, "dify:dispatch:unknown", "SYSTEM", null, "DISPATCH_UNKNOWN",
-                        "{\"status\":\"DISPATCH_UNKNOWN\"}");
+                markDispatchUnknown(runId);
             }
         }
     }
@@ -101,7 +109,9 @@ public class DifyWorkflowAdapter {
 
     @Scheduled(fixedDelay = 10000)
     public void reconcileBound() {
-        if (!"dify".equals(engine)) return;
+        // Existing Dify runs remain authoritative even after new traffic is switched
+        // back to LangGraph. Keep timing them out and reconciling their remote state.
+        repository.timeoutPendingDify();
         for (String runId : repository.abandonStaleDifyDispatches()) {
             repository.insertEvent(runId, "dify:dispatch:unknown", "SYSTEM", null,
                     "DISPATCH_UNKNOWN", "{\"status\":\"DISPATCH_UNKNOWN\"}");
@@ -111,8 +121,33 @@ public class DifyWorkflowAdapter {
                 stop(runId);
             }
         }
-        for (String runId : repository.boundDifyRuns()) {
-            try { reconcile(runId); } catch (Exception ignored) { /* next reconciliation tick */ }
+        dispatchStops();
+        int available = reconcileSlots.availablePermits();
+        if (available == 0) return;
+        for (String runId : repository.claimBoundDifyRuns(available)) {
+            if (!reconciling.add(runId) || !reconcileSlots.tryAcquire()) continue;
+            try {
+                reconcileExecutor.submit(() -> {
+                    try {
+                        reconcile(runId);
+                    } catch (Exception ignored) {
+                        // A bounded detail request is retried on a later rotation.
+                    } finally {
+                        reconciling.remove(runId);
+                        reconcileSlots.release();
+                    }
+                });
+            } catch (RejectedExecutionException rejected) {
+                reconciling.remove(runId);
+                reconcileSlots.release();
+            }
+        }
+    }
+
+    private void markDispatchUnknown(String runId) {
+        if (repository.unknownDifyDispatch(runId)) {
+            repository.insertEvent(runId, "dify:dispatch:unknown", "SYSTEM", null,
+                    "DISPATCH_UNKNOWN", "{\"status\":\"DISPATCH_UNKNOWN\"}");
         }
     }
 
@@ -147,6 +182,11 @@ public class DifyWorkflowAdapter {
             error = "CITATION_VALIDATION_FAILED";
             answer = "";
             citations = List.of();
+        } else if (status == WorkflowStatus.SUCCEEDED && !citationValidator.available(citations)) {
+            status = WorkflowStatus.FAILED;
+            error = "CITATION_SOURCE_UNAVAILABLE";
+            answer = "";
+            citations = List.of();
         }
         if (status != WorkflowStatus.SUCCEEDED) { answer = ""; citations = List.of(); }
         String response = json.writeValueAsString(Map.of("answer", answer, "citations", citations,
@@ -159,7 +199,7 @@ public class DifyWorkflowAdapter {
     }
 
     private boolean validCitations(String runId, String answer, List<String> citations) {
-        if (answer.isBlank() || answer.length() > 32768 || citations.isEmpty() || citations.size() > 32
+        if (answer.isBlank() || answer.length() > 32768 || citations.isEmpty() || citations.size() > 5
                 || citations.stream().anyMatch(value -> value == null || value.length() > 2048)
                 || citations.stream().distinct().count() != citations.size()
                 || citations.stream().anyMatch(value -> !SOURCE.matcher(value).matches())) return false;
@@ -183,13 +223,51 @@ public class DifyWorkflowAdapter {
     }
 
     public void stop(String runId) {
-        var row = repository.find(runId).orElseThrow();
-        var mapping = repository.difyMapping(runId).orElse(null);
-        if (mapping == null || mapping.taskId() == null) return;
-        controlExecutor.submit(() -> {
-            try { client.stop(mapping.taskId(), internalUser(row)); }
-            catch (Exception ignored) { /* Java cancellation remains authoritative */ }
-        });
+        repository.requestDifyStop(runId);
+        dispatchStops();
+    }
+
+    @Scheduled(fixedDelay = 5000)
+    public void dispatchStops() {
+        while (controlSlots.tryAcquire()) {
+            List<WorkflowRepository.DifyStopWork> claimed = repository.claimDifyStops(1);
+            if (claimed.isEmpty()) {
+                controlSlots.release();
+                break;
+            }
+            WorkflowRepository.DifyStopWork work = claimed.get(0);
+            try {
+                controlExecutor.submit(() -> {
+                    try { processStop(work); }
+                    finally { controlSlots.release(); }
+                });
+            } catch (RejectedExecutionException rejected) {
+                controlSlots.release();
+                // The database lease expires and another scheduler pass retries it.
+            }
+        }
+    }
+
+    private void processStop(WorkflowRepository.DifyStopWork work) {
+        try {
+            if ("REQUESTED".equals(work.previousState()) && work.workflowRunId() != null) {
+                JsonNode detail = client.detail(work.workflowRunId());
+                String status = detail.path("data").path("status").asText(detail.path("status").asText(""));
+                if ("stopped".equals(status)) {
+                    repository.completeDifyStop(work, "CONFIRMED_STOPPED", null);
+                    return;
+                }
+                if (Set.of("succeeded", "partial-succeeded", "failed").contains(status)) {
+                    repository.completeDifyStop(work, "REMOTE_TERMINAL", null);
+                    return;
+                }
+            }
+            WorkflowRepository.RunRow row = repository.find(work.runId()).orElseThrow();
+            client.stop(work.taskId(), internalUser(row));
+            repository.completeDifyStop(work, "REQUESTED", null);
+        } catch (Exception unavailable) {
+            repository.completeDifyStop(work, "PENDING", "DIFY_STOP_UNAVAILABLE");
+        }
     }
 
     private String internalUser(WorkflowRepository.RunRow row) {
@@ -197,5 +275,9 @@ public class DifyWorkflowAdapter {
     }
 
     @PreDestroy
-    void shutdown() { executor.shutdownNow(); controlExecutor.shutdownNow(); }
+    void shutdown() {
+        executor.shutdownNow();
+        controlExecutor.shutdownNow();
+        reconcileExecutor.shutdownNow();
+    }
 }

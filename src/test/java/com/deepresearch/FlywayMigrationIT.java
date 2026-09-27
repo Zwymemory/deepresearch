@@ -25,7 +25,7 @@ class FlywayMigrationIT {
             .withPassword("deepresearch");
 
     @Test
-    void appliesDifyV12ThenRagflowV13AndV14OnCleanDatabase() {
+    void appliesDifyAndRagflowMigrationsThroughV15OnCleanDatabase() {
         Flyway flyway = Flyway.configure()
                 .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
                 .locations("classpath:db/migration")
@@ -40,7 +40,7 @@ class FlywayMigrationIT {
                 SELECT version FROM flyway_schema_history
                 WHERE success ORDER BY installed_rank
                 """, String.class)).containsExactlyElementsOf(
-                List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"));
+                List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"));
         assertThat(db.queryForList("""
                 SELECT table_name FROM information_schema.tables
                 WHERE table_schema='public' AND table_name IN (
