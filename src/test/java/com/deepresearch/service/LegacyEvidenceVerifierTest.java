@@ -7,6 +7,8 @@ import org.springframework.ai.document.Document;
 
 import java.util.List;
 import java.util.Map;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -78,6 +80,25 @@ class LegacyEvidenceVerifierTest {
         responses("not JSON");
         assertThatThrownBy(() -> verifier.verify("What batch?", List.of(passage)))
                 .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void stalledModelCallHonorsOverallDeadline() {
+        LegacyEvidenceVerifier shortDeadline = new LegacyEvidenceVerifier(
+                chatClient, new ObjectMapper(), Duration.ofMillis(100));
+        when(chatClient.prompt().system(anyString()).user(anyString())
+                .options(any()).call().content()).thenAnswer(invocation -> {
+                    TimeUnit.SECONDS.sleep(5);
+                    return "{\"candidateIds\":[\"c0\"]}";
+                });
+        long started = System.nanoTime();
+        try {
+            assertThatThrownBy(() -> shortDeadline.verify("What batch?", List.of(passage)))
+                    .isInstanceOf(IllegalStateException.class);
+            assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(1));
+        } finally {
+            shortDeadline.shutdown();
+        }
     }
 
     private void responses(String... values) {

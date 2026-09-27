@@ -2,8 +2,10 @@ package com.deepresearch.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PreDestroy;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,9 +15,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.HashSet;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /** Admits only passages that directly support an answer to the precise question. */
@@ -24,6 +31,8 @@ class LegacyEvidenceVerifier {
     private static final Logger log = LoggerFactory.getLogger(LegacyEvidenceVerifier.class);
     private static final int MAX_VERIFICATION_CANDIDATES = 10;
     private static final int RERANKED_HEAD_COUNT = 8;
+    private static final int MAX_MODEL_CALLS = 8;
+    private static final Duration DEFAULT_DEADLINE = Duration.ofSeconds(15);
     private static final Pattern ACTUAL_PRODUCTION_QUESTION = Pattern.compile(
             "(?is)(\\b(actual|real|current|live)\\b.{0,40}\\bproduction\\b|"
                     + "\\bproduction\\b.{0,40}\\b(actual|real|current|today)\\b|"
@@ -63,13 +72,32 @@ class LegacyEvidenceVerifier {
 
     private final ChatClient chatClient;
     private final ObjectMapper mapper;
+    private final long deadlineNanos;
+    private final ThreadPoolExecutor modelCalls = new ThreadPoolExecutor(4, 4, 0, TimeUnit.SECONDS,
+            new ArrayBlockingQueue<>(4), task -> {
+                Thread thread = new Thread(task, "legacy-evidence-verifier");
+                thread.setDaemon(true);
+                return thread;
+            }, new ThreadPoolExecutor.AbortPolicy());
 
+    @Autowired
     LegacyEvidenceVerifier(ChatClient chatClient, ObjectMapper mapper) {
+        this(chatClient, mapper, DEFAULT_DEADLINE);
+    }
+
+    LegacyEvidenceVerifier(ChatClient chatClient, ObjectMapper mapper, Duration deadline) {
         this.chatClient = chatClient;
         this.mapper = mapper;
+        if (deadline == null || deadline.isNegative() || deadline.isZero())
+            throw new IllegalArgumentException("Verifier deadline must be positive");
+        this.deadlineNanos = deadline.toNanos();
     }
 
     Set<String> verify(String question, List<HybridChunk> ranked) {
+        if (ranked.isEmpty()) return Set.of();
+        long deadline = System.nanoTime() + deadlineNanos;
+        List<Future<?>> outstanding = new ArrayList<>();
+        int calls = 0;
         Map<String, HybridChunk> byId = new LinkedHashMap<>();
         List<Map<String, String>> passages = new ArrayList<>();
         List<Integer> selectedIndexes = new ArrayList<>();
@@ -88,12 +116,13 @@ class LegacyEvidenceVerifier {
         try {
             long batchStart = System.nanoTime();
             String input = mapper.writeValueAsString(Map.of("question", question, "passages", passages));
-            JsonNode batch = json(call(BATCH_SYSTEM, input));
+            JsonNode batch = json(await(submit(() -> call(BATCH_SYSTEM, input), outstanding), deadline));
+            calls++;
             long batchMs = (System.nanoTime() - batchStart) / 1_000_000;
             JsonNode selected = batch.path("candidateIds");
             if (!selected.isArray()) return Set.of();
             long confirmationStart = System.nanoTime();
-            List<CompletableFuture<String>> confirmations = new ArrayList<>();
+            List<Future<String>> confirmations = new ArrayList<>();
             Set<String> queued = new HashSet<>();
             List<String> proposed = new ArrayList<>();
             // Check the reranker's head even when the batch screen misses a
@@ -103,26 +132,28 @@ class LegacyEvidenceVerifier {
             proposed.add("c2");
             selected.forEach(item -> proposed.add(item.asText()));
             for (String id : proposed) {
-                if (confirmations.size() >= 5) break;
+                if (confirmations.size() >= 4) break;
                 HybridChunk chunk = byId.get(id);
                 if (chunk == null || !queued.add(id)) continue;
-                confirmations.add(CompletableFuture.supplyAsync(() -> confirm(question, question, chunk)));
+                if (++calls > MAX_MODEL_CALLS) throw new IllegalStateException("Verifier model call budget exceeded");
+                confirmations.add(submit(() -> confirm(question, question, chunk), outstanding));
             }
             Set<String> verified = new LinkedHashSet<>();
-            for (CompletableFuture<String> confirmation : confirmations) {
-                String key = confirmation.join();
+            for (Future<String> confirmation : confirmations) {
+                String key = await(confirmation, deadline);
                 if (key != null) verified.add(key);
             }
             if (verified.isEmpty() && crossLanguage(question, ranked)) {
-                String translated = translateQuestion(question);
-                List<CompletableFuture<String>> translatedChecks = new ArrayList<>();
-                for (int i = 0; i < Math.min(3, ranked.size()); i++) {
+                if (++calls > MAX_MODEL_CALLS) throw new IllegalStateException("Verifier model call budget exceeded");
+                String translated = await(submit(() -> translateQuestion(question), outstanding), deadline);
+                List<Future<String>> translatedChecks = new ArrayList<>();
+                for (int i = 0; i < Math.min(2, ranked.size()); i++) {
                     HybridChunk chunk = ranked.get(i);
-                    translatedChecks.add(CompletableFuture.supplyAsync(
-                            () -> confirm(translated, question, chunk)));
+                    if (++calls > MAX_MODEL_CALLS) throw new IllegalStateException("Verifier model call budget exceeded");
+                    translatedChecks.add(submit(() -> confirm(translated, question, chunk), outstanding));
                 }
-                for (CompletableFuture<String> check : translatedChecks) {
-                    String key = check.join();
+                for (Future<String> check : translatedChecks) {
+                    String key = await(check, deadline);
                     if (key != null) verified.add(key);
                 }
             }
@@ -130,9 +161,37 @@ class LegacyEvidenceVerifier {
                     confirmations.size(), verified.size(), batchMs,
                     (System.nanoTime() - confirmationStart) / 1_000_000);
             return verified;
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Legacy evidence verification interrupted", interrupted);
         } catch (Exception exception) {
             throw new IllegalStateException("Legacy evidence verification unavailable", exception);
+        } finally {
+            outstanding.forEach(future -> future.cancel(true));
         }
+    }
+
+    private <T> Future<T> submit(Callable<T> task, List<Future<?>> outstanding) {
+        Future<T> future = modelCalls.submit(task);
+        outstanding.add(future);
+        return future;
+    }
+
+    private <T> T await(Future<T> future, long deadline) throws Exception {
+        long remaining = deadline - System.nanoTime();
+        if (remaining <= 0) throw new java.util.concurrent.TimeoutException("Verifier deadline exceeded");
+        try {
+            return future.get(remaining, TimeUnit.NANOSECONDS);
+        } catch (java.util.concurrent.ExecutionException failed) {
+            Throwable cause = failed.getCause();
+            if (cause instanceof Exception exception) throw exception;
+            throw new IllegalStateException("Verifier model call failed", cause);
+        }
+    }
+
+    @PreDestroy
+    void shutdown() {
+        modelCalls.shutdownNow();
     }
 
     private String confirm(String verificationQuestion, String originalQuestion, HybridChunk chunk) {

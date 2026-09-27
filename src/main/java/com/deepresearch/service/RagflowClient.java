@@ -18,12 +18,22 @@ import java.util.UUID;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /** Bounded, server-side RAGFlow HTTP adapter. */
 @Component
 public class RagflowClient {
     private static final Logger log = LoggerFactory.getLogger(RagflowClient.class);
     private static final int MAX_BODY = 4 * 1024 * 1024;
+    private static final ScheduledExecutorService BODY_DEADLINES =
+            Executors.newSingleThreadScheduledExecutor(task -> {
+                Thread thread = new Thread(task, "ragflow-http-body-deadline");
+                thread.setDaemon(true);
+                return thread;
+            });
     private final HttpClient http;
     private final ObjectMapper json;
     private final String baseUrl;
@@ -182,9 +192,15 @@ public class RagflowClient {
 
     private JsonNode send(HttpRequest request) {
         try {
+            long deadline = System.nanoTime() + timeout.toNanos();
             HttpResponse<InputStream> response = http.send(request, HttpResponse.BodyHandlers.ofInputStream());
             byte[] bytes;
+            ScheduledFuture<?> watchdog = BODY_DEADLINES.schedule(() -> {
+                try { response.body().close(); }
+                catch (java.io.IOException ignored) { }
+            }, Math.max(0, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
             try (InputStream stream = response.body()) { bytes = stream.readNBytes(MAX_BODY + 1); }
+            finally { watchdog.cancel(false); }
             if (bytes.length > MAX_BODY) throw new IllegalStateException("RAGFlow response too large");
             if (response.statusCode() < 200 || response.statusCode() >= 300)
                 throw new IllegalStateException("RAGFlow HTTP " + response.statusCode());

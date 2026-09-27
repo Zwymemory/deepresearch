@@ -102,7 +102,7 @@ class DeepResearchApplicationIT {
                 LIMIT 1
                 """,
                 String.class);
-        assertThat(latestMigration).isEqualTo("14");
+        assertThat(latestMigration).isEqualTo("15");
 
         Integer coreTableCount = jdbcTemplate.queryForObject("""
                 SELECT count(*)
@@ -495,6 +495,19 @@ class DeepResearchApplicationIT {
         String lateCall = active + ":revision:1";
         assertThat(workflowRepository.beginDifyToolCall(active, lateCall, "kb_search", fingerprint)).isTrue();
         assertThat(workflowRepository.cancel(active, "tenant-it:user-it")).isEqualTo(1);
+        assertThat(workflowRepository.difyStopState(active)).contains("PENDING");
+        WorkflowRepository.DifyStopWork stop = workflowRepository.claimDifyStops(10).stream()
+                .filter(work -> active.equals(work.runId())).findFirst().orElseThrow();
+        assertThat(stop.taskId()).isEqualTo("task-receipt-it");
+        assertThat(stop.attempts()).isEqualTo(1);
+        jdbcTemplate.update("UPDATE dify_workflow_run SET stop_lease_until=now()-interval '1 second' WHERE run_id=?",
+                active);
+        WorkflowRepository.DifyStopWork recovered = workflowRepository.claimDifyStops(10).stream()
+                .filter(work -> active.equals(work.runId())).findFirst().orElseThrow();
+        assertThat(recovered.attempts()).isEqualTo(2);
+        assertThat(workflowRepository.completeDifyStop(stop, "REQUESTED", null)).isFalse();
+        assertThat(workflowRepository.completeDifyStop(recovered, "REQUESTED", null)).isTrue();
+        assertThat(workflowRepository.difyStopState(active)).contains("REQUESTED");
         workflowRepository.revokeGrantForRun(active);
         assertThat(workflowRepository.completeDifyToolCall(active, lateCall, "kb_search", fingerprint,
                 safeResult, List.of(source))).isFalse();

@@ -90,6 +90,9 @@ public class WorkflowRepository {
 
     @Transactional
     public void bindDify(String runId, String workflowRunId, String taskId) {
+        // Keep the agent-run -> Dify-mapping lock order shared with cancellation.
+        jdbcTemplate.query("SELECT run_id FROM agent_workflow_run WHERE run_id=? FOR UPDATE",
+                (rs, n) -> rs.getString(1), runId);
         jdbcTemplate.update("""
                 UPDATE dify_workflow_run SET workflow_run_id = ?, task_id = ?,
                     dispatch_state = CASE WHEN dispatch_state = 'POSTING' THEN 'BOUND' ELSE dispatch_state END,
@@ -100,10 +103,18 @@ public class WorkflowRepository {
                 UPDATE agent_workflow_run SET status = 'DIFY_WORKING', stage = 'DIFY_WORKING', updated_at = now()
                 WHERE run_id = ? AND status = 'DIFY_DISPATCHING' AND cancel_requested = false
                 """, runId);
+        jdbcTemplate.update("""
+                UPDATE dify_workflow_run d SET stop_state='PENDING', stop_next_attempt_at=now()
+                FROM agent_workflow_run r
+                WHERE d.run_id=? AND r.run_id=d.run_id AND r.cancel_requested=true
+                  AND d.task_id IS NOT NULL AND d.stop_state='NONE'
+                """, runId);
     }
 
     @Transactional
     public boolean unknownDifyDispatch(String runId) {
+        jdbcTemplate.query("SELECT run_id FROM agent_workflow_run WHERE run_id=? FOR UPDATE",
+                (rs, n) -> rs.getString(1), runId);
         jdbcTemplate.update("UPDATE dify_workflow_run SET dispatch_state = 'UNKNOWN', updated_at = now() WHERE run_id = ? AND dispatch_state = 'POSTING'", runId);
         int changed = jdbcTemplate.update("""
                 UPDATE agent_workflow_run SET status = 'DISPATCH_UNKNOWN', stage = 'DISPATCH_UNKNOWN',
@@ -120,14 +131,19 @@ public class WorkflowRepository {
     @Transactional
     public List<String> abandonStaleDifyDispatches() {
         List<String> ids = jdbcTemplate.query("""
-                UPDATE dify_workflow_run d SET dispatch_state = 'UNKNOWN', updated_at = now()
-                FROM agent_workflow_run r
-                WHERE d.run_id = r.run_id AND d.dispatch_state = 'POSTING'
+                SELECT r.run_id FROM agent_workflow_run r
+                JOIN dify_workflow_run d ON d.run_id=r.run_id
+                WHERE d.dispatch_state = 'POSTING'
                   AND (d.updated_at < now() - interval '5 minutes' OR r.deadline_at <= now())
-                RETURNING d.run_id
+                ORDER BY r.run_id FOR UPDATE OF r SKIP LOCKED LIMIT 100
                 """, (rs, n) -> rs.getString(1));
         List<String> transitioned = new java.util.ArrayList<>();
         for (String id : ids) {
+            int unmapped = jdbcTemplate.update("""
+                    UPDATE dify_workflow_run SET dispatch_state='UNKNOWN', updated_at=now()
+                    WHERE run_id=? AND dispatch_state='POSTING'
+                    """, id);
+            if (unmapped != 1) continue;
             int changed = jdbcTemplate.update("""
                     UPDATE agent_workflow_run SET status = 'DISPATCH_UNKNOWN', stage = 'DISPATCH_UNKNOWN',
                         cancel_requested = true,
@@ -189,6 +205,7 @@ public class WorkflowRepository {
                 WHERE run_id = ? AND status = 'DIFY_WORKING' AND deadline_at <= now()
                 """, runId);
         if (changed != 1) return false;
+        requestDifyStop(runId);
         revokeGrantForRun(runId);
         insertEvent(runId, "dify:terminal", "SYSTEM", null,
                 "TIMED_OUT", "{\"status\":\"TIMED_OUT\"}");
@@ -216,6 +233,65 @@ public class WorkflowRepository {
     }
 
     public record DifyMapping(String workflowRunId, String taskId, String dispatchState) {}
+
+    /** Local cancellation is authoritative; this records remote cleanup separately. */
+    public boolean requestDifyStop(String runId) {
+        return jdbcTemplate.update("""
+                UPDATE dify_workflow_run SET stop_state='PENDING', stop_next_attempt_at=now(),
+                    stop_last_error=NULL
+                WHERE run_id=? AND dispatch_state IN ('POSTING','BOUND','UNKNOWN')
+                  AND stop_state='NONE'
+                """, runId) == 1;
+    }
+
+    public Optional<String> difyStopState(String runId) {
+        return jdbcTemplate.query("SELECT stop_state FROM dify_workflow_run WHERE run_id=?",
+                (rs, n) -> rs.getString(1), runId).stream().findFirst();
+    }
+
+    /** Claim is durable across a Java crash; an expired lease can be retried. */
+    @Transactional
+    public List<DifyStopWork> claimDifyStops(int limit) {
+        if (limit < 1) return List.of();
+        jdbcTemplate.update("""
+                UPDATE dify_workflow_run SET stop_state='EXHAUSTED', stop_last_error='DIFY_STOP_UNCONFIRMED',
+                    stop_lease_until=NULL, stop_claim_token=NULL, stop_next_attempt_at=NULL
+                WHERE stop_state='LEASED' AND stop_attempts>=8 AND stop_lease_until<=now()
+                """);
+        return jdbcTemplate.query("""
+                WITH candidates AS (
+                    SELECT run_id, stop_state AS previous_state FROM dify_workflow_run
+                    WHERE task_id IS NOT NULL AND stop_attempts < 8
+                      AND ((stop_state IN ('PENDING','REQUESTED') AND stop_next_attempt_at <= now())
+                        OR (stop_state='LEASED' AND stop_lease_until <= now()))
+                    ORDER BY stop_next_attempt_at, run_id
+                    FOR UPDATE SKIP LOCKED LIMIT ?
+                )
+                UPDATE dify_workflow_run d SET stop_state='LEASED', stop_attempts=stop_attempts+1,
+                    stop_claim_token=gen_random_uuid(), stop_lease_until=now()+interval '30 seconds'
+                FROM candidates c WHERE d.run_id=c.run_id
+                RETURNING d.run_id,d.task_id,d.workflow_run_id,c.previous_state,d.stop_claim_token,d.stop_attempts
+                """, (rs, n) -> new DifyStopWork(rs.getString(1), rs.getString(2), rs.getString(3),
+                rs.getString(4), rs.getObject(5, UUID.class), rs.getInt(6)), limit);
+    }
+
+    public boolean completeDifyStop(DifyStopWork work, String nextState, String errorCode) {
+        if (!Set.of("PENDING", "REQUESTED", "CONFIRMED_STOPPED", "REMOTE_TERMINAL", "EXHAUSTED")
+                .contains(nextState)) throw new IllegalArgumentException("Invalid Dify stop state");
+        String state = work.attempts() >= 8 && Set.of("PENDING", "REQUESTED").contains(nextState)
+                ? "EXHAUSTED" : nextState;
+        int delay = Math.min(60, 5 * (1 << Math.min(work.attempts() - 1, 4)));
+        return jdbcTemplate.update("""
+                UPDATE dify_workflow_run SET stop_state=?, stop_last_error=?,
+                    stop_next_attempt_at=CASE WHEN ? IN ('PENDING','REQUESTED')
+                        THEN now() + (? * interval '1 second') ELSE NULL END,
+                    stop_lease_until=NULL, stop_claim_token=NULL
+                WHERE run_id=? AND stop_state='LEASED' AND stop_claim_token=?
+                """, state, errorCode, state, delay, work.runId(), work.claimToken()) == 1;
+    }
+
+    public record DifyStopWork(String runId, String taskId, String workflowRunId,
+                               String previousState, UUID claimToken, int attempts) {}
 
     @Transactional
     public boolean beginDifyToolCall(String runId, String callId, String tool, String fingerprint) {
@@ -524,14 +600,17 @@ public class WorkflowRepository {
                 postgresArray(context.scopes().stream().sorted().toList())) == 1;
     }
 
+    @Transactional
     public int cancel(String runId, String userId) {
-        return jdbcTemplate.update("""
+        int changed = jdbcTemplate.update("""
                 UPDATE agent_workflow_run
                 SET cancel_requested = TRUE, status = 'CANCELLED', stage = 'CANCELLED',
                     version = version + 1, updated_at = now()
                 WHERE run_id = ? AND user_id = ?
-                  AND status NOT IN ('SUCCEEDED','INSUFFICIENT_EVIDENCE','FAILED','CANCELLED','TIMED_OUT','BUDGET_EXCEEDED')
+                  AND status NOT IN ('SUCCEEDED','INSUFFICIENT_EVIDENCE','FAILED','CANCELLED','TIMED_OUT','BUDGET_EXCEEDED','DISPATCH_UNKNOWN')
                 """, runId, userId);
+        if (changed == 1) requestDifyStop(runId);
+        return changed;
     }
 
     public void revokeGrantForRun(String runId) {

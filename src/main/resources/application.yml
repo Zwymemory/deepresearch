@@ -86,7 +86,7 @@ deepresearch:
     # RAGFlow keyword=true invokes a separate LLM query-expansion call. Its native
     # lexical + dense hybrid retrieval remains enabled when query expansion is off.
     query-expansion-enabled: ${RAGFLOW_QUERY_EXPANSION_ENABLED:false}
-    ingestion-mode: builtin  # pipeline 数据集改为 pipeline
+    ingestion-mode: ${DEEPRESEARCH_RAGFLOW_INGESTION_MODE:builtin}
     similarity-threshold: ${RAGFLOW_SIMILARITY_THRESHOLD:0.22}
   default-temperature: 0.3
   search-top-k: 5            # RAG 检索条数
