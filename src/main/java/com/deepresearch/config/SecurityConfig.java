@@ -1,6 +1,7 @@
 package com.deepresearch.config;
 
 import com.deepresearch.security.JwtAuthenticationFilter;
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +42,9 @@ public class SecurityConfig {
                         })
                 )
                 .authorizeHttpRequests(auth -> {
+                    // SSE completion re-enters the filter chain as ASYNC after the
+                    // initial authenticated REQUEST. No new client request is admitted here.
+                    auth.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll();
                     auth.requestMatchers("/", "/demo.html", "/api/ping", "/actuator/health", "/error").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/auth/dev-token").permitAll();
                     auth.requestMatchers("/actuator/metrics", "/actuator/metrics/**").hasRole("ADMIN");

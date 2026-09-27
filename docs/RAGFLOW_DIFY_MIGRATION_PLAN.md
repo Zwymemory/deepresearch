@@ -185,3 +185,9 @@ Dify 工作流的输入以 `question`、Java `runId`、允许工具列表、限�
 
 - 对旧检索增加逐条证据核验；重排器关闭、失败或证据核验失败时按用户选择返回零证据。最终代码在独立合成语料的原始 25 个正例、3 个纯无依据题，以及发布前留出集的 5 个正例、8 个纯无依据题、1 个带证据拒答上全部通过。详见[修复复验报告](../integrations/ragflow/LEGACY_ABSTENTION_REPAIR_2026-09-27.md)。
 - 项目语料较早版本的完整回归为 23/25 锚点、22/25 完整事实、2/4 严格安全拒答，p95 约 46.9 秒。后来针对拒答措辞的定向复测通过，但最终代码尚未完成 29 题完整项目回归；外部核验带来的延迟与成本也未达上线目标。因此本节只确认原有合成纯负例缺口在所测范围内关闭，不改变 `readyToSwitch=false` 和默认 `legacy` 路由。
+
+### 7.8 RAGFlow 与 Dify 前端本地联调
+
+- Dify 的受权 `kb_search` 已接到 RAGFlow Evidence v1 gateway，Dify 检索 facade 在 RAGFlow 模式返回真实来源字段。项目知识包 8/8 文档在专用评测 dataset 完成解析与 Java 映射。
+- 浏览器正例两次成功，分别有 2/2、5/5 条引用经 RAGFlow chunk API 回查；纯无依据题返回 `INSUFFICIENT_EVIDENCE` 与零引用。联调期间发现并修复并行回执插入引用导致的 PostgreSQL 死锁，以及 SSE 异步派发的授权中断。具体运行 ID、失败诊断与边界见[本地联调记录](../integrations/dify/LIVE_RAGFLOW_FRONTEND_SMOKE_2026-09-27.md)。
+- 本轮仅是 opt-in 本地功能验收；完整 Gold、故障恢复、延迟与成本门禁尚未完成，默认检索和工作流引擎不切换。

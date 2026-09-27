@@ -21,6 +21,9 @@ class DifyRetrievalServiceTest {
     @Mock
     private HybridRagService hybridRagService;
 
+    @Mock
+    private KnowledgeRetrievalGateway retrievalGateway;
+
     @InjectMocks
     private DifyRetrievalService service;
 
@@ -74,6 +77,29 @@ class DifyRetrievalServiceTest {
         assertThat(response.diagnostics().packingEnabled()).isFalse();
         assertThat(response.diagnostics().compressionRatio()).isEqualTo(1.0);
         assertThat(response.diagnostics().rerankStatus()).isEqualTo("unknown");
+    }
+
+    @Test
+    void mapsRealRagflowEvidenceWithoutLegacyScores() {
+        when(retrievalGateway.ragflow()).thenReturn(true);
+        when(retrievalGateway.retrieve("错误码是什么", 3)).thenReturn(List.of(new RetrievedEvidence(
+                "来源1", "[来源1]", "ragflow:dataset-1:document-1:chunk-1",
+                "dataset-1", "document-1", "chunk-1", "错误码手册",
+                "[UNTRUSTED_DATA_BEGIN]ZXQ-4499 表示签名过期。[UNTRUSTED_DATA_END]",
+                0.83, "ragflow", true, null, null)));
+
+        DifyRetrievalResponse response = service.retrieve(
+                new DifyRetrievalRequest(" 错误码是什么 ", 3, List.of()));
+
+        assertThat(response.contractVersion()).isEqualTo("evidence-v1");
+        assertThat(response.evidenceCount()).isEqualTo(1);
+        assertThat(response.evidences().get(0).datasetId()).isEqualTo("dataset-1");
+        assertThat(response.evidences().get(0).chunkKey())
+                .isEqualTo("ragflow:dataset-1:document-1:chunk-1");
+        assertThat(response.evidences().get(0).score()).isEqualTo(0.83);
+        assertThat(response.evidences().get(0).rrfScore()).isNull();
+        assertThat(response.evidences().get(0).rerankScore()).isNull();
+        assertThat(response.diagnostics().rerankStatus()).isEqualTo("not_applicable");
     }
 
     private HybridDebugResponse debugResponse(List<HybridDebugResponse.Entry> packed) {

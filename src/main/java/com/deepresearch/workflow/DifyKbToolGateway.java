@@ -17,7 +17,7 @@ public interface DifyKbToolGateway {
 
     record Evidence(String citationId, String title, String content) {}
 
-    /** Task A's RAGFlow gateway replaces this bean during integration. */
+    /** Legacy mode has no RAGFlow citation contract for this Dify workflow. */
     @Configuration(proxyBeanMethods = false)
     class UnavailableConfiguration {
         @Bean

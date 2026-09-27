@@ -223,6 +223,12 @@ public class WorkflowRepository {
     public boolean completeDifyToolCall(String runId, String callId, String tool,
                                         String fingerprint, String safeResultJson,
                                         List<String> citationIds) {
+        // Parallel Dify workers often cite the same chunks. Serialize their
+        // receipts for one run before touching the shared source table, so
+        // overlapping INSERT ... ON CONFLICT calls cannot deadlock.
+        List<String> lock = jdbcTemplate.query("SELECT run_id FROM dify_workflow_run WHERE run_id = ? FOR UPDATE",
+                (rs, n) -> rs.getString(1), runId);
+        if (lock.isEmpty()) return false;
         int changed = jdbcTemplate.update("""
                 UPDATE dify_workflow_tool_call c SET status = 'COMPLETED',
                     safe_result = CAST(? AS jsonb), completed_at = now()
@@ -235,7 +241,7 @@ public class WorkflowRepository {
                       AND d.dispatch_state = 'BOUND' AND ? = ANY(r.requested_scopes))
                 """, safeResultJson, runId, callId, tool, fingerprint, tool);
         if (changed != 1) return false;
-        for (String id : citationIds) {
+        for (String id : citationIds.stream().distinct().sorted().toList()) {
             jdbcTemplate.update("""
                     INSERT INTO dify_workflow_source(run_id, citation_id) VALUES (?, ?)
                     ON CONFLICT DO NOTHING

@@ -3,8 +3,8 @@ package com.deepresearch.web.dto;
 import java.util.List;
 
 /**
- * 面向 Dify 的检索兼容契约。当前 legacy-v1 证据不伪造 RAGFlow datasetId/score；
- * 联调时由 Evidence v1 gateway 填入真实值并切换 contractVersion。
+ * 面向 Dify 的检索兼容契约。legacy-v1 证据不伪造 RAGFlow datasetId/score；
+ * RAGFlow 模式由 Evidence v1 gateway 填入真实值并切换 contractVersion。
  *
  * <p>不暴露向量/BM25 的原始候选和内部调试对象，只返回已经过融合、精排、
  * 邻居扩展与上下文压缩的最终证据。所有证据都显式标记为不可信输入，提醒
