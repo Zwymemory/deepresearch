@@ -24,7 +24,8 @@ from paired_eval import label_ranks, normalize_text
 
 
 HERE = Path(__file__).resolve().parent
-TERMINAL = {"SUCCEEDED", "INSUFFICIENT_EVIDENCE", "FAILED", "CANCELLED"}
+TERMINAL = {"SUCCEEDED", "INSUFFICIENT_EVIDENCE", "FAILED", "CANCELLED",
+            "TIMED_OUT", "BUDGET_EXCEEDED", "DISPATCH_UNKNOWN"}
 MARKER = re.compile(r"\[来源(\d+)]")
 RAGFLOW_ID = re.compile(r"kb:ragflow:([^\s\]\[\"']+)")
 JWT = re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b")
@@ -194,10 +195,10 @@ def collect(args):
         raise ValueError("conditions require " + ", ".join(required))
     if conditions.get("mode") != args.mode:
         raise ValueError("conditions mode must match --mode")
-    expected_provider = "legacy" if args.mode == "legacy-hybrid" else "ragflow"
+    expected_provider = "legacy" if args.mode.startswith("legacy-") else "ragflow"
     if conditions.get("retrievalProvider") != expected_provider:
         raise ValueError("conditions retrievalProvider does not match mode")
-    if args.mode != "legacy-hybrid" and conditions.get("workflowEngine") != args.mode.split("-")[-1]:
+    if not args.mode.endswith("-hybrid") and conditions.get("workflowEngine") != args.mode.split("-")[-1]:
         raise ValueError("conditions workflowEngine does not match mode")
     token = os.getenv("SHOWCASE_EVAL_TOKEN")
     if not token:
@@ -374,7 +375,8 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     collect_parser = commands.add_parser("collect")
     collect_parser.add_argument("--holdout", default=str(HERE / "showcase_holdout_cases.json"))
-    collect_parser.add_argument("--mode", choices=("legacy-hybrid", "ragflow-dify", "ragflow-langgraph"), required=True)
+    collect_parser.add_argument("--mode", choices=("legacy-hybrid", "legacy-langgraph",
+                                                   "ragflow-dify", "ragflow-langgraph"), required=True)
     collect_parser.add_argument("--base-url", required=True)
     collect_parser.add_argument("--conditions", required=True)
     collect_parser.add_argument("--case-id", action="append")
