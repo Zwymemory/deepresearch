@@ -138,6 +138,19 @@ def test_java_mcp_envelope_maps_exact_evidence_fields_and_failure_code() -> None
     assert not failure.evidence
 
 
+def test_explicit_empty_mcp_evidence_does_not_become_text_source() -> None:
+    payload = {"success": True, "code": "OK", "tool": "kb_search", "evidence": []}
+    for result in (
+        {
+            "structuredContent": payload,
+            "content": [{"type": "text", "text": "未找到相关证据"}],
+        },
+        {"content": [{"type": "text", "text": json.dumps(payload)}]},
+    ):
+        response = HttpMcpToolClient._tool_result("call-empty", result)
+        assert not response.evidence
+
+
 @pytest.mark.asyncio
 async def test_mcp_execution_binds_run_and_task_headers() -> None:
     captured: dict[str, object] = {}

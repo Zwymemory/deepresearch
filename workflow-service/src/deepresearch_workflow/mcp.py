@@ -204,14 +204,17 @@ class HttpMcpToolClient:
         evidence: list[ToolEvidence] = []
         structured = cls._structured_envelope(result)
         if isinstance(structured, dict):
-            raw_items = structured.get("evidence") or structured.get("results")
+            raw_items = structured.get("evidence")
+            if raw_items is None:
+                raw_items = structured.get("results")
             if isinstance(raw_items, list):
                 for index, item in enumerate(raw_items[:10]):
                     parsed = cls._structured_item(item, index)
                     if parsed is not None:
                         evidence.append(parsed)
-        if evidence:
-            return evidence
+                # An explicit empty list is a successful no-result response. Do
+                # not reinterpret its diagnostic text block as a source.
+                return evidence
 
         for index, block in enumerate(result.get("content") or []):
             if not isinstance(block, dict) or block.get("type") != "text":
