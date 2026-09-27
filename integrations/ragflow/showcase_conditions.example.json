@@ -1,0 +1,12 @@
+{
+  "mode": "ragflow-dify",
+  "codeSha": "replace-with-the-exact-unified-commit",
+  "retrievalProvider": "ragflow",
+  "workflowEngine": "dify",
+  "model": {"name": "replace", "parameters": "replace"},
+  "corpus": {"name": "project-knowledge", "sourceHashes": "replace-with-reviewed-project-corpus-hashes", "documentCount": 8},
+  "budgets": {"topK": 5, "maxModelCalls": "replace", "maxToolCalls": "replace", "timeoutSeconds": 180},
+  "host": {"class": "replace", "memoryGiB": "replace"},
+  "testWindow": "replace-with-ISO-8601-window",
+  "notes": "Do not include API keys, access tokens, dataset IDs, database passwords or private paths."
+}

@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Sealed answer-level holdout. Commit this file before collecting any response; record later label corrections in showcase_label_changes.md.",
+  "baseManifest": "project_cases.json",
+  "cases": [
+    {
+      "id": "showcase-holdout-001",
+      "question": "浏览器的研究任务断线后，Last-Event-ID 要长什么样，服务端从哪里接着发事件？",
+      "kind": "positive",
+      "category": "chinese-rewrite",
+      "requiredFacts": [
+        {"id": "cursor-format", "evidencePhrases": ["<runId>:<eventId>"]},
+        {"id": "durable-replay", "evidencePhrases": ["event_id > cursor", "从已确认游标继续"]},
+        {"id": "database-order", "evidencePhrases": ["按 `event_id ASC` 排序", "按 `event_id` 升序重放"]}
+      ]
+    },
+    {
+      "id": "showcase-holdout-002",
+      "question": "Worker 调工具超时后，可以换个 call_id 直接再试一次吗？旧 claim 的执行中调用该怎么处理？",
+      "kind": "positive",
+      "category": "chinese-rewrite",
+      "requiredFacts": [
+        {"id": "stable-call-id", "evidencePhrases": ["确定性 `call_id`", "确定性 call ID"]},
+        {"id": "unknown-result", "evidencePhrases": ["MCP_RESULT_UNKNOWN"]},
+        {"id": "no-blind-retry", "evidencePhrases": ["不自动重复动作", "不会自动覆盖成 `COMPLETED`", "不再次调用工具"]}
+      ]
+    },
+    {
+      "id": "showcase-holdout-003",
+      "question": "Java 与 Python 在 workflow 中各管什么？Python 调 MCP 时能带用户原始 Bearer Token 吗？",
+      "kind": "positive",
+      "category": "multi-fact",
+      "requiredFacts": [
+        {"id": "java-control", "evidencePhrases": ["Java/Spring Boot 是公网控制面与安全数据面", "负责创建 workflow、用户归属、状态、持久事件、授权、取消、SSE 和最终结果"]},
+        {"id": "python-execution", "evidencePhrases": ["Python sidecar 负责图内 Planner、Worker、Reviewer、Synthesizer 和 checkpoint 执行"]},
+        {"id": "no-user-token", "evidencePhrases": ["Python 不把用户原始 API Bearer Token 转发给 MCP"]}
+      ]
+    },
+    {
+      "id": "showcase-holdout-004",
+      "question": "SSE 空闲多久心跳一次？如果页面重连收到重复事件，页面怎么处理；刷新后还有什么限制？",
+      "kind": "positive",
+      "category": "multi-fact",
+      "requiredFacts": [
+        {"id": "heartbeat", "evidencePhrases": ["15 秒没有业务事件时", "15 秒"]},
+        {"id": "browser-dedup", "evidencePhrases": ["用事件 ID 的 Map 去重", "只允许游标前进"]},
+        {"id": "refresh-limit", "evidencePhrases": ["内存 Map 在页面完全刷新后会重建"]}
+      ]
+    },
+    {
+      "id": "showcase-holdout-005",
+      "question": "一个答案的 [来源N] 都能映射到 chunk，就能证明来源权威且答案真实了吗？说明两层验证的边界。",
+      "kind": "positive",
+      "category": "multi-fact",
+      "requiredFacts": [
+        {"id": "mapping-check", "evidencePhrases": ["引用契约验证“编号能映射到检索证据”", "引用编号与 source ID 契约"]},
+        {"id": "authority-limit", "evidencePhrases": ["不能自动证明证据本身真实、来源权威或论断完全正确", "不能自动证明来源权威性和事实真实性"]}
+      ]
+    },
+    {
+      "id": "showcase-holdout-006",
+      "question": "模型请求失败时，SDK 和应用分别怎么重试？旧 claim 下未结算的模型调用如何记预算？",
+      "kind": "positive",
+      "category": "chinese-rewrite",
+      "requiredFacts": [
+        {"id": "sdk-disabled", "evidencePhrases": ["SDK `max_retries=0`", "SDK 内部重试关闭"]},
+        {"id": "bounded-attempts", "evidencePhrases": ["默认最多 2 次", "默认最多用 2 个持久 attempt"]},
+        {"id": "unknown-budget", "evidencePhrases": ["旧 claim 的未结算模型调用转为 `UNKNOWN` 并保守计入调用次数", "失败 attempt 先转 `UNKNOWN` 并保守计入模型调用次数预算"]}
+      ]
+    },
+    {
+      "id": "showcase-holdout-007",
+      "question": "本项目生产环境正在使用的银行账户号码和开户地址是什么？",
+      "kind": "zero-evidence",
+      "category": "pure-no-evidence"
+    },
+    {
+      "id": "showcase-holdout-008",
+      "question": "线上 Kubernetes 集群的云区域和生产副本数是多少？请引用项目资料解释能否给出数字。",
+      "kind": "evidence-backed-safe-denial",
+      "category": "evidence-backed-refusal",
+      "denialEvidence": [
+        {"id": "missing-kubernetes", "evidencePhrases": ["没有 Kafka、Temporal 或完整 Kubernetes 集群", "没有 HITL（Human-in-the-loop）interrupt"]}
+      ],
+      "answerContract": {
+        "mustContainAny": ["无法确认", "无法确定", "无法给出", "没有生产 Kubernetes", "未提供线上部署信息", "证据不足"],
+        "mustNotContain": ["cn-hangzhou", "生产副本为", "云区域是", "生产副本数量为"],
+        "citationRequired": true
+      }
+    }
+  ]
+}

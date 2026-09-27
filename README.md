@@ -1,8 +1,8 @@
 # DeepResearch
 
-一个面向企业内部知识检索与复杂问题研究的 **RAG + Multi-Agent 工程原型**。
+一个面向项目知识检索与复杂问题研究的 **RAG + Multi-Agent 工程原型**，用于个人学习和开源作品展示。[五分钟演示与证据状态](docs/showcase/README.md)是本轮结果入口。
 
-项目采用“**Java / Spring Boot 安全控制面 + Python / LangGraph 可恢复执行面**”：Java 负责公网 API、认证授权、知识库、MCP 工具执行和持久化；Python 负责任务规划、并行取证、证据审阅与答案合成。回答只使用检索证据，并返回可核验引用。
+Java / Spring Boot 负责公网 API、认证授权、知识库工具、持久任务与事件、引用发布门禁。默认检索数据面是自建 pgvector + BM25，默认工作流执行器是 Python / LangGraph。RAGFlow 检索和 Dify Workflow 已接入为显式可选路径；两条路径仍由 Java 管理身份、工具权限、任务状态和对外 REST/SSE。回答应基于检索证据并附可核验引用，证据不足时拒答。
 
 > 本仓库用于工程学习、架构验证和作品展示，不是可直接上线的商用平台。
 
@@ -19,9 +19,11 @@ DeepResearch 对应实现了：
 - TXT、Markdown、文本型 PDF 的解析、结构化切分、版本化入库；
 - pgvector 语义召回 + Elasticsearch BM25 关键词召回；
 - RRF 融合、文档级去重、BGE Cross-Encoder 精排与故障降级；
+- 可选 RAGFlow 检索、Java 文档映射与稳定 chunk 来源 ID；
 - Sibling Expansion 与 Context Packing；
 - Spring AI 原生结构化 Tool Calling 和标准 MCP 工具发现/调用；
 - LangGraph Planner → 并行 Worker → Reviewer → Synthesizer 工作流；
+- 可选 Dify Planner → Worker → Reviewer → Synthesizer Workflow；
 - 幂等请求、持久事件、SSE 重放、lease / heartbeat / claim fencing；
 - token、时间、工具次数和估算费用预算；
 - 检索评测与 Agent Harness 证据级回归。
@@ -40,42 +42,49 @@ flowchart LR
         J --> SSE["REST / Durable SSE"]
     end
 
-    subgraph D["检索数据面"]
-        RAG --> V[("pgvector / HNSW")]
-        RAG --> ES[("Elasticsearch / BM25")]
-        V --> RRF["RRF + 文档去重"]
+    subgraph D["可选检索数据面"]
+        RAG --> V[("默认: pgvector / HNSW")]
+        RAG --> ES[("默认: Elasticsearch / BM25")]
+        RAG --> RF[("可选: RAGFlow")]
+        V --> RRF["RRF + BGE + Context Packing"]
         ES --> RRF
-        RRF --> BGE["BGE Cross-Encoder"]
-        BGE --> CTX["Sibling Expansion / Context Packing"]
+        RF --> EV["Java Evidence v1 / 来源核验"]
     end
 
-    subgraph E["Python / LangGraph 执行面"]
+    subgraph E["默认: Python / LangGraph"]
         P["Planner"] --> W["并行 Worker"]
         W --> R["Reviewer"]
         R -->|"证据不足，最多一次修订"| W
         R --> S["Synthesizer"]
     end
 
+    subgraph F["可选: Dify Workflow"]
+        DP["Planner"] --> DW["Worker"] --> DR["Reviewer"] --> DS["Synthesizer"]
+    end
+
     DB --> P
+    J --> DP
     W -->|"短期委派 JWT + MCP"| MCP
+    DW -->|"服务身份 + Java 工具回执"| MCP
     S -->|"原子 finalize"| J
+    DS -->|"Java 核验后发布"| J
     SSE --> U
 ```
 
-Java 是唯一公网入口。Python Worker 不持有用户原始 Bearer Token，也不直接访问业务数据库；它只能使用绑定 `run / task / scope` 的短期凭证调用获准工具。
+Java 是演示系统的对外入口。Python Worker 不持有用户原始 Bearer Token，只能使用绑定 `run / task / scope` 的短期凭证调用获准工具；Dify Worker 使用独立服务身份回调 Java 的受限工具接口。共享知识库仍没有文档级 tenant ACL。
 
 ## 技术栈
 
 | 层次 | 技术 |
 |---|---|
 | Java 控制面 | Java 17、Spring Boot 3.5、Spring AI 1.0、Spring Security、Flyway、Micrometer |
-| Agent 执行面 | Python 3.12、FastAPI、LangGraph、LangChain、Pydantic |
-| 模型与检索 | DeepSeek API、智谱 embedding、pgvector、Elasticsearch BM25、BAAI/bge-reranker-base |
+| Agent 执行面 | 默认：Python 3.12、FastAPI、LangGraph、LangChain、Pydantic；可选：Dify Workflow |
+| 模型与检索 | DeepSeek API、智谱 embedding、pgvector、Elasticsearch BM25、BAAI/bge-reranker-base；可选 RAGFlow |
 | 工具协议 | Spring AI MCP Server/Client、Python MCP SDK、SSE transport |
 | 工程基础设施 | PostgreSQL 16、Docker Compose、Testcontainers、GitHub Actions |
 | 测试 | JUnit 5、Mockito、pytest、Ruff、Gitleaks |
 
-DeepSeek 负责规划与生成，不直接查询数据库或执行工具；智谱负责 embedding，pgvector/Elasticsearch 负责初召回，BGE 负责候选精排，Java 工具层负责真正的受权执行。
+DeepSeek 负责规划与生成，不直接查询数据库或执行工具。默认数据面由智谱 embedding、pgvector/Elasticsearch 和 BGE 完成；RAGFlow 可接管检索。Java 工具层始终负责受权执行和最终来源边界。
 
 ## MCP 闭环
 
@@ -116,7 +125,7 @@ DEEPRESEARCH_DEV_TOKEN_ALLOW_ADMIN=true
 
 四个安全值必须互不相同；不要提交 `.env`。
 
-RAGFlow 数据面保持为显式选择。`RAGFLOW_QUERY_EXPANSION_ENABLED=false`
+RAGFlow 数据面保持为显式选择。API Key 在 RAGFlow UI 的账户 API 页面获取，dataset ID 在知识库 URL `/dataset/files/<id>` 中获取；UI 通常在本机 `80` 端口，API 在 `9380`。把 `RAGFLOW_API_KEY` 与 `RAGFLOW_DATASET_IDS` 写入被忽略的 `.env`。`RAGFLOW_QUERY_EXPANSION_ENABLED=false`
 关闭的是 RAGFlow 额外的 LLM 查询扩展，RAGFlow 自带的词法与向量混合检索仍然启用。
 本机 RAGFlow v0.27.2 的成对基准采用 `RAGFLOW_KNN_TOP_K=32`、
 `RAGFLOW_KNN_NUM_CANDIDATES=128`、`RAGFLOW_RERANK_CANDIDATES_COUNT=20`
@@ -146,9 +155,15 @@ export DEEPRESEARCH_ADMIN_TOKEN="替换为 ADMIN Bearer Token"
 
 然后可在页面选择 Single Agent 或 Durable Workflow，观察阶段进度、工具调用、引用、预算和 SSE 断线续传。
 
+### 5. 显式启用 RAGFlow + Dify
+
+先按 [RAGFlow 导入和评测](integrations/ragflow/README.md)同步项目知识包，再按 [Dify Workflow 导入](integrations/dify/README.md)导入 DSL、设置 Java 回调地址和独立服务密钥、发布并获取 App Key。Dify 是独立服务；它的本地 UI 端口以其 Compose 配置为准。本仓库的对外演示页仍在 Java 的 `8080`。
+
+验证完成后在私有配置中显式设置 `DEEPRESEARCH_RETRIEVAL_PROVIDER=ragflow`、`DEEPRESEARCH_WORKFLOW_ENGINE=dify`，并提供 `DEEPRESEARCH_DIFY_BASE_URL`、`DEEPRESEARCH_DIFY_APP_KEY`、`DEEPRESEARCH_WORKFLOW_DIFY_TOOL_SERVICE_TOKEN`。完成共同验收前，仓库默认值保持 `legacy` / `langgraph`。不要把服务密钥或 dataset ID 提交到仓库。
+
 ## 如何验证
 
-2026-08-28 公开快照的离线验证基线：
+2026-08-28 公开快照的历史离线验证基线：
 
 | 测试层 | 结果 | 命令 |
 |---|---:|---|
@@ -176,6 +191,10 @@ export DEEPRESEARCH_ADMIN_TOKEN="替换为 ADMIN Bearer Token"
 | Cross-Encoder doc rerank | 251 / 300 | 83.67% | 0.6423 |
 
 这里的 `Legacy HitRate@10` 表示“一条 query 至少命中一个相关文档”，不是标准 Recall@10，更不是最终答案准确率。新评测器已分别实现 HitRate、Recall、MRR 与 NDCG；同口径结果需在固定数据、索引和模型快照上重跑后再发布。
+
+### RAGFlow / Dify 当前证据
+
+2026-09-26 的[项目配对检索](integrations/ragflow/PROJECT_CASE_CLOSURE_2026-09-26.md)在 25 道正例上记录 Legacy 22/25、RAGFlow 25/25 的完整事实覆盖，四道项目边界拒答均通过当时的契约检查。这是**检索证据**结果。2026-09-27 至 28 的[前端真实链路冒烟](integrations/dify/LIVE_RAGFLOW_FRONTEND_SMOKE_2026-09-27.md)完成两道有引用问题和一道纯无证据问题。三次运行不能代替最终答案、p95、成本和恢复门禁。完整时间线见[证据状态](docs/showcase/EVIDENCE.md)；下一轮固定的 29 + 8 题见[答案级评测](integrations/ragflow/README.md#showcase-答案级评测)。
 
 ## 安全与已知边界
 
