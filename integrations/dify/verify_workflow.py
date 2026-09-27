@@ -64,7 +64,8 @@ def verify_contract() -> None:
     ):
         assert call("plan", plan_text=malformed, question="policy?", java_run_id=run_id, allowed_tools="kb_search")["status"] == "FAILED"
     assert json.loads(plan["requests"][0])["callId"] == run_id + ":initial:1"
-    assert call("plan", plan_text='{"tasks":[]}', question="q", java_run_id=run_id, allowed_tools="kb_search")["status"] == "FAILED"
+    empty_plan = call("plan", plan_text='<think>no authorized read-only task</think>{"tasks":[]}', question="q", java_run_id=run_id, allowed_tools="kb_search")
+    assert empty_plan == {"status": "INSUFFICIENT_EVIDENCE", "requests": [], "answer": "", "citations": [], "usage": {}}
     assert call("plan", plan_text=json.dumps({"tasks": [{"tool": "web_search", "input": "x"}]}), question="q", java_run_id=run_id, allowed_tools="kb_search")["status"] == "FAILED"
     assert call("plan", plan_text=json.dumps({"tasks": [{"tool": "kb_search", "input": "x"}] * 5}), question="q", java_run_id=run_id, allowed_tools="kb_search")["status"] == "FAILED"
     task = call("workers_parse", item=plan["requests"][0])
