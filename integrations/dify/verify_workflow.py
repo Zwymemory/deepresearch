@@ -109,6 +109,8 @@ def verify_contract() -> None:
     selected_ca = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "C first [来源3], then A [来源1].", "citations": [citation_c, citation_a]}), context=deduplicated["context"])
     assert selected_ca["status"] == "SUCCEEDED" and selected_ca["citations"] == [citation_c, citation_a]
     assert selected_ca["answer"] == "C first [来源1], then A [来源2]."
+    reordered_ca = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "C first [来源3], then A [来源1].", "citations": [citation_a, citation_c]}), context=deduplicated["context"])
+    assert reordered_ca["status"] == "SUCCEEDED" and reordered_ca["citations"] == [citation_c, citation_a]
     assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Wrong ID [来源3].", "citations": [citation_a]}), context=deduplicated["context"])["status"] == "FAILED"
     assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Unknown [来源4].", "citations": [citation_c]}), context=deduplicated["context"])["status"] == "FAILED"
     assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Duplicate [来源1] [来源2].", "citations": [citation_c, citation_c]}), context=deduplicated["context"])["status"] == "FAILED"
@@ -125,6 +127,11 @@ def verify_contract() -> None:
     assert live_shape["status"] == "SUCCEEDED"
     assert live_shape["citations"] == [nine[index - 1]["citationId"] for index in first_used]
     assert live_shape["answer"] == "A [来源1] B [来源2] C [来源2] D [来源3] E [来源4] F [来源5] G [来源6]"
+    unordered_shape = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED",
+            "answer": "A [来源1] B [来源2] C [来源2] D [来源6] E [来源7] F [来源3] G [来源5]",
+            "citations": [nine[index - 1]["citationId"] for index in reversed(first_used)]}),
+            context=json.dumps({"evidences": nine}))
+    assert unordered_shape == live_shape
 
     review = call("review", review_text=json.dumps({"verdict": "REVISE", "followups": [{"tool": "kb_search", "input": "more"}]}), context=initial["context"], initial_count=1, java_run_id=run_id, allowed_tools="kb_search")
     assert review["status"] == "READY" and len(review["requests"]) == 1
