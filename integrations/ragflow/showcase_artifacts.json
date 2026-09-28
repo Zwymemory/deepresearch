@@ -3,23 +3,31 @@
   "artifacts": [
     {
       "name": "dify-baseline-2026-09-28",
-      "captures": ["integrations/ragflow/showcase_dify_baseline_capture_2026-09-28.json"],
+      "captures": [
+        "integrations/ragflow/showcase_dify_baseline_capture_2026-09-28.json"
+      ],
       "score": "integrations/ragflow/showcase_dify_baseline_score_2026-09-28.json"
     },
     {
       "name": "dify-evidence-v4-2026-09-28",
-      "captures": ["integrations/ragflow/showcase_dify_candidate_v4_capture_2026-09-28.json"],
+      "captures": [
+        "integrations/ragflow/showcase_dify_candidate_v4_capture_2026-09-28.json"
+      ],
       "review": "integrations/ragflow/showcase_dify_candidate_v4_review_2026-09-28.json",
       "score": "integrations/ragflow/showcase_dify_candidate_v4_score_2026-09-28.json"
     },
     {
       "name": "dify-evidence-v4-targeted-2026-09-28",
-      "captures": ["integrations/ragflow/showcase_dify_candidate_v4_targeted_capture_2026-09-28.json"],
+      "captures": [
+        "integrations/ragflow/showcase_dify_candidate_v4_targeted_capture_2026-09-28.json"
+      ],
       "score": "integrations/ragflow/showcase_dify_candidate_v4_targeted_score_2026-09-28.json"
     },
     {
       "name": "legacy-langgraph-2026-09-28",
-      "captures": ["integrations/ragflow/showcase_legacy_langgraph_capture_2026-09-28.json"],
+      "captures": [
+        "integrations/ragflow/showcase_legacy_langgraph_capture_2026-09-28.json"
+      ],
       "review": "integrations/ragflow/showcase_legacy_langgraph_review_2026-09-28.json",
       "score": "integrations/ragflow/showcase_legacy_langgraph_score_2026-09-28.json"
     },
@@ -34,13 +42,49 @@
     },
     {
       "name": "legacy-empty-evidence-stage1-2026-09-28",
-      "captures": ["integrations/ragflow/showcase_legacy_placeholder_stage1_capture_2026-09-28.json"],
+      "captures": [
+        "integrations/ragflow/showcase_legacy_placeholder_stage1_capture_2026-09-28.json"
+      ],
       "score": "integrations/ragflow/showcase_legacy_placeholder_stage1_score_2026-09-28.json"
     },
     {
       "name": "legacy-empty-evidence-stage2-2026-09-28",
-      "captures": ["integrations/ragflow/showcase_legacy_placeholder_stage2_capture_2026-09-28.json"],
+      "captures": [
+        "integrations/ragflow/showcase_legacy_placeholder_stage2_capture_2026-09-28.json"
+      ],
       "score": "integrations/ragflow/showcase_legacy_placeholder_stage2_score_2026-09-28.json"
+    },
+    {
+      "name": "dify-release-v5-targeted-2026-09-28",
+      "captures": [
+        "integrations/ragflow/showcase_dify_release_v5_targeted_capture_2026-09-28.json"
+      ],
+      "review": "integrations/ragflow/showcase_dify_release_v5_targeted_review_2026-09-28.json",
+      "score": "integrations/ragflow/showcase_dify_release_v5_targeted_score_2026-09-28.json"
+    },
+    {
+      "name": "dify-release-v6-targeted-2026-09-28",
+      "captures": [
+        "integrations/ragflow/showcase_dify_release_v6_targeted_capture_2026-09-28.json"
+      ],
+      "review": "integrations/ragflow/showcase_dify_release_v6_targeted_review_2026-09-28.json",
+      "score": "integrations/ragflow/showcase_dify_release_v6_targeted_score_2026-09-28.json"
+    },
+    {
+      "name": "dify-release-v7-targeted-2026-09-28",
+      "captures": [
+        "integrations/ragflow/showcase_dify_release_v7_targeted_capture_2026-09-28.json"
+      ],
+      "review": "integrations/ragflow/showcase_dify_release_v7_targeted_review_2026-09-28.json",
+      "score": "integrations/ragflow/showcase_dify_release_v7_targeted_score_2026-09-28.json"
+    },
+    {
+      "name": "dify-release-v7-full37-2026-09-28",
+      "captures": [
+        "integrations/ragflow/showcase_dify_release_v7_full37_capture_2026-09-28.json"
+      ],
+      "review": "integrations/ragflow/showcase_dify_release_v7_full37_review_2026-09-28.json",
+      "score": "integrations/ragflow/showcase_dify_release_v7_full37_score_2026-09-28.json"
     }
   ]
 }

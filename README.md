@@ -239,7 +239,9 @@ bash scripts/import-project-kb.sh
 
 ### RAGFlow / Dify 当前证据
 
-2026-09-26 的[项目配对检索](integrations/ragflow/PROJECT_CASE_CLOSURE_2026-09-26.md)在 25 道正例上记录 Legacy 22/25、RAGFlow 25/25 的完整事实覆盖，四道项目边界拒答均通过当时的契约检查。这是**检索证据**结果。2026-09-27 至 28 的[前端真实链路冒烟](integrations/dify/LIVE_RAGFLOW_FRONTEND_SMOKE_2026-09-27.md)完成两道有引用问题和一道纯无证据问题；[统一版本 37 题现场基线](docs/showcase/LIVE_BASELINE_2026-09-28.md)记录了初始失败与定向恢复场景。之后的[Evidence v4 候选版](docs/showcase/LIVE_CANDIDATE_2026-09-28.md)在 37 题中取得 33 成功、30/31 正例事实覆盖，但两道边界拒答缺引用。[同集合整体链路对照](docs/showcase/LIVE_COMPARISON_2026-09-28.md)中的 Legacy + LangGraph 为 17 成功、16/31 正例事实覆盖；其证据核验器多次超过 15 秒截止时间，因此这个对照不能归因为单独的检索或编排组件。完整时间线见[证据状态](docs/showcase/EVIDENCE.md)；题目与工具见[答案级评测](integrations/ragflow/README.md#showcase-答案级评测)。
+最新的 [Dify Evidence v7 固定版本评测](integrations/dify/RELEASE_QUALITY_2026-09-28.md)保留 24 次定向重复及随后唯一一轮完整 37 题：34 成功、2 证据不足、1 失败；31 道正例中 29 道完整覆盖事实，严格拒答 5/6，34 组发布引用全部来源存在、33 组支持全部对应论断。端到端 p95 为 16.871826 秒（n=37）。重试次数表述矛盾、Reviewer 多余字段失败和一次无引用边界拒答均计入结果；没有替换失败或调整标签。
+
+较早的[项目配对检索](integrations/ragflow/PROJECT_CASE_CLOSURE_2026-09-26.md)、[前端冒烟](integrations/dify/LIVE_RAGFLOW_FRONTEND_SMOKE_2026-09-27.md)、[Evidence v4](docs/showcase/LIVE_CANDIDATE_2026-09-28.md)与 [Legacy 整体链路对照](docs/showcase/LIVE_COMPARISON_2026-09-28.md)保留各自条件。Legacy 的 15 秒证据核验截止时间多次触发安全降级，且两条路径预算不同，不能单独归因于检索或编排。完整时间线见[证据状态](docs/showcase/EVIDENCE.md)；题目与工具见[答案级评测](integrations/ragflow/README.md#showcase-答案级评测)。
 
 ## 安全与已知边界
 
