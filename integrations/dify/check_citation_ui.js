@@ -26,7 +26,16 @@ async (page) => {
     {name: "escaped-text", ids: [webId], details: [{...web, title: "<img src=x onerror=alert(1)>",
       excerpt: "<script>window.citationXss=true</script>"}], links: [web.url]},
     {name: "legacy-details", ids: [webId], details: [web], links: [web.url], legacy: true},
-    {name: "sse-reconnect", ids: [webId, kbId], details: [kb, web], links: [web.url], reconnect: true}
+    {name: "sse-reconnect", ids: [webId, kbId], details: [kb, web], links: [web.url], reconnect: true},
+    ...[
+      ["DIFY_MODEL_OUTPUT_TRUNCATED", "模型输出被截断"],
+      ["DIFY_MODEL_OUTPUT_EMPTY", "模型最终输出为空"],
+      ["DIFY_MODEL_OUTPUT_INVALID", "模型输出格式无效"],
+      ["DIFY_MODEL_PROVIDER_ERROR", "模型服务调用失败"],
+      ["CLAIM_EVIDENCE_INVALID", "论断证据无法对应"],
+      ["CLAIM_SUPPORT_INSUFFICIENT", "证据不足"]
+    ].map(([code, label]) => ({name: code, code, label, ids: [], details: [], links: [],
+      status: code === "CLAIM_SUPPORT_INSUFFICIENT" ? "INSUFFICIENT_EVIDENCE" : "FAILED"}))
   ];
   const report = [];
   let active, completed = false, streamCount = 0, traffic = [];
@@ -36,9 +45,9 @@ async (page) => {
       citations: active.ids, citationDetails: active.details, citationContract: active.contract || "INDEXED_V1"};
   }
   function view() {
-    return {runId: "fixture-" + active.name, status: completed ? "SUCCEEDED" : "DIFY_DISPATCHING",
+    return {runId: "fixture-" + active.name, status: completed ? (active.status || "SUCCEEDED") : "DIFY_DISPATCHING",
       stage: completed ? "TERMINAL" : "DIFY_DISPATCHING", progress: completed ? 100 : 40,
-      usage: {}, trace: [], finalResponse: completed ? finalResponse() : null};
+      errorCode: active.code || null, usage: {}, trace: [], finalResponse: completed ? finalResponse() : null};
   }
   await page.unrouteAll({behavior: "wait"});
   await page.route("**/*", async route => {
@@ -69,6 +78,8 @@ async (page) => {
     if (method === "GET" && path.endsWith("/fixture-" + active.name)) return route.fulfill({json: view()});
     throw new Error("Unexpected request in isolated fixture: " + method + " " + path);
   });
+  // A named browser session may already contain a previous fixture run.
+  await page.evaluate(() => {try {localStorage.clear(); sessionStorage.clear();} catch (ignored) {}});
   await page.goto("http://127.0.0.1:8080/demo.html?citation-fixture");
   for (const fixture of cases) {
     active = fixture; completed = false; streamCount = 0; traffic = [];
@@ -78,6 +89,18 @@ async (page) => {
     if (fixture.legacy) await page.getByRole("tab", {name: "Single Agent", exact: true}).click();
     await page.locator("#questionInput").fill("Synthetic citation UI fixture");
     await page.getByRole("button", {name: fixture.legacy ? "运行基线" : "开始研究", exact: true}).click();
+    if (fixture.code) {
+      await page.getByText(fixture.label, {exact: true}).first().waitFor();
+      const message = await page.locator("#answerText").textContent();
+      assert(message && !message.includes(fixture.code), fixture.name + ": technical error as main explanation");
+      assert(await page.locator(".citation-chip,#answerText .answer-citation").count() === 0, fixture.name + ": failed candidate published citations");
+      await page.reload();
+      await page.getByText(fixture.label, {exact: true}).first().waitFor();
+      assert(await page.locator("#answerText").textContent() === message, fixture.name + ": failure explanation changed on restore");
+      assert(traffic.filter(r => r.method === "POST").length === 1, fixture.name + ": failure restore recreated task");
+      report.push({case: fixture.name, passed: true, citations: 0, links: 0, createPosts: 1, refreshed: true, safeReasonRendered: true});
+      continue;
+    }
     await page.locator(".citation-chip").first().waitFor({timeout: 15000});
     async function inspect() {
       return page.locator(".citation-chip").evaluateAll(cards => cards.map(card => ({

@@ -108,9 +108,63 @@
       "createPosts": 1,
       "refreshed": true,
       "sseStreams": 2
+    },
+    {
+      "case": "DIFY_MODEL_OUTPUT_TRUNCATED",
+      "passed": true,
+      "citations": 0,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "safeReasonRendered": true
+    },
+    {
+      "case": "DIFY_MODEL_OUTPUT_EMPTY",
+      "passed": true,
+      "citations": 0,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "safeReasonRendered": true
+    },
+    {
+      "case": "DIFY_MODEL_OUTPUT_INVALID",
+      "passed": true,
+      "citations": 0,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "safeReasonRendered": true
+    },
+    {
+      "case": "DIFY_MODEL_PROVIDER_ERROR",
+      "passed": true,
+      "citations": 0,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "safeReasonRendered": true
+    },
+    {
+      "case": "CLAIM_EVIDENCE_INVALID",
+      "passed": true,
+      "citations": 0,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "safeReasonRendered": true
+    },
+    {
+      "case": "CLAIM_SUPPORT_INSUFFICIENT",
+      "passed": true,
+      "citations": 0,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "safeReasonRendered": true
     }
   ],
-  "checkedAt": "2026-09-28T08:10:59.810717+00:00",
-  "htmlSha256": "a8176f0879c87731f7cf452a5cf87c7650fb62f16b6074750b20a1ceaf4d28a6",
-  "scriptSha256": "b6c3b761330fdaf1b9d756b93292335867e3f80cffc2fd17ec3d48d7ca9436ac"
+  "checkedAt": "2026-09-28T08:21:10.446694+00:00",
+  "htmlSha256": "397b6a490e4714b44b5e3b9f3947790b157af69b492ced597c8142b4e3432c61",
+  "scriptSha256": "2430696872d74b49ee789a9d552e70b2daf1dc134cc4162051b800904673f63a"
 }

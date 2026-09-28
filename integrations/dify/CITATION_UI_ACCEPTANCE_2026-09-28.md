@@ -12,10 +12,11 @@
 
 ## 准备阶段验证
 
-- 前端 HTML SHA256：`a8176f0879c87731f7cf452a5cf87c7650fb62f16b6074750b20a1ceaf4d28a6`。
+- 最新离线受测 HTML SHA256：`397b6a490e4714b44b5e3b9f3947790b157af69b492ced597c8142b4e3432c61`。真实保存结果的初次呈现受测 HTML 为 `a8176f0879c87731f7cf452a5cf87c7650fb62f16b6074750b20a1ceaf4d28a6`；随后只增加六类安全故障提示，来源卡片逻辑未变。
 - 后端沿用真实验收版本 `182962f9d9be7e30b1188da39b7250c2f212a05e`。新版 HTML 仅在隔离浏览器中替换，未改变应用服务、DSL、凭据或知识库。
-- [12 个离线浏览器场景](citation-ui-browser-check-2026-09-28.json)全部通过：单网页、多网页、KB、混合、缺详情、错 ID、重复详情、不安全 URL、无验证契约的历史记录、文本转义、Single Agent 详情及 SSE 重连。
+- [18 个离线浏览器场景](citation-ui-browser-check-2026-09-28.json)全部通过：单网页、多网页、KB、混合、缺详情、错 ID、重复详情、不安全 URL、无验证契约的历史记录、文本转义、Single Agent 详情、SSE 重连及六类安全故障提示。
 - metadata 故意逆序时编号和标题仍对应正确 ID。知识库不生成外链；不安全地址不生成可点击元素。刷新前后的标题、链接、编号、折叠 ID 记录一致。
+- 截断、最终输出为空、JSON/字段格式错误、模型服务错误、论断引句无法对应及支持不足均显示中文原因；失败 fixture 空答零引用，刷新保持原因且不再 POST。原因只来自正式安全码，不展示模型思维链或 provider 原文。
 - 离线 SSE 场景两次流请求，第二次携带已保存游标，刷新与恢复后来源不变，仅一次 **fixture** 创建 POST。全部 API 都被 stub，未调用模型、网页 provider 或真实创建接口；不是新增真实断线故障注入。
 - [三个真实保存运行](citation-ui-saved-check-2026-09-28.json)共 7 条引用：页面标题、URL、编号、内部 ID 与后端 `finalResponse` 精确对应，刷新后保持一致，正文编号可以打开引用面板。本次呈现验证只有 GET，没有新建真实 workflow。
 - 实际点击 Python 官方文档卡片，浏览器新标签加载 `https://docs.python.org/3/library/asyncio.html`，并确认 `window.opener === null`。这证明普通网页跳转，不证明历史答案全部正确。

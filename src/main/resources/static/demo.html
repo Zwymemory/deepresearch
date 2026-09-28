@@ -747,6 +747,12 @@
       MODEL_RETRY_SCHEDULED: { label: "模型调用准备重试", description: "一次模型调用没有得到可靠结果；失败 attempt 已记入预算，工作流将进行有限重试。" },
       MODEL_EXECUTION_FAILED: { label: "模型调用失败", description: "外部模型调用未能安全完成。" },
       MODEL_CALL_FAILED: { label: "模型调用失败", description: "Planner、Reviewer 或 Synthesizer 的模型调用未能产生可用结果。" },
+      DIFY_MODEL_OUTPUT_TRUNCATED: { label: "模型输出被截断", description: "模型输出达到长度上限，未形成完整结果。" },
+      DIFY_MODEL_OUTPUT_EMPTY: { label: "模型最终输出为空", description: "模型没有返回可发布的最终结果。" },
+      DIFY_MODEL_OUTPUT_INVALID: { label: "模型输出格式无效", description: "模型结果未通过 JSON 或字段格式校验。" },
+      DIFY_MODEL_PROVIDER_ERROR: { label: "模型服务调用失败", description: "模型服务调用发生错误，本次任务未完成。" },
+      CLAIM_EVIDENCE_INVALID: { label: "论断证据无法对应", description: "答案论断的原文证据无法对应本次检索结果。" },
+      CLAIM_SUPPORT_INSUFFICIENT: { label: "论断支持不足", description: "现有证据不足以支持完整回答，系统已按证据不足处理。" },
       WORKFLOW_FAILED: { label: "工作流执行失败", description: "工作流在形成可发布结果前发生了技术故障。" }
     };
     var STORE_RUN = "deepresearch.console.currentRun";
@@ -1564,7 +1570,7 @@
       } else if (TERMINAL.has(state.status)) {
         answerRoot.dataset.markdown = "";
         answerRoot.textContent = state.status === "INSUFFICIENT_EVIDENCE" ?
-          "没有找到足够可信的证据，系统不会自行补全答案。" :
+          (failureMeta ? failureMeta.description : "没有找到足够可信的证据，系统不会自行补全答案。") :
           (failureMeta ? failureMeta.description :
             ((state.view && (state.view.errorMessage || state.view.errorCode)) || ("运行终态：" + state.status)));
       } else {
@@ -1573,12 +1579,12 @@
       }
       var resultClass = "result-banner";
       var resultTitle = "研究完成";
-      var resultMessage = "答案已完成核验";
+      var resultMessage = "可查看答案和对应来源";
       var icon = "✓";
       if (state.status === "INSUFFICIENT_EVIDENCE") {
         resultClass += " warning";
         resultTitle = "证据不足";
-        resultMessage = "系统拒绝在缺少可信证据时补全答案";
+        resultMessage = failureMeta ? failureMeta.description : "系统拒绝在缺少可信证据时补全答案";
         icon = "!";
       } else if (TERMINAL.has(state.status) && state.status !== "SUCCEEDED") {
         resultClass += " error";
