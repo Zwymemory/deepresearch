@@ -97,7 +97,50 @@ initialize → capabilities negotiation → tools/list
 
 Python sidecar 使用官方 MCP SDK 通过 SSE 调用同一服务，并携带任务级 delegation JWT、run/task 标识与确定性 `Idempotency-Key`。Java 在执行点再次校验权限、claim 和请求指纹。当前只实现 MCP `tools` capability，不宣称已实现 `resources`、`prompts` 或独立外部生产 MCP 服务。
 
-## 快速复现
+## 快速复现 RAGFlow + Dify
+
+从 GitHub 克隆本仓库并检出准备演示的候选版提交；命令从仓库根目录执行。完整版本、资源与陌生环境步骤见[复现指南](docs/showcase/REPRODUCE.md)。首次下载镜像、配置模型、解析知识包完成后，再开始“五分钟演示”。
+
+### 先离线检查
+
+Python 3.12 + Make 即可，不需要密钥、Docker 服务或付费模型：
+
+```bash
+make showcase-check
+```
+
+它校验 Dify DSL、paired/showcase 评测器、公开去敏采样的重计分一致性，以及八份知识文档。历史报告可以离线复核，重计分不请求模型。
+
+### 启动可选演示路径
+
+本轮记录的组合为 RAGFlow **0.27.2**、Dify **1.17.0**、官方 DeepSeek plugin **0.0.24**。先独立部署 RAGFlow/Dify，创建自己的数据集，导入并发布仓库 DSL。按复现指南完成 Java 回调 origin、模型与 SSRF 策略配置。
+
+```bash
+# 不覆盖已有 .env；生成五个不同的本机服务密钥，文件权限为 0600。
+python3 scripts/init-showcase-env.py
+# 编辑 .env，填写自己的模型凭证、新数据集 ID 与 Workflow App Key。
+python3 scripts/preflight-showcase.py
+bash scripts/start-showcase.sh
+python3 scripts/preflight-showcase.py --online
+
+# ADMIN 身份的取得方式见复现指南；Token 只放在本机变量中。
+export DEEPRESEARCH_ADMIN_TOKEN='本机 ADMIN Bearer Token'
+bash scripts/import-project-kb.sh
+python3 scripts/preflight-showcase.py --corpus
+```
+
+启动脚本只启动 Java、PostgreSQL 和角色初始化依赖。导入不会清空已有知识库；预检要求八份文档与 RAGFlow 映射均为 `DONE`。打开[演示页](http://localhost:8080/demo.html)，签发 USER 身份，选择 **Durable Workflow** 和知识库检索，按[五分钟讲稿](docs/showcase/FIVE_MINUTE_DEMO.md)演示有引用答案、无依据拒答、SSE 续传。
+
+| 入口 | 默认本机端口 |
+|---|---:|
+| Java 演示页、REST/SSE | 8080 |
+| RAGFlow UI / HTTP API | 80 / 9380 |
+| Dify UI / Service API | 8081 / 8081（`/v1`） |
+| Java PostgreSQL | 5432 |
+
+Java 容器访问宿主机服务用 `host.docker.internal`；Dify 回调也须使用其容器可访问的 origin。预检通过说明配置与依赖就绪；新运行实际经过 Dify 要看 `DIFY_STAGE` 事件。
+
+## 复现默认 Legacy + LangGraph
 
 ### 1. 环境要求
 
@@ -150,10 +193,10 @@ curl -fsS http://localhost:9002/health
 
 ```bash
 export DEEPRESEARCH_ADMIN_TOKEN="替换为 ADMIN Bearer Token"
-./scripts/reset-demo-kb.sh
+bash scripts/import-project-kb.sh
 ```
 
-然后可在页面选择 Single Agent 或 Durable Workflow，观察阶段进度、工具调用、引用、预算和 SSE 断线续传。
+然后可在页面选择 Single Agent 或 Durable Workflow，观察阶段进度、工具调用、引用、预算和 SSE 断线续传。`reset-demo-kb.sh` 是会删除 Legacy 知识库的维护工具，不是默认复现步骤。
 
 ### 5. 显式启用 RAGFlow + Dify
 
@@ -179,7 +222,7 @@ export DEEPRESEARCH_ADMIN_TOKEN="替换为 ADMIN Bearer Token"
 ./scripts/verify-engineering-baseline.sh
 ```
 
-默认测试使用 Mock/Stub，不调用付费模型。GitHub Actions 还会执行 Compose 配置校验、公开文件边界检查和 Gitleaks 秘密扫描。
+默认测试使用 Mock/Stub，不调用付费模型。GitHub Actions 还执行 `make showcase-check`、两套 Compose 配置校验、公开文件边界检查和完整历史 Gitleaks 扫描。完整本地门禁会启动 Legacy 服务；只复核展示材料时使用离线检查即可。
 
 ### 检索评测快照
 

@@ -1,8 +1,9 @@
 PYTHON312 ?= python3.12
+PYTHON ?= python3
 WORKFLOW_PY := workflow-service/.venv/bin/python
 RERANKER_PY := reranker-service/.venv/bin/python
 
-.PHONY: test integration-test workflow-setup workflow-test reranker-setup reranker-test build dev public-release-check
+.PHONY: test integration-test workflow-setup workflow-test reranker-setup reranker-test showcase-check build dev public-release-check
 
 test:
 	mvn test
@@ -42,6 +43,13 @@ reranker-setup:
 reranker-test: reranker-setup
 	$(RERANKER_PY) -m compileall -q reranker-service reranker-service/training reranker-service/tests
 	$(RERANKER_PY) -m pytest reranker-service/tests
+
+# Standard library only; runs from the repository root with no API keys/services.
+showcase-check:
+	$(PYTHON) integrations/dify/verify_workflow.py
+	$(PYTHON) -m unittest discover -s integrations/ragflow -p 'test_*.py' -v
+	$(PYTHON) integrations/ragflow/verify_showcase_artifacts.py
+	bash scripts/import-project-kb.sh --dry-run
 
 build:
 	mvn -DskipTests package

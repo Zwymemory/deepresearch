@@ -2,7 +2,6 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REPO_DIR="$(cd "$PROJECT_DIR/.." && pwd)"
 
 cd "$PROJECT_DIR"
 docker compose up -d postgres elasticsearch reranker
@@ -25,8 +24,8 @@ mvn -q clean test
 mvn -q -Pintegration verify
 make workflow-test
 make reranker-test
-make report
+make showcase-check
 docker compose config --quiet
-git -C "$REPO_DIR" diff --check -- deepresearch
+git -C "$PROJECT_DIR" diff --check -- .
 
 echo "DeepResearch engineering baseline verified."
