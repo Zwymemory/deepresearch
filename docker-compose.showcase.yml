@@ -8,6 +8,8 @@ services:
       - "127.0.0.1:${DEEPRESEARCH_PG_PORT:-5432}:5432"
 
   workflow-db-bootstrap:
+    # Use the same PostgreSQL 16 image/client as the server for role setup.
+    image: pgvector/pgvector:pg16
     container_name: ${COMPOSE_PROJECT_NAME:-deepresearch-showcase}-db-bootstrap
 
   app:
