@@ -48,9 +48,11 @@ def verify_graph() -> None:
     assert all(node["data"]["model"]["name"] == "deepseek-v4-flash" for node in llms)
     assert all(node["data"]["model"]["completion_params"]["response_format"] == "json_object" for node in llms)
     assert all(node["data"]["model"]["completion_params"]["max_tokens"] == 4096 for node in llms)
-    assert all(node["data"]["model"]["completion_params"]["thinking"] is True for node in llms)
+    assert all(node["data"]["model"]["completion_params"]["thinking"] is (not node["id"].startswith("synthesizer")) for node in llms)
     assert all(node["data"]["retry_config"]["enabled"] is False for node in llms)
     assert all(node["data"]["structured_output_enabled"] is False for node in llms)
+    for node_id in ("final", "final_direct"):
+        assert {item["variable"]: item["value_selector"] for item in NODES[node_id]["data"]["variables"]}["question"] == ["start", "question"]
     assert any(edge["source"] == "revision_gate" and edge["sourceHandle"] == "false" and edge["target"] == "synthesizer_direct" for edge in GRAPH["edges"])
     assert any(edge["source"] == "revision_gate" and edge["sourceHandle"] == "true" and edge["target"] == "revision_workers" for edge in GRAPH["edges"])
 
@@ -112,72 +114,72 @@ def verify_contract() -> None:
     assert [item["citationId"] for item in deduplicated_evidence] == [citation_a, citation_b, citation_c]
     assert [item["sourceId"] for item in deduplicated_evidence] == ["来源1", "来源2", "来源3"]
 
-    selected_ca = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "C first [来源3], then A [来源1].", "citations": [citation_c, citation_a]}), context=deduplicated["context"])
+    selected_ca = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "C first [来源3], then A [来源1].", "citations": [citation_c, citation_a], "answer_kind": "ANSWER", "boundary_support": []}), context=deduplicated["context"], question="policy")
     assert selected_ca["status"] == "SUCCEEDED" and selected_ca["citations"] == [citation_c, citation_a]
     assert selected_ca["answer"] == "C first [来源1], then A [来源2]."
-    reordered_ca = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "C first [来源3], then A [来源1].", "citations": [citation_a, citation_c]}), context=deduplicated["context"])
+    reordered_ca = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "C first [来源3], then A [来源1].", "citations": [citation_a, citation_c], "answer_kind": "ANSWER", "boundary_support": []}), context=deduplicated["context"], question="policy")
     assert reordered_ca["status"] == "SUCCEEDED" and reordered_ca["citations"] == [citation_c, citation_a]
-    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Wrong ID [来源3].", "citations": [citation_a]}), context=deduplicated["context"])["status"] == "FAILED"
-    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Unknown [来源4].", "citations": [citation_c]}), context=deduplicated["context"])["status"] == "FAILED"
-    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Duplicate [来源1] [来源2].", "citations": [citation_c, citation_c]}), context=deduplicated["context"])["status"] == "FAILED"
-    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Foreign [来源1] [来源2].", "citations": [citation_c, "kb:ragflow:foreign:document:chunk"]}), context=deduplicated["context"])["status"] == "FAILED"
+    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Wrong ID [来源3].", "citations": [citation_a], "answer_kind": "ANSWER", "boundary_support": []}), context=deduplicated["context"], question="policy")["status"] == "FAILED"
+    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Unknown [来源4].", "citations": [citation_c], "answer_kind": "ANSWER", "boundary_support": []}), context=deduplicated["context"], question="policy")["status"] == "FAILED"
+    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Duplicate [来源1] [来源2].", "citations": [citation_c, citation_c], "answer_kind": "ANSWER", "boundary_support": []}), context=deduplicated["context"], question="policy")["status"] == "FAILED"
+    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Foreign [来源1] [来源2].", "citations": [citation_c, "kb:ragflow:foreign:document:chunk"], "answer_kind": "ANSWER", "boundary_support": []}), context=deduplicated["context"], question="policy")["status"] == "FAILED"
     literal_example = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED",
-            "answer": "The literal [来源N] is a format example; evidence A [来源1].", "citations": [citation_a]}),
-            context=deduplicated["context"])
+            "answer": "The literal [来源N] is a format example; evidence A [来源1].", "citations": [citation_a], "answer_kind": "ANSWER", "boundary_support": []}),
+            context=deduplicated["context"], question="policy")
     assert literal_example["status"] == "SUCCEEDED" and literal_example["answer"] == "The literal 来源编号 is a format example; evidence A [来源1]."
     assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED",
-            "answer": "Malformed [来源X] beside evidence A [来源1].", "citations": [citation_a]}),
-            context=deduplicated["context"])["status"] == "FAILED"
-    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "No source [来源1].", "citations": [citation_a]}), context=empty_initial["context"])["status"] == "INSUFFICIENT_EVIDENCE"
+            "answer": "Malformed [来源X] beside evidence A [来源1].", "citations": [citation_a], "answer_kind": "ANSWER", "boundary_support": []}),
+            context=deduplicated["context"], question="policy")["status"] == "FAILED"
+    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "No source [来源1].", "citations": [citation_a], "answer_kind": "ANSWER", "boundary_support": []}), context=empty_initial["context"], question="policy")["status"] == "INSUFFICIENT_EVIDENCE"
 
     nine = [{"sourceId": "来源" + str(index), "citationId": "kb:ragflow:ds:doc:chunk" + str(index)}
             for index in range(1, 10)]
     first_used = [1, 2, 6, 7, 3, 5]
     live_shape = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED",
             "answer": "A [来源1] B [来源2] C [来源2] D [来源6] E [来源7] F [来源3] G [来源5]",
-            "citations": [nine[index - 1]["citationId"] for index in first_used]}),
-            context=json.dumps({"evidences": nine}))
+            "citations": [nine[index - 1]["citationId"] for index in first_used], "answer_kind": "ANSWER", "boundary_support": []}),
+            context=json.dumps({"evidences": nine}), question="policy")
     assert live_shape["status"] == "SUCCEEDED"
     assert live_shape["citations"] == [nine[index - 1]["citationId"] for index in first_used]
     assert live_shape["answer"] == "A [来源1] B [来源2] C [来源2] D [来源3] E [来源4] F [来源5] G [来源6]"
     unordered_shape = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED",
             "answer": "A [来源1] B [来源2] C [来源2] D [来源6] E [来源7] F [来源3] G [来源5]",
-            "citations": [nine[index - 1]["citationId"] for index in reversed(first_used)]}),
-            context=json.dumps({"evidences": nine}))
+            "citations": [nine[index - 1]["citationId"] for index in reversed(first_used)], "answer_kind": "ANSWER", "boundary_support": []}),
+            context=json.dumps({"evidences": nine}), question="policy")
     assert unordered_shape == live_shape
     source_label_shape = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED",
             "answer": "A [来源1] B [来源2] C [来源2] D [来源6] E [来源7] F [来源3] G [来源5]",
-            "citations": ["来源" + str(index) for index in reversed(first_used)]}),
-            context=json.dumps({"evidences": nine}))
+            "citations": ["来源" + str(index) for index in reversed(first_used)], "answer_kind": "ANSWER", "boundary_support": []}),
+            context=json.dumps({"evidences": nine}), question="policy")
     assert source_label_shape == live_shape
     assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED",
-            "answer": "A [来源1] B [来源2]", "citations": ["来源1", nine[1]["citationId"]]}),
-            context=json.dumps({"evidences": nine}))["status"] == "FAILED"
+            "answer": "A [来源1] B [来源2]", "citations": ["来源1", nine[1]["citationId"]], "answer_kind": "ANSWER", "boundary_support": []}),
+            context=json.dumps({"evidences": nine}), question="policy")["status"] == "FAILED"
     assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED",
-            "answer": "A [来源1] B [来源2]", "citations": ["来源1", "来源10"]}),
-            context=json.dumps({"evidences": nine}))["status"] == "FAILED"
+            "answer": "A [来源1] B [来源2]", "citations": ["来源1", "来源10"], "answer_kind": "ANSWER", "boundary_support": []}),
+            context=json.dumps({"evidences": nine}), question="policy")["status"] == "FAILED"
 
-    review = call("review", review_text=json.dumps({"verdict": "REVISE", "followups": [{"tool": "kb_search", "input": "more"}]}), context=initial["context"], initial_count=1, java_run_id=run_id, allowed_tools="kb_search", question="policy?")
+    review = call("review", review_text=json.dumps({"verdict": "REVISE", "followups": [{"tool": "kb_search", "input": "more"}], "answer_kind": "NONE", "boundary_support": []}), context=initial["context"], initial_count=1, java_run_id=run_id, allowed_tools="kb_search", question="policy?")
     assert review["status"] == "READY" and len(review["requests"]) == 1
     assert json.loads(review["requests"][0])["callId"] == run_id + ":revision:1"
-    over_budget = call("review", review_text=json.dumps({"verdict": "REVISE", "followups": [{"tool": "kb_search", "input": "more"}]}), context=initial["context"], initial_count=4, java_run_id=run_id, allowed_tools="kb_search", question="policy?")
+    over_budget = call("review", review_text=json.dumps({"verdict": "REVISE", "followups": [{"tool": "kb_search", "input": "more"}], "answer_kind": "NONE", "boundary_support": []}), context=initial["context"], initial_count=4, java_run_id=run_id, allowed_tools="kb_search", question="policy?")
     assert over_budget["status"] == "INSUFFICIENT_EVIDENCE"
     merged = call("merged", context=initial["context"], results=[success], revision_requests=review["requests"])
     assert merged["status"] == "READY" and len(json.loads(merged["context"])["evidences"]) == 1
-    enough = call("review", review_text='{"verdict":"SUFFICIENT","followups":[]}', context=initial["context"], initial_count=1, java_run_id=run_id, allowed_tools="kb_search", question="policy?")
+    enough = call("review", review_text='{"verdict":"SUFFICIENT","followups":[],"answer_kind":"ANSWER","boundary_support":[]}', context=initial["context"], initial_count=1, java_run_id=run_id, allowed_tools="kb_search", question="policy?")
     assert enough["status"] == "READY" and enough["requests"] == []
-    thinking_review = call("review", review_text='<think>evidence is enough</think>{"verdict":"SUFFICIENT","followups":[]}', context=initial["context"], initial_count=1, java_run_id=run_id, allowed_tools="kb_search", question="policy?")
+    thinking_review = call("review", review_text='<think>evidence is enough</think>{"verdict":"SUFFICIENT","followups":[],"answer_kind":"ANSWER","boundary_support":[]}', context=initial["context"], initial_count=1, java_run_id=run_id, allowed_tools="kb_search", question="policy?")
     assert thinking_review["status"] == "READY"
     assert enough["needs_revision"] == "NO" and review["needs_revision"] == "YES"
     assert call("merged", context=initial["context"], results=[], revision_requests=[])["status"] == "READY"
 
-    answer = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "The policy says so [来源1].", "citations": [citation]}), context=merged["context"])
+    answer = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "The policy says so [来源1].", "citations": [citation], "answer_kind": "ANSWER", "boundary_support": []}), context=merged["context"], question="policy")
     assert answer["status"] == "SUCCEEDED" and answer["citations"] == [citation]
-    thinking_answer = call("final", synthesis_text='<think>use only evidence</think>' + json.dumps({"status": "SUCCEEDED", "answer": "The policy says so [来源1].", "citations": [citation]}), context=merged["context"])
+    thinking_answer = call("final", synthesis_text='<think>use only evidence</think>' + json.dumps({"status": "SUCCEEDED", "answer": "The policy says so [来源1].", "citations": [citation], "answer_kind": "ANSWER", "boundary_support": []}), context=merged["context"], question="policy")
     assert thinking_answer["status"] == "SUCCEEDED"
-    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Uncited", "citations": [citation]}), context=merged["context"])["status"] == "FAILED"
-    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Wrong [来源1]", "citations": ["kb:ragflow:other:doc:chunk"]}), context=merged["context"])["status"] == "FAILED"
-    assert call("final", synthesis_text='{"status":"INSUFFICIENT_EVIDENCE","answer":"","citations":[]}', context=merged["context"])["status"] == "INSUFFICIENT_EVIDENCE"
+    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Uncited", "citations": [citation], "answer_kind": "ANSWER", "boundary_support": []}), context=merged["context"], question="policy")["status"] == "FAILED"
+    assert call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "Wrong [来源1]", "citations": ["kb:ragflow:other:doc:chunk"], "answer_kind": "ANSWER", "boundary_support": []}), context=merged["context"], question="policy")["status"] == "FAILED"
+    assert call("final", synthesis_text='{"status":"INSUFFICIENT_EVIDENCE","answer":"","citations":[],"answer_kind":"NONE","boundary_support":[]}', context=merged["context"], question="policy")["status"] == "INSUFFICIENT_EVIDENCE"
 
 
 def verify_release_constraints() -> None:
@@ -208,23 +210,72 @@ def verify_release_constraints() -> None:
         assert call("plan", plan_text=invalid, question=question, java_run_id=run_id, allowed_tools="kb_search")["status"] == "FAILED"
 
     context = json.dumps({"evidences": [{"sourceId": "来源1", "citationId": "kb:ragflow:ds:doc:chunk"}], "toolValues": []})
-    revision = call("review", review_text='{"verdict":"REVISE","followups":[{"tool":"kb_search","input":"actual key value"}]}',
+    revision = call("review", review_text='{"verdict":"REVISE","followups":[{"tool":"kb_search","input":"actual key value"}],"answer_kind":"NONE","boundary_support":[]}',
                     context=context, initial_count=1, java_run_id=run_id, allowed_tools="kb_search", question=question)
     assert revision["status"] == "READY" and len(revision["requests"]) == 1
     assert "只检索公开边界说明" in json.loads(revision["requests"][0])["input"]
-    for invalid in ('{"verdict":"SUFFICIENT"}', '{"verdict":"SUFFICIENT","followups":[{"tool":"kb_search","input":"x"}]}',
-                    '{"verdict":"SUFFICIENT","followups":[],"extra":true}'):
+    for invalid in ('{"verdict":"SUFFICIENT"}', '{"verdict":"SUFFICIENT","followups":[{"tool":"kb_search","input":"x"}],"answer_kind":"ANSWER","boundary_support":[]}',
+                    '{"verdict":"SUFFICIENT","followups":[],"extra":true,"answer_kind":"ANSWER","boundary_support":[]}'):
         assert call("review", review_text=invalid, context=context, initial_count=1, java_run_id=run_id,
                     allowed_tools="kb_search", question="policy")["status"] == "FAILED"
     for invalid in ('{"status":"INSUFFICIENT_EVIDENCE"}',
-                    '{"status":"INSUFFICIENT_EVIDENCE","answer":"unsupported","citations":[]}',
+                    '{"status":"INSUFFICIENT_EVIDENCE","answer":"unsupported","citations":[],"answer_kind":"NONE","boundary_support":[]}',
                     '{"status":"SUCCEEDED","answer":"Boundary [来源1]","citations":["kb:ragflow:ds:doc:chunk”]}',
-                    '{"status":"SUCCEEDED","answer":"Boundary [来源1]","citations":["kb:ragflow:ds:doc:chunk"],"extra":true}'):
-        assert call("final", synthesis_text=invalid, context=context)["status"] == "FAILED"
+                    '{"status":"SUCCEEDED","answer":"Boundary [来源1]","citations":["kb:ragflow:ds:doc:chunk"],"extra":true,"answer_kind":"ANSWER","boundary_support":[]}'):
+        assert call("final", synthesis_text=invalid, context=context, question="policy")["status"] == "FAILED"
+
+
+def verify_boundary_scope() -> None:
+    """Development regressions; none alter the frozen case labels or historical runs."""
+    citation = "kb:ragflow:development:boundary:chunk"
+    question = "请给出银行账户号码和开户地址。"
+
+    def check(q, content, subject, quote):
+        context = json.dumps({"evidences": [{"sourceId": "来源1", "citationId": citation, "content": content}], "toolValues": []})
+        proof = [{"subject": subject, "quote": quote, "sourceId": "来源1"}]
+        review = call("review", review_text=json.dumps({"verdict": "SUFFICIENT", "followups": [],
+                       "answer_kind": "DOCUMENTED_BOUNDARY", "boundary_support": proof}), context=context,
+                       initial_count=1, java_run_id="development-run", allowed_tools="kb_search", question=q)
+        final = call("final", synthesis_text=json.dumps({"status": "SUCCEEDED", "answer": "文档明确记录此边界。[来源1]",
+                     "citations": [citation], "answer_kind": "DOCUMENTED_BOUNDARY", "boundary_support": proof}),
+                     context=context, question=q)
+        return review, final
+
+    unrelated = "这些文档不包含 JWT 签名密钥、API Key 或联系方式。"
+    for q in (question, "项目对公银行账户的号码和开户地点能否直接列出？"):
+        for subject in ("银行账户", "文档", "联系方式"):
+            review, final = check(q, unrelated, subject, unrelated)
+            assert review["status"] == final["status"] == "INSUFFICIENT_EVIDENCE"
+            assert final["answer"] == "" and final["citations"] == []
+    # A real, exact exclusion of the requested topic is a valid documented boundary.
+    explicit = "这些文档不包含银行账户号码和开户地址。"
+    review, final = check(question, explicit, "银行账户号码", explicit)
+    assert review["status"] == "READY" and final["status"] == "SUCCEEDED"
+    # Mention and negation in the same paragraph are not enough: scope must match.
+    for content in ("银行账户号码由公开登记记录。文档不包含 JWT 签名密钥。",
+                    "文档不包含 JWT 签名密钥，但银行账户号码有公开记录。",
+                    "文档不包含 JWT 签名密钥, 银行账户号码有公开记录。",
+                    "文档不包含 JWT 签名密钥但银行账户号码有公开记录。"):
+        review, final = check(question, content, "银行账户号码", content)
+        assert review["status"] == final["status"] == "INSUFFICIENT_EVIDENCE"
+    english_q = "What bank account information is documented?"
+    for content, expected in (("The documents do not include bank account information.", "SUCCEEDED"),
+                              ("Bank account information is public. The documents do not include secrets.", "INSUFFICIENT_EVIDENCE"),
+                              ("The documents do not include secrets, but bank account information is public.", "INSUFFICIENT_EVIDENCE")):
+        _, final = check(english_q, content, "bank account information", content)
+        assert final["status"] == expected
+    # The contacts synonym is allowed only when the actual quote excludes contacts.
+    _, final = check("请给出维护者的私人手机号和个人邮箱。", unrelated, "联系方式", unrelated)
+    assert final["status"] == "SUCCEEDED"
+    _, final = check("请给出维护者的私人手机号和个人邮箱。", "联系方式有公开记录。文档不包含 API Key。", "联系方式", "联系方式有公开记录。文档不包含 API Key。")
+    assert final["status"] == "INSUFFICIENT_EVIDENCE"
+    _, final = check(question, explicit, "银行账户号码", "文档不包含银行账户号码。")
+    assert final["status"] == "INSUFFICIENT_EVIDENCE"  # invented/non-exact quote
 
 
 if __name__ == "__main__":
     verify_graph()
     verify_contract()
     verify_release_constraints()
+    verify_boundary_scope()
     print("Dify DSL graph and Evidence v1 contract checks passed")
