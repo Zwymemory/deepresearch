@@ -71,13 +71,22 @@ def redact_text(value):
 def suite(path):
     holdout_path = Path(path).resolve()
     holdout = load(holdout_path)
-    if holdout.get("schemaVersion") != 1 or len(holdout.get("cases", [])) != 8:
-        raise ValueError("holdout requires exactly eight fixed cases")
+    if holdout.get("schemaVersion") != 1:
+        raise ValueError("unsupported suite schema")
     base_path = holdout_path.parent / holdout["baseManifest"]
     base = load(base_path)
     if len(base.get("cases", [])) != 29:
         raise ValueError("base manifest requires 29 project cases")
-    cases = base["cases"] + holdout["cases"]
+    if holdout.get("suiteType") == "targeted":
+        expected = holdout.get("expectedCaseCount")
+        if type(expected) is not int or not 1 <= expected <= 100 \
+                or len(holdout.get("cases", [])) != expected:
+            raise ValueError("targeted suite must match its frozen case count")
+        cases = holdout["cases"]
+    else:
+        if len(holdout.get("cases", [])) != 8:
+            raise ValueError("holdout requires exactly eight fixed cases")
+        cases = base["cases"] + holdout["cases"]
     ids = [case["id"] for case in cases]
     if len(ids) != len(set(ids)):
         raise ValueError("duplicate case IDs")
@@ -387,7 +396,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     collect_parser = commands.add_parser("collect")
-    collect_parser.add_argument("--holdout", default=str(HERE / "showcase_holdout_cases.json"))
+    collect_parser.add_argument("--holdout", "--manifest", dest="holdout",
+                                default=str(HERE / "showcase_holdout_cases.json"))
     collect_parser.add_argument("--mode", choices=("legacy-hybrid", "legacy-langgraph",
                                                    "ragflow-dify", "ragflow-langgraph"), required=True)
     collect_parser.add_argument("--base-url", required=True)

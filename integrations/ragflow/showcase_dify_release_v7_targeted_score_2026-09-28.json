@@ -1,0 +1,774 @@
+{
+  "schemaVersion": 1,
+  "suiteHashes": [
+    "b276e82585c471377f1055b52883564ea2c20f3caa33848b3d31dbaee2aa6d96",
+    "58312bb38f8ba0899dd280c6a88b7e8a2d7affba7864ace5db5011e4abb49834"
+  ],
+  "conditionsByMode": {
+    "ragflow-dify": {
+      "mode": "ragflow-dify",
+      "codeSha": "86fac77e661bdcaac400a0d80cb4a26119c8078f",
+      "retrievalProvider": "ragflow",
+      "workflowEngine": "dify",
+      "model": {
+        "name": "deepseek-v4-flash",
+        "providerPlugin": "langgenius/deepseek:0.0.24",
+        "llmNodes": [
+          {
+            "id": "planner",
+            "model": "deepseek-v4-flash",
+            "completionParams": {
+              "max_tokens": 4096,
+              "reasoning_effort": "high",
+              "response_format": "json_object",
+              "temperature": 0,
+              "thinking": true
+            },
+            "structuredOutputEnabled": false,
+            "retryEnabled": false
+          },
+          {
+            "id": "reviewer",
+            "model": "deepseek-v4-flash",
+            "completionParams": {
+              "max_tokens": 4096,
+              "reasoning_effort": "high",
+              "response_format": "json_object",
+              "temperature": 0,
+              "thinking": true
+            },
+            "structuredOutputEnabled": false,
+            "retryEnabled": false
+          },
+          {
+            "id": "synthesizer_direct",
+            "model": "deepseek-v4-flash",
+            "completionParams": {
+              "max_tokens": 4096,
+              "reasoning_effort": "high",
+              "response_format": "json_object",
+              "temperature": 0,
+              "thinking": false
+            },
+            "structuredOutputEnabled": false,
+            "retryEnabled": false
+          },
+          {
+            "id": "synthesizer",
+            "model": "deepseek-v4-flash",
+            "completionParams": {
+              "max_tokens": 4096,
+              "reasoning_effort": "high",
+              "response_format": "json_object",
+              "temperature": 0,
+              "thinking": false
+            },
+            "structuredOutputEnabled": false,
+            "retryEnabled": false
+          }
+        ],
+        "temperatureEffective": "0 on non-thinking Synthesizers; provider removes temperature on thinking Planner/Reviewer",
+        "nativeStructuredOutput": "json_object",
+        "schemaEnforcement": "exact local fields and documented boundary proof; no repair calls"
+      },
+      "corpus": {
+        "name": "project-knowledge",
+        "sourceHashes": [
+          {
+            "path": "docs/kb-project/README.md",
+            "sha256": "15dc37ee805f7c541c33366b06be97443168abdc254b54c36f3ed45e9d5ce3cc"
+          },
+          {
+            "path": "docs/kb-project/01-architecture-and-trust-boundaries.md",
+            "sha256": "d281884eff6e581cbd25df1708c2c3ae963901ab0e6b1b17b5e6bc5e49bae92f"
+          },
+          {
+            "path": "docs/kb-project/02-checkpoint-and-crash-recovery.md",
+            "sha256": "7874c363d5be14e1af51964f87cd5e9ee5b2c6bdec0ed1e817bd5cd151800b95"
+          },
+          {
+            "path": "docs/kb-project/03-claim-lease-and-fencing.md",
+            "sha256": "fb7fc01c2c23fd709d1d1100c1bb6cfdd7e2bcd58cab0fd38d91c3f1e1d8fa64"
+          },
+          {
+            "path": "docs/kb-project/04-sse-durable-replay.md",
+            "sha256": "64dc2cd26bf13f0c84eacf26b071f213ac423ef634e4aa0bd49c0926b7fe6090"
+          },
+          {
+            "path": "docs/kb-project/05-tool-receipt-and-unknown-result.md",
+            "sha256": "5de1bc0c032dddeb5db71c4f1d67f08e6db6cfdd42750b188ce50dc86904e3d1"
+          },
+          {
+            "path": "docs/kb-project/06-verification-boundaries.md",
+            "sha256": "12df625ce79355fb450e539d1ce74789ec61e6c5193f726d166e7b89fd2c5140"
+          },
+          {
+            "path": "docs/kb-project/07-agent-evaluation-fact-cards.md",
+            "sha256": "ac7601e097a249e790f6d55baeb0a2cf6604e4f74a6b534abe19c9e026c6ebaf"
+          }
+        ],
+        "documentCount": 8,
+        "datasetFingerprint": "sha256:4aa81e80e2fd505e9efe3c72566d919fd6953f21423ed64b4bc48e9c14dcdb0f"
+      },
+      "budgets": {
+        "topK": 5,
+        "maxWorkerCalls": 4,
+        "maxRevisionCycles": 1,
+        "javaDeadlineSeconds": 120,
+        "modelCallLimit": "Dify graph bounded by nodes; no shared call ledger",
+        "maxOutputTokensPerModelCall": 4096,
+        "maxLlmNodeExecutions": 3,
+        "modelRetryEnabled": false,
+        "jsonRepairCalls": 0
+      },
+      "host": {
+        "class": "local Docker Desktop macOS",
+        "memoryGiB": 7.75
+      },
+      "testWindow": "2026-09-28T03:37:56.470369+00:00",
+      "notes": "Final fixed Evidence v6 candidate. Java jar built from codeSha; eight-document frozen RAGFlow corpus. Native JSON object mode, exact schemas, fixed public-boundary queries, source/negative-scope quote checks. Same 4096 per-call cap; Synthesizer thinking disabled after preserved v5 length failure. Separate debug probes are not internal tool receipts.",
+      "dslSha256": "48923fbfed9d2a6bf8d7c8d0ba3f2a4690fea959c04b8f21cf4d9d74f5273c46",
+      "publishedWorkflowId": "b1eb75ba-565c-4e13-ac15-4f97c42a97e4",
+      "javaArtifactSha256": "9231d3df1feb1bbbabad5634230c10e8cdbb6e1ddcf4a23c76f93d8d676db676"
+    }
+  },
+  "summaryByMode": {
+    "ragflow-dify": {
+      "sampleCount": 24,
+      "caseCount": 12,
+      "full37Once": false,
+      "answerP95Ms": 26497.572,
+      "answerP95SampleCount": 24,
+      "retrievalProbeP95Ms": 1080.352,
+      "retrievalFactCoverageMean": 1.0,
+      "reviewedAnswerFactCoverageMean": 0.75,
+      "reviewedPositiveSampleCount": 8,
+      "reviewedRefusalsCorrect": 15,
+      "reviewedRefusalSampleCount": 16,
+      "reviewedCitationsSupported": 17,
+      "reviewedCitationSampleCount": 17,
+      "citationContractValid": 17,
+      "citationSourceExistenceChecked": 17,
+      "citationSourceExists": 17,
+      "automaticRefusalsCorrect": 11,
+      "negativeSampleCount": 16,
+      "usageObserved": {
+        "totalTokens": [
+          4368,
+          6248,
+          4707,
+          4697,
+          5573,
+          5674,
+          6094,
+          4395,
+          3527,
+          2415,
+          6968,
+          7069,
+          1287,
+          null,
+          5900,
+          6048,
+          4875,
+          5414,
+          5101,
+          4663,
+          9253,
+          4552,
+          2621,
+          3858
+        ],
+        "modelCalls": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "toolCalls": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "estimatedCost": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    }
+  },
+  "comparability": {
+    "model": true,
+    "corpus": true,
+    "budgets": true,
+    "host": true
+  },
+  "samples": [
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-001",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 8939.07,
+      "retrievalLatencyMs": 762.289,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 4368
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "java-control-plane": 1,
+        "python-execution-plane": 1
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "java-control-plane": false,
+        "python-execution-plane": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-001",
+      "repetition": 2,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 10389.001,
+      "retrievalLatencyMs": 549.298,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 6248
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "java-control-plane": 1,
+        "python-execution-plane": 1
+      },
+      "answerExactPhraseCoverage": 0.5,
+      "answerExactPhraseHits": {
+        "java-control-plane": false,
+        "python-execution-plane": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-neg-001",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "SUCCEEDED",
+      "latencyMs": 10745.683,
+      "retrievalLatencyMs": 410.608,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 4707
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-neg-001",
+      "repetition": 2,
+      "kind": "evidence-backed-safe-denial",
+      "status": "SUCCEEDED",
+      "latencyMs": 9738.131,
+      "retrievalLatencyMs": 387.692,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 4697
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-neg-002",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "SUCCEEDED",
+      "latencyMs": 13856.215,
+      "retrievalLatencyMs": 467.526,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 5573
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-neg-002",
+      "repetition": 2,
+      "kind": "evidence-backed-safe-denial",
+      "status": "SUCCEEDED",
+      "latencyMs": 12427.381,
+      "retrievalLatencyMs": 374.375,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 5674
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "showcase-holdout-008",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "SUCCEEDED",
+      "latencyMs": 16454.118,
+      "retrievalLatencyMs": 597.818,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 6094
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "showcase-holdout-008",
+      "repetition": 2,
+      "kind": "evidence-backed-safe-denial",
+      "status": "SUCCEEDED",
+      "latencyMs": 10758.119,
+      "retrievalLatencyMs": 387.762,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 4395
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "showcase-holdout-007",
+      "repetition": 1,
+      "kind": "zero-evidence",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 11735.288,
+      "retrievalLatencyMs": 488.416,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "totalTokens": 3527
+      },
+      "retrievalNegativeClean": false,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "showcase-holdout-007",
+      "repetition": 2,
+      "kind": "zero-evidence",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 10735.219,
+      "retrievalLatencyMs": 376.422,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "totalTokens": 2415
+      },
+      "retrievalNegativeClean": false,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-025",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 14894.885,
+      "retrievalLatencyMs": 455.508,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 6968
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "sdk-retries-disabled": 2,
+        "one-request-per-reservation": 2,
+        "default-attempts": 2,
+        "unknown-budget-accounting": 2
+      },
+      "answerExactPhraseCoverage": 0.5,
+      "answerExactPhraseHits": {
+        "sdk-retries-disabled": false,
+        "one-request-per-reservation": true,
+        "default-attempts": false,
+        "unknown-budget-accounting": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-025",
+      "repetition": 2,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 11277.196,
+      "retrievalLatencyMs": 380.677,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 7069
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "sdk-retries-disabled": 2,
+        "one-request-per-reservation": 2,
+        "default-attempts": 2,
+        "unknown-budget-accounting": 2
+      },
+      "answerExactPhraseCoverage": 0.5,
+      "answerExactPhraseHits": {
+        "sdk-retries-disabled": false,
+        "one-request-per-reservation": true,
+        "default-attempts": true,
+        "unknown-budget-accounting": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "showcase-holdout-005",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "FAILED",
+      "latencyMs": 16346.555,
+      "retrievalLatencyMs": 446.013,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "totalTokens": 1287
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "mapping-check": 3,
+        "authority-limit": 3
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "mapping-check": false,
+        "authority-limit": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "showcase-holdout-005",
+      "repetition": 2,
+      "kind": "positive",
+      "status": "TIMED_OUT",
+      "latencyMs": 121305.077,
+      "retrievalLatencyMs": 4665.2,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {},
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "mapping-check": 3,
+        "authority-limit": 3
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "mapping-check": false,
+        "authority-limit": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "release-rewrite-planes",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 17890.508,
+      "retrievalLatencyMs": 521.049,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 5900
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "java-control-plane": 1,
+        "python-execution-plane": 1
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "java-control-plane": false,
+        "python-execution-plane": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "release-rewrite-planes",
+      "repetition": 2,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 11258.046,
+      "retrievalLatencyMs": 629.234,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 6048
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "java-control-plane": 1,
+        "python-execution-plane": 1
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "java-control-plane": false,
+        "python-execution-plane": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "release-rewrite-private",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "SUCCEEDED",
+      "latencyMs": 9192.996,
+      "retrievalLatencyMs": 420.852,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 4875
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": false,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "release-rewrite-private",
+      "repetition": 2,
+      "kind": "evidence-backed-safe-denial",
+      "status": "SUCCEEDED",
+      "latencyMs": 15805.311,
+      "retrievalLatencyMs": 442.023,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 5414
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": false,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "release-rewrite-secrets",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "SUCCEEDED",
+      "latencyMs": 16833.684,
+      "retrievalLatencyMs": 433.134,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 5101
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "release-rewrite-secrets",
+      "repetition": 2,
+      "kind": "evidence-backed-safe-denial",
+      "status": "SUCCEEDED",
+      "latencyMs": 9707.577,
+      "retrievalLatencyMs": 381.192,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 4663
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": false,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "release-rewrite-k8s",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "SUCCEEDED",
+      "latencyMs": 26497.572,
+      "retrievalLatencyMs": 1080.352,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 9253
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": false,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "release-rewrite-k8s",
+      "repetition": 2,
+      "kind": "evidence-backed-safe-denial",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 15275.135,
+      "retrievalLatencyMs": 424.168,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "totalTokens": 4552
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": false,
+      "reviewedRefusalCorrect": false,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "release-rewrite-bank",
+      "repetition": 1,
+      "kind": "zero-evidence",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 9159.481,
+      "retrievalLatencyMs": 429.635,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "totalTokens": 2621
+      },
+      "retrievalNegativeClean": false,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "release-rewrite-bank",
+      "repetition": 2,
+      "kind": "zero-evidence",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 13758.017,
+      "retrievalLatencyMs": 484.511,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "totalTokens": 3858
+      },
+      "retrievalNegativeClean": false,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": null
+    }
+  ],
+  "interpretation": "Workflow retrieval probes are separate debug calls. Exact answer phrase scores are lower bounds; semantic fact and factual citation support require recorded review. Compare latency only under matched model, corpus and budgets."
+}

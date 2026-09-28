@@ -18,6 +18,18 @@ class ShowcaseEvaluationTest(unittest.TestCase):
                 self.assertTrue(any(evaluation.normalize_text(phrase) in normalized
                                     for phrase in label["evidencePhrases"]), (case["id"], label["id"]))
 
+    def test_release_targeted_suite_preserves_source_case_labels(self):
+        original = evaluation.suite(evaluation.HERE / "showcase_holdout_cases.json")
+        frozen = evaluation.suite(evaluation.HERE / "showcase_dify_release_targeted_cases_2026-09-28.json")
+        self.assertEqual(12, frozen["caseCount"])
+        self.assertEqual(original["baseSha256"], frozen["baseSha256"])
+        by_id = {case["id"]: case for case in original["cases"]}
+        for case in frozen["cases"]:
+            source = by_id[case["sourceCaseId"]]
+            self.assertEqual(source["kind"], case["kind"])
+            for field in ("requiredFacts", "denialEvidence", "answerContract"):
+                self.assertEqual(source.get(field), case.get(field))
+
     def test_positive_axes_remain_separate_and_review_is_explicit(self):
         case = {"id": "one", "kind": "positive", "requiredFacts": [
             {"id": "fact-a", "evidencePhrases": ["甲事实"]},

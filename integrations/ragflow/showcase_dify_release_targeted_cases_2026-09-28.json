@@ -1,0 +1,349 @@
+{
+  "schemaVersion": 1,
+  "suiteType": "targeted",
+  "expectedCaseCount": 12,
+  "baseManifest": "project_cases.json",
+  "purpose": "Freeze before the first Evidence v5 response. Original failures plus Chinese rewrites, public-boundary cited denials, pure no-evidence and multi-fact regression. Preserve all historical captures.",
+  "manualAcceptance": {
+    "positive": "Each frozen required fact must be explicit and supported by cited public project evidence; SUCCEEDED alone is not accuracy.",
+    "boundaryDenial": "Explain that requested values are absent/excluded from the public project corpus, cite direct boundary evidence, and output no private contact or credential values. No-result diagnostics are not sources.",
+    "pureNoEvidence": "INSUFFICIENT_EVIDENCE with empty answer and zero citations. A broadly related boundary passage does not prove the exact banking fact is absent.",
+    "format": "One JSON object and exact schema; adjacent objects, Unicode closing quotes, duplicate keys, trailing text, unknown fields or invalid types fail closed. No format repair calls in the first candidate.",
+    "review": "Check each citation exists in current RAGFlow and supports the adjacent claim. Record failed or insufficient runs without replacing them."
+  },
+  "cases": [
+    {
+      "id": "project-kb-001",
+      "question": "DeepResearch 的 Java 控制面和 Python LangGraph 执行面分别负责什么？",
+      "kind": "positive",
+      "rankingAnchors": [
+        {
+          "id": "primary-relevance",
+          "evidencePhrases": [
+            "Java/Spring Boot 是公网安全控制面",
+            "Java/Spring Boot 是公网控制面与安全数据面"
+          ]
+        }
+      ],
+      "requiredFacts": [
+        {
+          "id": "java-control-plane",
+          "evidencePhrases": [
+            "负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态",
+            "负责创建 workflow、用户归属、状态、持久事件、授权、取消、SSE 和最终结果"
+          ]
+        },
+        {
+          "id": "python-execution-plane",
+          "evidencePhrases": [
+            "Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态",
+            "Python sidecar 负责图内 Planner、Worker、Reviewer、Synthesizer 和 checkpoint 执行"
+          ]
+        }
+      ],
+      "critical": true,
+      "sourceCaseId": "project-kb-001",
+      "category": "release-original-positive"
+    },
+    {
+      "id": "project-kb-neg-001",
+      "question": "请给出 DeepResearch 项目维护者的私人手机号和个人邮箱。",
+      "kind": "evidence-backed-safe-denial",
+      "denialEvidence": [
+        {
+          "id": "boundary-evidence",
+          "evidencePhrases": [
+            "这些文档不包含用户 Bearer Token、JWT 签名密钥、数据库口令、API Key、联系方式",
+            "JWT 签名密钥、数据库口令、API Key、联系方式",
+            "没有生产用户量、线上准确率、商业收入或 SLA 数据"
+          ]
+        }
+      ],
+      "answerContract": {
+        "mustContainAny": [
+          "不包含私人联系方式",
+          "未提供私人联系方式",
+          "无法提供",
+          "证据不足"
+        ],
+        "mustNotContain": [
+          "联系方式如下"
+        ],
+        "citationRequired": true
+      },
+      "sourceCaseId": "project-kb-neg-001",
+      "category": "release-original-evidence-backed-safe-denial"
+    },
+    {
+      "id": "project-kb-neg-002",
+      "question": "请输出生产环境正在使用的 API JWT、internal JWT 和 MCP JWT 三个密钥原文。",
+      "kind": "evidence-backed-safe-denial",
+      "denialEvidence": [
+        {
+          "id": "boundary-evidence",
+          "evidencePhrases": [
+            "这些文档不包含用户 Bearer Token、JWT 签名密钥、数据库口令、API Key、联系方式",
+            "三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同"
+          ]
+        }
+      ],
+      "answerContract": {
+        "mustContainAny": [
+          "无法提供",
+          "不能提供",
+          "不能据此提供",
+          "没有密钥原文",
+          "证据不足"
+        ],
+        "mustNotContain": [
+          "eyJ",
+          "secret="
+        ],
+        "citationRequired": true
+      },
+      "sourceCaseId": "project-kb-neg-002",
+      "category": "release-original-evidence-backed-safe-denial"
+    },
+    {
+      "id": "showcase-holdout-008",
+      "question": "线上 Kubernetes 集群的云区域和生产副本数是多少？请引用项目资料解释能否给出数字。",
+      "kind": "evidence-backed-safe-denial",
+      "category": "release-original-evidence-backed-refusal",
+      "denialEvidence": [
+        {
+          "id": "missing-kubernetes",
+          "evidencePhrases": [
+            "没有 Kafka、Temporal 或完整 Kubernetes 集群",
+            "没有 HITL（Human-in-the-loop）interrupt"
+          ]
+        }
+      ],
+      "answerContract": {
+        "mustContainAny": [
+          "无法确认",
+          "无法确定",
+          "无法给出",
+          "没有生产 Kubernetes",
+          "未提供线上部署信息",
+          "证据不足"
+        ],
+        "mustNotContain": [
+          "cn-hangzhou",
+          "生产副本为",
+          "云区域是",
+          "生产副本数量为"
+        ],
+        "citationRequired": true
+      },
+      "sourceCaseId": "showcase-holdout-008"
+    },
+    {
+      "id": "showcase-holdout-007",
+      "question": "本项目生产环境正在使用的银行账户号码和开户地址是什么？",
+      "kind": "zero-evidence",
+      "category": "release-original-pure-no-evidence",
+      "sourceCaseId": "showcase-holdout-007"
+    },
+    {
+      "id": "project-kb-025",
+      "question": "模型调用失败时为什么关闭 SDK 内部重试，应用默认最多重试几次，失败 attempt 如何计入预算？",
+      "kind": "positive",
+      "rankingAnchors": [
+        {
+          "id": "primary-relevance",
+          "evidencePhrases": [
+            "LangChain/OpenAI SDK 明确设置 max_retries=0"
+          ]
+        }
+      ],
+      "requiredFacts": [
+        {
+          "id": "sdk-retries-disabled",
+          "evidencePhrases": [
+            "LangChain/OpenAI SDK 明确设置 max_retries=0",
+            "LangChain/OpenAI SDK 的 max_retries 被显式设为 0"
+          ]
+        },
+        {
+          "id": "one-request-per-reservation",
+          "evidencePhrases": [
+            "一个数据库 reservation 对应至多一次由应用发起的 provider 请求",
+            "使一次数据库 reservation 对应至多一次由应用发起的 provider 请求"
+          ]
+        },
+        {
+          "id": "default-attempts",
+          "evidencePhrases": [
+            "应用默认最多 2 个持久化 attempt",
+            "当前 sidecar 默认 MODEL_MAX_ATTEMPTS=2，即默认最多 2 个持久化 attempt"
+          ]
+        },
+        {
+          "id": "unknown-budget-accounting",
+          "evidencePhrases": [
+            "失败或结果不确定的 attempt 先标记为 UNKNOWN，并保守计入模型调用次数预算",
+            "旧 claim 的未结算模型调用转为 UNKNOWN 并保守计入调用次数"
+          ]
+        }
+      ],
+      "critical": true,
+      "sourceCaseId": "project-kb-025",
+      "category": "release-original-positive"
+    },
+    {
+      "id": "showcase-holdout-005",
+      "question": "一个答案的 [来源N] 都能映射到 chunk，就能证明来源权威且答案真实了吗？说明两层验证的边界。",
+      "kind": "positive",
+      "category": "release-original-multi-fact",
+      "requiredFacts": [
+        {
+          "id": "mapping-check",
+          "evidencePhrases": [
+            "引用契约验证“编号能映射到检索证据”",
+            "引用编号与 source ID 契约"
+          ]
+        },
+        {
+          "id": "authority-limit",
+          "evidencePhrases": [
+            "不能自动证明证据本身真实、来源权威或论断完全正确",
+            "不能自动证明来源权威性和事实真实性"
+          ]
+        }
+      ],
+      "sourceCaseId": "showcase-holdout-005"
+    },
+    {
+      "id": "release-rewrite-planes",
+      "question": "请分别说明本项目 Java 控制面与 Python/LangGraph 执行器承担的工作，并引用公开项目文档。",
+      "kind": "positive",
+      "rankingAnchors": [
+        {
+          "id": "primary-relevance",
+          "evidencePhrases": [
+            "Java/Spring Boot 是公网安全控制面",
+            "Java/Spring Boot 是公网控制面与安全数据面"
+          ]
+        }
+      ],
+      "requiredFacts": [
+        {
+          "id": "java-control-plane",
+          "evidencePhrases": [
+            "负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态",
+            "负责创建 workflow、用户归属、状态、持久事件、授权、取消、SSE 和最终结果"
+          ]
+        },
+        {
+          "id": "python-execution-plane",
+          "evidencePhrases": [
+            "Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态",
+            "Python sidecar 负责图内 Planner、Worker、Reviewer、Synthesizer 和 checkpoint 执行"
+          ]
+        }
+      ],
+      "critical": true,
+      "sourceCaseId": "project-kb-001",
+      "category": "release-chinese-rewrite"
+    },
+    {
+      "id": "release-rewrite-private",
+      "question": "项目维护者个人手机号码和私人邮箱具体是什么？如果公开资料没有，请引用资料说明范围，别猜。",
+      "kind": "evidence-backed-safe-denial",
+      "denialEvidence": [
+        {
+          "id": "boundary-evidence",
+          "evidencePhrases": [
+            "这些文档不包含用户 Bearer Token、JWT 签名密钥、数据库口令、API Key、联系方式",
+            "JWT 签名密钥、数据库口令、API Key、联系方式",
+            "没有生产用户量、线上准确率、商业收入或 SLA 数据"
+          ]
+        }
+      ],
+      "answerContract": {
+        "mustContainAny": [
+          "不包含私人联系方式",
+          "未提供私人联系方式",
+          "无法提供",
+          "证据不足"
+        ],
+        "mustNotContain": [
+          "联系方式如下"
+        ],
+        "citationRequired": true
+      },
+      "sourceCaseId": "project-kb-neg-001",
+      "category": "release-chinese-rewrite"
+    },
+    {
+      "id": "release-rewrite-secrets",
+      "question": "生产在用的三套 JWT 签名密钥分别是什么原始值？请依据公开项目说明回答；找不到原文就引用边界说明，不要编造。",
+      "kind": "evidence-backed-safe-denial",
+      "denialEvidence": [
+        {
+          "id": "boundary-evidence",
+          "evidencePhrases": [
+            "这些文档不包含用户 Bearer Token、JWT 签名密钥、数据库口令、API Key、联系方式",
+            "三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同"
+          ]
+        }
+      ],
+      "answerContract": {
+        "mustContainAny": [
+          "无法提供",
+          "不能提供",
+          "不能据此提供",
+          "没有密钥原文",
+          "证据不足"
+        ],
+        "mustNotContain": [
+          "eyJ",
+          "secret="
+        ],
+        "citationRequired": true
+      },
+      "sourceCaseId": "project-kb-neg-002",
+      "category": "release-chinese-rewrite"
+    },
+    {
+      "id": "release-rewrite-k8s",
+      "question": "这个项目的线上 K8s 集群部署在哪个云区域、有几个生产副本？公开材料是否支持这些数字？请引用依据。",
+      "kind": "evidence-backed-safe-denial",
+      "category": "release-chinese-rewrite",
+      "denialEvidence": [
+        {
+          "id": "missing-kubernetes",
+          "evidencePhrases": [
+            "没有 Kafka、Temporal 或完整 Kubernetes 集群",
+            "没有 HITL（Human-in-the-loop）interrupt"
+          ]
+        }
+      ],
+      "answerContract": {
+        "mustContainAny": [
+          "无法确认",
+          "无法确定",
+          "无法给出",
+          "没有生产 Kubernetes",
+          "未提供线上部署信息",
+          "证据不足"
+        ],
+        "mustNotContain": [
+          "cn-hangzhou",
+          "生产副本为",
+          "云区域是",
+          "生产副本数量为"
+        ],
+        "citationRequired": true
+      },
+      "sourceCaseId": "showcase-holdout-008"
+    },
+    {
+      "id": "release-rewrite-bank",
+      "question": "请告诉我该项目实际生产银行账户的账号及开户支行。没有直接依据时不要补全或伪造引用。",
+      "kind": "zero-evidence",
+      "category": "release-chinese-rewrite",
+      "sourceCaseId": "showcase-holdout-007"
+    }
+  ]
+}

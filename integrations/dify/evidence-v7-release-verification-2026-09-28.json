@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "testedCodeSha": "fa021dc7c36b0b87514bdc01f2383bc9f783a24a",
+  "targetedImplementationSha": "86fac77e661bdcaac400a0d80cb4a26119c8078f",
+  "dslSha256": "48923fbfed9d2a6bf8d7c8d0ba3f2a4690fea959c04b8f21cf4d9d74f5273c46",
+  "publishedWorkflowId": "b1eb75ba-565c-4e13-ac15-4f97c42a97e4",
+  "runtimeManifestEvaluatorDiffEmpty": true,
+  "comparedPaths": [
+    "src",
+    "workflow-service",
+    "integrations/dify/build_workflow.py",
+    "integrations/dify/deepresearch-evidence-v1.yml",
+    "integrations/ragflow/showcase_eval.py",
+    "integrations/ragflow/project_cases.json",
+    "integrations/ragflow/showcase_holdout_cases.json",
+    "integrations/ragflow/showcase_dify_release_targeted_cases_2026-09-28.json"
+  ],
+  "offlineRescores": [
+    {
+      "suite": "v5_targeted",
+      "offlineScoreExactMatch": true
+    },
+    {
+      "suite": "v6_targeted",
+      "offlineScoreExactMatch": true
+    },
+    {
+      "suite": "v7_targeted",
+      "offlineScoreExactMatch": true
+    },
+    {
+      "suite": "v7_full37",
+      "offlineScoreExactMatch": true
+    }
+  ],
+  "fullSuiteMembership": {
+    "cases": 37,
+    "samples": 37,
+    "repetitionsPerCase": 1,
+    "duplicateSamples": 0,
+    "manualReviews": 37,
+    "frozenCasesAndLabelsExactMatch": true
+  },
+  "fullSuiteSummary": {
+    "sampleCount": 37,
+    "caseCount": 37,
+    "full37Once": true,
+    "answerP95Ms": 16871.826,
+    "answerP95SampleCount": 37,
+    "retrievalProbeP95Ms": 554.638,
+    "retrievalFactCoverageMean": 0.9784946236559139,
+    "reviewedAnswerFactCoverageMean": 0.9596774193548387,
+    "reviewedPositiveSampleCount": 31,
+    "reviewedRefusalsCorrect": 5,
+    "reviewedRefusalSampleCount": 6,
+    "reviewedCitationsSupported": 33,
+    "reviewedCitationSampleCount": 34,
+    "citationContractValid": 34,
+    "citationSourceExistenceChecked": 34,
+    "citationSourceExists": 34,
+    "automaticRefusalsCorrect": 3,
+    "negativeSampleCount": 6
+  },
+  "nativeFormatSummary": {
+    "sampleCount": 37,
+    "llmNodeCount": 108,
+    "llmOutputsAvailable": 108,
+    "llmOutputsUnavailable": 0,
+    "jsonObjectFailures": 0,
+    "exactRootSchemaFailures": 1,
+    "finishReasonLengthCount": 0,
+    "samplesWithFormatFailure": 1,
+    "samplesWithoutCompleteModelOutput": 0,
+    "validatorFailedCount": 1,
+    "modelCalls": 108,
+    "toolCalls": 97,
+    "maxModelCallsPerRun": 3,
+    "maxToolCallsPerRun": 4,
+    "tokenSampleCount": 37,
+    "totalTokens": 229375,
+    "meanTotalTokens": 6199.324324324324,
+    "p95TotalTokens": 8438
+  },
+  "recordedTests": {
+    "java": {
+      "command": "mvn test",
+      "suites": 56,
+      "tests": 241,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "python": {
+      "command": "PYTHONPATH=workflow-service/src python -m pytest workflow-service/tests -m 'not integration' -q",
+      "passed": 112,
+      "note": "Used the existing pytest environment; one known httpx deprecation warning."
+    },
+    "evaluator": {
+      "passed": 7
+    },
+    "actualDslCodeNodeVerifier": "passed"
+  },
+  "captureNoteCorrection": "Inherited notes text says v6; workflow ID/hash, codeSha, model parameters and native trace identify fixed Evidence v7. Captured text preserved.",
+  "limits": [
+    "Manual review is recorded but not independent blind review.",
+    "Full37 includes one schema failure, one contradictory retry answer and one safe uncited boundary miss.",
+    "Observed Dify node counts and usage are not an independent provider request/billing ledger.",
+    "Fresh-environment release reproduction and joint live fault acceptance are separately owned and pending at this handoff."
+  ]
+}
