@@ -4,6 +4,8 @@
 
 Java / Spring Boot 负责公网 API、认证授权、知识库工具、持久任务与事件、引用发布门禁。默认检索数据面是自建 pgvector + BM25，默认工作流执行器是 Python / LangGraph。RAGFlow 检索和 Dify Workflow 已接入为显式可选路径；两条路径仍由 Java 管理身份、工具权限、任务状态和对外 REST/SSE。回答应基于检索证据并附可核验引用，证据不足时拒答。
 
+![DeepResearch 项目展示](./User%20attachment.png)
+
 > 本仓库用于工程学习、架构验证和作品展示，不是可直接上线的商用平台。
 
 ## 项目解决什么问题
