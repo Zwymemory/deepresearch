@@ -2,6 +2,8 @@
 
 面向第一次了解项目的开发者。演示目标是看清一条主线：答案从哪里得到证据、引用如何核验，以及连接中断后怎样从持久事件继续观察同一次运行。
 
+本轮三项操作的实际条件与范围见[新目录复现记录](RELEASE_REPRODUCTION_2026-09-28.md)；现场必须新建运行并保留实际结果。
+
 ## 演示前准备
 
 按项目根目录 README 启动服务并导入仓库内的合成项目知识包；展示开始后不导入或修改知识库。打开 `http://localhost:8080/demo.html`、Dify Workflow 页面和浏览器 Network 面板。演示页签发本机演示 USER 身份，选择 **Durable Workflow** 和知识库检索。先从服务配置确认 `retrieval=ragflow`、`engine=dify`；不要把 Token、App Key、环境变量或 dataset ID 放进投屏或录屏。演示页没有独立的路由标牌，实际路由要在运行安全轨迹中看 `DIFY_STAGE`。

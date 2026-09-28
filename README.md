@@ -101,7 +101,7 @@ Python sidecar 使用官方 MCP SDK 通过 SSE 调用同一服务，并携带任
 
 ## 快速复现 RAGFlow + Dify
 
-从 GitHub 克隆本仓库并检出准备演示的候选版提交；命令从仓库根目录执行。完整版本、资源与陌生环境步骤见[复现指南](docs/showcase/REPRODUCE.md)。首次下载镜像、配置模型、解析知识包完成后，再开始“五分钟演示”。
+从 GitHub 克隆本仓库并检出准备演示的候选版提交；命令从仓库根目录执行。完整版本、资源与陌生环境步骤见[复现指南](docs/showcase/REPRODUCE.md)，实际验证范围见[新目录复现与前端验收](docs/showcase/RELEASE_REPRODUCTION_2026-09-28.md)。首次下载镜像、配置模型、解析知识包完成后，再开始“五分钟演示”。
 
 ### 先离线检查
 

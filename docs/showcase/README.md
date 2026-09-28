@@ -4,7 +4,7 @@ DeepResearch 是一个个人学习与开源作品项目：Java 保存身份、�
 
 ## 五分钟演示
 
-首次运行先看[新检出目录复现指南](REPRODUCE.md)，现场操作与讲解见[五分钟讲稿](FIVE_MINUTE_DEMO.md)。部署、模型配置和语料解析完成后再开始计时。
+首次运行先看[新检出目录复现指南](REPRODUCE.md)，现场操作与讲解见[五分钟讲稿](FIVE_MINUTE_DEMO.md)。[新目录实测](RELEASE_REPRODUCTION_2026-09-28.md)记录了独立空库、新数据集、有引用答案、空证据结果和一次受控 SSE 续传。部署、模型配置和语料解析完成后再开始计时。
 
 前提：按根目录 [README](../../README.md) 启动 Java、数据库和演示页，导入仓库内的合成项目知识包。演示页是 `http://localhost:8080/demo.html`；本地 RAGFlow 通常通过 `http://127.0.0.1` 打开，API 通常在 `9380`；本次本机 Dify UI 在 `http://127.0.0.1:8081`。需要走 RAGFlow + Dify 时，先按 [RAGFlow](../../integrations/ragflow/README.md) 与 [Dify](../../integrations/dify/README.md) 指南完成导入、服务密钥、回调地址和显式路由配置。
 
