@@ -924,6 +924,7 @@
           var marker = token.match(/^\[(?:来源|source)\s*(\d+)\]$/i);
           var citationNumber = marker ? Number(marker[1]) : 0;
           var isVerified = hasIndexedContract &&
+            /^\[来源\d+\]$/.test(token) &&
             citationNumber >= 1 && citationNumber <= verifiedSources.length;
           var citation = document.createElement(isVerified ? "a" : "span");
           citation.className = "answer-citation" + (isVerified ? "" : " unverified");
@@ -933,9 +934,10 @@
             citation.title = "查看来源 " + citationNumber;
             citation.addEventListener("click", function (event) {
               event.preventDefault();
+              var targetId = event.currentTarget.getAttribute("href").slice(1);
               activateTab("citations");
               window.requestAnimationFrame(function () {
-                var target = $("citation-" + citationNumber);
+                var target = $(targetId);
                 if (target) target.scrollIntoView({ behavior: "smooth", block: "nearest" });
               });
             });

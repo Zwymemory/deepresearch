@@ -20,6 +20,24 @@
       "sseStreams": 0
     },
     {
+      "case": "body-marker-target",
+      "passed": true,
+      "citations": 2,
+      "links": 2,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "noncanonical-marker",
+      "passed": true,
+      "citations": 1,
+      "links": 1,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
       "case": "knowledge",
       "passed": true,
       "citations": 1,
@@ -164,7 +182,7 @@
       "safeReasonRendered": true
     }
   ],
-  "checkedAt": "2026-09-28T08:21:10.446694+00:00",
-  "htmlSha256": "397b6a490e4714b44b5e3b9f3947790b157af69b492ced597c8142b4e3432c61",
-  "scriptSha256": "2430696872d74b49ee789a9d552e70b2daf1dc134cc4162051b800904673f63a"
+  "checkedAt": "2026-09-28T08:37:19.367846+00:00",
+  "htmlSha256": "2073b65d9672c9f21db6fcd456fae180d7b7c655559661d51c2b00adfeab901b",
+  "scriptSha256": "71316745e75099f13cd1e9a8c646704f2de187ad5bef433e832c50c71c0db2be"
 }

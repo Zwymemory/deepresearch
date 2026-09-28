@@ -15,6 +15,8 @@ async (page) => {
   const cases = [
     {name: "web", ids: [webId], details: [web], links: [web.url]},
     {name: "multiple-web", ids: [webId, otherId], details: [other, web], links: [web.url, other.url]},
+    {name: "body-marker-target", ids: [webId, otherId], details: [other, web], links: [web.url, other.url]},
+    {name: "noncanonical-marker", ids: [webId], details: [web], links: [web.url]},
     {name: "knowledge", ids: [kbId], details: [kb], links: []},
     {name: "mixed", ids: [webId, kbId], details: [kb, web], links: [web.url]},
     {name: "missing-metadata", ids: [webId], details: [], links: [], missing: true},
@@ -41,7 +43,10 @@ async (page) => {
   let active, completed = false, streamCount = 0, traffic = [];
   function assert(condition, message) { if (!condition) throw new Error(message); }
   function finalResponse() {
-    return {answer: active.ids.map((_, i) => "Synthetic statement [来源" + (i + 1) + "]").join("\n\n"),
+    const statements = active.ids.map((_, i) => "Synthetic statement [来源" + (i + 1) + "]");
+    return {answer: (active.name === "noncanonical-marker" ? "Synthetic [source 1] [来源 1] [来源1]" :
+        statements.join(active.name === "body-marker-target" ? " " : "\n\n")) +
+        (active.name === "body-marker-target" ? " **fixture tail**" : ""),
       citations: active.ids, citationDetails: active.details, citationContract: active.contract || "INDEXED_V1"};
   }
   function view() {
@@ -128,9 +133,27 @@ async (page) => {
       if (fixture.ids[i] === kbId) assert(card.kind === "知识库文档" && card.title === kb.title && !card.href, fixture.name + ": invented KB web link");
     });
     if (fixture.name === "multiple-web") assert(before[0].title === web.title && before[1].title === other.title, "Matched metadata by position");
+    if (fixture.name === "noncanonical-marker") {
+      assert(await page.locator("#answerText a.answer-citation").count() === 1 &&
+        await page.locator("#answerText .answer-citation.unverified").count() === 2,
+        "Marker syntax outside backend INDEXED_V1 contract was marked verified");
+    }
     if (fixture.contract !== "NONE") {
       await page.getByRole("tab", {name: "原始 JSON", exact: true}).click();
-      await page.locator("#answerText .answer-citation").first().click();
+      await page.evaluate(() => {
+        window.citationScrollTargets = [];
+        const original = Element.prototype.scrollIntoView;
+        Element.prototype.scrollIntoView = function (...args) {
+          window.citationScrollTargets.push(this.id); return original.apply(this, args);
+        };
+      });
+      const markers = page.locator("#answerText a.answer-citation");
+      for (let i = 0; i < await markers.count(); i++) {
+        const target = (await markers.nth(i).getAttribute("href")).slice(1);
+        await page.evaluate(() => {window.citationScrollTargets = [];});
+        await markers.nth(i).click();
+        await page.waitForFunction(id => window.citationScrollTargets.includes(id), target, {timeout: 1500});
+      }
       assert(await page.locator("#citationsPanel").isVisible(), fixture.name + ": body marker failed to reveal card");
     } else assert(await page.locator("#answerText a.answer-citation").count() === 0, "Unverified marker became a link");
     if (!fixture.legacy) {
