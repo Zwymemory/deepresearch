@@ -86,6 +86,25 @@ class DifyWebSourcesIT {
         assertThat(repository.eventsAfter(failure, 0, 20)).anyMatch(e -> e.payload().toString().contains("WEB_SEARCH_NOT_CONFIGURED"));
     }
 
+    @Test
+    void knowledgePresentationMetadataRequiresThisRunsCompletedAuthorizedReceipt() throws Exception {
+        String run = "wf-kb-metadata-it", other = "wf-kb-other-it", call = run + ":initial:1";
+        createRun(run); createRun(other);
+        String id = "kb:ragflow:dataset:document:chunk";
+        assertThat(tx.<Boolean>execute(s -> repository.beginDifyToolCall(run, call, "kb_search", "b".repeat(64)))).isTrue();
+        assertThat(repository.difyKbSource(run, id)).isEmpty();
+        var evidence = new DifyToolDtos.Evidence(id, "来源1", "Actual document.md", "Actual chunk", true);
+        String receipt = JSON.writeValueAsString(new DifyToolDtos.Response(true, "OK", "kb_search", List.of(evidence), ""));
+        assertThat(tx.<Boolean>execute(s -> repository.completeDifyToolCall(run, call, "kb_search", "b".repeat(64),
+                receipt, List.of(id)))).isTrue();
+        assertThat(repository.difyKbSource(run, id).orElseThrow().title()).isEqualTo("Actual document.md");
+        assertThat(repository.difyKbSource(run, id).orElseThrow().content()).isEqualTo("Actual chunk");
+        jdbc.update("INSERT INTO dify_workflow_source(run_id,citation_id) VALUES (?,?)", other, id);
+        assertThat(repository.difyKbSource(other, id)).isEmpty();
+        jdbc.update("UPDATE agent_workflow_run SET requested_scopes=ARRAY['web_search'] WHERE run_id=?", run);
+        assertThat(repository.difyKbSource(run, id)).isEmpty();
+    }
+
     private void createRun(String id) {
         tx.execute(s -> {
             repository.insertRun(new WorkflowRepository.NewRun(id, "sess-web-it", "tenant-it:user-it", "Question", "{}",
