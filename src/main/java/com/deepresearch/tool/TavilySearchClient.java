@@ -50,7 +50,7 @@ public class TavilySearchClient {
 
     private static RestClient boundedClient() {
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(
-                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
+                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build());
         factory.setReadTimeout(Duration.ofSeconds(15));
         return RestClient.builder().baseUrl("https://api.tavily.com").requestFactory(factory).build();
     }

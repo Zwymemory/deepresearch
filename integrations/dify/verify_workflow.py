@@ -281,6 +281,10 @@ def verify_boundary_scope() -> None:
 
 
 def verify_web_contract() -> None:
+    for node_id in ("synthesizer", "synthesizer_direct"):
+        prompt = NODES[node_id]["data"]["prompt_template"][0]["text"]
+        assert "WEB_SEARCH_SNAPSHOT" in prompt and "snapshot is citable" in prompt
+        assert "not a fetched" in prompt and "Calculator/web values" not in prompt
     web_id = "web:tavily:" + "a" * 64
     web = {"citationId": web_id, "sourceId": "来源1", "title": "Search result", "content": "Typed search summary says A.",
            "url": "https://example.com/page", "untrusted": True}
