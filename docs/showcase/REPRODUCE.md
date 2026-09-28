@@ -46,6 +46,7 @@ python3 scripts/init-showcase-env.py
 填写自己的凭证：
 
 - `DEEPSEEK_API_KEY`：Java 模型凭证；Dify provider 凭证需在其 UI 另行设置。
+- `TAVILY_API_KEY`：仅网页搜索需要；保持在私有 `.env`。缺配置、provider 拒绝/限流/超时和无结果会分别报告，配置非空不代表有效或有结果。
 - `RAGFLOW_API_KEY`、`RAGFLOW_DATASET_IDS`：自己的新数据集；多个 ID 用逗号分隔，导入使用第一个。
 - `RAGFLOW_BASE_URL`：Java 容器可访问的 API origin，通常 `http://host.docker.internal:9380`。
 - `DEEPRESEARCH_DIFY_BASE_URL`：Java 容器可访问的 Service API，通常 `http://host.docker.internal:8081/v1`。
@@ -62,6 +63,8 @@ python3 scripts/init-showcase-env.py
 Dify API/worker 和 HTTP Request 的 SSRF proxy 必须能解析并访问 Java origin。Docker Desktop 可使用宿主机别名；原生 Linux 的 host-gateway 通常不能访问仅绑定宿主机回环地址的端口，使用下面的共享 bridge 方案。Dify HTTP Request SSRF 策略仅允许所需 Java origin，具体配置按版本检查；不要关闭全局防护。
 
 发布 Workflow，在 **API Access** 取得 Service API App Key，填入 `.env` 的 `DEEPRESEARCH_DIFY_APP_KEY`。它与管理员登录 Token、工具服务密钥用途不同。导出 DSL 时 Secret 值保持为空，不提交私有导出。
+
+当前源 DSL 为 Evidence v8.1 Web，Java 须包含 V16 网页来源迁移与配套发布校验。升级既有环境时同步部署 Java 和发布 DSL，保留已有 `.env` 与数据卷；旧 V7 完整评测不能当作新代码的全量结果。
 
 ## 4. 启动与语料导入
 
@@ -110,6 +113,8 @@ python3 scripts/preflight-showcase.py --corpus
 1. `Last-Event-ID` 正例：事实正确、有有效编号与真实 chunk 引用，安全轨迹含 `DIFY_STAGE`。
 2. 银行账户题：`INSUFFICIENT_EVIDENCE`，不捏造号码或来源。
 3. 仍运行时点 **断线演练**：同一 run 自动重连，events 请求带旧游标，没有重建任务。
+
+网页或混合检索另运行 `python3 scripts/preflight-showcase.py --require-web-search --online --corpus`，再选择页面的网页搜索。纯网页可问 asyncio 的并发/I/O 用途；检查引用是否显示实际 URL、标题、摘要，摘要是否支持每句话。网页来源只证明来自本 run 已完成且获授权的搜索回执，不等于抓取全文或证明事实正确。当前五项定向终态通过、严格逐句支持 4/5，全部 12 次尝试和初版超时见 [v8.1 验收](../../integrations/dify/WEB_SEARCH_ACCEPTANCE_2026-09-28.md)。
 
 预检只说明依赖条件，不证明答案质量或恢复能力。一次成功不能代替固定评测、引用支持性审阅或生产门禁；最新结果见[EVIDENCE](EVIDENCE.md)。
 

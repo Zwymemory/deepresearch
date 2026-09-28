@@ -1,6 +1,6 @@
 # DeepResearch
 
-一个面向项目知识检索与复杂问题研究的 **RAG + Multi-Agent 工程原型**，用于个人学习和开源作品展示。[五分钟演示与证据状态](docs/showcase/README.md)是本轮结果入口。
+一个面向项目知识检索与复杂问题研究的 **RAG + Multi-Agent 工程原型**，用于个人学习和开源作品展示。[简短介绍、可选演示与证据状态](docs/showcase/README.md)是本轮结果入口。
 
 Java / Spring Boot 负责公网 API、认证授权、知识库工具、持久任务与事件、引用发布门禁。默认检索数据面是自建 pgvector + BM25，默认工作流执行器是 Python / LangGraph。RAGFlow 检索和 Dify Workflow 已接入为显式可选路径；两条路径仍由 Java 管理身份、工具权限、任务状态和对外 REST/SSE。回答应基于检索证据并附可核验引用，证据不足时拒答。
 
@@ -101,7 +101,7 @@ Python sidecar 使用官方 MCP SDK 通过 SSE 调用同一服务，并携带任
 
 ## 快速复现 RAGFlow + Dify
 
-从 GitHub 克隆本仓库并检出准备演示的候选版提交；命令从仓库根目录执行。完整版本、资源与陌生环境步骤见[复现指南](docs/showcase/REPRODUCE.md)，实际验证范围见[新目录复现与前端验收](docs/showcase/RELEASE_REPRODUCTION_2026-09-28.md)。首次下载镜像、配置模型、解析知识包完成后，再开始“五分钟演示”。
+从 GitHub 克隆本仓库并检出准备演示的候选版提交；命令从仓库根目录执行。完整版本、资源与陌生环境步骤见[复现指南](docs/showcase/REPRODUCE.md)。[新目录验收](docs/showcase/RELEASE_REPRODUCTION_2026-09-28.md)记录此前 KB 版本；当前网页与混合路径见 [v8.1 Web 验收](integrations/dify/WEB_SEARCH_ACCEPTANCE_2026-09-28.md)。首次下载镜像、配置模型和解析知识包属于准备工作，简短介绍可直接使用已归档实测记录。
 
 ### 先离线检查
 
@@ -131,7 +131,7 @@ bash scripts/import-project-kb.sh
 python3 scripts/preflight-showcase.py --corpus
 ```
 
-启动脚本只启动 Java、PostgreSQL 和角色初始化依赖。导入不会清空已有知识库；预检要求八份文档与 RAGFlow 映射均为 `DONE`。打开[演示页](http://localhost:8080/demo.html)，签发 USER 身份，选择 **Durable Workflow** 和知识库检索，按[五分钟讲稿](docs/showcase/FIVE_MINUTE_DEMO.md)演示有引用答案、无依据拒答、SSE 续传。
+启动脚本只启动 Java、PostgreSQL 和角色初始化依赖。导入不会清空已有知识库；预检要求八份文档与 RAGFlow 映射均为 `DONE`。打开[演示页](http://localhost:8080/demo.html)，签发 USER 身份，选择 **Durable Workflow**。知识库、网页或混合检索均可选择；网页搜索需要在私有 `.env` 配置 `TAVILY_API_KEY`，并运行 `python3 scripts/preflight-showcase.py --require-web-search --online --corpus`。页面配置提示不保证 provider 接受凭据或必有结果。按[简短讲稿与可选现场操作](docs/showcase/FIVE_MINUTE_DEMO.md)展示证据、引用和 SSE 续传。
 
 | 入口 | 默认本机端口 |
 |---|---:|

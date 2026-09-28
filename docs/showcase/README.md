@@ -2,9 +2,13 @@
 
 DeepResearch 是一个个人学习与开源作品项目：Java 保存身份、任务状态、证据入口和持久事件；研究执行器负责规划、工具调用、审阅和合成。默认执行器仍为 LangGraph，RAGFlow 检索和 Dify Workflow 是显式启用的候选路径。先看[可验证结果与时间线](EVIDENCE.md)，再运行演示。
 
-## 五分钟演示
+## 简短介绍与可选演示
 
-首次运行先看[新检出目录复现指南](REPRODUCE.md)，现场操作与讲解见[五分钟讲稿](FIVE_MINUTE_DEMO.md)。[新目录实测](RELEASE_REPRODUCTION_2026-09-28.md)记录了独立空库、新数据集、有引用答案、空证据结果和一次受控 SSE 续传。部署、模型配置和语料解析完成后再开始计时。
+主线为 2–3 分钟介绍，也可以只展示已归档记录。[当前 v8.1 网页与混合验收](../../integrations/dify/WEB_SEARCH_ACCEPTANCE_2026-09-28.md)包含真实来源截图、五项定向 API 预期终态、严格逐句支持 4/5，以及一次浏览器 SSE 续传。额外限定的引用精度缺口和初版两次超时均保留；历史 V7 的 37 题不是本版全量结果。现场希望操作时，可只创建一次网页或混合 run，串起提交、引用和续传。
+
+首次运行先看[新检出目录复现指南](REPRODUCE.md)，讲解与可选操作见[讲稿](FIVE_MINUTE_DEMO.md)。[此前 KB 版本的新目录实测](RELEASE_REPRODUCTION_2026-09-28.md)记录了独立空库、新数据集、有引用答案、空证据结果和一次受控 SSE 续传。部署、模型配置和语料解析属于准备工作。
+
+选择网页搜索时，在私有配置设置自己的 `TAVILY_API_KEY`，运行 `python3 scripts/preflight-showcase.py --require-web-search --online --corpus`。页面显示配置状态与真实失败原因；引用展开为实际 URL/标题/摘要。出处来自 run 绑定回执，不代表抓取了全文或证明事实正确。
 
 前提：按根目录 [README](../../README.md) 启动 Java、数据库和演示页，导入仓库内的合成项目知识包。演示页是 `http://localhost:8080/demo.html`；本地 RAGFlow 通常通过 `http://127.0.0.1` 打开，API 通常在 `9380`；本次本机 Dify UI 在 `http://127.0.0.1:8081`。需要走 RAGFlow + Dify 时，先按 [RAGFlow](../../integrations/ragflow/README.md) 与 [Dify](../../integrations/dify/README.md) 指南完成导入、服务密钥、回调地址和显式路由配置。
 
