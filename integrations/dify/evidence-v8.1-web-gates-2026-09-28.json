@@ -1,0 +1,65 @@
+{
+  "java": {
+    "suites": 58,
+    "tests": 252,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "postgresIntegration": {
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "dslVerifier": "passed",
+  "javascriptSyntax": "passed",
+  "showcaseCheck": {
+    "evaluatorTests": 26,
+    "historicalScores": 11,
+    "corpusDocuments": 8,
+    "passed": true
+  },
+  "schemaVersion": 1,
+  "implementationSha": "182962f9d9be7e30b1188da39b7250c2f212a05e",
+  "publication": {
+    "schemaVersion": 1,
+    "implementationSha": "182962f9d9be7e30b1188da39b7250c2f212a05e",
+    "dslSha256": "aea1f676326ab9c549e55b28fff0ebb1836895706ae8fcf16897d8b3e5af8a07",
+    "appId": "7050c6b7-3a16-4b90-b87f-564a55ca8e41",
+    "workflowId": "b445df5c-709c-46bb-afba-2b3a527f3264",
+    "name": "Evidence v8.1 Web",
+    "publishedAt": "2026-09-28T06:40:54.000Z",
+    "publishedGraphMatchesCommitted": true,
+    "nodeCount": 32,
+    "edgeCount": 29,
+    "effectiveLimits": {
+      "llmCalls": 3,
+      "workerHttpCalls": 4,
+      "maxOutputTokensPerLlm": 4096,
+      "webConnectTimeoutSeconds": 10,
+      "webRequestTimeoutSeconds": 15
+    },
+    "environmentVariableNames": [
+      "JAVA_INTERNAL_BASE_URL",
+      "DIFY_TOOL_SERVICE_TOKEN"
+    ]
+  },
+  "onlinePreflight": {
+    "passed": true,
+    "javaHealth": "UP",
+    "ragflowKeyAndDatasetAccess": true,
+    "difyAppKeyAccess": true,
+    "canonicalHashesAndDoneMappings": 8,
+    "webConfigured": true,
+    "credentialValuesExported": false
+  },
+  "webFailureChecks": {
+    "missingKey": "unit/DSL fixture only",
+    "upstreamUnavailableAndTimeout": "unit/DSL fixture plus genuine initial timeout runs retained",
+    "noResults": "unit/DSL fixture only",
+    "inventedSourceAndCrossRunReplay": "unit/DB/DSL checks",
+    "idempotencyReplay": "same run and unchanged receipt content on all 10 API attempts across v8/v8.1",
+    "cancellationAndDeadline": "PG integration checks; no new live stop claim"
+  }
+}

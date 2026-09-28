@@ -63,7 +63,7 @@ class DifyWorkflowAdapterTest {
                 "kb:ragflow:dataset:doc:one", "kb:ragflow:dataset:doc:two");
         when(repository.difySources("wf-1")).thenReturn(Set.of(
                 "kb:ragflow:dataset:doc:one", "kb:ragflow:dataset:doc:two"));
-        when(citationValidator.available(any())).thenReturn(true);
+        when(citationValidator.available(eq("wf-1"), any())).thenReturn(true);
 
         adapter.reconcile("wf-1");
 
@@ -76,7 +76,7 @@ class DifyWorkflowAdapterTest {
         String source = "kb:ragflow:dataset:doc:old-chunk";
         setup("succeeded", "SUCCEEDED", "answer [来源1]", source);
         when(repository.difySources("wf-1")).thenReturn(Set.of(source));
-        when(citationValidator.available(List.of(source))).thenReturn(false);
+        when(citationValidator.available("wf-1", List.of(source))).thenReturn(false);
 
         adapter.reconcile("wf-1");
 
@@ -94,7 +94,7 @@ class DifyWorkflowAdapterTest {
         }
         setup("succeeded", "SUCCEEDED", "facts [来源1][来源2][来源3][来源4][来源5][来源6]", sources);
         when(repository.difySources("wf-1")).thenReturn(Set.of(sources));
-        when(citationValidator.available(any())).thenReturn(true);
+        when(citationValidator.available(eq("wf-1"), any())).thenReturn(true);
 
         adapter.reconcile("wf-1");
 
@@ -109,6 +109,45 @@ class DifyWorkflowAdapterTest {
 
         verify(repository).finishDify(eq("wf-1"), eq(WorkflowStatus.FAILED), any(), any(),
                 eq("DIFY_WORKFLOW_FAILED"), eq(""));
+    }
+
+    @Test
+    void preservesDistinctSafeFailureReasonAndNeverAcceptsRawProviderErrorText() throws Exception {
+        when(repository.difyMapping("wf-1")).thenReturn(Optional.of(
+                new WorkflowRepository.DifyMapping("remote", "task", "BOUND")));
+        when(client.detail("remote")).thenReturn(json.readTree("""
+                {"status":"succeeded","outputs":{"status":"FAILED","answer":"","citations":[],
+                "error_code":"WEB_SEARCH_NOT_CONFIGURED"}}
+                """));
+        adapter.reconcile("wf-1");
+        verify(repository).finishDify(eq("wf-1"), eq(WorkflowStatus.FAILED), any(), any(),
+                eq("WEB_SEARCH_NOT_CONFIGURED"), eq(""));
+        when(client.detail("remote")).thenReturn(json.readTree("""
+                {"status":"succeeded","outputs":{"status":"FAILED","answer":"","citations":[],
+                "error_code":"secret unapproved provider body"}}
+                """));
+        adapter.reconcile("wf-1");
+        verify(repository).finishDify(eq("wf-1"), eq(WorkflowStatus.FAILED), any(), any(),
+                eq("DIFY_OUTPUT_INVALID"), eq(""));
+    }
+
+    @Test
+    void successfulWebOnlyAnswerPublishesActualReceiptMetadataAndMixedOrderRemainsExact() throws Exception {
+        String url = "https://example.com/page", web = DifyWebEvidence.id(url, "Page", "Search summary");
+        String kb = "kb:ragflow:dataset:doc:one";
+        when(repository.difySources("wf-1")).thenReturn(Set.of(web, kb));
+        when(repository.difyWebSource("wf-1", web)).thenReturn(Optional.of(new WorkflowRepository.DifyWebSource(
+                web, url, "Page", "Search summary", OffsetDateTime.now())));
+        when(citationValidator.available(eq("wf-1"), any())).thenReturn(true);
+        setup("succeeded", "SUCCEEDED", "Summary [来源1]", web);
+        adapter.reconcile("wf-1");
+        ArgumentCaptor<String> response = ArgumentCaptor.forClass(String.class);
+        verify(repository).finishDify(eq("wf-1"), eq(WorkflowStatus.SUCCEEDED), response.capture(), any(), eq(null), eq("Summary [来源1]"));
+        assertThat(response.getValue()).contains("WEB_SEARCH_SNAPSHOT", url, "Search summary");
+        setup("succeeded", "SUCCEEDED", "Knowledge [来源1] web [来源2]", kb, web);
+        adapter.reconcile("wf-1");
+        verify(repository).finishDify(eq("wf-1"), eq(WorkflowStatus.SUCCEEDED), any(), any(), eq(null),
+                eq("Knowledge [来源1] web [来源2]"));
     }
 
     @Test
@@ -158,7 +197,7 @@ class DifyWorkflowAdapterTest {
         DifyWorkflowAdapter switched = new DifyWorkflowAdapter(repository, client, json, citationValidator, "langgraph");
         setup("succeeded", "SUCCEEDED", "answer [来源1]", "kb:ragflow:dataset:doc:one");
         when(repository.difySources("wf-1")).thenReturn(Set.of("kb:ragflow:dataset:doc:one"));
-        when(citationValidator.available(any())).thenReturn(true);
+        when(citationValidator.available(eq("wf-1"), any())).thenReturn(true);
         when(repository.claimBoundDifyRuns(4)).thenReturn(List.of("wf-1"));
 
         try {

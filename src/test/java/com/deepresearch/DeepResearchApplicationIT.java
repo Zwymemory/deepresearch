@@ -102,7 +102,7 @@ class DeepResearchApplicationIT {
                 LIMIT 1
                 """,
                 String.class);
-        assertThat(latestMigration).isEqualTo("15");
+        assertThat(latestMigration).isEqualTo("16");
 
         Integer coreTableCount = jdbcTemplate.queryForObject("""
                 SELECT count(*)

@@ -49,6 +49,7 @@ def main():
     parser.add_argument("--online", action="store_true", help="GET Java health, RAGFlow datasets and Dify parameters")
     parser.add_argument("--corpus", action="store_true", help="also verify eight canonical Java documents and DONE RAGFlow mappings")
     parser.add_argument("--base-url", default=None)
+    parser.add_argument("--require-web-search", action="store_true", help="require Tavily configuration for a web-enabled demo")
     args = parser.parse_args()
     try:
         env = load_env(args.env_file.resolve())
@@ -67,6 +68,8 @@ def main():
     def config():
         required = (*SECRETS, "DEEPSEEK_API_KEY", "RAGFLOW_API_KEY", "RAGFLOW_DATASET_IDS",
                     "DEEPRESEARCH_DIFY_APP_KEY", "ZHIPU_API_KEY")
+        if args.require_web_search:
+            required += ("TAVILY_API_KEY",)
         missing = [key for key in required if not configured(env.get(key))]
         if missing:
             raise ValueError("Set " + ", ".join(missing))
@@ -106,6 +109,8 @@ def main():
     check("Compose showcase dependency graph", compose)
     if failures:
         parser.exit(1, "Configuration preflight failed; no online requests were sent.\n")
+    print("INFO web search: " + ("Tavily configured (credential validity not checked)" if configured(env.get("TAVILY_API_KEY"))
+          else "Tavily not configured; use knowledge search or configure it before selecting web search"))
     if args.online or args.corpus:
         java = (args.base_url or f"http://127.0.0.1:{env.get('DEEPRESEARCH_APP_PORT', '8080')}").rstrip("/")
 

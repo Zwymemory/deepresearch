@@ -16,7 +16,12 @@ public final class DifyToolDtos {
             @NotBlank @Size(max = 1000) String input) {}
 
     public record Evidence(String citationId, String sourceId, String title,
-                           String content, boolean untrusted) {}
+                           String content, boolean untrusted, String url) {
+        public Evidence(String citationId, String sourceId, String title,
+                        String content, boolean untrusted) {
+            this(citationId, sourceId, title, content, untrusted, "");
+        }
+    }
 
     public record Response(boolean success, String code, String tool,
                            List<Evidence> evidences, String value) {
