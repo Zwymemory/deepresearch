@@ -5,7 +5,7 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 /** Builds public, non-secret source identifiers without looking at model text. */
-final class CitationSourceSupport {
+public final class CitationSourceSupport {
 
     private static final int MAX_SOURCE_LENGTH = 2_048;
     private static final Pattern CONTROL = Pattern.compile("[\\p{Cntrl}]");
@@ -15,7 +15,7 @@ final class CitationSourceSupport {
     private CitationSourceSupport() {
     }
 
-    static String safeWebUrl(String raw) {
+    public static String safeWebUrl(String raw) {
         String value = compact(raw);
         if (value.isEmpty() || value.length() > MAX_SOURCE_LENGTH || SECRET_QUERY.matcher(value).find()) {
             return "";

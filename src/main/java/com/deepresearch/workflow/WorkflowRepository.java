@@ -217,18 +217,22 @@ public class WorkflowRepository {
                               String usageJson, String errorCode, String answer) {
         int changed = jdbcTemplate.update("""
                 UPDATE agent_workflow_run SET status = ?, stage = ?, final_response = CAST(? AS jsonb),
-                    usage = CAST(? AS jsonb), error_code = ?, updated_at = now(), version = version + 1
+                    usage = CAST(? AS jsonb), error_code = ?, error_message = ?, updated_at = now(), version = version + 1
                 WHERE run_id = ? AND status = 'DIFY_WORKING' AND cancel_requested = false
+                  AND deadline_at > now()
                   AND EXISTS (SELECT 1 FROM dify_workflow_run WHERE run_id = ? AND dispatch_state = 'BOUND')
-                """, status.name(), status.name(), responseJson, usageJson, errorCode, runId, runId);
+                """, status.name(), status.name(), responseJson, usageJson, errorCode,
+                errorCode == null ? null : DifyFailureCodes.message(errorCode), runId, runId);
         if (changed != 1) return false;
         RunRow row = find(runId).orElseThrow();
         revokeGrantForRun(runId);
         if (status == WorkflowStatus.SUCCEEDED) {
             insertFinalMessages(runId, row.sessionId(), row.userId(), row.question(), answer, true);
         }
-        insertEvent(runId, "dify:terminal", "SYSTEM", null, status.name(),
-                "{\"status\":\"" + status.name() + "\"}");
+        com.fasterxml.jackson.databind.node.ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("status", status.name());
+        if (errorCode != null) payload.put("errorCode", errorCode);
+        insertEvent(runId, "dify:terminal", "SYSTEM", null, status.name(), payload.toString());
         return true;
     }
 
@@ -358,6 +362,29 @@ public class WorkflowRepository {
         return new java.util.HashSet<>(jdbcTemplate.query(
                 "SELECT citation_id FROM dify_workflow_source WHERE run_id = ?",
                 (rs, n) -> rs.getString(1), runId));
+    }
+
+    public record DifyWebSource(String citationId, String url, String title, String content,
+                                OffsetDateTime completedAt) {}
+
+    /** Reads only successful, completed, authorized receipts for this exact run. No remote fetch. */
+    public Optional<DifyWebSource> difyWebSource(String runId, String citationId) {
+        return jdbcTemplate.query("""
+                SELECT e->>'citationId', e->>'url', e->>'title', e->>'content', c.completed_at
+                FROM dify_workflow_tool_call c
+                JOIN agent_workflow_run r ON r.run_id=c.run_id
+                JOIN dify_workflow_source s ON s.run_id=c.run_id AND s.citation_id=?
+                CROSS JOIN LATERAL jsonb_array_elements(c.safe_result->'evidences') e
+                WHERE c.run_id=? AND c.tool_name='web_search' AND c.status='COMPLETED'
+                  AND c.completed_at IS NOT NULL AND 'web_search'=ANY(r.requested_scopes)
+                  AND c.safe_result->>'success'='true' AND c.safe_result->>'code'='OK'
+                  AND c.safe_result->>'tool'='web_search'
+                  AND e->>'citationId'=? AND e->>'untrusted'='true'
+                  AND c.call_id ~ ('^' || c.run_id || ':(initial|revision):[1-4]$')
+                ORDER BY c.completed_at, c.call_id LIMIT 1
+                """, (rs, n) -> new DifyWebSource(rs.getString(1), rs.getString(2), rs.getString(3),
+                rs.getString(4), rs.getObject(5, OffsetDateTime.class)), citationId, runId, citationId)
+                .stream().findFirst();
     }
 
     public boolean insertEvent(String runId, String eventKey, String role, String taskId,

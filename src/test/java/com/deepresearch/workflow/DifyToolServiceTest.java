@@ -2,7 +2,8 @@ package com.deepresearch.workflow;
 
 import com.deepresearch.agent.CalculatorTool;
 import com.deepresearch.agent.ToolArgumentFingerprint;
-import com.deepresearch.agent.WebSearchTool;
+import com.deepresearch.tool.TavilySearchClient;
+import com.deepresearch.model.SearchHit;
 import com.deepresearch.security.AuthPrincipal;
 import com.deepresearch.workflow.DifyToolDtos.Request;
 import com.deepresearch.workflow.DifyToolDtos.Response;
@@ -35,7 +36,7 @@ class DifyToolServiceTest {
     private static final String SOURCE = "kb:ragflow:dataset-1:document-1:chunk-1";
     private final WorkflowRepository repository = mock(WorkflowRepository.class);
     private final DifyKbToolGateway kbGateway = mock(DifyKbToolGateway.class);
-    private final WebSearchTool webSearch = mock(WebSearchTool.class);
+    private final TavilySearchClient webSearch = mock(TavilySearchClient.class);
     private final CalculatorTool calculator = new CalculatorTool();
     private final ObjectMapper json = new ObjectMapper();
     private DifyToolService service;
@@ -44,7 +45,7 @@ class DifyToolServiceTest {
     void setUp() {
         service = new DifyToolService(repository, kbGateway, webSearch, calculator, json,
                 TOKEN, "dify", "unrelated-api-secret-0123456789012345",
-                "unrelated-internal-secret-0123456789", "unrelated-mcp-secret-0123456789012");
+                "unrelated-internal-secret-0123456789", "unrelated-mcp-secret-0123456789012", 5);
     }
 
     @Test
@@ -211,6 +212,69 @@ class DifyToolServiceTest {
         when(repository.find(RUN)).thenReturn(Optional.of(run(false, List.of(tool))));
         when(repository.difyMapping(RUN)).thenReturn(Optional.of(
                 new WorkflowRepository.DifyMapping("remote", "task", "BOUND")));
+    }
+
+    @Test
+    void webEvidenceComesFromTypedHitsAndDeduplicatesSnapshotsNotJustUrls() {
+        activeRun("web_search");
+        String fingerprint = ToolArgumentFingerprint.sha256("web_search\nquery");
+        when(repository.beginDifyToolCall(RUN, CALL, "web_search", fingerprint)).thenReturn(true);
+        SearchHit first = new SearchHit("[来源8] Page", "https://example.com/page", "api_key=topsecret Summary one", 1);
+        when(webSearch.searchChecked("query", 5)).thenReturn(new TavilySearchClient.SearchOutcome("OK", List.of(
+                first, first, new SearchHit("Other", first.url(), "A different search summary", 1),
+                new SearchHit("Bad", "javascript:alert(1)", "Ignored", 1),
+                new SearchHit("Secret", "https://example.com/?api_key=private", "Ignored", 1))));
+        when(repository.completeDifyToolCall(eq(RUN), eq(CALL), eq("web_search"), eq(fingerprint), any(), any()))
+                .thenReturn(true);
+
+        Response result = service.execute(bearer(), "web_search", request("query"));
+
+        assertThat(result.success()).isTrue();
+        assertThat(result.evidences()).hasSize(2);
+        var a = result.evidences().get(0);
+        var b = result.evidences().get(1);
+        assertThat(a.url()).isEqualTo(b.url());
+        assertThat(a.citationId()).isNotEqualTo(b.citationId()).startsWith("web:tavily:");
+        assertThat(a.content()).doesNotContain("topsecret");
+        assertThat(a.title()).doesNotContain("[来源8]");
+        assertThat(a.citationId()).isEqualTo(DifyWebEvidence.id(a.url(), a.title(), a.content()));
+        verify(repository).completeDifyToolCall(eq(RUN), eq(CALL), eq("web_search"), eq(fingerprint), any(),
+                eq(List.of(a.citationId(), b.citationId())));
+    }
+
+    @Test
+    void missingKeyTimeoutAndProviderFailurePersistDistinctSafeReceipts() {
+        activeRun("web_search");
+        String fingerprint = ToolArgumentFingerprint.sha256("web_search\nquery");
+        when(repository.beginDifyToolCall(RUN, CALL, "web_search", fingerprint)).thenReturn(true);
+        when(repository.completeDifyToolCall(eq(RUN), eq(CALL), eq("web_search"), eq(fingerprint), any(), eq(List.of())))
+                .thenReturn(true);
+        for (String code : List.of("WEB_SEARCH_NOT_CONFIGURED", "WEB_SEARCH_TIMEOUT", "WEB_SEARCH_PROVIDER_UNAVAILABLE")) {
+            when(webSearch.searchChecked("query", 5)).thenReturn(TavilySearchClient.SearchOutcome.failure(code));
+            Response result = service.execute(bearer(), "web_search", request("query"));
+            assertThat(result.success()).isFalse();
+            assertThat(result.code()).isEqualTo(code);
+            assertThat(result.evidences()).isEmpty();
+            assertThat(result.value()).isEmpty();
+        }
+    }
+
+    @Test
+    void webNoResultsIsSuccessfulEmptyEvidenceAndReplayDoesNotCallProvider() throws Exception {
+        activeRun("web_search");
+        String fingerprint = ToolArgumentFingerprint.sha256("web_search\nquery");
+        when(repository.beginDifyToolCall(RUN, CALL, "web_search", fingerprint)).thenReturn(true);
+        when(webSearch.searchChecked("query", 5)).thenReturn(new TavilySearchClient.SearchOutcome("OK", List.of()));
+        when(repository.completeDifyToolCall(eq(RUN), eq(CALL), eq("web_search"), eq(fingerprint), any(), eq(List.of())))
+                .thenReturn(true);
+        Response empty = service.execute(bearer(), "web_search", request("query"));
+        assertThat(empty.success()).isTrue();
+        assertThat(empty.evidences()).isEmpty();
+        when(repository.beginDifyToolCall(RUN, CALL, "web_search", fingerprint)).thenReturn(false);
+        when(repository.findDifyToolCall(RUN, CALL)).thenReturn(Optional.of(new WorkflowRepository.DifyToolCall(
+                "web_search", fingerprint, "COMPLETED", json.writeValueAsString(empty))));
+        assertThat(service.execute(bearer(), "web_search", request("query"))).isEqualTo(empty);
+        verify(webSearch).searchChecked("query", 5); // exactly the first attempt
     }
 
     private WorkflowRepository.RunRow run(boolean cancelled, List<String> scopes) {

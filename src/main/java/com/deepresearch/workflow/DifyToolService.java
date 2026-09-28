@@ -3,7 +3,9 @@ package com.deepresearch.workflow;
 import com.deepresearch.agent.CalculatorTool;
 import com.deepresearch.agent.ToolArgumentFingerprint;
 import com.deepresearch.agent.ToolOutputSanitizer;
-import com.deepresearch.agent.WebSearchTool;
+import com.deepresearch.agent.CitationSourceSupport;
+import com.deepresearch.model.SearchHit;
+import com.deepresearch.tool.TavilySearchClient;
 import com.deepresearch.security.AuthPrincipal;
 import com.deepresearch.workflow.DifyToolDtos.Evidence;
 import com.deepresearch.workflow.DifyToolDtos.Request;
@@ -31,21 +33,24 @@ public class DifyToolService {
             "kb:ragflow:[A-Za-z0-9._-]{1,128}:[A-Za-z0-9._-]{1,128}:[A-Za-z0-9._-]{1,128}");
     private final WorkflowRepository repository;
     private final DifyKbToolGateway kbGateway;
-    private final WebSearchTool webSearchTool;
+    private final TavilySearchClient webSearchClient;
+    private final int webTopK;
     private final CalculatorTool calculatorTool;
     private final ObjectMapper json;
     private final byte[] serviceToken;
 
     public DifyToolService(WorkflowRepository repository, DifyKbToolGateway kbGateway,
-                           WebSearchTool webSearchTool, CalculatorTool calculatorTool, ObjectMapper json,
+                           TavilySearchClient webSearchClient, CalculatorTool calculatorTool, ObjectMapper json,
                            @Value("${deepresearch.workflow.dify.tool-service-token:}") String serviceToken,
                            @Value("${deepresearch.workflow.engine:langgraph}") String engine,
                            @Value("${deepresearch.security.jwt-secret:}") String apiSecret,
                            @Value("${deepresearch.workflow.internal-jwt-secret:}") String internalSecret,
-                           @Value("${deepresearch.workflow.mcp-jwt-secret:}") String mcpSecret) {
+                           @Value("${deepresearch.workflow.mcp-jwt-secret:}") String mcpSecret,
+                           @Value("${deepresearch.search-top-k:5}") int webTopK) {
         this.repository = repository;
         this.kbGateway = kbGateway;
-        this.webSearchTool = webSearchTool;
+        this.webSearchClient = webSearchClient;
+        this.webTopK = Math.max(1, Math.min(10, webTopK));
         this.calculatorTool = calculatorTool;
         this.json = json;
         String configured = serviceToken == null ? "" : serviceToken.trim();
@@ -157,7 +162,8 @@ public class DifyToolService {
                 default -> throw new IllegalArgumentException("不支持的 Dify tool");
             };
         } catch (RuntimeException unavailable) {
-            return Response.failure(tool, "TOOL_UNAVAILABLE");
+            return Response.failure(tool, "web_search".equals(tool)
+                    ? "WEB_SEARCH_PROVIDER_UNAVAILABLE" : "TOOL_UNAVAILABLE");
         }
     }
 
@@ -182,13 +188,24 @@ public class DifyToolService {
     }
 
     private Response webSearch(String query) {
-        // The legacy web tool provides typed URLs, but only kb:ragflow IDs are
-        // eligible for this workflow's final citation contract.
-        String content = webSearchTool.executeWithCitations(query).content();
-        if (content.contains("搜索失败：服务暂时不可用")) {
-            return Response.failure("web_search", "TOOL_UNAVAILABLE");
+        TavilySearchClient.SearchOutcome found = webSearchClient.searchChecked(query, webTopK);
+        if (!"OK".equals(found.code())) {
+            return Response.failure("web_search", DifyFailureCodes.known(found.code())
+                    ? found.code() : "WEB_SEARCH_PROVIDER_UNAVAILABLE");
         }
-        return new Response(true, "OK", "web_search", List.of(), safeText(content, 10000));
+        List<Evidence> safe = new ArrayList<>();
+        for (SearchHit hit : found.hits()) {
+            if (safe.size() == 10) break;
+            if (hit == null) continue;
+            String url = CitationSourceSupport.safeWebUrl(hit.url());
+            String content = safeText(hit.content(), 2000);
+            String title = safeText(hit.title(), 300);
+            if (url.isBlank() || content.isBlank()) continue;
+            String id = DifyWebEvidence.id(url, title, content);
+            if (safe.stream().anyMatch(previous -> previous.citationId().equals(id))) continue;
+            safe.add(new Evidence(id, "来源" + (safe.size() + 1), title, content, true, url));
+        }
+        return new Response(true, "OK", "web_search", List.copyOf(safe), "");
     }
 
     private Response calculate(String expression) {
@@ -202,6 +219,6 @@ public class DifyToolService {
     private String safeText(String raw, int limit) {
         String safe = ToolOutputSanitizer.neutralizeCitationMarkers(
                 ToolOutputSanitizer.redactSecrets(raw == null ? "" : raw));
-        return safe.length() <= limit ? safe : safe.substring(0, limit) + "…";
+        return safe.length() <= limit ? safe : safe.substring(0, limit - 1) + "…";
     }
 }

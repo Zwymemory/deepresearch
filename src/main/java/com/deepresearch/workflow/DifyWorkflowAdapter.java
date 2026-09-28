@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
 @EnableScheduling
 public class DifyWorkflowAdapter {
     private static final Pattern MARKER = Pattern.compile("\\[来源(\\d+)]");
-    private static final Pattern SOURCE = Pattern.compile("kb:ragflow:[^:\\s]+:[^:\\s]+:[^:\\s]+");
+    private static final Pattern SOURCE = Pattern.compile("(?:kb:ragflow:[^:\\s]+:[^:\\s]+:[^:\\s]+|web:tavily:[a-f0-9]{64})");
     private final WorkflowRepository repository;
     private final DifyWorkflowClient client;
     private final ObjectMapper json;
@@ -175,21 +175,47 @@ public class DifyWorkflowAdapter {
         }
         String error = null;
         if (status == WorkflowStatus.FAILED) {
-            error = "succeeded".equals(remoteStatus) ? "DIFY_OUTPUT_INVALID" : "DIFY_WORKFLOW_FAILED";
+            String reason = outputs.path("error_code").asText("");
+            error = "succeeded".equals(remoteStatus) ?
+                    (DifyFailureCodes.known(reason) ? reason : "DIFY_OUTPUT_INVALID") : "DIFY_WORKFLOW_FAILED";
+        } else if (status == WorkflowStatus.INSUFFICIENT_EVIDENCE) {
+            String reason = outputs.path("error_code").asText("");
+            error = Set.of("WEB_SEARCH_NO_RESULTS", "NO_RELEVANT_EVIDENCE").contains(reason) ? reason : null;
         }
         if (status == WorkflowStatus.SUCCEEDED && !validCitations(runId, answer, citations)) {
             status = WorkflowStatus.FAILED;
             error = "CITATION_VALIDATION_FAILED";
             answer = "";
             citations = List.of();
-        } else if (status == WorkflowStatus.SUCCEEDED && !citationValidator.available(citations)) {
+        } else if (status == WorkflowStatus.SUCCEEDED && !citationValidator.available(runId, citations)) {
             status = WorkflowStatus.FAILED;
             error = "CITATION_SOURCE_UNAVAILABLE";
             answer = "";
             citations = List.of();
         }
         if (status != WorkflowStatus.SUCCEEDED) { answer = ""; citations = List.of(); }
+        List<Map<String, String>> citationDetails = new ArrayList<>();
+        if (status == WorkflowStatus.SUCCEEDED) {
+            for (String id : citations) {
+                if (DifyWebEvidence.ID.matcher(id).matches()) {
+                    var snapshot = repository.difyWebSource(runId, id).orElse(null);
+                    // A second read must still match; do not publish a model-created URL.
+                    if (!DifyWebEvidence.valid(snapshot)) {
+                        status = WorkflowStatus.FAILED;
+                        error = "CITATION_SOURCE_UNAVAILABLE";
+                        answer = "";
+                        citations = List.of();
+                        citationDetails.clear();
+                        break;
+                    }
+                    citationDetails.add(Map.of("sourceId", id, "kind", "WEB_SEARCH_SNAPSHOT",
+                            "url", snapshot.url(), "title", snapshot.title(), "excerpt", snapshot.content(),
+                            "retrievedAt", snapshot.completedAt().toString()));
+                }
+            }
+        }
         String response = json.writeValueAsString(Map.of("answer", answer, "citations", citations,
+                "citationDetails", citationDetails,
                 "citationContract", status == WorkflowStatus.SUCCEEDED ? "INDEXED_V1" : "NONE",
                 "insufficientEvidence", status == WorkflowStatus.INSUFFICIENT_EVIDENCE));
         JsonNode usage = detail.path("data").path("total_tokens");

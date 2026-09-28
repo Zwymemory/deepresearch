@@ -72,7 +72,7 @@ def verify_contract() -> None:
         assert call("plan", plan_text=malformed, question="policy?", java_run_id=run_id, allowed_tools="kb_search")["status"] == "FAILED"
     assert json.loads(plan["requests"][0])["callId"] == run_id + ":initial:1"
     empty_plan = call("plan", plan_text='<think>no authorized read-only task</think>{"tasks":[]}', question="q", java_run_id=run_id, allowed_tools="kb_search")
-    assert empty_plan == {"status": "INSUFFICIENT_EVIDENCE", "requests": [], "answer": "", "citations": [], "usage": {}}
+    assert empty_plan == {"status": "INSUFFICIENT_EVIDENCE", "error_code": "NO_RELEVANT_EVIDENCE", "requests": [], "answer": "", "citations": [], "usage": {}}
     assert call("plan", plan_text=json.dumps({"tasks": [{"tool": "web_search", "input": "x"}]}), question="q", java_run_id=run_id, allowed_tools="kb_search")["status"] == "FAILED"
     assert call("plan", plan_text=json.dumps({"tasks": [{"tool": "kb_search", "input": "x"}] * 5}), question="q", java_run_id=run_id, allowed_tools="kb_search")["status"] == "FAILED"
     task = call("workers_parse", item=plan["requests"][0])
@@ -280,9 +280,51 @@ def verify_boundary_scope() -> None:
     assert final["status"] == "INSUFFICIENT_EVIDENCE"  # no implicit qualifier stripping
 
 
+def verify_web_contract() -> None:
+    web_id = "web:tavily:" + "a" * 64
+    web = {"citationId": web_id, "sourceId": "来源1", "title": "Search result", "content": "Typed search summary says A.",
+           "url": "https://example.com/page", "untrusted": True}
+
+    def normalize(rows, success=True, code="OK", tool="web_search"):
+        return call("workers_result", status_code=200, tool=tool,
+                    body=json.dumps({"success": success, "code": code, "tool": tool, "evidences": rows, "value": ""}))["result"]
+
+    result = normalize([web, web])
+    initial = call("initial", results=[result])
+    evidence = json.loads(initial["context"])["evidences"]
+    assert initial["status"] == "READY" and len(evidence) == 1
+    final = call("final_direct", context=initial["context"], question="What does the search summary say?", synthesis_text=json.dumps(
+        {"status": "SUCCEEDED", "answer": "The summary says A [来源1]", "citations": ["来源1"], "answer_kind": "ANSWER", "boundary_support": []}))
+    assert final["status"] == "SUCCEEDED" and final["citations"] == [web_id] and final["error_code"] == ""
+
+    kb = dict(web, citationId="kb:ragflow:dataset:doc:chunk", content="Knowledge fact B.")
+    mixed = call("initial", results=[normalize([kb], tool="kb_search"), result])
+    mixed_final = call("final_direct", context=mixed["context"], question="What are A and B?", synthesis_text=json.dumps(
+        {"status": "SUCCEEDED", "answer": "Web A [来源2], knowledge B [来源1]", "citations": ["来源2", "来源1"], "answer_kind": "ANSWER", "boundary_support": []}))
+    assert mixed_final["answer"] == "Web A [来源1], knowledge B [来源2]"
+    assert mixed_final["citations"] == [web_id, kb["citationId"]]
+    for reason in ("WEB_SEARCH_NOT_CONFIGURED", "WEB_SEARCH_TIMEOUT", "WEB_SEARCH_PROVIDER_UNAVAILABLE"):
+        failure = call("initial", results=[normalize([], success=False, code=reason)])
+        assert failure["status"] == "FAILED" and failure["error_code"] == reason
+        assert failure["answer"] == "" and failure["citations"] == []
+    empty = call("initial", results=[normalize([])])
+    assert empty["status"] == "INSUFFICIENT_EVIDENCE" and empty["error_code"] == "WEB_SEARCH_NO_RESULTS"
+    for bad in (dict(web, citationId="https://example.com/invented"), dict(web, url="javascript:alert(1)"), dict(web, untrusted=False)):
+        assert json.loads(normalize([bad]))["status"] == "FAILED"
+    forged = call("final_direct", context=initial["context"], question="A?", synthesis_text=json.dumps(
+        {"status": "SUCCEEDED", "answer": "A [来源1]", "citations": ["web:tavily:" + "b" * 64], "answer_kind": "ANSWER", "boundary_support": []}))
+    assert forged["status"] == "FAILED" and forged["answer"] == ""
+    schema = call("review", context=initial["context"], question="A?", java_run_id="wf-test", initial_count=1, allowed_tools="web_search",
+                  review_text='{"verdict":"SUFFICIENT","followups":[],"answer_kind":"ANSWER","boundary_support":[],"extra":1}')
+    assert schema["status"] == "FAILED" and schema["error_code"] == "DIFY_MODEL_OUTPUT_INVALID"
+    assert all("error_code" in {output["variable"] for output in node["data"]["outputs"]}
+               for node in NODES.values() if node["data"]["type"] == "end")
+
+
 if __name__ == "__main__":
     verify_graph()
     verify_contract()
     verify_release_constraints()
     verify_boundary_scope()
+    verify_web_contract()
     print("Dify DSL graph and Evidence v1 contract checks passed")
