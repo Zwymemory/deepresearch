@@ -53,6 +53,12 @@
 
 这项证明限定于本次受控的浏览器断线续传。没有在新目录重做 Java kill/restart、远端模型故障、取消或全部故障矩阵，不能据此推导 exactly-once、任意断点恢复、跨实例能力或生产 SLA。人工支持性检查由同一操作者完成，不是盲评。
 
+## 托管 CI 发现的旧测试样例
+
+首个公开候选 `bdec0fde9c5b2d78fbbcbd660259720fd89b247a` 的[Java 集成测试](https://github.com/Zwymemory/deepresearch/actions/runs/36381213889/job/108797180486)运行 28 项，其中 `McpKnowledgeLoopIT` 一项失败；其余五类 CI job 通过。该测试的旧 mock 只有单行 `[来源1]` 文本，没有生产工具使用的多行证据正文。KB 普通诊断文本的证据兜底被移除后，它正确产生空证据，但旧断言仍期待正文。
+
+后续修复把测试样例改成“标题、chunkKey、证据”格式，并在真实 MCP 传输后解析响应，断言来源 ID、chunkKey 和正文完整。无证据安全规则和运行源码保持原样。本地定向执行 `McpKnowledgeToolsReceiptTest` 3 项、`McpKnowledgeLoopIT` 4 项全部通过，Maven 总耗时 25.025 秒。这项补充不改变上文新目录在线验收的版本或完整 37 题结果；后续托管结果见[草稿 PR #1](https://github.com/Zwymemory/deepresearch/pull/1)的检查记录。
+
 ## 与完整质量结果一起阅读
 
 V7 唯一一轮完整 37 题为 34 `SUCCEEDED`、2 `INSUFFICIENT_EVIDENCE`、1 `FAILED`；完整事实 29/31、严格拒答 5/6、来源存在 34/34 组、支持全部对应论断 33/34 组。34 个成功终态不等于 34 题质量通过。
