@@ -1,0 +1,14 @@
+# Optional override for the INDEPENDENT Dify stack, especially native Linux.
+# Apply after scripts/start-showcase.sh creates the named network.
+services:
+  api:
+    networks: [default, deepresearch_callback]
+  worker:
+    networks: [default, deepresearch_callback]
+  ssrf_proxy:
+    networks: [default, deepresearch_callback]
+
+networks:
+  deepresearch_callback:
+    external: true
+    name: ${DEEPRESEARCH_CALLBACK_NETWORK:-deepresearch-showcase-callback}

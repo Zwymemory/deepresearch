@@ -150,7 +150,7 @@ while IFS= read -r entry; do
   [[ -n "$entry" && "$entry" != */ ]] || continue
   lower="$(printf '%s' "$entry" | tr '[:upper:]' '[:lower:]')"
   case "$lower" in
-    *.md|*.txt|*.json|*.jsonl|*.yml|*.yaml|*.properties|*.xml|*.java|*.py|*.sh|*.html|*.toml|*.lock|*.sql|*.css|*.js|dockerfile|makefile|.gitignore|.gitattributes|.env.example) ;;
+    *.md|*.txt|*.json|*.jsonl|*.yml|*.yaml|*.properties|*.xml|*.java|*.py|*.sh|*.html|*.toml|*.lock|*.sql|*.css|*.js|dockerfile|makefile|.gitignore|.gitattributes|.env.example|*/.env.example) ;;
     *) continue ;;
   esac
   object="$commit:${object_prefix}${entry}"
