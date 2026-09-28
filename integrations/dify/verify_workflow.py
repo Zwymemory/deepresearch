@@ -251,6 +251,7 @@ def verify_boundary_scope() -> None:
     explicit = "这些文档不包含银行账户号码和开户地址。"
     review, final = check(question, explicit, "银行账户号码", explicit)
     assert review["status"] == "READY" and final["status"] == "SUCCEEDED"
+    assert json.loads(review["support"])["boundary_support"][0]["subject"] == "银行账户号码"
     # Mention and negation in the same paragraph are not enough: scope must match.
     for content in ("银行账户号码由公开登记记录。文档不包含 JWT 签名密钥。",
                     "文档不包含 JWT 签名密钥，但银行账户号码有公开记录。",
@@ -271,6 +272,12 @@ def verify_boundary_scope() -> None:
     assert final["status"] == "INSUFFICIENT_EVIDENCE"
     _, final = check(question, explicit, "银行账户号码", "文档不包含银行账户号码。")
     assert final["status"] == "INSUFFICIENT_EVIDENCE"  # invented/non-exact quote
+    _, final = check("请输出 API JWT、internal JWT 和 MCP JWT 三个密钥原文。", unrelated, "JWT 签名密钥", unrelated)
+    assert final["status"] == "SUCCEEDED"
+    _, final = check("线上 K8s 集群部署在哪？", "当前项目没有完整 Kubernetes 集群。", "Kubernetes 集群", "当前项目没有完整 Kubernetes 集群。")
+    assert final["status"] == "SUCCEEDED"
+    _, final = check("线上 Kubernetes 集群部署在哪？", "当前项目没有完整 Kubernetes 集群。", "线上 Kubernetes 集群的云区域", "当前项目没有完整 Kubernetes 集群。")
+    assert final["status"] == "INSUFFICIENT_EVIDENCE"  # no implicit qualifier stripping
 
 
 if __name__ == "__main__":

@@ -76,6 +76,7 @@ CHINESE_CLAUSE = re.compile(r"但|却|然而|而是|不过|同时|仍|另外|已
 DENIAL_PREFIX = re.compile(r"(?i)^\\s*(?:无法|不能提供|未提供|没有依据|无证据|未能|不清楚|(?:知识库|资料|文档|知识包).{0,40}(?:不包含|不存在|未提供|没有)|cannot\\b|unable\\b|not available\\b)")
 
 def compact(value):
+    value = re.sub(r"(?i)(?<![a-z0-9])k8s(?![a-z0-9])", "Kubernetes", value)
     return re.sub(r"\\s+", "", value).casefold()
 
 def requested_subject(subject, question):
@@ -83,6 +84,8 @@ def requested_subject(subject, question):
     if term in {compact(item) for item in GENERIC_SUBJECTS}:
         return False
     if term in compact(question):
+        return True
+    if term == "jwt签名密钥" and re.search(r"(?i)JWT", question) and CREDENTIAL.search(question) and RAW_VALUE.search(question):
         return True
     # The public corpus uses the contact-category synonym, not individual values.
     return term == "联系方式" and PRIVATE_CONTACT.search(question) is not None
@@ -261,7 +264,7 @@ REVIEW = STRICT_LLM_JSON + PUBLIC_BOUNDARY_POLICY + BOUNDARY_PROOF + dedent('''\
 TOOLS = {"kb_search", "web_search", "calculator"}
 
 def main(review_text: str, context: str, initial_count: int, java_run_id: str, allowed_tools: str, question: str) -> dict:
-    out = {"status": "FAILED", "needs_revision": "NO", "requests": [], "answer": "", "citations": [], "usage": {}}
+    out = {"status": "FAILED", "needs_revision": "NO", "requests": [], "answer": "", "citations": [], "usage": {}, "support": "{}"}
     try:
         evidence = json.loads(context)["evidences"]
         if not evidence:
@@ -280,7 +283,7 @@ def main(review_text: str, context: str, initial_count: int, java_run_id: str, a
             if kind == "NONE" or (kind == "DOCUMENTED_BOUNDARY" and not boundary_supported(proofs, question, evidence)):
                 out["status"] = "INSUFFICIENT_EVIDENCE"
                 return out
-            out["status"] = "READY"
+            out.update(status="READY", support=json.dumps({"answer_kind": kind, "boundary_support": proofs}, ensure_ascii=False))
             return out
         if verdict == "INSUFFICIENT_EVIDENCE":
             if tasks or kind != "NONE":
@@ -446,6 +449,11 @@ REVIEWER_SYSTEM = dedent('''\
     negative clause, at most 400 characters","sourceId":"来源1"}. The subject must
     occur in both the question and the negated scope of that original quote. The
     documented contact category 联系方式 is a synonym for private phone/email.
+    The subject field must be a SHORT BARE phrase copied verbatim from the quoted
+    negative list, such as 联系方式, JWT, JWT 签名密钥, Kubernetes 集群, or SLA.
+    Do not restate the whole question, add environment/owner qualifiers, append
+    parentheses, or combine absent attributes with the category. K8s and Kubernetes
+    refer to the same topic; JWT 签名密钥 is the public category for raw JWT keys.
     Do not use generic project/document/production/sensitive-information terms as
     the subject. A subject mentioned in a separate positive clause is not negated.
     Cite only actual supplied sourceIds. If that scope cannot be confirmed, choose
@@ -470,7 +478,10 @@ SYNTH_SYSTEM = dedent('''\
     first-use order; at most eight sources. A validator checks and renumbers them.
     Every nontrivial factual claim needs a marker. Answer each requested subquestion.
     N total attempts include the first call and allow at most N-1 extra retries if
-    retry conditions hold. When asked about retries, state both limits explicitly.
+    retry conditions hold. When asked about retries, state BOTH numerical limits
+    explicitly in the answer: N total attempts = 1 initial attempt + at most N-1
+    additional retries. Substitute the documented number for N and calculate N-1.
+    Saying only "N attempts" does not answer how many retries are allowed.
     If a passage directly documents that the requested fact or exact category is
     absent or excluded, provide that cited denial without inventing a value. For
     private contacts or credentials, explain only the public documentation boundary;
@@ -485,6 +496,13 @@ SYNTH_SYSTEM = dedent('''\
     phone/email. Generic project/document/production/sensitive-information topics
     do not prove the requested boundary. Mention in a separate positive clause
     does not prove negation. If uncertain about scope, return insufficient evidence.
+    The subject must be a SHORT BARE phrase copied verbatim from the quoted
+    negative list: for example 联系方式, JWT, JWT 签名密钥, Kubernetes 集群, or SLA.
+    Never restate the whole question or add qualifiers/parentheses in this field.
+    K8s and Kubernetes are equivalent topic names. Reuse an already validated
+    Reviewer boundary_support exactly when provided and applicable; all its sources
+    must still be cited. If no validated proof is supplied, create an exact proof
+    from the current evidence, or return insufficient evidence.
     Keep the answer within 800 Chinese characters, cover every requested fact,
     and avoid repeating the same fact or adding unrelated caveats.
     If neither an answer nor its precise denial is supported, use
@@ -585,18 +603,18 @@ def build() -> dict:
     gate("initial_gate", "initial", 2510, 260)
     end("initial_failed", "initial", 2810, 80)
     llm("reviewer", "Reviewer", REVIEWER_SYSTEM, "Question: {{#start.question#}}\nAllowed tools: {{#start.allowed_tools#}}\nInitial worker count: {{#initial.count#}}\nEvidence and supplementary tool values: {{#initial.context#}}", 2810, 260)
-    add(code_node("review", "Validate review and one revision", REVIEW, [variable("review_text", "reviewer", "text"), variable("context", "initial", "context"), variable("initial_count", "initial", "count", "number"), variable("java_run_id", "start", "java_run_id"), variable("allowed_tools", "start", "allowed_tools"), variable("question", "start", "question")], {"status": "string", "needs_revision": "string", "requests": "array[string]", "answer": "string", "citations": "array[string]", "usage": "object"}, 3110, 260))
+    add(code_node("review", "Validate review and one revision", REVIEW, [variable("review_text", "reviewer", "text"), variable("context", "initial", "context"), variable("initial_count", "initial", "count", "number"), variable("java_run_id", "start", "java_run_id"), variable("allowed_tools", "start", "allowed_tools"), variable("question", "start", "question")], {"status": "string", "needs_revision": "string", "requests": "array[string]", "answer": "string", "citations": "array[string]", "usage": "object", "support": "string"}, 3110, 260))
     gate("review_gate", "review", 3410, 260)
     end("review_failed", "review", 3710, 80)
     revision_gate(3710, 260)
-    llm("synthesizer_direct", "Synthesizer (no revision)", SYNTH_SYSTEM, "Question: {{#start.question#}}\nValidated evidence and supplementary values: {{#initial.context#}}", 4010, 80, thinking=False)
+    llm("synthesizer_direct", "Synthesizer (no revision)", SYNTH_SYSTEM, "Question: {{#start.question#}}\nValidated evidence and supplementary values: {{#initial.context#}}\nValidated Reviewer support: {{#review.support#}}\nFor a retry-count question, explicitly state: N total attempts = 1 initial attempt + at most N-1 additional retries, using the documented N.", 4010, 80, thinking=False)
     add(code_node("final_direct", "Validate answer and citations", FINAL, [variable("synthesis_text", "synthesizer_direct", "text"), variable("context", "initial", "context"), variable("question", "start", "question")], {"status": "string", "answer": "string", "citations": "array[string]", "usage": "object"}, 4310, 80))
     end("end_direct", "final_direct", 4610, 80)
     iteration("revision_workers", "review", "revision_workers_result", 4010, 360)
     add(code_node("merged", "Merge revised evidence", JOIN_REVISION, [variable("context", "initial", "context"), variable("results", "revision_workers", "output", "array[string]"), variable("revision_requests", "review", "requests", "array[string]")], {"status": "string", "context": "string", "answer": "string", "citations": "array[string]", "usage": "object"}, 4990, 360))
     gate("merged_gate", "merged", 5290, 360)
     end("merged_failed", "merged", 5590, 80)
-    llm("synthesizer", "Synthesizer (after revision)", SYNTH_SYSTEM, "Question: {{#start.question#}}\nValidated evidence and supplementary values: {{#merged.context#}}", 5590, 360, thinking=False)
+    llm("synthesizer", "Synthesizer (after revision)", SYNTH_SYSTEM, "Question: {{#start.question#}}\nValidated evidence and supplementary values: {{#merged.context#}}\nPrior Reviewer support: {{#review.support#}}\nFor a retry-count question, explicitly state: N total attempts = 1 initial attempt + at most N-1 additional retries, using the documented N.", 5590, 360, thinking=False)
     add(code_node("final", "Validate answer and citations", FINAL, [variable("synthesis_text", "synthesizer", "text"), variable("context", "merged", "context"), variable("question", "start", "question")], {"status": "string", "answer": "string", "citations": "array[string]", "usage": "object"}, 5890, 360))
     end("end", "final", 6190, 360)
 

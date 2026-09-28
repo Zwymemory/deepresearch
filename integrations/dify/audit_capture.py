@@ -28,7 +28,7 @@ def audit(capture, trace, contract):
     roots = {"planner": ("tasks",), "reviewer": ("verdict", "followups"),
              "synthesizer_direct": ("status", "answer", "citations"),
              "synthesizer": ("status", "answer", "citations")}
-    if contract == "v6":
+    if contract in ("v6", "v7"):
         for node in roots:
             if node != "planner":
                 roots[node] += ("answer_kind", "boundary_support")
@@ -112,7 +112,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--capture", required=True)
     parser.add_argument("--native-trace", required=True)
-    parser.add_argument("--contract", choices=("v5", "v6"), required=True)
+    parser.add_argument("--contract", choices=("v5", "v6", "v7"), required=True)
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
     capture = json.loads(Path(args.capture).read_text())

@@ -1,0 +1,102 @@
+{
+  "ragflow-dify": {
+    "project-kb-001": {
+      "1": {
+        "citationSupport": true,
+        "note": "Answer and attached evidence previews checked; both control/execution plane facts are explicitly supported.",
+        "factChecks": {
+          "java-control-plane": true,
+          "python-execution-plane": true
+        }
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Answer and attached evidence previews checked; both control/execution plane facts are explicitly supported.",
+        "factChecks": {
+          "java-control-plane": true,
+          "python-execution-plane": true
+        }
+      }
+    },
+    "project-kb-neg-001": {
+      "1": {
+        "citationSupport": null,
+        "note": "Safe empty response, but the frozen contract requires a cited documented boundary. Reviewer or Synthesizer produced an overqualified/parenthesized subject absent from the original negated clause; strict scope gate rejected it. This is not a strict refusal success.",
+        "refusalCorrect": false
+      },
+      "2": {
+        "citationSupport": null,
+        "note": "Safe empty response, but the frozen contract requires a cited documented boundary. Reviewer or Synthesizer produced an overqualified/parenthesized subject absent from the original negated clause; strict scope gate rejected it. This is not a strict refusal success.",
+        "refusalCorrect": false
+      }
+    },
+    "project-kb-neg-002": {
+      "1": {
+        "citationSupport": null,
+        "note": "Safe empty response, but the frozen contract requires a cited documented boundary. Reviewer or Synthesizer produced an overqualified/parenthesized subject absent from the original negated clause; strict scope gate rejected it. This is not a strict refusal success.",
+        "refusalCorrect": false
+      },
+      "2": {
+        "citationSupport": null,
+        "note": "Safe empty response, but the frozen contract requires a cited documented boundary. Reviewer or Synthesizer produced an overqualified/parenthesized subject absent from the original negated clause; strict scope gate rejected it. This is not a strict refusal success.",
+        "refusalCorrect": false
+      }
+    },
+    "showcase-holdout-008": {
+      "1": {
+        "citationSupport": null,
+        "note": "Safe empty response, but the frozen contract requires a cited documented boundary. Reviewer or Synthesizer produced an overqualified/parenthesized subject absent from the original negated clause; strict scope gate rejected it. This is not a strict refusal success.",
+        "refusalCorrect": false
+      },
+      "2": {
+        "citationSupport": null,
+        "note": "Safe empty response, but the frozen contract requires a cited documented boundary. Reviewer or Synthesizer produced an overqualified/parenthesized subject absent from the original negated clause; strict scope gate rejected it. This is not a strict refusal success.",
+        "refusalCorrect": false
+      }
+    },
+    "showcase-holdout-007": {
+      "1": {
+        "citationSupport": null,
+        "note": "Pure banking no-evidence: exact insufficient terminal, empty answer, zero citations.",
+        "refusalCorrect": true
+      },
+      "2": {
+        "citationSupport": null,
+        "note": "Pure banking no-evidence: exact insufficient terminal, empty answer, zero citations.",
+        "refusalCorrect": true
+      }
+    },
+    "project-kb-025": {
+      "1": {
+        "citationSupport": true,
+        "note": "Omitted the required at-most-one additional retry answer. Repetition 2 says retry two persistent attempts and conflates retry/attempt; do not credit this fact. Other three required facts are explicit and supported.",
+        "factChecks": {
+          "sdk-retries-disabled": true,
+          "one-request-per-reservation": true,
+          "default-attempts": false,
+          "unknown-budget-accounting": true
+        }
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Omitted the required at-most-one additional retry answer. Repetition 2 says retry two persistent attempts and conflates retry/attempt; do not credit this fact. Other three required facts are explicit and supported.",
+        "factChecks": {
+          "sdk-retries-disabled": true,
+          "one-request-per-reservation": true,
+          "default-attempts": false,
+          "unknown-budget-accounting": true
+        }
+      }
+    },
+    "showcase-holdout-005": {
+      "1": {
+        "citationSupport": null,
+        "note": "Empty failed answer after RAGFlow embedding connection/DNS failure. No answer fact or citation is credited.",
+        "factChecks": {
+          "mapping-check": false,
+          "authority-limit": false
+        }
+      }
+    }
+  }
+}
