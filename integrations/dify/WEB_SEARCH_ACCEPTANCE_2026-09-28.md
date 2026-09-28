@@ -67,6 +67,12 @@
 
 完整离线/在线检查边界见 [gate 记录](evidence-v8.1-web-gates-2026-09-28.json)。快照身份与出处通过不等于已抓取网页全文或保证事实正确；语义审阅中发现的额外限定仍被保留。
 
+## 发布整合中的 CI 修复
+
+整合候选 `b04cced78d6755e59c0a632757e99422bdf3e0e6` 的[托管集成测试](https://github.com/Zwymemory/deepresearch/actions/runs/36390183046/job/108824072217)运行 30 项，旧 `FlywayMigrationIT` 一项失败，其余 29 项和另外五类 CI job 通过。数据库实际成功应用 V1–V16；旧测试的版本列表仍止于 V15。后续仅把既有断言和方法名同步至 V16，运行源码、已发布 DSL 和本节现场采样不变。
+
+定向复验中，完整迁移链 1 项与网页来源 PostgreSQL 2 项全部通过，另有 Tavily 单测 3 项通过，Maven 总耗时 6.353 秒。首轮 CI 失败记录保留，最终托管检查见[同一草稿 PR #1](https://github.com/Zwymemory/deepresearch/pull/1)。
+
 ## 现场演示顺序
 
 用户倾向几分钟介绍，也可能不现场操作；按介绍为主、实测记录随时可打开准备：
