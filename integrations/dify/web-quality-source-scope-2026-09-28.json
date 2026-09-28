@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Frozen source authority expectations for the unchanged 16-case quality cohort; site candidates are not automatic authority certifications.",
+  "frozenCasesSha256": "51586f65fe525404f2dde852b5f32aa2fdc9ac772008a09fc2f2199fe8c6e57b",
+  "verifiedAt": "2026-09-28",
+  "authorityChecks": [
+    {
+      "entity": "Python",
+      "documentationDomain": "docs.python.org",
+      "basisUrl": "https://www.python.org/doc/",
+      "basis": "Python Software Foundation website documentation entry links its Python library reference and current documentation to docs.python.org.",
+      "referenceUrl": "https://docs.python.org/3/library/asyncio.html",
+      "allowedHostRule": "exact docs.python.org or a dot-separated legal DNS subdomain; credentials and other schemes rejected",
+      "cases": [
+        "original-01",
+        "original-02",
+        "original-03",
+        "original-04",
+        "original-05",
+        "original-06",
+        "original-07",
+        "original-08",
+        "original-09",
+        "original-10",
+        "rewrite-1",
+        "rewrite-2",
+        "mixed-kb-web"
+      ],
+      "requiredForAcceptance": "Every cited web snapshot in these cases must pass the expected domain check; third-party facts never count as official-source compliance."
+    }
+  ],
+  "limits": [
+    "Hostname restriction constrains retrieval; domain ownership remains a separately verified fact.",
+    "Other model-selected domains require their own authority basis before being described as verified official sources.",
+    "Search summaries do not establish the full page content or universal factual truth."
+  ]
+}

@@ -3,6 +3,38 @@
 from textwrap import dedent
 
 
+QUOTE_OPTIONS = dedent('''\
+import re
+
+def quote_options(content):
+    # Bounded contiguous slices of the exact authorized snapshot, never model text.
+    # Prefer sentence/paragraph ends; carry 60 characters when a long span is cut.
+    if not isinstance(content, str) or not 1 <= len(content) <= 2000:
+        raise ValueError("invalid snapshot text")
+    options, start = [], 0
+    while start < len(content) and len(options) < 16:
+        stop = min(start + 300, len(content))
+        overlap = False
+        if stop < len(content):
+            ends = [m.end() for m in re.finditer(r"。|[!?！？](?:\\s|$)|\\.(?:\\s|$)|\\n\\n", content[start:stop])]
+            ends = [end for end in ends if end >= 80]
+            if ends:
+                stop = start + ends[-1]
+            else:
+                overlap = True
+        text = content[start:stop]
+        if len(text.strip()) >= 2:
+            options.append({"quoteId": "q" + str(len(options) + 1), "quote": text})
+        start = max(start + 1, stop - 60) if overlap else stop
+    return options
+
+def model_context(evidence, values):
+    return json.dumps({"evidences": [{key: value for key, value in item.items() if key != "content"}
+        | {"quoteOptions": quote_options(item["content"])} for item in evidence],
+        "toolValues": values}, ensure_ascii=False)
+''')
+
+
 PREPARE_CLAIMS = dedent('''\
 def folded(text):
     return " ".join(text.split())
@@ -48,12 +80,16 @@ def main(synthesis_text: str, context: str, question: str, requirements: str, fi
                 return out
             own_sources = set()
             for proof in quotes:
-                exact_fields(proof, ("sourceId", "quote"))
-                source, quote = proof["sourceId"], proof["quote"]
-                if not isinstance(source, str) or not isinstance(quote, str) or source not in sources:
+                exact_fields(proof, ("sourceId", "quoteId"))
+                source, quote_id = proof["sourceId"], proof["quoteId"]
+                if not isinstance(source, str) or not isinstance(quote_id, str) or source not in sources:
                     out["error_code"] = "CLAIM_EVIDENCE_INVALID"
                     return out
-                if source in own_sources or not 2 <= len(quote.strip()) <= 300:
+                # Recompute from this run's actual content. Never trust a model's
+                # quote text or an externally supplied quoteOptions field.
+                options = {item["quoteId"]: item["quote"] for item in quote_options(sources[source]["content"])}
+                quote = options.get(quote_id)
+                if source in own_sources or quote is None:
                     out["error_code"] = "CLAIM_EVIDENCE_INVALID"
                     return out
                 # Exact quote provenance is structural; semantic support is checked separately.
@@ -62,6 +98,8 @@ def main(synthesis_text: str, context: str, question: str, requirements: str, fi
                     return out
                 own_sources.add(source)
                 referenced.add(source)
+                proof.clear()
+                proof.update(sourceId=source, quote=quote)
         if text_size > 700 or len(referenced) > 8:
             return out
         if kind == "NONE" or (kind == "ANSWER" and public_boundary_query(question) is not None):
@@ -77,7 +115,8 @@ def main(synthesis_text: str, context: str, question: str, requirements: str, fi
         # retrieval context or an uncited worker's passage.
         verification = {"claims": [{"index": index, **claim} for index, claim in enumerate(claims, 1)],
                         "requirements": [{"index": index, "question_part": part}
-                                         for index, part in enumerate(required, 1)]}
+                                         for index, part in enumerate(required, 1)],
+                        "answer_kind": kind, "boundary_support": proofs}
         out.update(status="READY", error_code="", candidate=json.dumps(candidate, ensure_ascii=False),
                    verification=json.dumps(verification, ensure_ascii=False))
     except ModelOutputError as exc:
@@ -156,9 +195,11 @@ Return exactly one JSON object:
  "answer_kind":"ANSWER|DOCUMENTED_BOUNDARY|NONE","boundary_support":[]}.
 For SUCCEEDED, claims contains 1-6 atomic, concise Chinese statements with exactly
 {"text":"one requested factual statement, at most 160 characters",
- "quotes":[{"sourceId":"来源1","quote":"exact original source text, at most 300 characters"}]}.
-Each claim has 1-2 quotes from distinct supplied sourceIds. Copy quote text literally;
-do not translate, shorten with ellipses or invent an extract. At most eight distinct
+ "quotes":[{"sourceId":"来源1","quoteId":"q1"}]}.
+Each claim selects 1-2 supplied quoteOptions from distinct sourceIds. Select the
+EXACT quoteId belonging to that source. Never copy or rewrite quote text, invent an
+ID or put a quote field in claims. Code resolves the selected ID to original text.
+At most eight distinct
 sources, and at most 700 characters of claim text altogether. No citation markers,
 line breaks, introductions, conclusions or free answer field. Code adds markers.
 Cover each FIXED requirement with a separate short claim; do not delete or redefine
@@ -174,6 +215,11 @@ from the explicit negative clause/list, occurring in the question or its authori
 public category synonym. Each boundary source must appear in claims' quotes too.
 Reuse applicable validated Reviewer boundary_support verbatim. Generic safety
 advice, unrelated exclusions and no-result diagnostics cannot prove absence.
+For DOCUMENTED_BOUNDARY, state a concise cited refusal addressing each requested
+value; an implementation fact such as a minimum length does not answer a request
+for its current value. An excluded category covers a specific member only when
+the requested member actually belongs to that category. Do not claim a value does
+not exist: say only that the supplied public documents do not provide it.
 Never disclose private contact/credential values; only state the public corpus
 boundary. If requested facts and a precise boundary are both unsupported, return
 {"status":"INSUFFICIENT_EVIDENCE","claims":[],"answer_kind":"NONE","boundary_support":[]}.
@@ -197,6 +243,13 @@ Arithmetic must follow from a numerical rule in that claim's quotes. Separate cl
 must all be supported; if any clause is unsupported set false for the entire claim.
 For a denial, its exact requested subject must be inside an explicit negative scope.
 No-result diagnostics or an unrelated exclusion do not support denial of another fact.
+For answer_kind=DOCUMENTED_BOUNDARY, a supported explanation that public documents
+exclude the requested category and therefore cannot supply its values is a complete
+refusal to that value request; do not require the missing private values themselves.
+Check that ALL requested members fall under the quoted excluded category, using
+their actual meaning in the question and quotes. A general exclusion unrelated to
+any requested member leaves that member unanswered. Boundary metadata is validated
+structure, not a substitute for support from each claim's own quotes.
 When unsure, supported=false. Coverage MUST contain exactly one ordered entry for
 EVERY fixed requirement index supplied in the input, even if unanswered. You may
 not delete, merge, redefine or add requirements. For each requirement, claim_indices lists

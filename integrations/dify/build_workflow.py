@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from textwrap import dedent
-from claim_support import PREPARE_CLAIMS, FINAL_CLAIMS, SYNTH_CLAIMS_SYSTEM, VERIFY_CLAIMS_SYSTEM
+from claim_support import QUOTE_OPTIONS, PREPARE_CLAIMS, FINAL_CLAIMS, SYNTH_CLAIMS_SYSTEM, VERIFY_CLAIMS_SYSTEM
 
 
 HERE = Path(__file__).resolve().parent
@@ -146,7 +146,21 @@ def support_shape(response):
     return kind, proofs
 ''')
 
-PLAN = STRICT_LLM_JSON + PUBLIC_BOUNDARY_POLICY + dedent('''\
+SOURCE_SCOPE = dedent('''\
+import re
+
+OFFICIAL_REQUEST = re.compile(r"(?i)官方|official|primary[- ]sources?|一手来源")
+SITE_DOMAIN = re.compile(r"(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}")
+
+def scoped_web_query(query, question):
+    tokens = [token[5:].lower() for token in query.split() if token.lower().startswith("site:")]
+    if len(tokens) > 3 or any(not SITE_DOMAIN.fullmatch(token) for token in tokens):
+        return False
+    # A domain candidate constrains retrieval; it does not certify authority.
+    return bool(tokens) or OFFICIAL_REQUEST.search(question) is None
+''')
+
+PLAN = STRICT_LLM_JSON + PUBLIC_BOUNDARY_POLICY + SOURCE_SCOPE + dedent('''\
 TOOLS = {"kb_search", "web_search", "calculator"}
 
 def main(plan_text: str, question: str, java_run_id: str, allowed_tools: str, finish_reason: str = "stop") -> dict:
@@ -170,6 +184,8 @@ def main(plan_text: str, question: str, java_run_id: str, allowed_tools: str, fi
             exact_fields(task, ("tool", "input"))
             if not isinstance(task["tool"], str) or task["tool"] not in allowed \
                     or not isinstance(task["input"], str) or not 1 <= len(task["input"].strip()) <= 400:
+                return result
+            if task["tool"] == "web_search" and not scoped_web_query(task["input"], question):
                 return result
         boundary = public_boundary_query(question)
         if boundary is not None:
@@ -279,11 +295,11 @@ def main(status_code: int, body: str, tool: str) -> dict:
     return {"result": json.dumps(out, ensure_ascii=False)}
 ''')
 
-JOIN_INITIAL = TOOL_FAILURES + dedent('''\
+JOIN_INITIAL = TOOL_FAILURES + QUOTE_OPTIONS + dedent('''\
 import json
 
 def main(results: list) -> dict:
-    out = {"status": "FAILED", "error_code": "DIFY_TOOL_RESPONSE_INVALID", "context": "{}", "count": 0, "answer": "", "citations": [], "usage": {}}
+    out = {"status": "FAILED", "error_code": "DIFY_TOOL_RESPONSE_INVALID", "context": "{}", "model_context": "{}", "count": 0, "answer": "", "citations": [], "usage": {}}
     try:
         if not isinstance(results, list) or not 1 <= len(results) <= 4:
             return out
@@ -309,13 +325,13 @@ def main(results: list) -> dict:
         for index, item in enumerate(evidence, 1):
             item["sourceId"] = "来源" + str(index)
         out.update(status="READY" if evidence else "INSUFFICIENT_EVIDENCE",
-                   error_code="" if evidence else ("WEB_SEARCH_NO_RESULTS" if saw_web else "NO_RELEVANT_EVIDENCE"), context=json.dumps({"evidences": evidence, "toolValues": values}, ensure_ascii=False), count=len(results))
+                   error_code="" if evidence else ("WEB_SEARCH_NO_RESULTS" if saw_web else "NO_RELEVANT_EVIDENCE"), context=json.dumps({"evidences": evidence, "toolValues": values}, ensure_ascii=False), model_context=model_context(evidence, values), count=len(results))
     except (ValueError, TypeError, KeyError, AttributeError):
         pass
     return out
 ''')
 
-REVIEW = STRICT_LLM_JSON + PUBLIC_BOUNDARY_POLICY + BOUNDARY_PROOF + dedent('''\
+REVIEW = STRICT_LLM_JSON + PUBLIC_BOUNDARY_POLICY + BOUNDARY_PROOF + SOURCE_SCOPE + dedent('''\
 TOOLS = {"kb_search", "web_search", "calculator"}
 
 def main(review_text: str, context: str, initial_count: int, java_run_id: str, allowed_tools: str, question: str, finish_reason: str = "stop") -> dict:
@@ -359,6 +375,8 @@ def main(review_text: str, context: str, initial_count: int, java_run_id: str, a
             if not isinstance(task["tool"], str) or task["tool"] not in allowed \
                     or not isinstance(task["input"], str) or not 1 <= len(task["input"].strip()) <= 400:
                 return out
+            if task["tool"] == "web_search" and not scoped_web_query(task["input"], question):
+                return out
         boundary = public_boundary_query(question)
         if boundary is not None:
             if "kb_search" not in allowed:
@@ -381,11 +399,11 @@ def main(review_text: str, context: str, initial_count: int, java_run_id: str, a
     return out
 ''')
 
-JOIN_REVISION = TOOL_FAILURES + dedent('''\
+JOIN_REVISION = TOOL_FAILURES + QUOTE_OPTIONS + dedent('''\
 import json
 
 def main(context: str, results: list, revision_requests: list) -> dict:
-    out = {"status": "FAILED", "error_code": "DIFY_TOOL_RESPONSE_INVALID", "context": "{}", "answer": "", "citations": [], "usage": {}}
+    out = {"status": "FAILED", "error_code": "DIFY_TOOL_RESPONSE_INVALID", "context": "{}", "model_context": "{}", "answer": "", "citations": [], "usage": {}}
     try:
         if not isinstance(results, list) or not isinstance(revision_requests, list) or len(results) != len(revision_requests):
             return out
@@ -412,13 +430,13 @@ def main(context: str, results: list, revision_requests: list) -> dict:
         for index, item in enumerate(evidence, 1):
             item["sourceId"] = "来源" + str(index)
         out.update(status="READY" if evidence else "INSUFFICIENT_EVIDENCE",
-                   error_code="" if evidence else ("WEB_SEARCH_NO_RESULTS" if saw_web else "NO_RELEVANT_EVIDENCE"), context=json.dumps({"evidences": evidence, "toolValues": values}, ensure_ascii=False))
+                   error_code="" if evidence else ("WEB_SEARCH_NO_RESULTS" if saw_web else "NO_RELEVANT_EVIDENCE"), context=json.dumps({"evidences": evidence, "toolValues": values}, ensure_ascii=False), model_context=model_context(evidence, values))
     except (ValueError, TypeError, KeyError, AttributeError):
         pass
     return out
 ''')
 
-PREPARE = STRICT_LLM_JSON + PUBLIC_BOUNDARY_POLICY + BOUNDARY_PROOF + PREPARE_CLAIMS
+PREPARE = STRICT_LLM_JSON + PUBLIC_BOUNDARY_POLICY + BOUNDARY_PROOF + QUOTE_OPTIONS + PREPARE_CLAIMS
 FINAL = STRICT_LLM_JSON + PUBLIC_BOUNDARY_POLICY + BOUNDARY_PROOF + FINAL_CLAIMS
 
 PLANNER_SYSTEM = dedent('''\
@@ -432,6 +450,13 @@ PLANNER_SYSTEM = dedent('''\
     substring of at most 200 characters. Do not omit an inconvenient or unsupported
     subquestion. For "what is X and where does X operate", record both definition
     and location requirements. These requirements stay fixed for all later nodes.
+    When the user requests official/primary sources, every web_search input MUST
+    include a site:DOMAIN constraint. Prefer a domain explicitly supplied by the
+    user; otherwise choose the relevant entity's official documentation domain.
+    Use 1-3 plain ASCII DNS names, without scheme, path, wildcard or credentials.
+    A model-selected domain is a candidate, not proof of official ownership. If
+    you cannot identify an appropriate domain, do not substitute a tutorial/blog
+    or claim official authority. Domains will be enforced by the search service.
     A request for private contact values or raw credentials must never search for
     those values. When kb_search is allowed, search only public project documentation
     describing whether the requested category is included or excluded. This can
@@ -446,6 +471,9 @@ REVIEWER_SYSTEM = dedent('''\
     a Tavily search-summary snapshot, not a fetched full page or proof of truth.
     Only claim facts directly supported by its supplied content; URLs alone are
     not support. Missing/failed search diagnostics are never evidence.
+    For official/primary-source requests, all web followup inputs must include
+    site:DOMAIN using 1-3 plain DNS names, preferably the user's explicit domain.
+    A domain restriction does not itself establish that a site is official.
     Return exactly one JSON object with exactly these four keys:
     {"verdict":"SUFFICIENT|REVISE|INSUFFICIENT_EVIDENCE","followups":[],
      "answer_kind":"ANSWER|DOCUMENTED_BOUNDARY|NONE","boundary_support":[]}.
@@ -605,7 +633,7 @@ def build() -> dict:
     gate("plan_gate", "plan", 930, 260)
     end("plan_failed", "plan", 1230, 80)
     iteration("workers", "plan", "workers_result", 1230, 260)
-    add(code_node("initial", "Combine Evidence v1", JOIN_INITIAL, [variable("results", "workers", "output", "array[string]")], {"status": "string", "context": "string", "count": "number", "answer": "string", "citations": "array[string]", "usage": "object"}, 2210, 260))
+    add(code_node("initial", "Combine Evidence v1", JOIN_INITIAL, [variable("results", "workers", "output", "array[string]")], {"status": "string", "context": "string", "model_context": "string", "count": "number", "answer": "string", "citations": "array[string]", "usage": "object"}, 2210, 260))
     gate("initial_gate", "initial", 2510, 260)
     end("initial_failed", "initial", 2810, 80)
     llm("reviewer", "Reviewer", REVIEWER_SYSTEM, "Question: {{#start.question#}}\nFixed requirements: {{#plan.requirements#}}\nAllowed tools: {{#start.allowed_tools#}}\nInitial worker count: {{#initial.count#}}\nEvidence and supplementary tool values: {{#initial.context#}}", 2810, 260)
@@ -613,13 +641,13 @@ def build() -> dict:
     gate("review_gate", "review", 3410, 260)
     end("review_failed", "review", 3710, 80)
     revision_gate(3710, 260)
-    llm("synthesizer_direct", "Synthesizer (no revision)", SYNTH_SYSTEM, "Question: {{#start.question#}}\nFixed requirements: {{#plan.requirements#}}\nValidated evidence and supplementary values: {{#initial.context#}}\nValidated Reviewer support: {{#review.support#}}", 4010, -160)
+    llm("synthesizer_direct", "Synthesizer (no revision)", SYNTH_SYSTEM, "Question: {{#start.question#}}\nFixed requirements: {{#plan.requirements#}}\nValidated quote options and supplementary values: {{#initial.model_context#}}\nValidated Reviewer support: {{#review.support#}}", 4010, -160)
     claim_validation("synthesizer_direct", "initial", "_direct", 4310, -160)
     iteration("revision_workers", "review", "revision_workers_result", 4010, 360)
-    add(code_node("merged", "Merge revised evidence", JOIN_REVISION, [variable("context", "initial", "context"), variable("results", "revision_workers", "output", "array[string]"), variable("revision_requests", "review", "requests", "array[string]")], {"status": "string", "context": "string", "answer": "string", "citations": "array[string]", "usage": "object"}, 4990, 360))
+    add(code_node("merged", "Merge revised evidence", JOIN_REVISION, [variable("context", "initial", "context"), variable("results", "revision_workers", "output", "array[string]"), variable("revision_requests", "review", "requests", "array[string]")], {"status": "string", "context": "string", "model_context": "string", "answer": "string", "citations": "array[string]", "usage": "object"}, 4990, 360))
     gate("merged_gate", "merged", 5290, 360)
     end("merged_failed", "merged", 5590, 80)
-    llm("synthesizer", "Synthesizer (after revision)", SYNTH_SYSTEM, "Question: {{#start.question#}}\nFixed requirements: {{#plan.requirements#}}\nValidated evidence and supplementary values: {{#merged.context#}}\nPrior Reviewer support: {{#review.support#}}", 5590, 360)
+    llm("synthesizer", "Synthesizer (after revision)", SYNTH_SYSTEM, "Question: {{#start.question#}}\nFixed requirements: {{#plan.requirements#}}\nValidated quote options and supplementary values: {{#merged.model_context#}}\nPrior Reviewer support: {{#review.support#}}", 5590, 360)
     claim_validation("synthesizer", "merged", "", 5890, 360)
 
     for source, target in (("start", "planner"), ("planner", "plan"), ("plan", "plan_gate"), ("workers", "initial"), ("initial", "initial_gate"), ("reviewer", "review"), ("review", "review_gate"), ("revision_workers", "merged"), ("merged", "merged_gate")):

@@ -68,7 +68,8 @@ def verify_graph() -> None:
 
 def publish_fixture(context, claims, question="policy", supported=None, kind="ANSWER", proofs=None, covers=True, requirements=None):
     requirements = requirements or [question]
-    candidate = call("claims", synthesis_text=json.dumps({"status": "SUCCEEDED", "claims": claims,
+    selected = [select_options(context, item) for item in claims]
+    candidate = call("claims", synthesis_text=json.dumps({"status": "SUCCEEDED", "claims": selected,
                      "answer_kind": kind, "boundary_support": proofs or []}), context=context, question=question,
                      requirements=json.dumps(requirements))
     if candidate["status"] != "READY":
@@ -82,6 +83,23 @@ def publish_fixture(context, claims, question="policy", supported=None, kind="AN
 
 def claim(text, source, quote):
     return {"text": text, "quotes": [{"sourceId": source, "quote": quote}]}
+
+def select_options(context, original):
+    """Explicit test migration from retained quote fixtures to generated options."""
+    namespace = {}
+    exec(NODES["claims"]["data"]["code"], namespace)
+    sources = {row["sourceId"]: row for row in json.loads(context)["evidences"]}
+    selected = []
+    for proof in original["quotes"]:
+        if "quoteId" in proof:
+            selected.append(dict(proof))
+            continue
+        content = sources.get(proof["sourceId"], {}).get("content", "")
+        options = namespace["quote_options"](content) if content else []
+        folded = " ".join(proof["quote"].split())
+        option = next((row for row in options if folded in " ".join(row["quote"].split())), None)
+        selected.append({"sourceId": proof["sourceId"], "quoteId": option["quoteId"] if option else "q-missing"})
+    return {"text": original["text"], "quotes": selected}
 
 def verify_contract() -> None:
     run_id = "3d6edbc1-219c-4c72-a814-0b2652b2582c"
@@ -309,7 +327,7 @@ def verify_claim_support() -> None:
     fixtures = json.loads((HERE / "claim-support-fixtures-2026-09-28.json").read_text())["cases"]
     for fixture in fixtures:
         context = json.dumps({"evidences": [fixture["evidence"]], "toolValues": []})
-        prepared = call("claims", synthesis_text=json.dumps({"status": "SUCCEEDED", "claims": [fixture["claim"]],
+        prepared = call("claims", synthesis_text=json.dumps({"status": "SUCCEEDED", "claims": [select_options(context, fixture["claim"])],
                         "answer_kind": "ANSWER", "boundary_support": []}), context=context, question=fixture["question"])
         assert prepared["status"] == "READY"  # Exact quote presence alone accepts both positive/negative semantics.
         final = publish_fixture(context, [fixture["claim"]], question=fixture["question"],
@@ -326,7 +344,7 @@ def verify_claim_support() -> None:
     trimmed = publish_fixture(context, [minimal, fixture["claim"]], supported=[True, False])
     assert trimmed["status"] == "SUCCEEDED" and "单线程" not in trimmed["answer"]
     assert trimmed["citations"] == [fixture["evidence"]["citationId"]]
-    prepared = call("claims", synthesis_text=json.dumps({"status": "SUCCEEDED", "claims": [minimal],
+    prepared = call("claims", synthesis_text=json.dumps({"status": "SUCCEEDED", "claims": [select_options(context, minimal)],
                     "answer_kind": "ANSWER", "boundary_support": []}), context=context, question=fixture["question"])
     valid_coverage = [{"requirement_index": 1, "claim_indices": [1]}]
     for invalid in ({"decisions": [], "coverage": valid_coverage},
@@ -358,7 +376,7 @@ def verify_claim_support() -> None:
     # Requirements are frozen BEFORE synthesis. A partial answer cannot pass by
     # having the verifier omit the unanswered I/O part, even with nonempty mappings.
     question = fixture["question"]
-    partial = call("claims", synthesis_text=json.dumps({"status": "SUCCEEDED", "claims": [minimal],
+    partial = call("claims", synthesis_text=json.dumps({"status": "SUCCEEDED", "claims": [select_options(context, minimal)],
                    "answer_kind": "ANSWER", "boundary_support": []}), context=context, question=question,
                    requirements=json.dumps(["用于哪类并发编程", "适合哪类任务"]))
     assert partial["status"] == "READY"
@@ -382,13 +400,60 @@ def verify_claim_support() -> None:
     assert len(fixed) == len(fixtures) == 8
     for row in fixed:
         fixture = next(item for item in fixtures if item["id"] == row["fixtureId"])
-        prepared = call("claims", synthesis_text=json.dumps({"status": "SUCCEEDED", "claims": [fixture["claim"]],
-                        "answer_kind": "ANSWER", "boundary_support": []}),
-                        context=json.dumps({"evidences": [fixture["evidence"]]}),
-                        question=fixture["question"], requirements=json.dumps(fixture["requirements"]))
-        replay = call("final", candidate=prepared["candidate"], question=fixture["question"],
+        # Replay the historical verifier's EXACT quoted payload through final Code.
+        # This remains a v9 semantic record, not a v10 model invocation.
+        candidate = {"claims": [fixture["claim"]], "evidences": [fixture["evidence"]],
+                     "answer_kind": "ANSWER", "boundary_support": [], "requirements": fixture["requirements"]}
+        replay = call("final", candidate=json.dumps(candidate), question=fixture["question"],
                       verification_text=json.dumps(row["response"]), finish_reason=row["finishReason"])
         assert replay["status"] == row["expectedFinalStatus"]
+
+
+def verify_quote_options_and_source_scope():
+    namespace = {}
+    exec(NODES["claims"]["data"]["code"], namespace)
+    content = "# 标题\n\n这个 **原文** 包含 `async/await`。\n\n" + "x" * 1700
+    options = namespace["quote_options"](content)
+    assert options == namespace["quote_options"](content)
+    assert 1 <= len(options) <= 16 and all(2 <= len(row["quote"].strip()) <= 300 for row in options)
+    assert all(row["quote"] in content for row in options)
+    context = json.dumps({"evidences": [{"sourceId": "来源1", "citationId": "kb:test", "content": content,
+                          "quoteOptions": [{"quoteId": "fabricated", "quote": "injected"}]}]})
+    selected = {"text": "原文包含 async/await。", "quotes": [{"sourceId": "来源1", "quoteId": "q1"}]}
+    prepare = lambda claims: call("claims", synthesis_text=json.dumps({"status": "SUCCEEDED", "claims": claims,
+                       "answer_kind": "ANSWER", "boundary_support": []}), context=context, question="原文是什么？")
+    resolved = prepare([selected])
+    assert resolved["status"] == "READY"
+    assert json.loads(resolved["verification"])["claims"][0]["quotes"][0]["quote"] == options[0]["quote"]
+    for source, quote_id in (("来源1", "fabricated"), ("来源1", "q99"), ("来源2", "q1")):
+        result = prepare([dict(selected, quotes=[{"sourceId": source, "quoteId": quote_id}])])
+        assert result["status"] == "FAILED" and result["error_code"] == "CLAIM_EVIDENCE_INVALID"
+    assert prepare([claim("原文包含 async/await。", "来源1", "这个原文包含 async/await。")])["status"] == "FAILED"
+    question = "请根据官方资料介绍这个项目。"
+    args = {"question": question, "java_run_id": "wf-scope", "allowed_tools": "web_search"}
+    for query, expected in (("topic", "FAILED"), ("topic site:docs.example.org", "READY"),
+                            ("topic site:example.org/path", "FAILED"), ("topic site:*.example.org", "FAILED")):
+        plan = call("plan", plan_text=json.dumps({"tasks": [{"tool": "web_search", "input": query}],
+                       "requirements": ["介绍这个项目"]}), **args)
+        assert plan["status"] == expected
+        review = call("review", review_text=json.dumps({"verdict": "REVISE", "followups": [{"tool": "web_search", "input": query}],
+                        "answer_kind": "NONE", "boundary_support": []}), context=context, initial_count=1, **args)
+        assert review["status"] == expected
+    # Actual v10 development checker responses, using the precise resolved text.
+    audit = json.loads((HERE / "claim-support-options-audit-2026-09-28.json").read_text())
+    assert len(audit["attempts"]) == 10 and audit["summary"]["allMatched"]
+    for row in audit["attempts"]:
+        for c in row["verificationInput"]["claims"]:
+            assert c["quotes"] == row["candidate"]["claims"][c["index"] - 1]["quotes"]
+        result = call("final", candidate=json.dumps(row["candidate"]), question=row["question"],
+                      verification_text=json.dumps(row["response"]), finish_reason=row["finishReason"])
+        assert result["status"] == row["finalStatus"] and row["matchesExpected"]
+    # A complete category refusal is different from an unrelated/missing fact.
+    boundary = next(row for row in audit["attempts"] if row["fixtureId"] == "boundary-full")
+    partial = next(row for row in audit["attempts"] if row["fixtureId"] == "boundary-partial-unrelated")
+    assert boundary["finalStatus"] == "SUCCEEDED"
+    assert partial["finalStatus"] == "INSUFFICIENT_EVIDENCE"
+    assert partial["response"]["coverage"][1]["claim_indices"] == []
 
 
 if __name__ == "__main__":
@@ -398,4 +463,5 @@ if __name__ == "__main__":
     verify_boundary_scope()
     verify_web_contract()
     verify_claim_support()
+    verify_quote_options_and_source_scope()
     print("Dify graph, claim support, failure classification and preserved scope checks passed")
