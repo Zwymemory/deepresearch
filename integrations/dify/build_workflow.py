@@ -165,7 +165,7 @@ TOOLS = {"kb_search", "web_search", "calculator"}
 
 def main(plan_text: str, question: str, java_run_id: str, allowed_tools: str, finish_reason: str = "stop") -> dict:
     result = {"status": "FAILED", "error_code": "DIFY_MODEL_OUTPUT_INVALID", "requests": [], "answer": "", "citations": [], "usage": {}, "requirements": "[]"}
-    if not question.strip() or not java_run_id.strip():
+    if not question.strip() or len(question) > 4000 or not java_run_id.strip():
         return result
     allowed = set(allowed_tools.split(",")) & TOOLS
     try:
@@ -196,11 +196,17 @@ def main(plan_text: str, question: str, java_run_id: str, allowed_tools: str, fi
             # This trusted query replaces model inputs, including an empty plan.
             tasks = [{"tool": "kb_search", "input": boundary}]
             # Preserve the whole requested public boundary under the existing policy.
-            requirements = [question] if len(question) <= 200 else []
+            requirements = [question]
         if not tasks:
             result.update(status="INSUFFICIENT_EVIDENCE", error_code="NO_RELEVANT_EVIDENCE")
             return result
         if not requirements:
+            return result
+        # Reserve an immutable whole-question requirement before synthesis.
+        # The model's decomposition cannot erase an omitted named subject.
+        if question not in requirements:
+            requirements.append(question)
+        if len(requirements) > 6:
             return result
         requests = []
         for index, task in enumerate(tasks, 1):
@@ -446,10 +452,13 @@ PLANNER_SYSTEM = dedent('''\
     Plan 1-4 independent tasks using only allowed_tools. If no authorized read-only
     task is appropriate, return {"tasks":[],"requirements":[]}.
     Before retrieval or answer generation, split the question into ALL separate
-    requested facts/attributes, at most six requirements, each an exact original
+    requested facts/attributes, at most five requirements, each an exact original
     substring of at most 200 characters. Do not omit an inconvenient or unsupported
     subquestion. For "what is X and where does X operate", record both definition
-    and location requirements. These requirements stay fixed for all later nodes.
+    and location requirements. Include each named subject. Code adds the whole
+    original question as a mandatory sixth-or-earlier requirement before synthesis;
+    a partial decomposition cannot remove an unanswered subject from final coverage.
+    These requirements stay fixed for all later nodes.
     When the user requests official/primary sources, every web_search input MUST
     include a site:DOMAIN constraint. Prefer a domain explicitly supplied by the
     user; otherwise choose the relevant entity's official documentation domain.

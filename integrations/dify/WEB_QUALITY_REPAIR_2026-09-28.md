@@ -10,8 +10,8 @@ wf-37517854-e59b-4ee4-88d0-f364a9968c1c 的两次网页检索均成功、各有�
 
 - 本地官方 DeepSeek 插件 0.0.24 将 thinking=false 转成 type=disabled 并删除 reasoning_effort；manifest 支持 JSON object，尚未声明原生 JSON Schema。所有有限 JSON 节点使用非思考模式，保留严格字段、类型、重复键等本地验证。[官方思考模式说明](https://api-docs.deepseek.com/guides/thinking_mode/)。
 - 最多四次模型调用：Planner 1536、Reviewer 1536、Synthesizer 4096、独立支持核验 2048 completion tokens，总上限 9216，低于旧三节点 12288。最多四次 Worker、一次检索修订，未启用模型或 HTTP 重试，也不重新派发整单。Java 120 秒截止不变；额外核验调用仍受它约束。
-- Planner 在检索与生成之前固定最多六个原问题要求，Code 验证为原问题片段；之后的模型不能重新定义这个列表。Code 从每个真实快照确定生成最多 16 条、每条至多 300 字符的连续原文选项。Synthesizer 只能提交最多六条短论断，每条选最多两个来源的 sourceId+quoteId，总论断文字最多 700 字符、最多八个来源。Prepare 从同一 run 的实际 content 重新计算选项，拒绝模型自造 ID，不接受模型自抄引句或外部 quoteOptions 替代原文。
-- Code 先验证被引原文来自确切来源。独立模型仅查看各论断自己的引句，判断全部限定、数字、单位、版本、否定等是否得到支持，并对每个固定要求返回已批准论断索引。Code 验证覆盖数量、顺序和索引一致，所有要求都有批准论断才发布；被拒绝的论断不会残留在自由文本中。
+- Planner 提出最多五个原问题片段，Code 在检索与生成之前固定最多六个要求，保留一个不可省略的完整原问题项（与 Java 4000 字符问题上限一致）；之后的模型不能重新定义列表。完整问题项必须由全部相关批准论断联合覆盖，不能只回答其中一个实体。Code 从每个真实快照确定生成最多 16 条、每条至多 300 字符的连续原文选项，优先按分号、句子和段落边界分组，跳过超过上限的单个长分句，不另行切字制造半个词的尾段。Synthesizer 只能提交最多六条短论断，每条选最多两个来源的 sourceId+quoteId，总论断文字最多 700 字符、最多八个来源。Prepare 从同一 run 的实际 content 重新计算选项，拒绝模型自造 ID，不接受模型自抄引句或外部 quoteOptions 替代原文。
+- Code 先验证被引原文来自确切来源。独立模型仅查看各论断自己的引句，判断全部限定、数字、单位、版本、否定等是否得到支持，并对每个固定要求返回已批准论断索引；不能从问题或半句尾段补出缺失主语、职责和条件。来源种类仅为经过 Code 验证的 KB/web 展示约束元数据，不给事实或官网身份背书。Code 验证覆盖数量、顺序和索引一致，所有要求都有批准论断才发布；仅保留批准且参与覆盖的论断，被拒绝或未用于回答的文字不会残留在自由文本中。
 - **原文存在、覆盖映射及模型批准均不等于逻辑证明**。问题分解和语义支持仍由模型判断，必须保留人工验收。开发期间曾观察到正确的并发论断被误认为已回答 I/O 子问；原判断保留。固定要求后的同样部分回答明确返回未覆盖的 I/O 项；少列这一项即使其余映射非空，也被确定性代码拒绝。
 - length、空最终正文、非法 JSON/schema、模型服务异常分为 DIFY_MODEL_OUTPUT_TRUNCATED、DIFY_MODEL_OUTPUT_EMPTY、DIFY_MODEL_OUTPUT_INVALID、DIFY_MODEL_PROVIDER_ERROR。引句来源错误为 CLAIM_EVIDENCE_INVALID；支持/完整性不足为空答零引用的 CLAIM_SUPPORT_INSUFFICIENT。仅允许安全节点名和代码进入诊断，provider 原始错误及思维链不进入前端。
 - 网页快照的 run 级授权、完成回执、URL/标题/内容身份复核，以及原 KB 实时文档/chunk 验证保留。KB 展示元数据取自本 run 成功完成且已授权回执，kind=KNOWLEDGE_CHUNK，无伪造网页 URL。取消、截止、无证据与 SSE 规则不变。
@@ -44,3 +44,20 @@ evidence-v9-quality-live-2026-09-28.json 保留该版 16 次真实执行与全�
 上述失败驱动 quoteId、实际域过滤和拒答覆盖修复。claim-support-options-audit-2026-09-28.json 单列十次真实独立核验：原八个限定/数量/环境/部分覆盖样本，以及全部 JWT 类别拒答和 JWT 拒答但银行未回答两例；十次均符合预先期望，finish_reason=stop。实际响应通过最终 Code 重放，银行项仍为空覆盖并返回不足。六项 Tavily 和十三项 Dify 工具 unit 通过，未增加模型/Worker/时间预算。
 
 第二版将保持原 16 个问题、次序与期望不变，另存独立结果；在队列和逐项来源/论断审阅完成前不声称已稳定或最终验收通过。
+
+### 第二冻结版 833b1e7：终态 16/16，质量 14/16，仍失败
+
+evidence-v10-quality-live-2026-09-28.json 保留全部 16 次；连续原题十次均 SUCCEEDED，所有终态均符合预先期望，全部 62 个模型节点 finish_reason=stop。本轮 13 个需官网范围的用例，全部发布网页引用及检索结果均在核实的 docs.python.org 范围。部分引用含 3.6/3.9 旧文档路径，身份与摘要均保留；不能据此推断所有当前版本均只用单线程。Native Dify 耗时中位数 8.247 秒、P95 24.905 秒；采集 latencyMs 还含终态后的引用回查及幂等验证，不能当作纯执行耗时。
+
+逐句审阅发现两项真实失败，未因终态成功而放过：
+
+- kb-positive / wf-a982711d-9045-4355-aa1c-0a901c2dfa3f：Planner 的要求只有 Java 控制面，输出四条 Java 事实，漏答原问中的 Python 职责。说明模型自己分解要求仍可遗漏对象；新增完整原问题固定项，补足这个确定的范围缺口。
+- mixed-kb-web / wf-27bb6c04-5c58-45a9-9441-e1a38386d844：第二条 Python 职责只引用从“ner、并行 Worker…”开始的尾段，却获得 supported=true。原始误判与最终回答保留。语义核验仍会误判，原文 ID 不能替代语义判断；新增完整分句选择与缺主语反例。
+
+本轮正常源码 Dockerfile 构建曾因 Docker Hub EOF、Maven Central TLS 中断失败。构建恢复仅预置当前测试 classpath 上缺失的 spring-retry 2.0.12 和 jackson-module-jsonSchema 2.19.1 jar/pom/checksum（8 文件），保留官方 Maven 基镜像 digest、逐文件 SHA256、缓存镜像与原 Dockerfile 构建命令。build-cache-provenance-2026-09-28.json 明确记录缓存参与及限制；不是无缓存新机复现结论。原镜像、数据、.env 保留，清洁 CI gate 不取消。
+
+### 第三版开发验证
+
+claim-support-whole-question-audit-2026-09-28.json 保留十三次实际独立核验：原八例、两类拒答覆盖，以及上述原样尾段/同快照完整 Python 分句/原 Java-only 答案。十三例符合预定标签：旧尾段 supported=false、完整职责通过、Java-only 原整问覆盖为 []。Debug 会话过期的十三次 401 均发生在模型调用前并单列；通过原账户会话刷新后检查，不改变账户和权限。开发检查不计入最终连续队列。
+
+第三版仍使用原十六个问题、次序、期望和官方范围依据，保留前两轮失败记录。Java 源码和运行时输入树没有改变，可复用第二版正常源码构建镜像；另行固定当前 DSL/代码身份和该镜像来源后才开始第三轮。

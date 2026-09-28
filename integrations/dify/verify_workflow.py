@@ -67,7 +67,9 @@ def verify_graph() -> None:
         assert any(edge["source"] == "support_checker" + suffix and edge["target"] == "final" + suffix for edge in GRAPH["edges"])
 
 def publish_fixture(context, claims, question="policy", supported=None, kind="ANSWER", proofs=None, covers=True, requirements=None):
-    requirements = requirements or [question]
+    requirements = list(requirements or [question])
+    if question not in requirements:
+        requirements.append(question)
     selected = [select_options(context, item) for item in claims]
     candidate = call("claims", synthesis_text=json.dumps({"status": "SUCCEEDED", "claims": selected,
                      "answer_kind": kind, "boundary_support": proofs or []}), context=context, question=question,
@@ -378,14 +380,15 @@ def verify_claim_support() -> None:
     question = fixture["question"]
     partial = call("claims", synthesis_text=json.dumps({"status": "SUCCEEDED", "claims": [select_options(context, minimal)],
                    "answer_kind": "ANSWER", "boundary_support": []}), context=context, question=question,
-                   requirements=json.dumps(["用于哪类并发编程", "适合哪类任务"]))
+                   requirements=json.dumps(["用于哪类并发编程", "适合哪类任务", question]))
     assert partial["status"] == "READY"
     omitted = {"decisions": [{"index": 1, "supported": True}],
                "coverage": [{"requirement_index": 1, "claim_indices": [1]}]}
     assert call("final", candidate=partial["candidate"], question=question,
                 verification_text=json.dumps(omitted))["status"] == "FAILED"
     complete_but_partial = dict(omitted, coverage=[{"requirement_index": 1, "claim_indices": [1]},
-                                                 {"requirement_index": 2, "claim_indices": []}])
+                                                 {"requirement_index": 2, "claim_indices": []},
+                                                 {"requirement_index": 3, "claim_indices": []}])
     result = call("final", candidate=partial["candidate"], question=question,
                   verification_text=json.dumps(complete_but_partial))
     assert result["status"] == "INSUFFICIENT_EVIDENCE" and result["answer"] == "" and result["citations"] == []
@@ -454,6 +457,37 @@ def verify_quote_options_and_source_scope():
     assert boundary["finalStatus"] == "SUCCEEDED"
     assert partial["finalStatus"] == "INSUFFICIENT_EVIDENCE"
     assert partial["response"]["coverage"][1]["claim_indices"] == []
+    whole = "组件甲和组件乙分别负责什么？"
+    plan = call("plan", plan_text=json.dumps({"tasks": [{"tool": "kb_search", "input": "组件甲职责"}],
+                "requirements": ["组件甲"]}), question=whole, java_run_id="wf-whole", allowed_tools="kb_search")
+    assert json.loads(plan["requirements"]) == ["组件甲", whole]
+    omitted_whole = call("claims", synthesis_text=json.dumps({"status": "SUCCEEDED", "claims": [selected],
+                         "answer_kind": "ANSWER", "boundary_support": []}), context=context,
+                         question=whole, requirements=json.dumps(["组件甲"]))
+    assert omitted_whole["status"] == "FAILED"
+    long_question = "组件甲" + "与组件乙" * 60 + "分别负责什么？"
+    long_plan = call("plan", plan_text=json.dumps({"tasks": [{"tool": "kb_search", "input": "职责"}],
+                     "requirements": ["组件甲"]}), question=long_question, java_run_id="wf-long", allowed_tools="kb_search")
+    assert long_plan["status"] == "READY" and long_question in json.loads(long_plan["requirements"])
+    long_clause = "长句开始" + "x" * 500 + "长句结尾。"
+    options = namespace["quote_options"]("前段完整事实。" + long_clause + "后段完整事实。")
+    assert [row["quote"] for row in options] == ["前段完整事实。", "后段完整事实。"]
+    # Real rejected v10 mixed snapshot: full actor/role survives clause separation.
+    audit_live = json.loads((HERE / "evidence-v10-quality-live-2026-09-28.json").read_text())
+    mixed = next(row for row in audit_live["attempts"] if row["id"] == "mixed-kb-web")
+    content = mixed["toolReceipts"][0]["result"]["evidences"][0]["content"]
+    options = namespace["quote_options"](content)
+    assert any("Python/LangGraph 是私网图执行面" in row["quote"] and "保存节点状态" in row["quote"] for row in options)
+    whole_audit = json.loads((HERE / "claim-support-whole-question-audit-2026-09-28.json").read_text())
+    assert len(whole_audit["attempts"]) == 13 and whole_audit["summary"]["allMatched"]
+    for row in whole_audit["attempts"]:
+        replay = call("final", candidate=json.dumps(row["candidate"]), question=row["question"],
+                      verification_text=json.dumps(row["response"]), finish_reason=row["finishReason"])
+        assert replay["status"] == row["finalStatus"] and row["matchesExpected"]
+    by_id = {row["fixtureId"]: row for row in whole_audit["attempts"]}
+    assert by_id["retained-mixed-dangling-fragment"]["response"]["decisions"][0]["supported"] is False
+    assert by_id["same-snapshot-complete-python-clause"]["finalStatus"] == "SUCCEEDED"
+    assert by_id["retained-java-only-missing-python"]["response"]["coverage"][-1]["claim_indices"] == []
 
 
 if __name__ == "__main__":
