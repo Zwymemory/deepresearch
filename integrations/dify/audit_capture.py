@@ -48,13 +48,17 @@ def audit(capture, trace, contract):
             if reasoning:
                 # The original text is strictly parsed below; this only omits reasoning.
                 body = body.split("</think>", 1)[-1].strip() if "</think>" in body else ""
-            parsed, error, schema = None, None, False
-            try:
-                parsed = parse(text)
-                exact(parsed, roots[item["id"]])
-                schema = True
-            except (ValueError, TypeError, KeyError) as exc:
-                error = type(exc).__name__
+            available = bool(text) or item["status"] == "succeeded"
+            parsed, error, schema = None, None, False if available else None
+            if available:
+                try:
+                    parsed = parse(text)
+                    exact(parsed, roots[item["id"]])
+                    schema = True
+                except (ValueError, TypeError, KeyError) as exc:
+                    error = type(exc).__name__
+            provider_error = item.get("error") or ""
+            category = "TLS_EOF" if "SSL" in provider_error else "USER_STOP" if "requested stop" in provider_error else "NODE_ERROR" if provider_error else None
             usage = item.get("usage") or {}
             public_body = redact_text(body)
             nodes.append({"id": item["id"], "status": item["status"],
@@ -62,7 +66,8 @@ def audit(capture, trace, contract):
                           "reasoningWrapperPresent": reasoning,
                           "rawResponseSha256": hashlib.sha256(text.encode()).hexdigest(),
                           "responseBody": public_body, "responseBodyRedacted": public_body != body,
-                          "jsonObjectValid": parsed is not None, "exactRootSchemaValid": schema,
+                          "modelOutputAvailable": available, "nodeErrorCategory": category,
+                          "jsonObjectValid": parsed is not None if available else None, "exactRootSchemaValid": schema,
                           "parseOrSchemaError": error,
                           "usage": {key: usage[key] for key in
                                     ("prompt_tokens", "completion_tokens", "total_tokens", "total_price", "currency")
@@ -84,7 +89,8 @@ def audit(capture, trace, contract):
                      "toolQueries": [{"tool": query["tool"], "input": redact_text(query["input"])} for query in queries],
                      "privateBoundaryQueriesVerified": boundary_only,
                      "validators": raw.get("validators") or [],
-                     "formatPassed": all(node["exactRootSchemaValid"] for node in nodes)})
+                     "formatPassed": False if any(node["exactRootSchemaValid"] is False for node in nodes)
+                     else None if any(node["exactRootSchemaValid"] is None for node in nodes) else True})
     nodes = [node for row in rows for node in row["llmNodes"]]
     token_values = [row["difyTotalTokens"] for row in rows if row["difyTotalTokens"] is not None]
     return {"schemaVersion": 1, "contract": contract,
@@ -92,10 +98,13 @@ def audit(capture, trace, contract):
             "dslSha256": capture["conditions"]["dslSha256"],
             "publishedWorkflowId": capture["conditions"]["publishedWorkflowId"],
             "summary": {"sampleCount": len(rows), "llmNodeCount": len(nodes),
-                        "jsonObjectFailures": sum(not node["jsonObjectValid"] for node in nodes),
-                        "exactRootSchemaFailures": sum(not node["exactRootSchemaValid"] for node in nodes),
+                        "llmOutputsAvailable": sum(node["modelOutputAvailable"] for node in nodes),
+                        "llmOutputsUnavailable": sum(not node["modelOutputAvailable"] for node in nodes),
+                        "jsonObjectFailures": sum(node["jsonObjectValid"] is False for node in nodes),
+                        "exactRootSchemaFailures": sum(node["exactRootSchemaValid"] is False for node in nodes),
                         "finishReasonLengthCount": sum(node["finishReason"] == "length" for node in nodes),
-                        "samplesWithFormatFailure": sum(not row["formatPassed"] for row in rows),
+                        "samplesWithFormatFailure": sum(row["formatPassed"] is False for row in rows),
+                        "samplesWithoutCompleteModelOutput": sum(row["formatPassed"] is None for row in rows),
                         "validatorFailedCount": sum(node["status"] == "FAILED" for row in rows for node in row["validators"]),
                         "modelCalls": sum(row["modelCalls"] for row in rows),
                         "toolCalls": sum(row["toolCalls"] for row in rows),
