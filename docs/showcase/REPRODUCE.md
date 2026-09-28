@@ -59,7 +59,7 @@ python3 scripts/init-showcase-env.py
 | `JAVA_INTERNAL_BASE_URL` | `http://host.docker.internal:8080`，无结尾斜线；Java 改端口时同步改 |
 | `DIFY_TOOL_SERVICE_TOKEN` | Secret 类型，取 `.env` 中 `DEEPRESEARCH_WORKFLOW_DIFY_TOOL_SERVICE_TOKEN` 的相同值 |
 
-Dify API/worker 容器必须能解析并访问 Java origin。Linux 缺少 `host.docker.internal` 时，在所需 Dify 服务添加 `extra_hosts: ["host.docker.internal:host-gateway"]`，或改用可达服务名。Dify HTTP Request SSRF 策略仅允许所需 Java origin，具体配置按版本检查；不要关闭全局防护。
+Dify API/worker 和 HTTP Request 的 SSRF proxy 必须能解析并访问 Java origin。Docker Desktop 可使用宿主机别名；原生 Linux 的 host-gateway 通常不能访问仅绑定宿主机回环地址的端口，使用下面的共享 bridge 方案。Dify HTTP Request SSRF 策略仅允许所需 Java origin，具体配置按版本检查；不要关闭全局防护。
 
 发布 Workflow，在 **API Access** 取得 Service API App Key，填入 `.env` 的 `DEEPRESEARCH_DIFY_APP_KEY`。它与管理员登录 Token、工具服务密钥用途不同。导出 DSL 时 Secret 值保持为空，不提交私有导出。
 
@@ -72,6 +72,18 @@ python3 scripts/preflight-showcase.py --online
 ```
 
 脚本使用 base Compose 加 `docker-compose.showcase.yml`，只启动 `app` 及 PostgreSQL / role bootstrap，不启动 Legacy Elasticsearch、BGE reranker 或 LangGraph sidecar。RAGFlow/Dify 独立运行；首次 Java 镜像构建需要 Maven 依赖下载。
+
+### 原生 Linux 的 Dify 回调
+
+Java 启动会创建 `deepresearch-showcase-callback` bridge，Java 服务别名为 `deepresearch-java`。在本仓库根目录保存路径 `export DEEPRESEARCH_REPO="$(pwd)"`，然后在同一个 shell 切换至独立 Dify 的 `docker/` 目录执行：
+
+```bash
+docker compose -f docker-compose.yaml \
+  -f "$DEEPRESEARCH_REPO/docs/showcase/dify-callback.compose.yml" \
+  up -d api worker ssrf_proxy
+```
+
+将 Workflow 的 `JAVA_INTERNAL_BASE_URL` 改为 `http://deepresearch-java:8080`，仅允许该 origin 的 SSRF 访问，重新发布。它使用容器内端口，不受 Java 宿主机端口变更影响。自定义 `COMPOSE_PROJECT_NAME` 时同步设置 `DEEPRESEARCH_CALLBACK_NETWORK`。后续管理 Dify 时沿用同一组 Compose 文件，避免撤掉回调网络。Docker Desktop 若宿主机别名不可达，也可采用该方案。该 overlay 只连接网络，不更改模型或秘密。
 
 展示模板显式开启本机 dev-token。取得 ADMIN Token 放入变量；下面不将 Token 直接输出到终端：
 
