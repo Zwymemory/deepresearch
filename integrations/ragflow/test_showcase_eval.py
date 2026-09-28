@@ -65,11 +65,17 @@ class ShowcaseEvaluationTest(unittest.TestCase):
     def test_capture_redacts_source_identifiers_and_common_secrets(self):
         source = "kb:ragflow:dataset:document:chunk"
         probe_source = "ragflow:dataset:document:chunk"
-        redacted = evaluation.redact_text("mail a@example.com " + source + " " +
-                                          probe_source + " phone 13800138000")
+        # .invalid is reserved for fixtures; construct a mobile-shaped value,
+        # rather than publishing a contact number as a test literal.
+        synthetic_email = "redaction-fixture@example.invalid"
+        synthetic_phone = "13" + "0" * 9
+        redacted = evaluation.redact_text("mail " + synthetic_email + " " + source + " " +
+                                          probe_source + " phone " + synthetic_phone)
         self.assertNotIn("dataset", redacted)
-        self.assertNotIn("a@example.com", redacted)
-        self.assertNotIn("13800138000", redacted)
+        self.assertNotIn(synthetic_email, redacted)
+        self.assertNotIn(synthetic_phone, redacted)
+        self.assertIn("[REDACTED_EMAIL]", redacted)
+        self.assertIn("[REDACTED_PHONE]", redacted)
         self.assertIn("kb:ragflow:sha256-", redacted)
         self.assertIn("ragflow:sha256-", redacted)
         self.assertEqual(evaluation.redact_text(redacted), redacted)
@@ -80,13 +86,14 @@ class ShowcaseEvaluationTest(unittest.TestCase):
 
     def test_source_backcheck_saves_redacted_evidence_for_review(self):
         source = "kb:ragflow:dataset:document:chunk"
+        synthetic_email = "redaction-fixture@example.invalid"
         remote = {"code": 0, "data": {"id": "chunk", "doc_id": "document",
-                                       "content_with_weight": "联系 a@example.com 处理"}}
+                                       "content_with_weight": "联系 " + synthetic_email + " 处理"}}
         with patch.object(evaluation, "http_json", return_value=remote):
             detail = evaluation.source_detail(source, "http://localhost:9380", "test-key")
         self.assertTrue(detail["exists"])
         self.assertNotIn("dataset", detail["source"])
-        self.assertNotIn("a@example.com", detail["evidencePreview"])
+        self.assertNotIn(synthetic_email, detail["evidencePreview"])
 
     def test_no_result_placeholders_are_never_counted_as_sources(self):
         for source in ("kb_search:missing", "mcp-text-0", "mcp-item-0"):

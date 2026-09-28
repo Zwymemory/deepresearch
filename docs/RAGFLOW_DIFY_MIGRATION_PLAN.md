@@ -32,8 +32,8 @@ flowchart LR
 
 | 项目 | 证据与影响 |
 |---|---|
-| RAGFlow | 本机容器 `ragflow-stable-ragflow-1` 运行，镜像为 `v0.27.2-arm64-local`；`GET http://127.0.0.1:9380/api/v1/system/healthz` 返回 HTTP 200，db、redis、doc_engine、storage 均为 `ok`。本机源码 `/Users/zwy/Documents/ragflow-v0.27.2` 为 `v0.27.2` 后一个提交。健康只证明服务可用，不证明已有数据集、API Key、模型配置及检索质量。 |
-| Dify | 本机源码 `/Users/zwy/Claude/Projects/dify` 为 `1.17.0`；服务现已运行在宿主机 `8081/8444`，生产候选 Workflow 已导入、发布并通过真实 DeepSeek + 隔离证据服务的完整流程。Java 真工具回调与 RAGFlow 联调仍待验收。 |
+| RAGFlow | 本机容器 `ragflow-stable-ragflow-1` 运行，镜像为 `v0.27.2-arm64-local`；`GET http://127.0.0.1:9380/api/v1/system/healthz` 返回 HTTP 200，db、redis、doc_engine、storage 均为 `ok`。该现场源码 checkout 为 `v0.27.2` 后一个提交；目录位置不属于复现条件。健康只证明服务可用，不证明已有数据集、API Key、模型配置及检索质量。 |
+| Dify | 本机源码 checkout 为 `1.17.0`；服务现已运行在宿主机 `8081/8444`，生产候选 Workflow 已导入、发布并通过真实 DeepSeek + 隔离证据服务的完整流程。Java 真工具回调与 RAGFlow 联调仍待验收。 |
 | 旧 RAG | [`KnowledgeBaseService`](../src/main/java/com/deepresearch/service/KnowledgeBaseService.java) 管入库和 `pgvector + Elasticsearch` 双写；[`HybridRetrievalOrchestrator`](../src/main/java/com/deepresearch/service/HybridRetrievalOrchestrator.java) 管双路召回；[`HybridRagService`](../src/main/java/com/deepresearch/service/HybridRagService.java) 继续做 RRF、rerank、邻接扩展、上下文装配。`ContextExpansionService` 直接读 `vector_store`，因此仅替换召回函数还不算迁移完成。 |
 | 旧编排 | [`workflow-service/README.md`](../workflow-service/README.md) 描述 LangGraph 执行面；Java 的 [`WorkflowController`](../src/main/java/com/deepresearch/web/WorkflowController.java) 和 [`WorkflowService`](../src/main/java/com/deepresearch/workflow/WorkflowService.java) 保存 run、幂等键、取消、引用校验和可重放事件。 |
 | Dify 分支成果 | `main` 上的 `ca4a5e5` 已实现可选 Dify 执行路径、专用工具接口、运行映射与 DSL。`DifyKbToolGateway` 仍为不可用占位；需要接到任务 A 的 RAGFlow gateway。旧 `DifyRetrievalService` 仍读 legacy HybridRagService，联调时需按 provider 映射证据。 |
@@ -122,11 +122,11 @@ Dify 工作流的输入以 `question`、Java `runId`、允许工具列表、限�
 
 **对话 A：RAGFlow**
 
-> 请按 `/Users/zwy/Claude/Projects/deepresearch-github/docs/RAGFLOW_DIFY_MIGRATION_PLAN.md` 的任务 A 实施。主仓库是 `/Users/zwy/Claude/Projects/deepresearch-github`。请从 `main` 建独立 worktree，不覆盖主工作区未提交的 Dify 草稿；只改任务 A 的文件。先交付 RAGFlow client、统一证据契约、入库映射和检索/引用测试，再做同口径评测。完成后给出变更、测试与联调说明，不要直接切默认配置。
+> 请按仓库内 `docs/RAGFLOW_DIFY_MIGRATION_PLAN.md` 的任务 A 实施。请从当前仓库的 `main` 建独立 worktree，不覆盖主工作区未提交的 Dify 草稿；只改任务 A 的文件。先交付 RAGFlow client、统一证据契约、入库映射和检索/引用测试，再做同口径评测。完成后给出变更、测试与联调说明，不要直接切默认配置。
 
 **对话 B：Dify**
 
-> 请按 `/Users/zwy/Claude/Projects/deepresearch-github/docs/RAGFLOW_DIFY_MIGRATION_PLAN.md` 的任务 B 实施。请在 `/Users/zwy/Claude/Projects/deepresearch-github` 当前工作区接续已有未提交的 Dify 草稿，避免覆盖其他未提交改动；只改任务 B 的文件。先用文档中的固定证据契约建立 Dify DSL、Java client 和运行映射，再验证幂等、取消、SSE、引用与安全门禁。不要修改 RAGFlow 检索和入库文件，也不要直接切默认配置。
+> 请按仓库内 `docs/RAGFLOW_DIFY_MIGRATION_PLAN.md` 的任务 B 实施。在当前主工作区接续已有未提交的 Dify 草稿，避免覆盖其他未提交改动；只改任务 B 的文件。先用文档中的固定证据契约建立 Dify DSL、Java client 和运行映射，再验证幂等、取消、SSE、引用与安全门禁。不要修改 RAGFlow 检索和入库文件，也不要直接切默认配置。
 
 两边完成后由一个集成对话统一合并与运行第 5 节的四格验证。**开发并行，切流串行**；这是当前能最快推进且最容易定位问题的安排。
 
