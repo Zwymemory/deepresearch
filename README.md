@@ -133,6 +133,8 @@ python3 scripts/preflight-showcase.py --corpus
 
 启动脚本只启动 Java、PostgreSQL 和角色初始化依赖。导入不会清空已有知识库；预检要求八份文档与 RAGFlow 映射均为 `DONE`。打开[演示页](http://localhost:8080/demo.html)，签发 USER 身份，选择 **Durable Workflow**。知识库、网页或混合检索均可选择；网页搜索需要在私有 `.env` 配置 `TAVILY_API_KEY`，并运行 `python3 scripts/preflight-showcase.py --require-web-search --online --corpus`。页面配置提示不保证 provider 接受凭据或必有结果。按[简短讲稿与可选现场操作](docs/showcase/FIVE_MINUTE_DEMO.md)展示证据、引用和 SSE 续传。
 
+引用卡片优先展示标题、网页地址与摘录；点击正文 `[来源N]` 查看对应卡片，再点网页标题打开原文。知识库不会伪造公网链接，历史结果缺详情时会明确提示。升级后强制刷新原标签页；[引用呈现验收](integrations/dify/CITATION_UI_ACCEPTANCE_2026-09-28.md)区分真实保存结果与离线 fixture。
+
 | 入口 | 默认本机端口 |
 |---|---:|
 | Java 演示页、REST/SSE | 8080 |

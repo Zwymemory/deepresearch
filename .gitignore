@@ -39,6 +39,7 @@ testdata/eval/open-scifact.jsonl
 testdata/eval/temp.json
 testdata/eval/*-report.html
 .playwright-cli/
+output/playwright/
 
 # Python build and test caches.
 __pycache__/

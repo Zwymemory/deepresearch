@@ -356,14 +356,25 @@
     .tab-button { min-height: 42px; padding: 9px 13px; border: 0; border-bottom: 2px solid transparent; color: var(--muted); background: transparent; cursor: pointer; white-space: nowrap; font-weight: 680; }
     .tab-button[aria-selected="true"] { color: var(--primary); border-bottom-color: var(--primary); }
     .tab-panel { min-height: 130px; padding: 18px 20px; }
-    .citation-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .citation-list { display: grid; gap: 12px; }
     .citation-contract-note {
       width: 100%; margin-bottom: 4px; padding: 9px 11px; border: 1px solid #d8cdfb;
       border-radius: 9px; color: #5235a5; background: #f5f1ff; font-size: 10px; line-height: 1.55;
     }
     .citation-contract-note.unverified { border-color: #f0d48a; color: #805700; background: #fff8e6; }
-    .citation-chip { max-width: 100%; display: flex; align-items: flex-start; gap: 8px; padding: 7px 10px; border: 1px solid #cbd7ff; border-radius: 9px; color: #3150b9; background: var(--surface-blue); overflow-wrap: anywhere; scroll-margin-top: 96px; font-size: 11px; }
-    .citation-index { width: 19px; height: 19px; flex: 0 0 19px; display: grid; place-items: center; border-radius: 5px; color: white; background: var(--primary); font-size: 9px; font-weight: 800; }
+    .citation-chip { min-width: 0; padding: 14px 16px; border: 1px solid #cbd7ff; border-radius: 12px; color: var(--ink); background: var(--surface-blue); overflow-wrap: anywhere; scroll-margin-top: 96px; font-size: 12px; }
+    .citation-heading { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 7px; }
+    .citation-index { flex: 0 0 auto; padding: 2px 6px; border-radius: 5px; color: white; background: var(--primary); font-size: 10px; font-weight: 800; white-space: nowrap; }
+    .citation-title { min-width: 0; font-size: 14px; font-weight: 740; line-height: 1.45; }
+    .citation-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin-bottom: 8px; color: var(--muted); font-size: 11px; }
+    .citation-kind { padding: 2px 7px; border-radius: 5px; color: var(--primary); background: var(--primary-soft); }
+    .citation-address { color: var(--muted); }
+    .citation-excerpt { margin: 0; color: #43546d; line-height: 1.7; }
+    .citation-missing { margin: 0; color: #805700; font-size: 11px; }
+    .citation-record { margin-top: 10px; color: var(--muted); font-size: 10px; }
+    .citation-record summary { width: fit-content; cursor: pointer; }
+    .citation-full-excerpt { margin: 8px 0; padding: 9px 11px; border-radius: 7px; background: white; color: #43546d; white-space: pre-wrap; font: inherit; line-height: 1.7; }
+    .citation-source-id { margin-top: 6px; overflow-wrap: anywhere; font: 10px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
     .citation-chip a { color: inherit; text-underline-offset: 2px; }
     .citation-chip.unverified { border-color: #f0d48a; color: #805700; background: #fff8e6; }
     .citation-chip.unverified .citation-index { background: #b27b08; }
@@ -630,7 +641,7 @@
           <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="usagePanel" data-tab="usage">Usage</button>
           <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="rawPanel" data-tab="raw">原始 JSON</button>
         </div>
-        <div id="citationsPanel" class="tab-panel" role="tabpanel"><div id="citationList" class="citation-list"><span class="muted small">任务完成后显示引用标识；引用不一定是 URL。</span></div></div>
+        <div id="citationsPanel" class="tab-panel" role="tabpanel"><div id="citationList" class="citation-list"><span class="muted small">任务完成后显示来源标题和摘录；网页来源可打开原文。</span></div></div>
         <div id="tracePanel" class="tab-panel" role="tabpanel" hidden><div id="traceList" class="trace-list"><span class="muted small">这里仅展示计划、证据数量和安全摘要，不保存 Chain-of-Thought。</span></div></div>
         <div id="usagePanel" class="tab-panel" role="tabpanel" hidden><div class="usage-grid"><div class="metric"><span class="metric-label">Model calls</span><span id="modelCallsMetric" class="metric-value">—</span></div><div class="metric"><span class="metric-label">Tool calls</span><span id="toolCallsMetric" class="metric-value">—</span></div><div class="metric"><span class="metric-label">Total tokens</span><span id="tokensMetric" class="metric-value">—</span></div><div class="metric"><span class="metric-label">Duration</span><span id="durationMetric" class="metric-value">—</span></div><div class="metric"><span class="metric-label">Input tokens</span><span id="inputTokensMetric" class="metric-value">—</span></div><div class="metric"><span class="metric-label">Output tokens</span><span id="outputTokensMetric" class="metric-value">—</span></div><div class="metric"><span class="metric-label">Estimated cost</span><span id="costMetric" class="metric-value">—</span></div><div class="metric"><span class="metric-label">SSE reconnects</span><span id="reconnectMetric" class="metric-value">0</span></div></div></div>
         <div id="rawPanel" class="tab-panel" role="tabpanel" hidden>
@@ -913,7 +924,7 @@
           citation.textContent = token;
           if (isVerified) {
             citation.href = "#citation-" + citationNumber;
-            citation.title = "编号映射已由后端校验，对应引用列表第 " + citationNumber + " 项；不代表来源本身一定权威";
+            citation.title = "查看来源 " + citationNumber;
             citation.addEventListener("click", function (event) {
               event.preventDefault();
               activateTab("citations");
@@ -1382,7 +1393,28 @@
       lockComposer(state.submitting || !!state.pending || (!!state.runId && !TERMINAL.has(state.status)));
     }
 
+    function safeCitationUrl(value) {
+      if (typeof value !== "string" || /[\u0000-\u0020\u007f]/.test(value)) return null;
+      try {
+        var url = new URL(value);
+        return (url.protocol === "http:" || url.protocol === "https:") &&
+          url.hostname && !url.username && !url.password ? url : null;
+      } catch (ignored) { return null; }
+    }
+
+    function citationPreview(value) {
+      var text = String(value || "");
+      // Skip short navigation paragraphs in the preview; the complete saved
+      // excerpt stays available below without changing the evidence snapshot.
+      var paragraph = text.split(/\n\s*\n/).find(function (part) {
+        return part.replace(/\s+/g, " ").trim().length >= 80;
+      }) || text;
+      var compact = paragraph.replace(/\s+/g, " ").trim();
+      return compact.length > 280 ? compact.slice(0, 280) + "…" : compact;
+    }
+
     function renderCitations(citations, citationContract, details) {
+      citations = Array.isArray(citations) ? citations : [];
       var root = $("citationList");
       root.replaceChildren();
       $("citationCount").textContent = String(citations.length);
@@ -1392,8 +1424,8 @@
       note.className = "citation-contract-note" + (indexed || refusedForMissingEvidence ? "" : " unverified");
       note.textContent = refusedForMissingEvidence ?
         "系统因证据不足拒答，本次没有可展示的引用。" : indexed ?
-        "紫色标记表示“答案编号 ↔ 结构化来源 ID”的映射已通过后端校验；它不等于来源本身一定权威。" :
-        "当前结果没有通过结构化引用映射校验。正文中的黄色来源标记仅作历史展示，不能据此猜测链接。";
+        "点击正文中的 [来源N] 可查看对应来源。核对结论时，请同时查看摘录。" :
+        "历史结果缺少可验证的引用映射，暂不能打开来源链接。";
       root.appendChild(note);
       if (!citations.length) {
         var empty = document.createElement("span");
@@ -1407,39 +1439,81 @@
       }
       citations.forEach(function (citation, index) {
         var card = document.createElement("article");
+        var heading = document.createElement("div");
         var number = document.createElement("span");
-        var content = document.createElement("div");
+        var meta = document.createElement("div");
+        var kind = document.createElement("span");
         var text = String(citation == null ? "" : citation);
-        var snapshot = Array.isArray(details) ? details.find(function (item) {
-          return item && item.sourceId === text && item.kind === "WEB_SEARCH_SNAPSHOT";
-        }) : null;
+        var matches = Array.isArray(details) ? details.filter(function (item) {
+          return item && item.sourceId === text;
+        }) : [];
+        // Never match by metadata position, a model label or an inferred URL.
+        // Duplicate metadata for an ID is ambiguous and must not create a link.
+        var source = indexed && matches.length === 1 ? matches[0] : null;
+        var web = source && source.kind === "WEB_SEARCH_SNAPSHOT";
+        var knowledge = source && source.kind === "KNOWLEDGE_CHUNK";
+        if (!web && !knowledge) source = null;
+        var url = web ? safeCitationUrl(source.url) : null;
+        var title = source && typeof source.title === "string" ? source.title.trim() : "";
+        var excerpt = source && typeof source.excerpt === "string" ? source.excerpt : "";
         card.className = "citation-chip" + (indexed ? "" : " unverified");
         card.id = "citation-" + (index + 1);
+        heading.className = "citation-heading";
         number.className = "citation-index";
-        number.textContent = String(index + 1);
-        try {
-          var url = new URL(snapshot ? snapshot.url : text);
-          if (indexed && (url.protocol === "http:" || url.protocol === "https:")) {
-            var link = document.createElement("a");
-            link.href = url.href;
-            link.target = "_blank";
-            link.rel = "noopener noreferrer";
-            link.textContent = snapshot ? (snapshot.title || url.hostname) : text;
-            content.appendChild(link);
-            if (snapshot) {
-              var boundary = document.createElement("div");
-              boundary.textContent = "Tavily 搜索摘要快照；未抓取全文，也不保证事实正确。";
-              var address = document.createElement("div");
-              address.textContent = url.href;
-              var excerpt = document.createElement("div");
-              excerpt.textContent = snapshot.excerpt || "";
-              content.append(boundary, address, excerpt);
-            }
-          } else content.textContent = text;
-        } catch (ignored) {
-          content.textContent = text;
+        number.textContent = "[来源" + (index + 1) + "]";
+        var titleNode = document.createElement(url ? "a" : "span");
+        titleNode.className = "citation-title";
+        titleNode.textContent = title || (url ? url.hostname : knowledge ?
+          "知识库文档（标题未记录）" : web ? "网页来源（标题未记录）" : "来源信息不足");
+        if (url) {
+          titleNode.href = url.href;
+          titleNode.target = "_blank";
+          titleNode.rel = "noopener noreferrer";
+          titleNode.title = "在新标签页打开网页";
         }
-        card.append(number, content);
+        heading.append(number, titleNode);
+        meta.className = "citation-meta";
+        kind.className = "citation-kind";
+        kind.textContent = web ? "网页 · 搜索摘要" : knowledge ? "知识库文档" : "来源详情未记录";
+        meta.appendChild(kind);
+        if (url) {
+          var address = document.createElement("span");
+          address.className = "citation-address";
+          address.textContent = url.host + (url.pathname === "/" ? "" : url.pathname) + url.search + url.hash;
+          address.title = url.href;
+          meta.appendChild(address);
+        }
+        card.append(heading, meta);
+        if (excerpt.trim()) {
+          var preview = document.createElement("p");
+          preview.className = "citation-excerpt";
+          preview.textContent = citationPreview(excerpt);
+          card.appendChild(preview);
+        }
+        if (!source || !excerpt.trim() || (web && !url)) {
+          var missing = document.createElement("p");
+          missing.className = "citation-missing";
+          missing.textContent = !source ?
+            "此结果缺少唯一的来源详情，无法确认标题、摘录或网页地址。" : web && !url ?
+            "网页地址未记录或无法安全打开。" : "此来源未保存摘录。";
+          card.appendChild(missing);
+        }
+        var record = document.createElement("details");
+        var summary = document.createElement("summary");
+        record.className = "citation-record";
+        summary.textContent = excerpt ? "完整摘录与来源记录" : "查看来源记录";
+        record.appendChild(summary);
+        if (excerpt) {
+          var fullExcerpt = document.createElement("div");
+          fullExcerpt.className = "citation-full-excerpt";
+          fullExcerpt.textContent = excerpt;
+          record.appendChild(fullExcerpt);
+        }
+        var sourceId = document.createElement("div");
+        sourceId.className = "citation-source-id";
+        sourceId.textContent = "来源 ID：" + text;
+        record.appendChild(sourceId);
+        card.appendChild(record);
         root.appendChild(card);
       });
     }
@@ -1687,7 +1761,7 @@
           payload: { summary: step.decisionSummary || "", outcomeCode: step.outcomeCode || "" }
         };
       }));
-      renderCitations(data.citations || [], data.citationContract || "");
+      renderCitations(data.citations || [], data.citationContract || "", data.citationDetails || []);
       renderUsage(data.usage || {
         modelCalls: data.rounds,
         toolCalls: (data.steps || []).length

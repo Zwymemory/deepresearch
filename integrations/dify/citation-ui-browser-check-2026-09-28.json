@@ -1,0 +1,116 @@
+{
+  "fixtureOnly": true,
+  "cases": [
+    {
+      "case": "web",
+      "passed": true,
+      "citations": 1,
+      "links": 1,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "multiple-web",
+      "passed": true,
+      "citations": 2,
+      "links": 2,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "knowledge",
+      "passed": true,
+      "citations": 1,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "mixed",
+      "passed": true,
+      "citations": 2,
+      "links": 1,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "missing-metadata",
+      "passed": true,
+      "citations": 1,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "wrong-source-id",
+      "passed": true,
+      "citations": 1,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "duplicate-metadata",
+      "passed": true,
+      "citations": 1,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "unsafe-url",
+      "passed": true,
+      "citations": 6,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "unverified-history",
+      "passed": true,
+      "citations": 1,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "escaped-text",
+      "passed": true,
+      "citations": 1,
+      "links": 1,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "legacy-details",
+      "passed": true,
+      "citations": 1,
+      "links": 1,
+      "createPosts": 1,
+      "refreshed": false,
+      "sseStreams": 0
+    },
+    {
+      "case": "sse-reconnect",
+      "passed": true,
+      "citations": 2,
+      "links": 1,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 2
+    }
+  ],
+  "checkedAt": "2026-09-28T08:10:59.810717+00:00",
+  "htmlSha256": "a8176f0879c87731f7cf452a5cf87c7650fb62f16b6074750b20a1ceaf4d28a6",
+  "scriptSha256": "b6c3b761330fdaf1b9d756b93292335867e3f80cffc2fd17ec3d48d7ca9436ac"
+}

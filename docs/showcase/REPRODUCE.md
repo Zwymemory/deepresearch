@@ -118,6 +118,8 @@ python3 scripts/preflight-showcase.py --corpus
 
 预检只说明依赖条件，不证明答案质量或恢复能力。一次成功不能代替固定评测、引用支持性审阅或生产门禁；最新结果见[EVIDENCE](EVIDENCE.md)。
 
+更新前端后强制刷新原 `/demo.html` 标签页（macOS `Cmd+Shift+R`，其他平台 `Ctrl+Shift+R`）。正文编号应定位对应来源卡片，网页标题应打开原始 HTTP(S) 地址；KB 没有伪造公网链接。历史结果缺少详情时显示信息不足，不能凭 ID 补造 URL。离线重跑方法与真实保存结果检查见[引用呈现验收](../../integrations/dify/CITATION_UI_ACCEPTANCE_2026-09-28.md)。
+
 停止本仓库服务可用以下命令，不删除数据卷；外部服务生命周期单独管理：
 
 ```bash
