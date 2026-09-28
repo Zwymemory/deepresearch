@@ -55,6 +55,12 @@ def main():
     names = [item["name"] for item in catalog["artifacts"]]
     if len(names) != len(set(names)):
         parser.error("duplicate artifact names")
+    registered = {repository_file(item["score"]) for item in catalog["artifacts"]}
+    published = set(CATALOG.parent.glob("showcase_*score*.json"))
+    if registered != published:
+        parser.error("catalog must register every published showcase score exactly once")
+    if len(registered) != len(names):
+        parser.error("duplicate published score entries")
     failures = []
     with tempfile.TemporaryDirectory(prefix="deepresearch-offline-scores-") as directory:
         for index, item in enumerate(catalog["artifacts"]):

@@ -133,7 +133,10 @@ def main():
                 if not token:
                     raise ValueError("Set DEEPRESEARCH_ADMIN_TOKEN for the corpus check")
                 documents = request_json(java + "/api/kb/documents", token)
-                for file in sorted((ROOT / "docs/kb-project").glob("*.md")):
+                files = sorted((ROOT / "docs/kb-project").glob("*.md"))
+                if len(files) != 8:
+                    raise ValueError("Canonical showcase corpus must have exactly eight Markdown files")
+                for file in files:
                     digest = hashlib.sha256(file.read_bytes()).hexdigest()
                     matches = [row for row in documents if row.get("filename") == file.name and row.get("contentHash") == digest]
                     if len(matches) != 1:

@@ -85,6 +85,8 @@ docker compose -f docker-compose.yaml \
 
 将 Workflow 的 `JAVA_INTERNAL_BASE_URL` 改为 `http://deepresearch-java:8080`，仅允许该 origin 的 SSRF 访问，重新发布。它使用容器内端口，不受 Java 宿主机端口变更影响。自定义 `COMPOSE_PROJECT_NAME` 时同步设置 `DEEPRESEARCH_CALLBACK_NETWORK`。后续管理 Dify 时沿用同一组 Compose 文件，避免撤掉回调网络。Docker Desktop 若宿主机别名不可达，也可采用该方案。该 overlay 只连接网络，不更改模型或秘密。
 
+### 所有平台的知识包导入
+
 展示模板显式开启本机 dev-token。取得 ADMIN Token 放入变量；下面不将 Token 直接输出到终端：
 
 ```bash
