@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from textwrap import dedent
-from claim_support import QUOTE_OPTIONS, PREPARE_CLAIMS, FINAL_CLAIMS, SYNTH_CLAIMS_SYSTEM, VERIFY_CLAIMS_SYSTEM
+from claim_support import QUOTE_OPTIONS, SOURCE_CONTEXT, PREPARE_CLAIMS, FINAL_CLAIMS, SYNTH_CLAIMS_SYSTEM, VERIFY_CLAIMS_SYSTEM
 
 
 HERE = Path(__file__).resolve().parent
@@ -442,8 +442,8 @@ def main(context: str, results: list, revision_requests: list) -> dict:
     return out
 ''')
 
-PREPARE = STRICT_LLM_JSON + PUBLIC_BOUNDARY_POLICY + BOUNDARY_PROOF + QUOTE_OPTIONS + PREPARE_CLAIMS
-FINAL = STRICT_LLM_JSON + PUBLIC_BOUNDARY_POLICY + BOUNDARY_PROOF + FINAL_CLAIMS
+PREPARE = STRICT_LLM_JSON + PUBLIC_BOUNDARY_POLICY + BOUNDARY_PROOF + QUOTE_OPTIONS + SOURCE_CONTEXT + PREPARE_CLAIMS
+FINAL = STRICT_LLM_JSON + PUBLIC_BOUNDARY_POLICY + BOUNDARY_PROOF + QUOTE_OPTIONS + SOURCE_CONTEXT + FINAL_CLAIMS
 
 PLANNER_SYSTEM = dedent('''\
     Return exactly one JSON object with no extra keys:

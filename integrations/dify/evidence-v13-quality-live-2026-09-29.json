@@ -526,9 +526,9 @@
               }
             ],
             "approvedByModel": true,
-            "recordSupported": true,
+            "recordSupported": false,
             "published": false,
-            "recordReview": "Own quotes plus the explicitly supplied same-source title/continuous original context directly support the full claim; title identifies topic only. No other claim/source/run is used; no full-page truth guarantee.",
+            "recordReview": "The own 249-character quote and 399-character continuous context identify the actual asyncio capability list but do not establish high-level API classification. The generic source title identifies topic only; a separately reordered high-level passage in the full same-run snapshot cannot classify this list.",
             "ownQuoteContexts": [
               {
                 "sourceId": "来源3",
@@ -542,7 +542,10 @@
             ],
             "rawOwnQuoteContextsSha256": "8c6d2f40d309393e006203e99212853a0bb80e202296026eb2546da97fda4779",
             "contextBindingsCheckedBeforePublicRedaction": true,
-            "publicRedactionMayChangeCharacterOffsets": true
+            "publicRedactionMayChangeCharacterOffsets": true,
+            "priorRecordSupported": true,
+            "priorRecordReview": "Own quotes plus the explicitly supplied same-source title/continuous original context directly support the full claim; title identifies topic only. No other claim/source/run is used; no full-page truth guarantee.",
+            "reviewCorrectionFile": "evidence-v13-review-correction-2026-09-29.json"
           }
         ],
         "sourceAuthority": {
@@ -9874,9 +9877,9 @@
               }
             ],
             "approvedByModel": true,
-            "recordSupported": true,
+            "recordSupported": false,
             "published": true,
-            "recordReview": "Own quotes plus the explicitly supplied same-source title/continuous original context directly support the full claim; title identifies topic only. No other claim/source/run is used; no full-page truth guarantee.",
+            "recordReview": "The own 249-character quote and 399-character continuous context identify the actual asyncio capability list but do not establish high-level API classification. The generic source title identifies topic only; a separately reordered high-level passage in the full same-run snapshot cannot classify this list.",
             "ownQuoteContexts": [
               {
                 "sourceId": "来源1",
@@ -9890,7 +9893,10 @@
             ],
             "rawOwnQuoteContextsSha256": "25cc48fbe93b67c581a2c85d24bb0bc8fc9a5aada10da0868a0ccfb5e58d513c",
             "contextBindingsCheckedBeforePublicRedaction": true,
-            "publicRedactionMayChangeCharacterOffsets": true
+            "publicRedactionMayChangeCharacterOffsets": true,
+            "priorRecordSupported": true,
+            "priorRecordReview": "Own quotes plus the explicitly supplied same-source title/continuous original context directly support the full claim; title identifies topic only. No other claim/source/run is used; no full-page truth guarantee.",
+            "reviewCorrectionFile": "evidence-v13-review-correction-2026-09-29.json"
           },
           {
             "index": 2,
@@ -10013,7 +10019,8 @@
           "continuousContextMaxCharsPerQuote": 600,
           "contextBeforeAfterMaxChars": 150,
           "noFragmentReordering": true
-        }
+        },
+        "independentReviewCorrection": "Published high-level API qualifier lacks support in its own allowed body/context; original model approval is retained."
       },
       "expectedStatus": "SUCCEEDED",
       "native": [
@@ -10347,7 +10354,7 @@
         }
       ],
       "singleRemoteRun": true,
-      "acceptancePassed": true
+      "acceptancePassed": false
     },
     {
       "id": "rewrite-2",
@@ -14981,7 +14988,7 @@
     }
   ],
   "summary": {
-    "status": "recordReviewPassed",
+    "status": "qualityRejectedAfterIndependentReview",
     "attemptCount": 16,
     "consecutiveOriginalCount": 10,
     "originalStatuses": {
@@ -14993,7 +15000,7 @@
     "expectedTerminalCount": 16,
     "singleRemoteRunAll": true,
     "manualSupport": "recordReviewed",
-    "acceptancePassedCount": 16,
+    "acceptancePassedCount": 15,
     "authorityCompliantCaseCount": 13,
     "allModelFinishReasonsStop": true,
     "modelCalls": 62,
@@ -15014,7 +15021,14 @@
       "allFileJavaRagflowHashesMatch": true,
       "allDone": true
     },
-    "semanticGuarantee": false
+    "semanticGuarantee": false,
+    "priorRecordReviewStatus": "recordReviewPassed",
+    "unsupportedCandidateCount": 2,
+    "unsupportedPublishedClaimCount": 1,
+    "reviewCorrectionFile": "evidence-v13-review-correction-2026-09-29.json",
+    "rejectionReasons": [
+      "rewrite-1 published an API-level qualifier absent from its own permitted quoted body/context."
+    ]
   },
   "finishedAt": "2026-09-29T04:57:12.788063+00:00"
 }

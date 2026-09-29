@@ -32,10 +32,7 @@ def model_context(evidence, values):
 ''')
 
 
-PREPARE_CLAIMS = dedent('''\
-def folded(text):
-    return " ".join(text.split())
-
+SOURCE_CONTEXT = dedent('''\
 def quote_context(source, quote):
     # Keep the actual snapshot order. Never join search fragments across [...].
     content = source["content"]
@@ -47,6 +44,31 @@ def quote_context(source, quote):
             "content": content[left:right], "quoteStart": start - left,
             "quoteEnd": start - left + len(quote),
             "prefixClipped": left > 0, "suffixClipped": right < len(content)}
+
+def api_level_supported(claim, sources):
+    # Necessary lexical evidence for a claimed API level, not semantic proof.
+    # Match the modifier attached to API, not high-level network/workload prose.
+    patterns = (
+        r"(?:高层(?:级)?|高级)(?:的)?\\s*(?:API|接口)|(?:high(?:er)?[-\\s]+level)\\s+(?:APIs?|interfaces?)",
+        r"(?:低层(?:级)?|底层)(?:的)?\\s*(?:API|接口)|(?:low(?:er)?[-\\s]+level)\\s+(?:APIs?|interfaces?)",
+    )
+    for pattern in patterns:
+        if not re.search(pattern, claim["text"], re.IGNORECASE):
+            continue
+        # Context is recomputed from the authorized candidate snapshot. Titles,
+        # other claims/sources and a model-supplied context never enter this gate.
+        bodies = [quote_context(sources[proof["sourceId"]], proof["quote"])["content"]
+                  for proof in claim["quotes"]]
+        segments = [part for body in bodies for part in body.split("[...]")]
+        if not any(re.search(pattern, body, re.IGNORECASE) for body in segments):
+            return False
+    return True
+''')
+
+
+PREPARE_CLAIMS = dedent('''\
+def folded(text):
+    return " ".join(text.split())
 
 def main(synthesis_text: str, context: str, question: str, requirements: str, finish_reason: str = "stop") -> dict:
     out = {"status": "FAILED", "error_code": "DIFY_MODEL_OUTPUT_INVALID",
@@ -183,6 +205,9 @@ def main(candidate: str, verification_text: str, question: str, finish_reason: s
         selected = [claim for index, claim in enumerate(claims, 1) if index in approved and index in used]
         source_order = list(dict.fromkeys(proof["sourceId"] for claim in selected for proof in claim["quotes"]))
         sources = {item["sourceId"]: item for item in evidence}
+        if any(not api_level_supported(claim, sources) for claim in selected):
+            out.update(status="INSUFFICIENT_EVIDENCE", error_code="CLAIM_SUPPORT_INSUFFICIENT")
+            return out
         if data["answer_kind"] == "DOCUMENTED_BOUNDARY" and not boundary_supported(
                 data["boundary_support"], question, evidence, set(source_order)):
             out.update(status="INSUFFICIENT_EVIDENCE", error_code="CLAIM_SUPPORT_INSUFFICIENT")
@@ -234,6 +259,12 @@ Code supplies the verifier with each selected source's real title and continuous
 snapshot text around that exact quote. The title can identify the topic of a list;
 it does not prove an extra fact or permit borrowing another source's statement.
 You cannot fill quote_contexts, change original order, or join snippets across [...].
+Classification and level labels are factual restrictions too. A list of operations
+does not establish that its APIs are high-level, low-level, recommended, standard,
+stable or version-specific. State the listed capabilities without an extra label
+unless the selected quote explicitly establishes that label for that list. An
+adjective attached to a workload or a separately reordered passage cannot classify
+the APIs in this claim. Choose minimal supported wording for every clause.
 Match the REQUESTED RELATION, not just the topic. A definition, API operation,
 syntax recommendation or scheduling mechanism cannot substitute for suitable
 workload/use-case types. An architecture label cannot substitute for each actor's

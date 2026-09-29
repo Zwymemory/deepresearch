@@ -562,6 +562,57 @@ def verify_quote_options_and_source_scope():
     assert rejected["status"] == "FAILED"
 
 
+def verify_api_level_guard() -> None:
+    retained = json.loads((HERE / "evidence-v13-quality-live-2026-09-29.json").read_text())
+    rewrite = next(item for item in retained["attempts"] if item["id"] == "rewrite-1")
+    review = rewrite["manualSupportReview"]
+    assert not rewrite["acceptancePassed"] and not review["claims"][0]["recordSupported"]
+    # Replay the actual old approved claim against the new gate; never rewrite
+    # its stored output or turn the historical success into a new live result.
+    evidence = next(e for receipt in rewrite["toolReceipts"] for e in receipt["result"].get("evidences", [])
+                    if e["citationId"] == review["claims"][0]["ownQuotes"][0]["citationId"])
+    evidence = dict(evidence, sourceId="来源1")
+    context = json.dumps({"evidences": [evidence]})
+    quote = review["claims"][0]["ownQuotes"][0]["quote"]
+    restricted = review["claims"][0]["text"]
+    question = "asyncio 的 API 能做哪些操作？"
+    failed = publish_fixture(context, [claim(restricted, "来源1", quote)], question)
+    assert failed["status"] == "INSUFFICIENT_EVIDENCE" and failed["answer"] == "" and failed["citations"] == []
+    minimal = restricted.replace("提供高层 API", "提供 API")
+    passed = publish_fixture(context, [claim(minimal, "来源1", quote)], question)
+    assert passed["status"] == "SUCCEEDED" and minimal in passed["answer"]
+    low = restricted.replace("高层", "低层")
+    assert publish_fixture(context, [claim(low, "来源1", quote)], question)["status"] == "INSUFFICIENT_EVIDENCE"
+    misleading_title = json.dumps({"evidences": [dict(evidence, title="High-level API Index")]})
+    assert publish_fixture(misleading_title, [claim(restricted, "来源1", quote)], question)["status"] == "INSUFFICIENT_EVIDENCE"
+    namespace = {}
+    exec(NODES["final"]["data"]["code"], namespace)
+    check = namespace["api_level_supported"]
+    restricted_claim = claim("组件提供高层 API。", "来源1", "组件执行任务。")
+    for body in ("组件执行任务。适合高层结构化网络代码。", "组件执行任务。高层 [...] API。",
+                 "组件执行任务。" + "其他段落。" * 100 + "组件提供高层 API。"):
+        assert not check(restricted_claim, {"来源1": dict(evidence, content=body)})
+    # Another candidate/source cannot supply this claim's missing label.
+    assert not check(restricted_claim, {"来源1": dict(evidence, content="组件执行任务。"),
+                                       "来源2": dict(evidence, content="另一组件提供高层 API。")})
+    assert check(claim("组件提供高层 API。", "来源1", "组件提供高层 API。"),
+                 {"来源1": dict(evidence, content="组件提供高层 API。")})
+    # Label presence alone does not approve a negated or unrelated statement;
+    # semantic model decisions still apply after this necessary lexical check.
+    negative = dict(evidence, content="组件不提供高层 API。")
+    assert check(claim("组件提供高层 API。", "来源1", negative["content"]), {"来源1": negative})
+    assert publish_fixture(json.dumps({"evidences": [negative]}),
+                           [claim("组件提供高层 API。", "来源1", negative["content"])],
+                           "组件提供哪类 API？", supported=[False])["status"] == "INSUFFICIENT_EVIDENCE"
+    audit = json.loads((HERE / "claim-support-api-level-audit-2026-09-29.json").read_text())
+    assert audit["summary"]["modelCalls"] == 23 and audit["summary"]["setupValidationFailures"] == 2
+    assert audit["summary"]["rejectedPrompt"] and audit["summary"]["initialExpectedMismatchCount"] == 6
+    for item in audit["codeGuardReplays"]:
+        result = call("final", candidate=json.dumps(item["candidate"]),
+                      question=item["candidate"]["requirements"][-1], verification_text=json.dumps(item["response"]))
+        assert item["modelApproved"] and result["status"] == item["expectedCodeStatus"]
+
+
 if __name__ == "__main__":
     verify_graph()
     verify_contract()
@@ -570,4 +621,5 @@ if __name__ == "__main__":
     verify_web_contract()
     verify_claim_support()
     verify_quote_options_and_source_scope()
+    verify_api_level_guard()
     print("Dify graph, claim support, failure classification and preserved scope checks passed")
