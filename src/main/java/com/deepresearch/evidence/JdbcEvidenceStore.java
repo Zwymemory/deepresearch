@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -124,6 +125,38 @@ public final class JdbcEvidenceStore implements EvidenceStore {
                 WHERE check_id=? AND tenant_id=? AND owner_id=? AND project_id=? AND run_id=? AND status='AWAITING_MODEL'
                 """, responseHash,assessment,EvidenceJson.canonical(result),id,g.principal().tenantId(),g.principal().userId(),g.projectId(),g.runId());
         if (changed != 1) throw new EvidenceException("CHECK_COMPLETION_CONFLICT");
+    }
+    @Override public List<CheckEntry> checks(EvidenceAuthority.Grant g) {
+        var rows = db.query("""
+                SELECT investigation,task_id,dispute_round,check_id,status,request_sha256,request,response_sha256,result
+                FROM agent_evidence_check WHERE tenant_id=? AND owner_id=? AND project_id=? AND run_id=?
+                ORDER BY investigation,dispute_round LIMIT 129
+                """, (rs,n) -> new CheckEntry(rs.getString(1),rs.getString(2),rs.getInt(3),
+                new CheckState(rs.getString(4),rs.getString(5),rs.getString(6),parse(rs.getString(7)),rs.getString(8),parse(rs.getString(9)))),
+                g.principal().tenantId(),g.principal().userId(),g.projectId(),g.runId());
+        if (rows.size() > 128) throw new EvidenceException("REPORT_CAPACITY_EXCEEDED");
+        return rows;
+    }
+    @Override public void block(EvidenceAuthority.Grant g, JsonNode attempt) {
+        String raw = EvidenceJson.canonical(attempt), hash = EvidenceJson.sha(raw);
+        db.update("""
+                INSERT INTO agent_evidence_blocked_attempt(attempt_id,tenant_id,owner_id,project_id,run_id,investigation,payload,payload_sha256)
+                VALUES (?,?,?,?,?,?,?::jsonb,?) ON CONFLICT DO NOTHING
+                """, attempt.path("attempt_id").asText(), g.principal().tenantId(), g.principal().userId(), g.projectId(), g.runId(), attempt.path("investigation_id").asText(), raw, hash);
+        boolean matches = blocked(g).stream().anyMatch(row -> row.path("attempt_id").equals(attempt.path("attempt_id")) && EvidenceJson.sha(EvidenceJson.canonical(row)).equals(hash));
+        if (!matches) throw new EvidenceException("BLOCKED_ATTEMPT_CONFLICT");
+    }
+    @Override public List<JsonNode> blocked(EvidenceAuthority.Grant g) {
+        var rows = db.query("""
+                SELECT payload,payload_sha256 FROM agent_evidence_blocked_attempt WHERE tenant_id=? AND owner_id=? AND project_id=? AND run_id=?
+                ORDER BY attempt_id LIMIT 129
+                """, (rs,n) -> {
+            var row = parse(rs.getString(1));
+            if (!EvidenceJson.sha(EvidenceJson.canonical(row)).equals(rs.getString(2))) throw new EvidenceException("RECORD_HASH_CHANGED");
+            return row;
+        },g.principal().tenantId(),g.principal().userId(),g.projectId(),g.runId());
+        if (rows.size() > 128) throw new EvidenceException("REPORT_CAPACITY_EXCEEDED");
+        return rows;
     }
     private static JsonNode parse(String raw) {
         if (raw == null) return null;

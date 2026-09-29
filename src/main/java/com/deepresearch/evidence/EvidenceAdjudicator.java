@@ -48,8 +48,22 @@ public final class EvidenceAdjudicator {
                 text(field(relation, "reason"), 1000);
                 basis.add(object("evidence_id", evidenceId, "reason", field(relation, "reason")));
                 JsonNode boundQuote = bindQuote(source, relation.path("quote"));
+                String assessmentRef = assessment;
+                JsonNode prior = null;
+                for (var row : request.path("prior_relations")) if (row.path("claim_id").asText().equals(claimId) && row.path("evidence_id").asText().equals(evidenceId)) { prior = row; break; }
+                String clarification = prior == null ? null : scopeClarification(original, source, prior.path("quote"), evidence.values());
+                if (prior != null) {
+                    // Changing a model label or choosing a different paragraph is not new evidence.
+                    boundQuote = prior.path("quote"); quote(source, boundQuote);
+                    label = prior.path("relation").asText(); assessmentRef = prior.path("assessment_ref").asText();
+                    basis.add(object("evidence_id", evidenceId, "prior_decision_id", prior.path("decision_id").asText(),
+                            "continuity", clarification == null ? "Previously applicable relation retained" : clarification));
+                }
                 links.add(object("evidence_id", evidenceId, "relation", label, "quote", boundQuote,
-                        "assessment_method", "model_proposal", "assessment_ref", assessment));
+                        "assessment_method", "model_proposal", "assessment_ref", assessmentRef));
+                if (clarification != null) {
+                    dismissed.add(object("evidence_id", evidenceId, "reason", clarification)); continue;
+                }
                 JsonNode targetVersion = original.path("applicability").path("version"), sourceVersion = source.path("applicability").path("version");
                 boolean versionMatches = targetVersion.path("status").asText().equals(sourceVersion.path("status").asText())
                         && (!targetVersion.path("status").asText().equals("known") || targetVersion.path("value").asText().equals(sourceVersion.path("value").asText()));
@@ -63,6 +77,9 @@ public final class EvidenceAdjudicator {
                         || !java.time.OffsetDateTime.parse(targetTime.path("value").asText()).toInstant().equals(java.time.OffsetDateTime.parse(sourceTime.path("value").asText()).toInstant()))) {
                     String reason = "Requested effective time is not established by this original evidence";
                     dismissed.add(object("evidence_id", evidenceId, "reason", reason)); gaps.add(reason); continue;
+                }
+                if (outsideDeclaredConditions(original, source)) {
+                    dismissed.add(object("evidence_id", evidenceId, "reason", "Original document explicitly declares conditions outside the requested scope")); continue;
                 }
                 String previous = grouped.putIfAbsent(source.path("snapshot").path("sha256").asText(), label);
                 if (previous != null && !previous.equals(label) && !previous.equals("insufficient") && !label.equals("insufficient"))
@@ -124,6 +141,50 @@ public final class EvidenceAdjudicator {
         return new EvidenceDtos.RecordResult(records, actions.stream().distinct().limit(4).toList(), false);
     }
 
+    private static boolean outsideDeclaredConditions(JsonNode claim, JsonNode evidence) {
+        var declared = EvidenceService.declaredConditions(evidence.path("snapshot").path("text").asText());
+        if (declared.equals(List.of("Limited to this original document or recorded observation")) || claim.path("applicability").path("conditions").isEmpty()) return false;
+        // Unequal free-form language does not prove disjoint scope. Only a literal
+        // categorical dimension (e.g. mode=legacy versus mode=general) can do so.
+        var dimension = java.util.regex.Pattern.compile("([a-z][a-z0-9_]{0,31})=([A-Za-z0-9_.-]{1,64})");
+        for (String condition : declared) {
+            var sourceDimension = dimension.matcher(condition); if (!sourceDimension.matches()) continue;
+            for (var requested : claim.path("applicability").path("conditions")) {
+                var targetDimension = dimension.matcher(requested.asText());
+                if (targetDimension.matches() && sourceDimension.group(1).equals(targetDimension.group(1))
+                        && !sourceDimension.group(2).equals(targetDimension.group(2))) return true;
+            }
+        }
+        return false;
+    }
+    /** Narrow, auditable scope clarification: same document, same version/time, exact old paragraph. */
+    private static String scopeClarification(JsonNode claim, JsonNode old, JsonNode oldQuote, Collection<JsonNode> evidence) {
+        if (!EvidenceService.declaredConditions(old.path("snapshot").path("text").asText()).equals(List.of("Limited to this original document or recorded observation"))) return null;
+        for (var candidate : evidence) {
+            if (candidate.path("evidence_id").equals(old.path("evidence_id")) || !sameDocument(old, candidate)
+                    || !candidate.path("applicability").path("version").equals(old.path("applicability").path("version"))
+                    || !candidate.path("applicability").path("valid_at").equals(old.path("applicability").path("valid_at"))
+                    || !outsideDeclaredConditions(claim, candidate)) continue;
+            // Scope is asserted only by the original; no model supplied locator or verified flag.
+            try { bindQuote(candidate, oldQuote.path("text")); }
+            catch (EvidenceException invalidContext) { continue; }
+            String header = "Document conditions: " + EvidenceService.declaredConditions(candidate.path("snapshot").path("text").asText()).get(0);
+            if (!candidate.path("snapshot").path("text").asText().contains(header)) continue;
+            return "Scope clarification in completed evidence " + candidate.path("evidence_id").asText()
+                    + " (snapshot " + candidate.path("snapshot").path("sha256").asText() + ") reproduces the original quote and declares "
+                    + EvidenceJson.canonical(candidate.path("applicability").path("conditions")) + "; original decision and quote retained";
+        }
+        return null;
+    }
+    private static boolean sameDocument(JsonNode left, JsonNode right) {
+        var a = left.path("source"); var b = right.path("source");
+        if (!a.path("kind").equals(b.path("kind"))) return false;
+        var x = a.path("locator"); var y = b.path("locator");
+        return a.path("kind").asText().equals("knowledge")
+                ? x.path("dataset_id").equals(y.path("dataset_id")) && x.path("document_id").equals(y.path("document_id"))
+                : a.path("kind").asText().equals("web") && x.equals(y);
+    }
+
     /** The model quotes text; trusted code computes the exact range and hash. */
     public static JsonNode bindQuote(JsonNode evidence, JsonNode proposal) {
         if (!proposal.isTextual()) { quote(evidence, proposal); return proposal; }
@@ -145,11 +206,11 @@ public final class EvidenceAdjudicator {
         String original = source.substring(left, right);
         if (!original.equals(field(quote, "text")) || !sha(original).equals(field(quote, "sha256"))) throw new EvidenceException("CHECK_QUOTE_BINDING_INVALID");
         int contentLeft = left, contentRight = right;
-        while (contentLeft < right && Character.isWhitespace(source.charAt(contentLeft))) contentLeft++;
-        while (contentRight > left && Character.isWhitespace(source.charAt(contentRight - 1))) contentRight--;
+        while (contentLeft < right && QuoteWhitespace.space(source.codePointAt(contentLeft))) contentLeft += Character.charCount(source.codePointAt(contentLeft));
+        while (contentRight > left && QuoteWhitespace.space(source.codePointBefore(contentRight))) contentRight -= Character.charCount(source.codePointBefore(contentRight));
         int paragraphStart = source.lastIndexOf('\n', Math.max(-1, contentLeft - 1)) + 1;
         int paragraphEnd = source.indexOf('\n', contentRight); if (paragraphEnd < 0) paragraphEnd = source.length();
-        if (!source.substring(paragraphStart, contentLeft).isBlank() || !source.substring(contentRight, paragraphEnd).isBlank())
+        if (!QuoteWhitespace.blank(source.substring(paragraphStart, contentLeft)) || !QuoteWhitespace.blank(source.substring(contentRight, paragraphEnd)))
             throw new EvidenceException("CHECK_QUOTE_CONTEXT_INCOMPLETE");
     }
     public static void strings(JsonNode values, int count, int max) {

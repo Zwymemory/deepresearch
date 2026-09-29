@@ -42,7 +42,7 @@ public final class EvidenceJson {
         return value;
     }
     public static String text(String value, int max) {
-        if (value == null || value.isBlank() || value.codePointCount(0, value.length()) > max)
+        if (value == null || QuoteWhitespace.blank(value) || value.codePointCount(0, value.length()) > max)
             throw new EvidenceException("EVIDENCE_TEXT_INVALID");
         return value;
     }

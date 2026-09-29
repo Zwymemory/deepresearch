@@ -49,7 +49,7 @@ public final class EvidenceService {
             var evidence = scoped("Evidence", g, "evidence_id", "evidence-" + UUID.randomUUID(), "version", 1,
                     "run_id", g.runId(), "task_id", g.taskId(), "receipt_id", begin.receiptId(), "source", source,
                     "snapshot", object("kind", document.snapshotKind(), "text", original, "sha256", hash, "encoding", "utf-8", "offset_unit", "unicode_codepoint"),
-                    "applicability", object("subject", source.path("title").asText(), "version", version, "valid_at", declaredTime(original), "conditions", List.of("Limited to this original document or recorded observation")),
+                    "applicability", object("subject", source.path("title").asText(), "version", version, "valid_at", declaredTime(original), "conditions", declaredConditions(original)),
                     "retrieval_score", unknown("Read operation does not measure retrieval relevance"), "freshness", "fresh", "availability", "available", "validity", "unassessed", "invalidation_reason", null);
             var metadata = object("source_id", sourceId, "snapshot_sha256", hash, "source_metadata_sha256", sha(canonical(source)),
                     "evidence_sha256", sha(canonical(evidence)), "requested_candidate", candidate,
@@ -79,6 +79,12 @@ public final class EvidenceService {
         }
         return values.size() == 1 ? known(values.iterator().next()) : unknown("No unambiguous effective time declaration in original text");
     }
+    static List<String> declaredConditions(String original) {
+        var matcher = Pattern.compile("(?im)^Document conditions:[ \\t]*([^\\r\\n]+)$").matcher(original);
+        var values = new LinkedHashSet<String>();
+        while (matcher.find()) values.add(matcher.group(1).strip());
+        return values.size() == 1 ? List.copyOf(values) : List.of("Limited to this original document or recorded observation");
+    }
     private JsonNode verifiedEvidence(EvidenceAuthority.Grant g, JsonNode evidence) {
         if (!g.runId().equals(evidence.path("run_id").asText()) || !g.projectId().equals(evidence.path("project_id").asText())
                 || !g.principal().tenantId().equals(evidence.path("tenant_id").asText()) || !g.principal().userId().equals(evidence.path("owner_id").asText())) throw EvidenceException.denied();
@@ -95,27 +101,122 @@ public final class EvidenceService {
     public EvidenceDtos.PreparedCheck prepare(String authorization, EvidenceDtos.PrepareRequest command) {
         var g = grant(authorization, "check_claims", command.identifiers());
         if (command.claims() == null || command.claims().isEmpty() || command.claims().size() > 4 || command.evidence_ids() == null
-                || command.evidence_ids().size() > 4 || new HashSet<>(command.evidence_ids()).size() != command.evidence_ids().size()
+                || new HashSet<>(command.evidence_ids()).size() != command.evidence_ids().size()
                 || command.dispute_round() < 0 || command.dispute_round() > 2 || (command.dispute_round() == 0) != (command.parent_check_id() == null))
             throw new EvidenceException("CHECK_REQUEST_INVALID");
+        if (command.evidence_ids().size() > 64) throw new EvidenceException("CHECK_REQUEST_INVALID");
         for (var spec : command.claims()) {
             if (spec == null || spec.kind() == null) throw new EvidenceException("CHECK_REQUEST_INVALID");
             text(spec.text(), 4000); if (!Set.of("factual", "inference", "recommendation").contains(spec.kind())) throw new EvidenceException("CHECK_REQUEST_INVALID");
             applicability(spec.applicability());
         }
-        String investigation = sha(canonical(JSON.valueToTree(command.claims())));
-        String fingerprint = sha(canonical(object("claims", command.claims(), "evidence_ids", command.evidence_ids(), "dispute_round", command.dispute_round(), "parent_check_id", command.parent_check_id())));
+        var specs = command.claims().stream().map(s -> claimSpec(JSON.valueToTree(s))).sorted().toList();
+        if (new HashSet<>(specs).size() != specs.size()) throw new EvidenceException("CHECK_REQUEST_INVALID");
+        String investigation = sha(canonical(JSON.valueToTree(specs)));
+        if (command.investigation_id() != null && !investigation.equals(command.investigation_id())) throw new EvidenceException("CLAIM_SCOPE_CHANGED");
+        command.evidence_ids().forEach(EvidenceJson::id);
+        String fingerprint = sha(canonical(object("claims", specs, "evidence_ids", command.evidence_ids().stream().sorted().toList(), "dispute_round", command.dispute_round(), "parent_check_id", command.parent_check_id())));
         String checkId = "check-" + sha(g.runId() + ":" + g.projectId() + ":" + g.callId() + ":" + fingerprint).substring(0, 48);
-        var evidence = new ArrayList<JsonNode>();
-        for (String identity : command.evidence_ids()) { var record = store.get(g, "Evidence", id(identity)); verifiedEvidence(g, record); evidence.add(record); }
-        var claims = new ArrayList<JsonNode>(); int index = 0;
-        for (var spec : command.claims()) claims.add(object("claim_id", "claim-" + checkId + "-" + index++, "text", spec.text(), "kind", spec.kind(), "applicability", spec.applicability()));
-        var request = object("protocol_version", "evidence-check/1", "check_id", checkId, "claims", claims, "evidence", evidence,
-                "dispute_round", command.dispute_round(), "parent_check_id", command.parent_check_id());
-        if (canonical(request).getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 65536) throw new EvidenceException("CHECK_REQUEST_TOO_LARGE");
-        String requestHash = sha(canonical(request));
-        var stored = tx(g, () -> store.prepare(g, checkId, investigation, command.dispute_round(), command.parent_check_id(), fingerprint, requestHash, request));
-        return new EvidenceDtos.PreparedCheck(stored.checkId(), stored.requestHash(), stored.request(), !stored.status().equals("COMPLETED"), stored.result() == null ? null : result(stored.result()));
+        PrepareAttempt attempt = tx(g, () -> {
+            var history = store.checks(g).stream().filter(e -> investigation.equals(e.investigation())).toList();
+            for (var entry : history) if (checkId.equals(entry.check().checkId())) return new PrepareAttempt(prepared(entry.check(), investigation), null);
+            // Validate supplied originals before reporting a conflicting root; never accept corrupt snapshots.
+            for (String identity : command.evidence_ids()) verifiedEvidence(g, store.get(g, "Evidence", identity));
+            EvidenceStore.CheckState previous = null;
+            if (command.dispute_round() == 0) {
+                if (!history.isEmpty()) throw new EvidenceException("CHECK_IDEMPOTENCY_CONFLICT");
+            } else {
+                var parent = history.stream().filter(e -> e.check().checkId().equals(command.parent_check_id())).findFirst().orElseThrow(() -> new EvidenceException("DISPUTE_PARENT_INVALID"));
+                if (!parent.check().status().equals("COMPLETED") || parent.round() != command.dispute_round() - 1
+                        || history.stream().anyMatch(e -> e.round() > parent.round())) throw new EvidenceException("DISPUTE_PARENT_INVALID");
+                previous = parent.check();
+            }
+            var required = new TreeSet<>(command.evidence_ids());
+            if (previous != null) required.addAll(retainedEvidence(previous));
+            for (var blocked : store.blocked(g)) if (blocked.path("investigation_id").asText().equals(investigation) && !blockResolved(blocked, history))
+                blocked.path("evidence_ids").forEach(e -> required.add(e.asText()));
+            if (required.size() > 4) return blockedAttempt(g, command, checkId, investigation, required, "EVIDENCE_CAPACITY_EXCEEDED");
+            var evidence = new ArrayList<JsonNode>();
+            for (String identity : required) { var record = store.get(g, "Evidence", identity); verifiedEvidence(g, record); evidence.add(record); }
+            var claims = new ArrayList<JsonNode>(); int index = 0;
+            for (var spec : command.claims()) claims.add(object("claim_id", "claim-" + checkId + "-" + index++, "text", spec.text(), "kind", spec.kind(), "applicability", spec.applicability()));
+            var priors = new ArrayList<JsonNode>();
+            if (previous != null) for (var currentClaim : claims) for (var oldClaim : result(previous.result()).records()) {
+                if (!oldClaim.path("record_type").asText().equals("Claim") || !claimSpec(currentClaim).equals(claimSpec(oldClaim))) continue;
+                var decision = store.get(g, "DecisionRecord", "decision-" + oldClaim.path("claim_id").asText());
+                var liveIds = new HashSet<String>();
+                decision.path("adopted_evidence_ids").forEach(e -> liveIds.add(e.asText()));
+                decision.path("unresolved_evidence_ids").forEach(e -> liveIds.add(e.asText()));
+                for (var link : oldClaim.path("evidence_links")) if (liveIds.contains(link.path("evidence_id").asText()) && Set.of("supports", "refutes").contains(link.path("relation").asText())) {
+                    priors.add(object("claim_id", currentClaim.path("claim_id").asText(), "evidence_id", link.path("evidence_id").asText(),
+                            "relation", link.path("relation").asText(), "quote", link.path("quote"), "decision_id", decision.path("decision_id").asText(), "assessment_ref", link.path("assessment_ref").asText()));
+                }
+            }
+            var request = object("protocol_version", "evidence-check/2", "check_id", checkId, "claims", claims, "evidence", evidence,
+                    "dispute_round", command.dispute_round(), "parent_check_id", command.parent_check_id(), "investigation_id", investigation, "prior_relations", priors);
+            if (canonical(request).getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 65536) return blockedAttempt(g, command, checkId, investigation, required, "CHECK_REQUEST_TOO_LARGE");
+            return new PrepareAttempt(prepared(store.prepare(g, checkId, investigation, command.dispute_round(), command.parent_check_id(), fingerprint, sha(canonical(request)), request), investigation), null);
+        });
+        if (attempt.error() != null) throw new EvidenceException(attempt.error());
+        return attempt.prepared();
+    }
+    private record PrepareAttempt(EvidenceDtos.PreparedCheck prepared, String error) { }
+    private PrepareAttempt blockedAttempt(EvidenceAuthority.Grant g, EvidenceDtos.PrepareRequest command, String checkId, String investigation, Set<String> required, String code) {
+        var row = object("attempt_id", "blocked-"+checkId, "tenant_id", g.principal().tenantId(), "owner_id", g.principal().userId(), "project_id", g.projectId(), "run_id", g.runId(),
+                "task_id", g.taskId(), "investigation_id", investigation, "dispute_round", command.dispute_round(), "parent_check_id", command.parent_check_id(),
+                "claim_texts", command.claims().stream().map(EvidenceDtos.ClaimSpec::text).toList(), "evidence_ids", required, "error_code", code);
+        store.block(g, row); return new PrepareAttempt(null, code);
+    }
+    private static boolean blockResolved(JsonNode blocked, List<EvidenceStore.CheckEntry> history) {
+        for (var entry : history) if (entry.round() >= blocked.path("dispute_round").asInt() && entry.check().status().equals("COMPLETED")) {
+            if (!entry.investigation().equals(blocked.path("investigation_id").asText())) continue;
+            var seen = new HashSet<String>(); entry.check().request().path("evidence").forEach(e -> seen.add(e.path("evidence_id").asText()));
+            boolean covered = true; for (var e : blocked.path("evidence_ids")) if (!seen.contains(e.asText())) covered = false;
+            if (covered) return true;
+        }
+        return false;
+    }
+    private static String claimSpec(JsonNode claim) {
+        var scope = (com.fasterxml.jackson.databind.node.ObjectNode)claim.path("applicability").deepCopy();
+        var conditions = new TreeSet<String>(); scope.path("conditions").forEach(c -> conditions.add(c.asText())); scope.set("conditions", JSON.valueToTree(conditions));
+        return canonical(object("text", claim.path("text"), "kind", claim.path("kind"), "applicability", scope));
+    }
+    private static EvidenceDtos.PreparedCheck prepared(EvidenceStore.CheckState state, String investigation) {
+        var required = new ArrayList<String>(); state.request().path("evidence").forEach(e -> required.add(e.path("evidence_id").asText()));
+        return new EvidenceDtos.PreparedCheck(state.checkId(), state.requestHash(), state.request(), !state.status().equals("COMPLETED"),
+                state.result() == null ? null : result(state.result()), investigation, required);
+    }
+    private static Set<String> retainedEvidence(EvidenceStore.CheckState check) {
+        var retained = new LinkedHashSet<String>();
+        for (var row : result(check.result()).records()) if (row.path("record_type").asText().equals("DecisionRecord")) {
+            row.path("adopted_evidence_ids").forEach(e -> retained.add(e.asText()));
+            row.path("unresolved_evidence_ids").forEach(e -> retained.add(e.asText()));
+        }
+        return retained;
+    }
+    public JsonNode investigation(String authorization, EvidenceDtos.InvestigationRequest command) {
+        var g = grant(authorization, "check_claims", command.identifiers());
+        return tx(g, () -> {
+            var history = store.checks(g).stream().filter(e -> id(command.investigation_id()).equals(e.investigation())).toList();
+            var blocked = store.blocked(g).stream().filter(b -> b.path("investigation_id").asText().equals(command.investigation_id()) && !blockResolved(b, history)).toList();
+            if (history.isEmpty()) {
+                if (blocked.isEmpty()) throw EvidenceException.denied();
+                var required = new TreeSet<String>(); blocked.forEach(b -> b.path("evidence_ids").forEach(e -> required.add(e.asText())));
+                return object("investigation_id", command.investigation_id(), "claim_specs", List.of(), "claim_texts", blocked.get(0).path("claim_texts"),
+                        "check_id", null, "dispute_round", 0, "required_evidence_ids", required, "blocked_attempts", blocked,
+                        "records", List.of(), "gaps", blocked.stream().map(b -> b.path("error_code").asText()).distinct().toList(), "check_ids", List.of(), "status", "CAPACITY_BLOCKED");
+            }
+            var latest = history.stream().filter(e -> e.check().status().equals("COMPLETED")).reduce((a,b) -> b).orElse(history.get(0));
+            var specs = new ArrayList<JsonNode>(); latest.check().request().path("claims").forEach(c -> specs.add(object("text", c.path("text"), "kind", c.path("kind"), "applicability", c.path("applicability"))));
+            var records = latest.check().result() == null ? List.<JsonNode>of() : result(latest.check().result()).records();
+            var gaps = new LinkedHashSet<String>(); records.stream().filter(r -> r.path("record_type").asText().equals("DecisionRecord")).forEach(r -> r.path("gaps").forEach(x -> gaps.add(x.asText())));
+            blocked.forEach(b -> gaps.add(b.path("error_code").asText()));
+            var required = new TreeSet<String>(latest.check().result() == null ? Set.of() : retainedEvidence(latest.check()));
+            blocked.forEach(b -> b.path("evidence_ids").forEach(e -> required.add(e.asText())));
+            return object("investigation_id", command.investigation_id(), "claim_specs", specs, "check_id", latest.check().checkId(),
+                    "dispute_round", latest.round(), "required_evidence_ids", required, "blocked_attempts", blocked,
+                    "records", records, "gaps", gaps, "check_ids", history.stream().map(e -> e.check().checkId()).toList(), "status", latest.check().status());
+        });
     }
     public EvidenceDtos.RecordResult complete(String authorization, EvidenceDtos.CompleteRequest command) {
         var g = grant(authorization, "check_claims", command.identifiers());
@@ -145,8 +246,21 @@ public final class EvidenceService {
                 || new HashSet<>(command.check_ids()).size() != command.check_ids().size()) throw new EvidenceException("PACKET_INVALID");
         var claims = new LinkedHashSet<String>(); var decisions = new LinkedHashSet<String>();
         var evidence = new LinkedHashSet<String>(); var challenges = new LinkedHashSet<String>(); var gaps = new LinkedHashSet<String>();
+        var all = tx(g, () -> store.checks(g));
+        var blocked = tx(g, () -> store.blocked(g)).stream().filter(b -> !blockResolved(b, all)).toList();
+        var investigations = new TreeSet<String>();
         for (String checkId : command.check_ids()) {
-            var checked = store.check(g, id(checkId)); if (!checked.status().equals("COMPLETED")) throw new EvidenceException("PACKET_CHECK_INCOMPLETE");
+            var selected = all.stream().filter(e -> e.check().checkId().equals(id(checkId))).findFirst().orElseThrow(EvidenceException::denied);
+            if (!selected.check().status().equals("COMPLETED")) throw new EvidenceException("PACKET_CHECK_INCOMPLETE");
+            investigations.add(selected.investigation());
+        }
+        var activeChecks = new ArrayList<String>();
+        for (var investigation : investigations) {
+            var history = all.stream().filter(e -> e.investigation().equals(investigation)).toList();
+            var current = history.stream().filter(e -> e.check().status().equals("COMPLETED")).reduce((a,b) -> b).orElseThrow(EvidenceException::denied);
+            var checked = current.check(); activeChecks.add(checked.checkId());
+            if (history.stream().anyMatch(e -> !e.check().status().equals("COMPLETED"))) gaps.add("Supplement check is not completed: " + investigation);
+            blocked.stream().filter(b -> b.path("investigation_id").asText().equals(investigation)).forEach(b -> gaps.add(b.path("error_code").asText()));
             for (JsonNode record : result(checked.result()).records()) {
                 switch (record.path("record_type").asText()) {
                     case "Claim" -> { claims.add(record.path("claim_id").asText()); record.path("evidence_links").forEach(link -> evidence.add(link.path("evidence_id").asText())); }
@@ -156,7 +270,7 @@ public final class EvidenceService {
                 }
             }
         }
-        String packetId = "packet-" + sha(g.runId() + ":" + canonical(JSON.valueToTree(command.check_ids()))).substring(0, 48);
+        String packetId = "packet-" + sha(g.runId() + ":" + canonical(object("checks", activeChecks, "gaps", gaps))).substring(0, 48);
         try { return store.get(g, "ResearchPacket", packetId); }
         catch (EvidenceException absent) { if (!absent.code().equals("EVIDENCE_ACCESS_DENIED")) throw absent; }
         var packet = scoped("ResearchPacket", g, "packet_id", packetId, "run_id", g.runId(), "task_id", g.taskId(), "context_id", null,
@@ -168,22 +282,60 @@ public final class EvidenceService {
     /** Returns quote-bound publication data; A remains the only answer publisher. */
     public JsonNode publish(String authorization, EvidenceDtos.PublishRequest command) {
         var g = grant(authorization, "publish_evidence", command.identifiers());
-        var packet = store.get(g, "ResearchPacket", id(command.packet_id()));
-        if (command.claim_ids() == null || command.claim_ids().isEmpty() || command.claim_ids().size() > 4
-                || new HashSet<>(command.claim_ids()).size() != command.claim_ids().size()) throw new EvidenceException("PUBLICATION_INVALID");
-        Set<String> available = new HashSet<>(); packet.path("claim_ids").forEach(c -> available.add(c.asText()));
+        store.get(g, "ResearchPacket", id(command.packet_id()));
+        // Compatibility selectors authorize no exclusion from the complete run report.
+        var report = (com.fasterxml.jackson.databind.node.ObjectNode) report(g);
+        report.put("packet_id", command.packet_id()); return report;
+    }
+    public JsonNode report(String authorization, EvidenceDtos.ReportRequest command) {
+        return report(grant(authorization, "publish_evidence", command.identifiers()));
+    }
+    private JsonNode report(EvidenceAuthority.Grant g) {
+        var all = tx(g, () -> store.checks(g));
+        var blocked = tx(g, () -> store.blocked(g));
+        var pending = blocked.stream().filter(b -> !blockResolved(b, all)).toList();
+        var goals = authority.reportGoals(g);
+        if (goals == null || goals.size() > 64) throw new EvidenceException("REPORT_CAPACITY_EXCEEDED");
+        var goalIds = new HashSet<String>();
+        for (var goal : goals) if (goal == null || !goalIds.add(id(goal.taskId())) || goal.status() == null || goal.text() == null) throw EvidenceException.denied();
+        var current = new TreeMap<String, EvidenceStore.CheckEntry>();
+        for (var entry : all) if (entry.check().status().equals("COMPLETED")) current.put(entry.investigation(), entry);
+        var claimIds = new ArrayList<String>();
+        for (var entry : current.values()) for (var row : result(entry.check().result()).records())
+            if (row.path("record_type").asText().equals("Claim")) claimIds.add(row.path("claim_id").asText());
+        var unfinished = new ArrayList<JsonNode>();
+        for (var gap : pending) unfinished.add(object("task_id", gap.path("task_id").asText(), "investigation_id", gap.path("investigation_id").asText(),
+                "attempt_id", gap.path("attempt_id").asText(), "text", "核查未完成：" + canonical(gap.path("claim_texts")), "error_code", gap.path("error_code").asText(),
+                "reason", "材料或请求超出本轮核查容量，保留缺口（" + gap.path("error_code").asText() + "）"));
+        for (var entry : all) if (!entry.check().status().equals("COMPLETED"))
+            unfinished.add(object("task_id", entry.taskId(), "investigation_id", entry.investigation(), "check_id", entry.check().checkId(), "reason", "Check has no completed, budget-attested assessment"));
+        for (var goal : goals) {
+            // A owns objective/dependency completion. A resolved Claim cannot silently
+            // fulfill every objective of a task that A still calls pending/blocked.
+            if (!goal.status().equals("done")) unfinished.add(object("task_id", goal.taskId(), "text", goal.text(), "status", goal.status(), "reason", "Research goal remains unfinished"));
+        }
         var published = new ArrayList<JsonNode>();
         var validatedLive = new HashSet<String>(); var validationReceipts = new ArrayList<String>();
-        for (String claimId : command.claim_ids()) {
-            if (!available.contains(claimId)) throw new EvidenceException("PUBLICATION_INVALID");
+        var resolvedCount = 0;
+        for (String claimId : claimIds) {
             var claim = store.get(g, "Claim", claimId);
-            if (!claim.path("decision_status").asText().equals("supported")) throw new EvidenceException("PUBLICATION_NOT_SUPPORTED");
             JsonNode decision = store.get(g, "DecisionRecord", "decision-" + claimId);
-            if (!decision.path("decision_status").asText().equals("supported") || !decision.path("unresolved_evidence_ids").isEmpty()) throw new EvidenceException("PUBLICATION_NOT_SUPPORTED");
+            String status = claim.path("decision_status").asText();
+            if (!status.equals(decision.path("decision_status").asText()) || !Set.of("supported", "refuted", "contested", "insufficient").contains(status)) throw new EvidenceException("PUBLICATION_INVALID");
+            if (Set.of("supported", "refuted").contains(status)) {
+                if (!decision.path("unresolved_evidence_ids").isEmpty() || decision.path("adopted_evidence_ids").isEmpty()) throw new EvidenceException("PUBLICATION_INVALID");
+                resolvedCount++;
+            }
             var quotes = new ArrayList<JsonNode>();
-            for (var adopted : decision.path("adopted_evidence_ids")) {
+            var cited = new LinkedHashSet<String>();
+            decision.path("adopted_evidence_ids").forEach(e -> cited.add(e.asText()));
+            decision.path("unresolved_evidence_ids").forEach(e -> cited.add(e.asText()));
+            // Dismissed scope material also proves how a prior conflict was resolved.
+            claim.path("evidence_links").forEach(e -> cited.add(e.path("evidence_id").asText()));
+            for (var identity : cited) {
+                var adopted = JSON.valueToTree(identity);
                 var source = store.get(g, "Evidence", adopted.asText()); var sourceMetadata = verifiedEvidence(g, source);
-                var candidate = authority.candidate(g, source.path("source").path("source_id").asText());
+                var candidate = authority.originalCandidate(g, source.path("source").path("source_id").asText(), sourceMetadata.path("parent_receipt_id").asText());
                 if (candidate == null) throw EvidenceException.denied();
                 if (!canonical(JSON.valueToTree(candidate)).equals(canonical(sourceMetadata.path("requested_candidate"))))
                     throw new EvidenceException("PUBLICATION_SOURCE_IDENTITY_CHANGED");
@@ -194,7 +346,7 @@ public final class EvidenceService {
                     String currentHash = permit.completedSnapshotHash();
                     if (currentHash == null) {
                         try {
-                            var current = reader.read(g, candidate); currentHash = sha(current.text()); active(g);
+                            var reread = reader.read(g, candidate); currentHash = sha(reread.text()); active(g);
                         } catch (RuntimeException failure) {
                             authority.completePublicationRead(g, permit, null, failure instanceof EvidenceException e ? e.code() : "SOURCE_READ_FAILED");
                             throw failure;
@@ -206,14 +358,27 @@ public final class EvidenceService {
                 }
                 for (var link : claim.path("evidence_links")) if (link.path("evidence_id").asText().equals(adopted.asText())) {
                     EvidenceAdjudicator.quote(source, link.path("quote"));
-                    quotes.add(object("evidence_id", adopted.asText(), "source", source.path("source"), "quote", link.path("quote"), "receipt_id", source.path("receipt_id").asText()));
+                    String disposition = "dismissed"; String reason = "";
+                    for (var v : decision.path("adopted_evidence_ids")) if (v.asText().equals(identity)) disposition = "adopted";
+                    for (var v : decision.path("unresolved_evidence_ids")) if (v.asText().equals(identity)) disposition = "unresolved";
+                    for (var v : decision.path("dismissed_evidence")) if (v.path("evidence_id").asText().equals(identity)) reason = v.path("reason").asText();
+                    quotes.add(object("evidence_id", adopted.asText(), "source", source.path("source"), "quote", link.path("quote"), "receipt_id", source.path("receipt_id").asText(),
+                            "relation", link.path("relation").asText(), "disposition", disposition, "reason", reason));
                 }
             }
-            if (quotes.isEmpty()) throw new EvidenceException("PUBLICATION_INVALID");
+            if (quotes.isEmpty() && !status.equals("insufficient")) throw new EvidenceException("PUBLICATION_INVALID");
             published.add(object("claim", claim, "decision", decision, "citations", quotes));
         }
         var references = new LinkedHashMap<String, JsonNode>(); StringBuilder answer = new StringBuilder();
-        for (JsonNode item : published) {
+        boolean complete = !published.isEmpty() && resolvedCount == published.size() && unfinished.isEmpty();
+        String reportStatus = complete ? "complete" : resolvedCount > 0 ? "partial" : "insufficient";
+        answer.append("研究报告（").append(complete ? "已完成" : resolvedCount > 0 ? "部分完成" : "证据不足").append("）\n");
+        var labels = Map.of("supported", "已支持", "refuted", "被反驳的主张", "contested", "仍有争议", "insufficient", "证据不足");
+        for (String section : List.of("supported", "refuted", "contested", "insufficient")) {
+          boolean heading = false;
+          for (JsonNode item : published) {
+            if (!item.path("claim").path("decision_status").asText().equals(section)) continue;
+            if (!heading) { answer.append('\n').append(labels.get(section)).append("：\n"); heading = true; }
             String claimText = com.deepresearch.agent.ToolOutputSanitizer.neutralizeCitationMarkers(item.path("claim").path("text").asText());
             answer.append(claimText);
             var scope = item.path("claim").path("applicability");
@@ -224,16 +389,50 @@ public final class EvidenceService {
             if (!scope.path("conditions").isEmpty()) answer.append("；条件：").append(com.deepresearch.agent.ToolOutputSanitizer.neutralizeCitationMarkers(canonical(scope.path("conditions"))));
             answer.append('）');
             for (JsonNode citation : item.path("citations")) {
-                String identity = citation.path("evidence_id").asText(); references.putIfAbsent(identity, citation);
+                String identity = citationIdentity(citation.path("source"));
+                if (!references.containsKey(identity)) {
+                    var reference = (com.fasterxml.jackson.databind.node.ObjectNode) citation.deepCopy();
+                    reference.put("citation_uri", identity); reference.set("occurrences", JSON.createArrayNode()); references.put(identity, reference);
+                }
+                ((com.fasterxml.jackson.databind.node.ArrayNode)references.get(identity).path("occurrences")).add(citation);
                 int number = new ArrayList<>(references.keySet()).indexOf(identity) + 1;
                 answer.append(" [来源").append(number).append(']');
             }
+            if (!item.path("decision").path("gaps").isEmpty()) answer.append("；缺口：").append(neutral(canonical(item.path("decision").path("gaps"))));
+            for (var dismissed : item.path("decision").path("dismissed_evidence"))
+                if (dismissed.path("reason").asText().startsWith("Scope clarification")) answer.append("；争议解决依据：").append(neutral(dismissed.path("reason").asText()));
             answer.append('\n');
+          }
         }
+        if (!unfinished.isEmpty()) {
+            answer.append("\n未完成目标：\n");
+            for (var goal : unfinished) answer.append(neutral(goal.has("text") ? goal.path("text").asText() : goal.path("task_id").asText())).append("：").append(neutral(goal.path("reason").asText())).append('\n');
+        }
+        if (published.isEmpty()) answer.append("\n尚无完成核查的主张，不能据此给出事实结论。\n");
+        answer.append("\n范围说明：上述裁决绑定所列原文、版本与条件；结构和回执校验不保证模型语义判断正确。");
+        if (references.size() > 32) throw new EvidenceException("REPORT_CAPACITY_EXCEEDED");
         if (answer.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 32768) throw new EvidenceException("PUBLICATION_TOO_LARGE");
-        active(g); return object("packet_id", command.packet_id(), "run_id", g.runId(), "claims", published,
-                "answer", answer.toString().strip(), "answer_sha256", sha(answer.toString().strip()),
+        tx(g, () -> {
+            if (!canonical(JSON.valueToTree(store.checks(g))).equals(canonical(JSON.valueToTree(all)))
+                    || !canonical(JSON.valueToTree(store.blocked(g))).equals(canonical(JSON.valueToTree(blocked)))
+                    || !canonical(JSON.valueToTree(authority.reportGoals(g))).equals(canonical(JSON.valueToTree(goals)))) throw new EvidenceException("REPORT_STATE_CHANGED");
+            return null;
+        });
+        var investigations = all.stream().map(EvidenceStore.CheckEntry::investigation).distinct().map(identity -> object("investigation_id", identity,
+                "check_ids", all.stream().filter(e -> e.investigation().equals(identity)).map(e -> e.check().checkId()).toList(),
+                "current_check_id", current.containsKey(identity) ? current.get(identity).check().checkId() : null)).toList();
+        var report = object("approved", true, "report_status", reportStatus, "terminal_status", complete ? "SUCCEEDED" : "INSUFFICIENT_EVIDENCE", "investigations", investigations,
+                "run_id", g.runId(), "claims", published, "unfinished_goals", unfinished, "answer", answer.toString(), "answer_sha256", sha(answer.toString()),
                 "citations", references.values(), "validation_receipts", validationReceipts, "semantic_truth_guaranteed", false);
+        if (canonical(report).getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 120000) throw new EvidenceException("REPORT_CAPACITY_EXCEEDED");
+        return report;
+    }
+    private static String neutral(String text) { return com.deepresearch.agent.ToolOutputSanitizer.neutralizeCitationMarkers(text); }
+    private static String citationIdentity(JsonNode source) {
+        var locator = source.path("locator");
+        if (source.path("kind").asText().equals("controlled_test")) return "test:" + locator.path("artifact_id").asText();
+        return source.path("kind").asText().equals("knowledge") ? "kb:ragflow:" + locator.path("dataset_id").asText() + ":" + locator.path("document_id").asText() + ":" + locator.path("chunk_id").asText()
+                : locator.path("uri").asText();
     }
     private static EvidenceDtos.RecordResult result(JsonNode value) { return JSON.convertValue(value, EvidenceDtos.RecordResult.class); }
     private static void applicability(JsonNode value) {

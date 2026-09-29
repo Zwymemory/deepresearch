@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
 class EvidenceServiceIT {
     @Container static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>(DockerImageName.parse("pgvector/pgvector:pg16"))
             .withDatabaseName("deepresearch").withUsername("deepresearch").withPassword("deepresearch").withInitScript("init-workflow-role.sql");
-    static JdbcTemplate db; static JdbcEvidenceStore store; static final List<JsonNode> EXPORTS = new ArrayList<>();
+    static JdbcTemplate db; static JdbcEvidenceStore store; static final List<JsonNode> EXPORTS = new ArrayList<>(), REPAIR_EXPORTS = new ArrayList<>();
     @BeforeAll static void setup() {
         var ds = new DriverManagerDataSource(PG.getJdbcUrl(),PG.getUsername(),PG.getPassword());
         Flyway.configure().dataSource(ds).locations("classpath:db/migration").load().migrate();
@@ -39,13 +39,18 @@ class EvidenceServiceIT {
         Path out = Path.of("target/evidence-round1-service-records.json");
         Files.writeString(out,JSON.writerWithDefaultPrettyPrinter().writeValueAsString(object("fixture_origin","synthetic_transport_and_model_receipt",
                 "actual_service_and_postgres",true,"real_network",false,"real_model",false,"bundles",EXPORTS))+"\n");
+        Files.writeString(Path.of("target/evidence-round1-repair-service-records.json"),JSON.writerWithDefaultPrettyPrinter().writeValueAsString(object(
+                "fixture_origin","ordinary synthetic conflict; experimental port not used","actual_service_and_postgres",true,"real_network",false,"real_model",false,"bundles",REPAIR_EXPORTS))+"\n");
     }
     static final class Harness implements EvidenceAuthority {
         final String run = "wf-" + UUID.randomUUID(), project = "project-" + UUID.randomUUID(), claim = UUID.randomUUID().toString();
         final Map<String,Candidate> candidates = new LinkedHashMap<>(); final Map<String,String> bodies = new HashMap<>();
+        final Map<String,Candidate> originalCandidates = new HashMap<>();
         final Map<String,JsonNode> models = new HashMap<>(); final List<String> assessments = new ArrayList<>();
         final RagflowClient ragflow = mock(RagflowClient.class); final EvidenceService service;
         boolean failCommit; boolean allowPublicationRead = true; int publicationSettlements;
+        String task = "task-main";
+        List<ReportGoal> goals = List.of(new ReportGoal("task-main", "Synthetic limit question", "done"));
         Runnable onFetch = () -> { };
         AuthPrincipal principal = new AuthPrincipal("fixture-tenant","fixture-owner",List.of("USER"));
         Harness() {
@@ -64,8 +69,8 @@ class EvidenceServiceIT {
             });
             service = new EvidenceService(this,store,new ManagedSourceReader(web,ragflow,new RagflowDocumentRegistry(db),this));
         }
-        EvidenceDtos.Identifiers ids(String call) { return new EvidenceDtos.Identifiers(project,run,"task-main",call,claim); }
-        Grant current(String call) { return new Grant(principal,project,run,"task-main",call,claim); }
+        EvidenceDtos.Identifiers ids(String call) { return new EvidenceDtos.Identifiers(project,run,task,call,claim); }
+        Grant current(String call) { return new Grant(principal,project,run,task,call,claim); }
         public Grant authorize(String authorization,String operation,EvidenceDtos.Identifiers ids) {
             if (!"test-service-token".equals(authorization) || !run.equals(ids.run_id()) || !project.equals(ids.project_id()) || !claim.equals(ids.claim_token())) throw EvidenceException.denied();
             return current(ids.call_id());
@@ -79,6 +84,13 @@ class EvidenceServiceIT {
             if (db.queryForObject("SELECT count(*) FROM agent_workflow_tool_receipt WHERE run_id=? AND call_id=? AND status='COMPLETED'",Integer.class,run,candidate.parentReceiptId()) != 1) throw EvidenceException.denied();
             return candidate;
         }
+        public Candidate originalCandidate(Grant g,String sourceId,String parent) {
+            var original = originalCandidates.get(sourceId+":"+parent);
+            if (original == null || !g.runId().equals(run) || !g.principal().userId().equals("fixture-owner")
+                    || db.queryForObject("SELECT count(*) FROM agent_workflow_tool_receipt WHERE run_id=? AND call_id=? AND status='COMPLETED'",Integer.class,run,parent) != 1) throw EvidenceException.denied();
+            return original;
+        }
+        public List<ReportGoal> reportGoals(Grant g) { return goals; }
         public void commitRead(Grant g,String source,JsonNode evidence,String receipt) {
             assertThat(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()).isTrue();
             db.update("UPDATE agent_workflow_tool_receipt SET status='COMPLETED',safe_result=?::jsonb,completed_at=now() WHERE run_id=? AND call_id=?",
@@ -101,6 +113,7 @@ class EvidenceServiceIT {
         void source(String identity,String kind,String original) {
             String parent = "search-"+identity;
             candidates.put(identity,new Candidate(identity,kind,"https://sources.example.org/"+identity,"dataset-evidence","doc-"+identity,"chunk-"+identity,"Synthetic "+identity,parent));
+            originalCandidates.put(identity+":"+parent,candidates.get(identity));
             bodies.put(identity,original);
             db.update("INSERT INTO agent_workflow_tool_receipt(run_id,call_id,task_id,tool_name,request_fingerprint,status,safe_result,completed_at) VALUES (?,?,'task-main','web_search','f','COMPLETED','{}',now())",run,parent);
         }
@@ -116,6 +129,9 @@ class EvidenceServiceIT {
             return service.complete("test-service-token",new EvidenceDtos.CompleteRequest(ids(call),prepared.check_id(),model,response));
         }
         void export(String caseId,EvidenceDtos.RecordResult result,List<JsonNode> originals,JsonNode packet) {
+            EXPORTS.add(bundle(caseId,result,originals,packet));
+        }
+        JsonNode bundle(String caseId,EvidenceDtos.RecordResult result,List<JsonNode> originals,JsonNode packet) {
             var rows = new ArrayList<JsonNode>(originals); rows.addAll(result.records()); if (packet != null) rows.add(packet);
             var scope = object("tenant_id","fixture-tenant","owner_id","fixture-owner","project_id",project);
             var refs = new ArrayList<JsonNode>();
@@ -129,8 +145,8 @@ class EvidenceServiceIT {
                         "source_bindings",List.of(object("source_id",meta.path("source_id").asText(),"snapshot_sha256",meta.path("snapshot_sha256").asText(),"source_metadata_sha256",meta.path("source_metadata_sha256").asText())),
                         "tenant_id","fixture-tenant","owner_id","fixture-owner","project_id",project));
             }
-            EXPORTS.add(object("fixture_id",caseId,"fixture_origin","synthetic_transport_and_model_receipt","authorized_scope",scope,"records",rows,"external_refs",refs,
-                    "semantic_truth_guaranteed",false,"actual_persistence",true));
+            return object("fixture_id",caseId,"fixture_origin","synthetic_transport_and_model_receipt","authorized_scope",scope,"records",rows,"external_refs",refs,
+                    "semantic_truth_guaranteed",false,"actual_persistence",true);
         }
     }
     static EvidenceDtos.ClaimSpec spec(String sentence,String version) {
@@ -156,6 +172,218 @@ class EvidenceServiceIT {
         return object("claims",claims,"follow_up_actions",List.of(object("action","seek_counterevidence","query","Find original version-specific request limit","reason","Investigate applicable conflicting originals")));
     }
     static List<String> statuses(EvidenceDtos.RecordResult result) { return result.records().stream().filter(r->r.path("record_type").asText().equals("DecisionRecord")).map(r->r.path("decision_status").asText()).toList(); }
+
+    @Test void omittedCounterevidenceDuplicateSupportAndModelRelabellingCannotResolveConflict() {
+        var h = new Harness(); h.source("support", "web", "Version: 1.0\n\nLimit: 10"); h.source("counter", "web", "Version: 1.0\n\nLimit: 20");
+        h.goals = List.of(new EvidenceAuthority.ReportGoal("task-main","Synthetic limit question","blocked"));
+        var support = h.read("support", "read-support"); var counter = h.read("counter", "read-counter");
+        var specs = List.of(spec("The request limit is 10.", "1.0"));
+        var root = h.prepare(specs, List.of(support, counter), 0, null, "root");
+        var original = h.complete(root, propose(root.request()), "complete-root");
+        assertThat(statuses(original)).containsExactly("contested");
+        var next = h.prepare(specs, List.of(support), 1, root.check_id(), "next");
+        assertThat(next.required_evidence_ids()).containsExactlyInAnyOrder(support.path("evidence_id").asText(), counter.path("evidence_id").asText());
+        var dishonest = propose(next.request());
+        for (var relation : dishonest.path("claims").get(0).path("relations"))
+            if (relation.path("evidence_id").equals(counter.path("evidence_id"))) ((ObjectNode)relation).put("relation", "insufficient");
+        assertThat(statuses(h.complete(next, dishonest, "complete-next"))).containsExactly("contested");
+        h.source("duplicate", "web", "Version: 1.0\n\nLimit: 10"); var duplicate = h.read("duplicate", "read-duplicate");
+        var last = h.prepare(specs, List.of(duplicate), 2, next.check_id(), "last");
+        assertThat(last.required_evidence_ids()).hasSize(3).contains(counter.path("evidence_id").asText());
+        assertThat(statuses(h.complete(last, propose(last.request()), "complete-last"))).containsExactly("contested");
+        var report = h.service.report("test-service-token", new EvidenceDtos.ReportRequest(h.ids("report")));
+        assertThat(report.path("terminal_status").asText()).isEqualTo("INSUFFICIENT_EVIDENCE");
+        assertThat(report.path("answer").asText()).contains("仍有争议", "Synthetic limit question");
+        assertThat(store.check(h.current("history"), root.check_id()).result()).isEqualTo(JSON.valueToTree(original));
+        var packet = h.service.packet("test-service-token",new EvidenceDtos.PacketRequest(h.ids("export-packet"),List.of(root.check_id(),next.check_id(),last.check_id())));
+        REPAIR_EXPORTS.add(h.bundle("retained-counterevidence", h.complete(last,propose(last.request()),"replay-complete"),List.of(support,counter,duplicate),packet));
+    }
+    @Test void ordinaryWrongMaterialConflictUsesNoControlledObservationAndExportsActualRecords() throws Exception {
+        var fixture = JSON.readTree(Files.readString(Path.of("testdata/agent-round1-repair/evidence/ordinary-conflict.json")));
+        var h = new Harness(); var originals = new ArrayList<JsonNode>();
+        for (var source : fixture.path("sources")) { h.source(source.path("id").asText(),source.path("kind").asText(),source.path("text").asText()); originals.add(h.read(source.path("id").asText(),"read-"+source.path("id").asText())); }
+        var check = h.prepare(List.of(spec(fixture.path("claim").path("text").asText(),fixture.path("claim").path("version").asText())),originals,0,null,"root");
+        var result = h.complete(check,propose(check.request()),"complete"); assertThat(statuses(result)).containsExactly(fixture.path("expected_status").asText());
+        for (var original : originals) assertThat(store.readMetadata(h.current("metadata"),original.path("receipt_id").asText()).path("verified_observation").asBoolean()).isFalse();
+        var packet = h.service.packet("test-service-token",new EvidenceDtos.PacketRequest(h.ids("packet"),List.of(check.check_id())));
+        var report = h.service.report("test-service-token",new EvidenceDtos.ReportRequest(h.ids("report")));
+        assertThat(report.path("terminal_status").asText()).isEqualTo(fixture.path("expected_terminal_status").asText());
+        REPAIR_EXPORTS.add(h.bundle(fixture.path("fixture_id").asText(),result,originals,packet));
+    }
+
+    @Test void evidenceCapacityFailurePreservesCurrentConflictAndOriginalHistory() {
+        var h = new Harness(); var originals = new ArrayList<JsonNode>();
+        for (int n=0; n<5; n++) { h.source("source-"+n, "web", "Version: 1.0\n\nLimit: " + (n==1 ? "20" : "10")); originals.add(h.read("source-"+n, "read-"+n)); }
+        var specs = List.of(spec("The request limit is 10.", "1.0"));
+        var root = h.prepare(specs, originals.subList(0,4), 0, null, "root"); h.complete(root, propose(root.request()), "complete");
+        assertThatThrownBy(() -> h.prepare(specs, List.of(originals.get(4)), 1, root.check_id(), "overflow")).hasMessageContaining("EVIDENCE_CAPACITY_EXCEEDED");
+        var state = h.service.investigation("test-service-token", new EvidenceDtos.InvestigationRequest(h.ids("state"), root.investigation_id()));
+        assertThat(state.path("check_id").asText()).isEqualTo(root.check_id()); assertThat(state.path("required_evidence_ids")).hasSize(5);
+        assertThat(state.path("gaps")).isNotEmpty();
+        assertThat(db.queryForObject("SELECT count(*) FROM agent_evidence_check WHERE run_id=?", Integer.class, h.run)).isEqualTo(1);
+        assertThat(h.service.report("test-service-token", new EvidenceDtos.ReportRequest(h.ids("report"))).path("report_status").asText()).isEqualTo("insufficient");
+    }
+
+    @Test void canonicalInvestigationIdentityRejectsReorderTaskCallParentAndRoundBypasses() {
+        var h = new Harness(); var specs = List.of(spec("The request limit is 10.", "1.0"), spec("The request limit is 20.", "2.0"));
+        var root = h.prepare(specs, List.of(), 0, null, "root"); h.complete(root, propose(root.request()), "complete");
+        h.task = "task-new";
+        assertThatThrownBy(() -> h.prepare(List.of(specs.get(1), specs.get(0)), List.of(), 0, null, "new-root")).hasMessageContaining("CHECK_IDEMPOTENCY_CONFLICT");
+        assertThatThrownBy(() -> h.prepare(specs, List.of(), 2, root.check_id(), "skip")).hasMessageContaining("DISPUTE_PARENT_INVALID");
+        assertThatThrownBy(() -> h.prepare(specs, List.of(), 1, "invented-parent", "fake")).hasMessageContaining("DISPUTE_PARENT_INVALID");
+        var changed = List.of(spec("The request limit is 999.", "1.0"));
+        assertThatThrownBy(() -> h.service.prepare("test-service-token", new EvidenceDtos.PrepareRequest(h.ids("changed"), changed, List.of(), 1, root.check_id(), root.investigation_id()))).hasMessageContaining("CLAIM_SCOPE_CHANGED");
+        var other = new Harness();
+        assertThatThrownBy(() -> other.service.investigation("test-service-token", new EvidenceDtos.InvestigationRequest(other.ids("foreign"), root.investigation_id()))).hasMessageContaining("EVIDENCE_ACCESS_DENIED");
+    }
+
+    @Test void exactSameDocumentScopeClarificationCanResolveWhileUnrelatedDeclarationCannot() {
+        for (boolean sameDocument : List.of(false, true)) {
+            var h = new Harness(); h.source("support", "web", "Version: 1.0\n\nLimit: 10"); h.source("counter", "web", "Version: 1.0\n\nLimit: 20");
+            var support = h.read("support", "support"); var counter = h.read("counter", "counter");
+            var scope = (ObjectNode)spec("The request limit is 10.", "1.0").applicability().deepCopy(); scope.set("conditions", JSON.valueToTree(List.of("mode=general")));
+            var specs = List.of(new EvidenceDtos.ClaimSpec("The request limit is 10.", "factual", scope));
+            var root = h.prepare(specs, List.of(support,counter), 0, null, "root"); h.complete(root, propose(root.request()), "complete-root");
+            String expanded = "Version: 1.0\n\nDocument conditions: mode=legacy\n\nLimit: 20";
+            JsonNode clarification;
+            if (sameDocument) { h.bodies.put("counter", expanded); clarification = h.read("counter", "expanded-counter"); }
+            else { h.source("unrelated", "web", expanded); clarification = h.read("unrelated", "expanded-unrelated"); }
+            var next = h.prepare(specs, List.of(support,clarification), 1, root.check_id(), "next");
+            var result = h.complete(next, propose(next.request()), "complete-next");
+            assertThat(statuses(result)).containsExactly(sameDocument ? "supported" : "contested");
+            var packet = h.service.packet("test-service-token", new EvidenceDtos.PacketRequest(h.ids("packet"), List.of(root.check_id(),next.check_id())));
+            assertThat(packet.path("status").asText()).isEqualTo(sameDocument ? "complete" : "partial");
+            var report = h.service.report("test-service-token", new EvidenceDtos.ReportRequest(h.ids("report")));
+            assertThat(report.path("report_status").asText()).isEqualTo(sameDocument ? "complete" : "insufficient");
+            if (sameDocument) {
+                assertThat(report.path("answer").asText()).contains("争议解决依据", clarification.path("evidence_id").asText());
+                assertThat(report.path("citations")).hasSize(2); // Old/new snapshots of counter share one URI.
+                var decision = result.records().stream().filter(r -> r.path("record_type").asText().equals("DecisionRecord")).findFirst().orElseThrow();
+                assertThat(decision.path("dismissed_evidence").toString()).contains(counter.path("evidence_id").asText(), clarification.path("snapshot").path("sha256").asText());
+                REPAIR_EXPORTS.add(h.bundle("document-scope-clarification",result,List.of(support,counter,clarification),packet));
+            }
+            assertThat(store.check(h.current("history"), root.check_id()).result().toString()).contains("contested");
+        }
+    }
+
+    @Test void successfulSupplementReplacesActiveGapsButKeepsImmutablePriorChallenges() {
+        var h = new Harness(); var specs = List.of(spec("The request limit is 10.", "1.0"));
+        var root = h.prepare(specs, List.of(), 0, null, "root"); var original = h.complete(root, propose(root.request()), "complete-root");
+        h.source("new-original", "web", "Version: 1.0\n\nLimit: 10"); var source = h.read("new-original", "read");
+        var next = h.prepare(specs, List.of(source), 1, root.check_id(), "next"); h.complete(next, propose(next.request()), "complete-next");
+        var packet = h.service.packet("test-service-token", new EvidenceDtos.PacketRequest(h.ids("packet"), List.of(root.check_id(),next.check_id())));
+        assertThat(packet.path("status").asText()).isEqualTo("complete"); assertThat(packet.path("gaps")).isEmpty();
+        assertThat(packet.path("claim_ids")).hasSize(1); assertThat(packet.path("challenge_ids")).isEmpty();
+        assertThat(h.service.report("test-service-token", new EvidenceDtos.ReportRequest(h.ids("report"))).path("terminal_status").asText()).isEqualTo("SUCCEEDED");
+        assertThat(store.check(h.current("history"), root.check_id()).result()).isEqualTo(JSON.valueToTree(original));
+    }
+    @Test void wrongVersionMissingOriginalQuoteAndFreeFormConditionsDoNotProveScopeResolution() {
+        for (String variation : List.of("version", "quote", "free-form")) {
+            var h = new Harness(); h.source("support","web","Version: 1.0\n\nLimit: 10"); h.source("counter","web","Version: 1.0\n\nLimit: 20");
+            var support = h.read("support","read-support"); var counter = h.read("counter","read-counter");
+            var scope = (ObjectNode)spec("The request limit is 10.","1.0").applicability().deepCopy();
+            scope.set("conditions",JSON.valueToTree(List.of(variation.equals("free-form") ? "general usage" : "mode=general")));
+            var specs = List.of(new EvidenceDtos.ClaimSpec("The request limit is 10.","factual",scope));
+            var root = h.prepare(specs,List.of(support,counter),0,null,"root"); h.complete(root,propose(root.request()),"complete-root");
+            h.bodies.put("counter","Version: " + (variation.equals("version") ? "2.0" : "1.0") + "\n\nDocument conditions: "
+                    + (variation.equals("free-form") ? "legacy usage" : "mode=legacy") + "\n\nLimit: " + (variation.equals("quote") ? "30" : "20"));
+            var candidate = h.read("counter","expanded");
+            var next = h.prepare(specs,List.of(candidate),1,root.check_id(),"next");
+            assertThat(statuses(h.complete(next,propose(next.request()),"complete-next"))).containsExactly("contested");
+        }
+    }
+
+    @Test void mixedFullReportCannotHideRefutedContestedInsufficientOrUnfinishedGoalsUsingSelectors() {
+        var h = new Harness(); h.source("v1", "web", "Version: 1.0\n\nLimit: 10"); h.source("v2-a", "web", "Version: 2.0\n\nLimit: 10"); h.source("v2-b", "web", "Version: 2.0\n\nLimit: 20");
+        var evidence = List.of(h.read("v1","read-v1"),h.read("v2-a","read-v2-a"),h.read("v2-b","read-v2-b"));
+        var specs = List.of(spec("The request limit is 10.", "1.0"),spec("The request limit is 99.", "1.0"),spec("The request limit is 10.", "2.0"),spec("The request limit is 1.", "3.0"));
+        var check = h.prepare(specs,evidence,0,null,"root"); var result = h.complete(check,propose(check.request()),"complete");
+        assertThat(statuses(result)).containsExactly("supported","refuted","contested","insufficient");
+        h.goals = List.of(new EvidenceAuthority.ReportGoal("task-main","Verify all versioned limits","running"), new EvidenceAuthority.ReportGoal("pending-goal","Unexamined latency question","pending"));
+        var packet = h.service.packet("test-service-token",new EvidenceDtos.PacketRequest(h.ids("packet"),List.of(check.check_id())));
+        var report = h.service.publish("test-service-token",new EvidenceDtos.PublishRequest(h.ids("publish"),packet.path("packet_id").asText(),List.of(result.records().get(0).path("claim_id").asText())));
+        assertThat(report.path("claims")).hasSize(4); assertThat(report.path("report_status").asText()).isEqualTo("partial");
+        assertThat(report.path("answer").asText()).contains("已支持","被反驳的主张","仍有争议","证据不足","未完成目标","Unexamined latency question","适用版本：3.0");
+        assertThat(report.path("terminal_status").asText()).isEqualTo("INSUFFICIENT_EVIDENCE");
+        assertThat(report.path("citations")).hasSize(3); assertThat(report.path("answer_sha256").asText()).isEqualTo(sha(report.path("answer").asText()));
+    }
+
+    @Test void renamedNewInvestigationAndOlderPacketCannotHidePreviousUnresolvedQuestion() {
+        var h = new Harness(); var first = h.prepare(List.of(spec("The request limit is 10.","1.0")),List.of(),0,null,"first"); h.complete(first,propose(first.request()),"complete-first");
+        h.source("answer", "web", "Version: 1.0\n\nLimit: 20"); var source = h.read("answer","read");
+        var second = h.prepare(List.of(spec("The request limit is 20.","1.0")),List.of(source),0,null,"second"); var answer = h.complete(second,propose(second.request()),"complete-second");
+        var packet = h.service.packet("test-service-token",new EvidenceDtos.PacketRequest(h.ids("packet"),List.of(second.check_id())));
+        var report = h.service.publish("test-service-token",new EvidenceDtos.PublishRequest(h.ids("publish"),packet.path("packet_id").asText(),List.of(answer.records().get(0).path("claim_id").asText())));
+        assertThat(report.path("claims")).hasSize(2); assertThat(report.path("report_status").asText()).isEqualTo("partial");
+        assertThat(report.path("answer").asText()).contains("The request limit is 10.","The request limit is 20.");
+    }
+
+    @Test void originalCompletedReceiptSurvivesLaterHitAndDuplicateReadUsesOneCitationNumber() {
+        var h = new Harness(); h.source("same", "web", "Version: 1.0\n\nLimit: 10"); var first = h.read("same","first-read"); var c = h.candidates.get("same");
+        var nextCandidate = new EvidenceAuthority.Candidate(c.sourceId(),c.kind(),c.url(),c.datasetId(),c.documentId(),c.chunkId(),c.title(),"later-search");
+        db.update("INSERT INTO agent_workflow_tool_receipt(run_id,call_id,task_id,tool_name,request_fingerprint,status,safe_result,completed_at) VALUES (?,'later-search','task-main','web_search','f','COMPLETED','{}',now())",h.run);
+        h.candidates.put("same",nextCandidate); h.originalCandidates.put("same:later-search",nextCandidate); var second = h.read("same","second-read");
+        var check = h.prepare(List.of(spec("The request limit is 10.","1.0")),List.of(first,second),0,null,"root"); h.complete(check,propose(check.request()),"complete");
+        var report = h.service.report("test-service-token",new EvidenceDtos.ReportRequest(h.ids("report")));
+        assertThat(report.path("report_status").asText()).isEqualTo("complete"); assertThat(report.path("citations")).hasSize(1);
+        assertThat(report.path("citations").get(0).path("occurrences")).hasSize(2);
+        assertThat(report.path("answer").asText()).contains("[来源1]").doesNotContain("[来源2]");
+        assertThatThrownBy(() -> h.originalCandidate(new EvidenceAuthority.Grant(h.principal,h.project,"foreign-run",h.task,"call",h.claim),"same",c.parentReceiptId())).hasMessageContaining("EVIDENCE_ACCESS_DENIED");
+        var outsider = new Harness(); assertThatThrownBy(() -> outsider.service.prepare("test-service-token",new EvidenceDtos.PrepareRequest(outsider.ids("cross-run"),List.of(spec("The request limit is 10.","1.0")),List.of(first.path("evidence_id").asText()),0,null))).hasMessageContaining("EVIDENCE_ACCESS_DENIED");
+    }
+
+    @Test void gapOnlyReportIsDeterministicWithoutFabricatingEvidenceOrAssessments() {
+        var h = new Harness(); h.goals = List.of(new EvidenceAuthority.ReportGoal("task-main","Synthetic limit question","pending"));
+        var report = h.service.report("test-service-token",new EvidenceDtos.ReportRequest(h.ids("first")));
+        var repeat = h.service.report("test-service-token",new EvidenceDtos.ReportRequest(h.ids("second")));
+        assertThat(report).isEqualTo(repeat); assertThat(report.path("terminal_status").asText()).isEqualTo("INSUFFICIENT_EVIDENCE");
+        assertThat(report.path("citations")).isEmpty(); assertThat(report.path("claims")).isEmpty(); assertThat(report.path("unfinished_goals")).hasSize(1);
+        assertThat(db.queryForObject("SELECT count(*) FROM agent_evidence_record WHERE run_id=?",Integer.class,h.run)).isZero();
+    }
+    @Test void supportedClaimDoesNotCompleteNativeBlockedOrPendingGoal() {
+        var h = new Harness(); h.source("original","web","Version: 1.0\n\nLimit: 10"); var original = h.read("original","read");
+        var check = h.prepare(List.of(spec("The request limit is 10.","1.0")),List.of(original),0,null,"root"); h.complete(check,propose(check.request()),"complete");
+        for (String nativeStatus : List.of("pending","blocked","running")) {
+            h.goals = List.of(new EvidenceAuthority.ReportGoal("task-main","Additional acceptance criterion unfinished",nativeStatus));
+            var report = h.service.report("test-service-token",new EvidenceDtos.ReportRequest(h.ids("report-"+nativeStatus)));
+            assertThat(report.path("report_status").asText()).isEqualTo("partial");
+            assertThat(report.path("answer").asText()).contains("已支持","Additional acceptance criterion unfinished");
+        }
+    }
+    @Test void capacityFailureAfterSupportedCheckIsDurableAndCannotBeHiddenBySubsetOrNewCall() {
+        var h = new Harness(); var originals = new ArrayList<JsonNode>();
+        for (int n=0; n<5; n++) { h.source("source-"+n,"web","Version: 1.0\n\nLimit: " + (n==4 ? "20" : "10")); originals.add(h.read("source-"+n,"read-"+n)); }
+        var specs = List.of(spec("The request limit is 10.","1.0")); var root = h.prepare(specs,originals.subList(0,4),0,null,"root"); h.complete(root,propose(root.request()),"complete");
+        assertThatThrownBy(() -> h.prepare(specs,List.of(originals.get(4)),1,root.check_id(),"new-material")).hasMessageContaining("EVIDENCE_CAPACITY_EXCEEDED");
+        assertThatThrownBy(() -> h.prepare(specs,List.of(originals.get(0)),1,root.check_id(),"drop-new-material")).hasMessageContaining("EVIDENCE_CAPACITY_EXCEEDED");
+        var restored = new EvidenceService(h,store,(g,c) -> { throw new AssertionError("No provider read needed for web report"); });
+        var report = restored.report("test-service-token",new EvidenceDtos.ReportRequest(h.ids("report")));
+        assertThat(report.path("report_status").asText()).isEqualTo("partial");
+        assertThat(report.path("answer").asText()).contains("已支持","EVIDENCE_CAPACITY_EXCEEDED");
+        assertThat(report.path("terminal_status").asText()).isEqualTo("INSUFFICIENT_EVIDENCE");
+        assertThat(db.queryForObject("SELECT count(*) FROM agent_evidence_blocked_attempt WHERE run_id=?",Integer.class,h.run)).isEqualTo(2);
+        assertThat(db.queryForObject("SELECT has_table_privilege('deepresearch_workflow','agent_evidence_blocked_attempt','INSERT')",Boolean.class)).isFalse();
+        assertThatThrownBy(() -> db.update("UPDATE agent_evidence_blocked_attempt SET payload='{}'::jsonb WHERE run_id=?",h.run)).isInstanceOf(org.springframework.dao.DataAccessException.class);
+    }
+    @Test void oversizedOriginalRequestPersistsGapWithoutCreatingFakeCheckOrDecision() {
+        var h = new Harness(); var originals = new ArrayList<JsonNode>();
+        for (int n=0; n<2; n++) { h.source("large-"+n,"web","Version: 1.0\n\n" + "🧪".repeat(8500) + "\n\nLimit: 10"); originals.add(h.read("large-"+n,"read-"+n)); }
+        var specs = List.of(spec("The request limit is 10.","1.0"));
+        assertThatThrownBy(() -> h.prepare(specs,originals,0,null,"too-large")).hasMessageContaining("CHECK_REQUEST_TOO_LARGE");
+        assertThat(db.queryForObject("SELECT count(*) FROM agent_evidence_check WHERE run_id=?",Integer.class,h.run)).isZero();
+        var report = h.service.report("test-service-token",new EvidenceDtos.ReportRequest(h.ids("report")));
+        assertThat(report.path("report_status").asText()).isEqualTo("insufficient"); assertThat(report.path("claims")).isEmpty();
+        assertThat(report.path("answer").asText()).contains("The request limit is 10.","CHECK_REQUEST_TOO_LARGE");
+    }
+
+    @Test void unfinishedSupplementCannotPublishOldCompleteStateAsComplete() {
+        var h = new Harness(); h.source("original","web","Version: 1.0\n\nLimit: 10"); var source = h.read("original","read");
+        var specs = List.of(spec("The request limit is 10.","1.0")); var root = h.prepare(specs,List.of(source),0,null,"root"); h.complete(root,propose(root.request()),"complete-root");
+        h.prepare(specs,List.of(source),1,root.check_id(),"pending-supplement");
+        var report = h.service.report("test-service-token",new EvidenceDtos.ReportRequest(h.ids("report")));
+        assertThat(report.path("report_status").asText()).isEqualTo("partial"); assertThat(report.path("unfinished_goals")).isNotEmpty();
+        assertThat(report.path("answer").asText()).contains("已支持","Check has no completed");
+    }
 
     @Test void allFourCasesGoThroughRealReadParseCheckRecordAndPacketPaths() throws Exception {
         var scenarios = JSON.readTree(Files.readString(Path.of("testdata/agent-round1/evidence/scenarios.json")));
@@ -236,9 +464,9 @@ class EvidenceServiceIT {
         assertThatThrownBy(()->h.service.publish("test-service-token",publication)).hasMessageContaining("EVIDENCE_ACCESS_DENIED");
         verify(h.ragflow,times(1)).chunk(c.datasetId(),c.documentId(),c.chunkId());
         assertThat(h.publicationSettlements).isZero(); h.allowPublicationRead=true;
-        h.candidates.put("managed",new EvidenceAuthority.Candidate(c.sourceId(),c.kind(),c.url(),c.datasetId(),"substituted-doc",c.chunkId(),c.title(),c.parentReceiptId()));
+        h.originalCandidates.put("managed:"+c.parentReceiptId(),new EvidenceAuthority.Candidate(c.sourceId(),c.kind(),c.url(),c.datasetId(),"substituted-doc",c.chunkId(),c.title(),c.parentReceiptId()));
         assertThatThrownBy(()->h.service.publish("test-service-token",publication)).hasMessageContaining("PUBLICATION_SOURCE_IDENTITY_CHANGED");
-        verify(h.ragflow,times(1)).chunk(c.datasetId(),c.documentId(),c.chunkId()); h.candidates.put("managed",c);
+        verify(h.ragflow,times(1)).chunk(c.datasetId(),c.documentId(),c.chunkId()); h.originalCandidates.put("managed:"+c.parentReceiptId(),c);
         var published=h.service.publish("test-service-token",publication);
         assertThat(published.path("citations")).hasSize(1); assertThat(published.path("validation_receipts")).hasSize(1);
         assertThat(h.publicationSettlements).isEqualTo(1);

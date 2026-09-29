@@ -1,0 +1,12 @@
+{
+  "fixture_id": "ordinary-wrong-material-conflict",
+  "fixture_origin": "synthetic ordinary sources; no experiment port",
+  "claim": {"text": "The request limit is 99.", "version": "1.0"},
+  "sources": [
+    {"id": "ordinary-guide", "kind": "web", "text": "Version: 1.0\n\nLimit: 99"},
+    {"id": "ordinary-counter", "kind": "web", "text": "Version: 1.0\n\nLimit: 10"}
+  ],
+  "expected_status": "contested",
+  "expected_terminal_status": "INSUFFICIENT_EVIDENCE",
+  "semantic_truth_guaranteed": false
+}
