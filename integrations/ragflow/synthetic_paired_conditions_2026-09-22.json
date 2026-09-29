@@ -1,0 +1,70 @@
+{
+  "legacyConfig": {
+    "provider": "legacy",
+    "baseUrl": "http://127.0.0.1:8082",
+    "embeddingModel": "embedding-2",
+    "reranker": "BAAI/bge-reranker-base",
+    "rerankerUrl": "http://127.0.0.1:19002/rerank",
+    "retrievalTopK": 5
+  },
+  "ragflowConfig": {
+    "provider": "ragflow",
+    "baseUrl": "http://127.0.0.1:8080",
+    "apiUrl": "http://127.0.0.1:9380",
+    "datasetId": "49375886b67411f1811e952527b08ce2",
+    "chunkTokenNum": 128,
+    "similarityThreshold": 0.22,
+    "retrievalTopK": 5
+  },
+  "host": {
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "dockerMemoryGiB": 7.75
+  },
+  "corpus": {
+    "files": [
+      {
+        "path": "docs/kb-project/README.md",
+        "sha256": "9bf9b4e98771e5ab6f2df7c60e331e57c382ce9b40634b68ad8dbdd61a7dbebd"
+      },
+      {
+        "path": "docs/kb-project/01-architecture-and-trust-boundaries.md",
+        "sha256": "d281884eff6e581cbd25df1708c2c3ae963901ab0e6b1b17b5e6bc5e49bae92f"
+      },
+      {
+        "path": "docs/kb-project/02-checkpoint-and-crash-recovery.md",
+        "sha256": "7874c363d5be14e1af51964f87cd5e9ee5b2c6bdec0ed1e817bd5cd151800b95"
+      },
+      {
+        "path": "docs/kb-project/03-claim-lease-and-fencing.md",
+        "sha256": "fb7fc01c2c23fd709d1d1100c1bb6cfdd7e2bcd58cab0fd38d91c3f1e1d8fa64"
+      },
+      {
+        "path": "docs/kb-project/04-sse-durable-replay.md",
+        "sha256": "64dc2cd26bf13f0c84eacf26b071f213ac423ef634e4aa0bd49c0926b7fe6090"
+      },
+      {
+        "path": "docs/kb-project/05-tool-receipt-and-unknown-result.md",
+        "sha256": "6b0e232d31b4d0eaf81e6a721a8632d63d921e4c76d85f4c0876dca82b72e04b"
+      },
+      {
+        "path": "docs/kb-project/06-verification-boundaries.md",
+        "sha256": "12df625ce79355fb450e539d1ce74789ec61e6c5193f726d166e7b89fd2c5140"
+      },
+      {
+        "path": "docs/kb-project/07-agent-evaluation-fact-cards.md",
+        "sha256": "ac7601e097a249e790f6d55baeb0a2cf6604e4f74a6b534abe19c9e026c6ebaf"
+      }
+    ],
+    "documentCount": 8,
+    "legacyChunkCount": 57,
+    "ragflowChunkCount": 129,
+    "databaseIsolation": "separate PostgreSQL volumes; shared Elasticsearch contains legacy index only",
+    "syntheticFixtureSha256": "3f142361f5f03c6bd1101643cb45d544dca090eda10632706c6383a368288202",
+    "syntheticFixtureName": "synthetic_knowledge_pair_20260922.md",
+    "note": "Both routes contain the same eight project files; this distinct-name synthetic fixture is added through Java for this run and removed afterward."
+  },
+  "testWindow": "2026-09-22T11:24:19.770745+00:00",
+  "projectDocumentIds": [],
+  "goldLabelsReviewed": false
+}

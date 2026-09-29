@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-28",
+  "checkoutSha": "4d3ebff54b4b98c01349904675c51b94e862c737",
+  "fullQualityTestedSha": "fa021dc7c36b0b87514bdc01f2383bc9f783a24a",
+  "dslSha256": "48923fbfed9d2a6bf8d7c8d0ba3f2a4690fea959c04b8f21cf4d9d74f5273c46",
+  "scope": {
+    "newIndependentCheckout": true,
+    "newPostgresVolume": true,
+    "publicTablesBeforeJavaStartup": 0,
+    "newRagflowDataset": true,
+    "reusedExternalRagflowAndDify": true,
+    "reusedPublishedDifyApp": true,
+    "firstCompleteExternalStackInstallation": false,
+    "linuxLiveTested": false,
+    "model": "deepseek-v4-flash",
+    "providerPlugin": "langgenius/deepseek:0.0.24",
+    "postgresql": "16.14",
+    "hostClass": "macOS Docker Desktop arm64"
+  },
+  "datasetFingerprint": "sha256:0579d1c20c70f8caaddfea81c87f4d94775bc5f452fd987e2b66dea6519d1b80",
+  "beforeImport": {
+    "javaDocuments": 0,
+    "ragflowDocuments": 0
+  },
+  "database": {
+    "migrations": 15,
+    "latestMigration": "15",
+    "documents": 8,
+    "doneMappings": 8,
+    "legacyVectors": 0
+  },
+  "loopbackBindings": true,
+  "appImage": "sha256:4435561616e2566dc186bbaa3a77743b9d712cc8f9e61cf4341c98708e56ebd6",
+  "databaseImage": "sha256:131dcf7ff6a900545df8e7e092c270aa8c6db2f2c818e408cb45ec21316b74e6",
+  "canonicalFiles": [
+    {
+      "filename": "01-architecture-and-trust-boundaries.md",
+      "sha256": "d281884eff6e581cbd25df1708c2c3ae963901ab0e6b1b17b5e6bc5e49bae92f"
+    },
+    {
+      "filename": "02-checkpoint-and-crash-recovery.md",
+      "sha256": "7874c363d5be14e1af51964f87cd5e9ee5b2c6bdec0ed1e817bd5cd151800b95"
+    },
+    {
+      "filename": "03-claim-lease-and-fencing.md",
+      "sha256": "fb7fc01c2c23fd709d1d1100c1bb6cfdd7e2bcd58cab0fd38d91c3f1e1d8fa64"
+    },
+    {
+      "filename": "04-sse-durable-replay.md",
+      "sha256": "64dc2cd26bf13f0c84eacf26b071f213ac423ef634e4aa0bd49c0926b7fe6090"
+    },
+    {
+      "filename": "05-tool-receipt-and-unknown-result.md",
+      "sha256": "5de1bc0c032dddeb5db71c4f1d67f08e6db6cfdd42750b188ce50dc86904e3d1"
+    },
+    {
+      "filename": "06-verification-boundaries.md",
+      "sha256": "12df625ce79355fb450e539d1ce74789ec61e6c5193f726d166e7b89fd2c5140"
+    },
+    {
+      "filename": "07-agent-evaluation-fact-cards.md",
+      "sha256": "ac7601e097a249e790f6d55baeb0a2cf6604e4f74a6b534abe19c9e026c6ebaf"
+    },
+    {
+      "filename": "README.md",
+      "sha256": "15dc37ee805f7c541c33366b06be97443168abdc254b54c36f3ed45e9d5ce3cc"
+    }
+  ],
+  "scenes": [
+    {
+      "scene": "cited-answer",
+      "runFingerprint": "sha256:3f54428e1c295a4edf3655cea127d1ed009f0802bf89b1bacf5049e39db2f244",
+      "status": "SUCCEEDED",
+      "citationContract": "INDEXED_V1",
+      "answer": "断线重连时，客户端应携带 `Last-Event-ID` 请求重放：SSE ID 采用 `<runId>:<eventId>` 格式，客户端重连时发送 `Last-Event-ID`，服务端验证游标后使用 `event_id > cursor` 并按 `event_id` 升序重放后续事件 [来源1]。服务端还要求前缀属于当前 run，错误 run 返回冲突，负数或非法数字返回参数错误 [来源1]。查询按 `event_id ASC` 排序，每次最多读取 200 条，因此断线后能从已确认游标继续，而不依赖 Java 进程内缓存 [来源2]。演示页断线后使用 fetch streaming 携带 `Last-Event-ID`，按指数退避重连，并用事件 ID 的 Map 去重、只允许游标前进 [来源3]。持久事件、Last-Event-ID、15 秒 heartbeat、前端去重和重连代码已存在，但缺少浏览器自动化在任意事件断线、刷新、服务重启后验证无缺失和无重复展示的测试 [来源4]。",
+      "citationCount": 4,
+      "sourceChecks": [
+        {
+          "source": "kb:ragflow:sha256-49b466f78dfa995a",
+          "exists": true,
+          "evidencePreview": "## 2. Last-Event-ID 契约\n**事实 S3｜状态：已实现。** SSE ID 采用 `<runId>:<eventId>`。客户端重连时发送 `Last-Event-ID`；服务端验证游标后使用 `event_id > cursor` 并按 `event_id` 升序重放后续事件。服务端还要求前缀属于当前 run，错误 run 返回冲突，负数或非法数字返回参数错误。"
+        },
+        {
+          "source": "kb:ragflow:sha256-38027be654a77d34",
+          "exists": true,
+          "evidencePreview": "**事实 S2｜状态：已实现。** SSE 查询使用 `event_id > cursor`、按 `event_id ASC` 排序，每次最多读取 200 条；也就是按 `event_id` 升序重放，因此断线后能从已确认游标继续，而不是依赖 Java 进程内缓存。\n- 代码证据：`WorkflowRepository.eventsAfter`、`WorkflowController.stream`。"
+        },
+        {
+          "source": "kb:ragflow:sha256-d51b2ed43992f2e7",
+          "exists": true,
+          "evidencePreview": "**事实 S6｜状态：已实现于演示页。** `demo.html` 用事件 ID 的 Map 去重，只允许游标前进；断线后使用 fetch streaming 携带 `Last-Event-ID`，按指数退避重连。\n- 代码证据：`demo.html` 的 `eventKey`、`advanceEventCursor`、`appendEvent`、`consumeEventStream`、`startEventLoop`。"
+        },
+        {
+          "source": "kb:ragflow:sha256-51312a11a0c99d0c",
+          "exists": true,
+          "evidencePreview": "**事实 V2｜状态：代码已实现，浏览器专项验收缺失。** 持久事件、Last-Event-ID、15 秒 heartbeat、前端去重和重连代码已存在；但缺少浏览器自动化在任意事件断线、刷新、服务重启后验证无缺失和无重复展示的测试。\n- 代码证据：`WorkflowController`、`WorkflowRepository.eventsAfter`、`demo.html` 的 SSE 游标与去重函数。"
+        }
+      ],
+      "difyStageEvents": 34,
+      "persistedEventCount": 36,
+      "manualFactsCorrect": true,
+      "manualCitationSupport": true,
+      "pureNoEvidenceContractPassed": null
+    },
+    {
+      "scene": "no-evidence",
+      "runFingerprint": "sha256:1b6075316821cf5fb411e269b4422403e7f1074cabe3a86986eed2c6fff41587",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "citationContract": "NONE",
+      "answer": "",
+      "citationCount": 0,
+      "sourceChecks": [],
+      "difyStageEvents": 28,
+      "persistedEventCount": 30,
+      "manualFactsCorrect": true,
+      "manualCitationSupport": null,
+      "pureNoEvidenceContractPassed": true
+    },
+    {
+      "scene": "sse-reconnect",
+      "runFingerprint": "sha256:800d33fed15517cd4d00fb38c337e834e7754bd95c1814bfd9d99d3439760404",
+      "status": "SUCCEEDED",
+      "citationContract": "INDEXED_V1",
+      "answer": "断线重连时，客户端应在重连请求中携带 `Last-Event-ID`，其值采用 `<runId>:<eventId>` 格式 [来源1]。服务端收到后会验证游标：要求前缀属于当前 run，错误 run 返回冲突，负数或非法数字返回参数错误 [来源1]。验证通过后，服务端按 `event_id > cursor` 且 `event_id` 升序重放后续事件，每次最多读取 200 条，因此断线后可从已确认游标继续，而不依赖 Java 进程内缓存 [来源1][来源2]。演示页中，断线后使用 fetch streaming 携带 `Last-Event-ID`，并按指数退避重连 [来源3]。此外，持久事件、Last-Event-ID、15 秒 heartbeat、前端去重和重连代码已存在，但缺少浏览器自动化在任意事件断线、刷新、服务重启后验证无缺失和无重复展示的测试 [来源4]。",
+      "citationCount": 4,
+      "sourceChecks": [
+        {
+          "source": "kb:ragflow:sha256-49b466f78dfa995a",
+          "exists": true,
+          "evidencePreview": "## 2. Last-Event-ID 契约\n**事实 S3｜状态：已实现。** SSE ID 采用 `<runId>:<eventId>`。客户端重连时发送 `Last-Event-ID`；服务端验证游标后使用 `event_id > cursor` 并按 `event_id` 升序重放后续事件。服务端还要求前缀属于当前 run，错误 run 返回冲突，负数或非法数字返回参数错误。"
+        },
+        {
+          "source": "kb:ragflow:sha256-38027be654a77d34",
+          "exists": true,
+          "evidencePreview": "**事实 S2｜状态：已实现。** SSE 查询使用 `event_id > cursor`、按 `event_id ASC` 排序，每次最多读取 200 条；也就是按 `event_id` 升序重放，因此断线后能从已确认游标继续，而不是依赖 Java 进程内缓存。\n- 代码证据：`WorkflowRepository.eventsAfter`、`WorkflowController.stream`。"
+        },
+        {
+          "source": "kb:ragflow:sha256-d51b2ed43992f2e7",
+          "exists": true,
+          "evidencePreview": "**事实 S6｜状态：已实现于演示页。** `demo.html` 用事件 ID 的 Map 去重，只允许游标前进；断线后使用 fetch streaming 携带 `Last-Event-ID`，按指数退避重连。\n- 代码证据：`demo.html` 的 `eventKey`、`advanceEventCursor`、`appendEvent`、`consumeEventStream`、`startEventLoop`。"
+        },
+        {
+          "source": "kb:ragflow:sha256-51312a11a0c99d0c",
+          "exists": true,
+          "evidencePreview": "**事实 V2｜状态：代码已实现，浏览器专项验收缺失。** 持久事件、Last-Event-ID、15 秒 heartbeat、前端去重和重连代码已存在；但缺少浏览器自动化在任意事件断线、刷新、服务重启后验证无缺失和无重复展示的测试。\n- 代码证据：`WorkflowController`、`WorkflowRepository.eventsAfter`、`demo.html` 的 SSE 游标与去重函数。"
+        }
+      ],
+      "difyStageEvents": 34,
+      "persistedEventCount": 36,
+      "manualFactsCorrect": true,
+      "manualCitationSupport": true,
+      "pureNoEvidenceContractPassed": null
+    }
+  ],
+  "sse": {
+    "statusAtDisconnect": "DIFY_DISPATCHING",
+    "renderedEventsAtDisconnect": 5,
+    "cursorEventNumber": 71,
+    "sameRunAtDisconnect": true,
+    "createRequestsInThisScene": 1,
+    "createRequestsAfterDisconnect": 0,
+    "eventStreamsForSameRun": 2,
+    "resumedStreams": 1,
+    "resumeHeaderMatchesOldCursor": true,
+    "resumedEventCount": 31,
+    "allResumedEventIdsAfterCursor": true,
+    "observedStreamIdsUnique": true,
+    "renderedEvents": 36,
+    "persistedEvents": 36,
+    "renderedTypesAndPayloadsMatchPersistedTrace": true,
+    "finalStatus": "SUCCEEDED"
+  },
+  "manualReviewMethod": "One operator read each returned chunk and compared all attached claims; not blind independent review."
+}

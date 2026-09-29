@@ -83,15 +83,13 @@ class LexicalAnchorGuard {
         if (contains(direct, anchorKey)) {
             return List.copyOf(direct);
         }
-        HybridChunk anchored = ranked.stream()
+        Optional<HybridChunk> anchored = ranked.stream()
                 .filter(chunk -> anchorKey.equals(HybridDocumentSupport.stableKey(chunk.document())))
-                .findFirst()
-                .orElseGet(() -> {
-                    HybridChunk chunk = new HybridChunk(anchor.document());
-                    chunk.add(HybridChunk.Route.KEYWORD, anchor.keywordRank(), 0.0);
-                    return chunk;
-                });
-        direct.set(direct.size() - 1, anchored);
+                .findFirst();
+        // A rejected candidate must not reappear as citable evidence just because
+        // it contains a literal identifier from the question.
+        if (anchored.isEmpty()) return List.copyOf(direct);
+        direct.set(direct.size() - 1, anchored.orElseThrow());
         log.debug("lexical_anchor_guard action=final_topk_promoted kind={} keyword_rank={} chunk_key={}",
                 anchor.identifier().kind(), anchor.keywordRank(), HybridDocumentSupport.chunkKey(anchor.document()));
         return List.copyOf(direct);

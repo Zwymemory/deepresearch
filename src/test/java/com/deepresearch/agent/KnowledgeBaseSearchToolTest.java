@@ -1,6 +1,7 @@
 package com.deepresearch.agent;
 
 import com.deepresearch.service.HybridRagService;
+import com.deepresearch.service.KnowledgeRetrievalGateway;
 import com.deepresearch.web.dto.HybridDebugResponse;
 import org.junit.jupiter.api.Test;
 
@@ -9,11 +10,13 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class KnowledgeBaseSearchToolTest {
 
     private final HybridRagService ragService = mock(HybridRagService.class);
-    private final KnowledgeBaseSearchTool tool = new KnowledgeBaseSearchTool(ragService, 3, 20, 10);
+    private final KnowledgeRetrievalGateway gateway = mock(KnowledgeRetrievalGateway.class);
+    private final KnowledgeBaseSearchTool tool = new KnowledgeBaseSearchTool(ragService, gateway, 3, 20, 10);
 
     @Test
     void formatsEvidenceTruncatesPreviewAndRedactsSecrets() {

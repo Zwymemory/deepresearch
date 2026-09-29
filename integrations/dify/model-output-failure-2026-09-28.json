@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "javaRun": {
+    "runId": "wf-37517854-e59b-4ee4-88d0-f364a9968c1c",
+    "status": "FAILED",
+    "errorCode": "DIFY_MODEL_OUTPUT_INVALID",
+    "question": "根据 Python 官方公开资料，asyncio 用于哪类并发编程、适合哪类任务？",
+    "createdAt": "2026-09-28T07:43:08.547969+00:00",
+    "updatedAt": "2026-09-28T07:43:43.490153+00:00"
+  },
+  "toolReceipts": [
+    {
+      "callId": "wf-37517854-e59b-4ee4-88d0-f364a9968c1c:initial:1",
+      "tool": "web_search",
+      "status": "COMPLETED",
+      "code": "OK",
+      "evidenceCount": 5
+    },
+    {
+      "callId": "wf-37517854-e59b-4ee4-88d0-f364a9968c1c:initial:2",
+      "tool": "web_search",
+      "status": "COMPLETED",
+      "code": "OK",
+      "evidenceCount": 5
+    }
+  ],
+  "difyWorkflowRunId": "c71a338f-0600-445a-91db-2fbf7c7637c5",
+  "llmNodes": [
+    {
+      "nodeId": "planner",
+      "status": "succeeded",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 234,
+        "completion_tokens": 625,
+        "total_tokens": 859
+      },
+      "elapsedSeconds": 3.500524,
+      "reasoningWrapperPresent": true,
+      "finalTextCharacters": 287,
+      "rawOutputSha256": "f8011e4e20903cf677770223e39fa91e1a1058f1f2394e4a84af448c83c15994"
+    },
+    {
+      "nodeId": "reviewer",
+      "status": "succeeded",
+      "finishReason": "length",
+      "usage": {
+        "prompt_tokens": 4589,
+        "completion_tokens": 4096,
+        "total_tokens": 8685
+      },
+      "elapsedSeconds": 19.861669,
+      "reasoningWrapperPresent": true,
+      "finalTextCharacters": 0,
+      "rawOutputSha256": "afa593ac8832f037eb2187c571be540e91fa9a9ac1d1c1358bd53c83930989f6"
+    }
+  ],
+  "diagnosis": "Reviewer finish_reason=length at 4096 completion tokens, closed reasoning wrapper with zero final JSON; both web searches completed successfully. Historical failure is retained; no reasoning text or credentials exported."
+}

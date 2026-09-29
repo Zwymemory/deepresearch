@@ -1,0 +1,16 @@
+{
+  "sourceId": "来源1",
+  "citation": "[来源1]",
+  "chunkKey": "ragflow:dataset-1:document-1:chunk-1",
+  "datasetId": "dataset-1",
+  "docId": "document-1",
+  "chunkId": "chunk-1",
+  "title": "研发规范",
+  "content": "[UNTRUSTED_DATA_BEGIN]示例证据内容[UNTRUSTED_DATA_END]",
+  "pageNumber": null,
+  "sectionPath": null,
+  "score": 0.83,
+  "route": "ragflow",
+  "untrusted": true,
+  "citationId": "kb:ragflow:dataset-1:document-1:chunk-1"
+}

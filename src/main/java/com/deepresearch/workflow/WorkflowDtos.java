@@ -64,7 +64,8 @@ public final class WorkflowDtos {
             String errorCode,
             String errorMessage,
             OffsetDateTime createdAt,
-            OffsetDateTime updatedAt
+            OffsetDateTime updatedAt,
+            String remoteStopState
     ) {
     }
 

@@ -1,0 +1,85 @@
+{
+  "runs": [
+    {
+      "citations": 3,
+      "metadataMatched": true,
+      "refreshMatched": true,
+      "bodyMarkerClicked": true,
+      "sources": [
+        {
+          "title": "asyncio — Asynchronous I/O",
+          "href": "https://docs.python.org/3/library/asyncio.html",
+          "number": "[来源1]",
+          "sourceIdSha256": "91c5f7bcc813c9c388662830e706fc195774cb8390024ef3283a1ada290fbbb8"
+        },
+        {
+          "title": "Python's asyncio: A Hands-On Walkthrough – Real Python",
+          "href": "https://realpython.com/async-io-python",
+          "number": "[来源2]",
+          "sourceIdSha256": "e9a4124773de73dd562666f98aeafa021a2e3ca482db308542b48ec4318afca2"
+        },
+        {
+          "title": "Understanding Asyncio in Python | Built In",
+          "href": "https://builtin.com/data-science/asyncio",
+          "number": "[来源3]",
+          "sourceIdSha256": "6cf974004a50204ef40960d4d6977c0fefe87bd3d3e3d09ddd885389c47bba2b"
+        }
+      ],
+      "runIdSha256": "3cbff58f857a4825fc5810e9e8febf78d341ada7ed21b61627035abd6927a660"
+    },
+    {
+      "citations": 2,
+      "metadataMatched": true,
+      "refreshMatched": true,
+      "bodyMarkerClicked": true,
+      "sources": [
+        {
+          "title": "asyncio — Asynchronous I/O",
+          "href": "https://docs.python.org/3/library/asyncio.html",
+          "number": "[来源1]",
+          "sourceIdSha256": "91c5f7bcc813c9c388662830e706fc195774cb8390024ef3283a1ada290fbbb8"
+        },
+        {
+          "title": "asyncio — Asynchronous I/O",
+          "href": "https://docs.python.org/3/library/asyncio.html",
+          "number": "[来源2]",
+          "sourceIdSha256": "9feb726ccc3651199a1ebed5bfaa9ef146fda2218dd81c7594148540b04fd72c"
+        }
+      ],
+      "runIdSha256": "070d94be4fe2c2b39827dafd832b27bff220d459930e4f7bf809488cd19c1bb6"
+    },
+    {
+      "citations": 2,
+      "metadataMatched": true,
+      "refreshMatched": true,
+      "bodyMarkerClicked": true,
+      "sources": [
+        {
+          "title": "asyncio --- 异步I/O — Python 3.14.7 文档",
+          "href": "https://docs.python.org/zh-cn/3/library/asyncio.html",
+          "number": "[来源1]",
+          "sourceIdSha256": "1e5cbecc4c7249f6c27a97158cc503b68a91f25165a2fb4a06129c15aa6e2142"
+        },
+        {
+          "title": "asyncio — Asynchronous I/O",
+          "href": "https://docs.python.org/3/library/asyncio.html",
+          "number": "[来源2]",
+          "sourceIdSha256": "9feb726ccc3651199a1ebed5bfaa9ef146fda2218dd81c7594148540b04fd72c"
+        }
+      ],
+      "runIdSha256": "1602c7e92aa1e0487c4a4dc4e2831d5995a3adcc2b19a86018004722b6326cba"
+    }
+  ],
+  "workflowPosts": 0,
+  "workflowReads": 9,
+  "checkedAt": "2026-09-28T08:12:52.582644+00:00",
+  "htmlSha256": "a8176f0879c87731f7cf452a5cf87c7650fb62f16b6074750b20a1ceaf4d28a6",
+  "backendLiveTestedSha": "182962f9d9be7e30b1188da39b7250c2f212a05e",
+  "clientHtmlOverriddenOnlyInIsolatedBrowser": true,
+  "ordinaryLinkClick": {
+    "url": "https://docs.python.org/3/library/asyncio.html",
+    "newTab": true,
+    "loaded": true,
+    "openerIsNull": true
+  }
+}

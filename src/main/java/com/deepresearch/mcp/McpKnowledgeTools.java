@@ -140,6 +140,10 @@ public class McpKnowledgeTools {
         if (!result.isEmpty()) {
             return List.copyOf(result);
         }
+        if ("kb_search".equals(toolName)) {
+            // A no-result message is diagnostic text, not a citable knowledge source.
+            return List.of();
+        }
         String content = truncate(raw);
         return List.of(new Evidence(
                 toolName + ":" + fingerprint.substring(0, 16), toolName,

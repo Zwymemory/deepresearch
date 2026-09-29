@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Read-only console session setup before frozen cohort. No Java workflow or model/tool called.",
+  "attempts": [
+    {
+      "operation": "Read frozen console draft before publication",
+      "httpStatus": 401,
+      "sessionExpired": true,
+      "publicationAttempted": false,
+      "modelCalled": false
+    },
+    {
+      "operation": "Routine reload of existing authorized administrator session and read same draft",
+      "httpStatus": 200,
+      "graphMatches": true,
+      "accountOrPermissionsChanged": false
+    }
+  ],
+  "privateEnvChanged": false
+}

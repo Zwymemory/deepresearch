@@ -1,0 +1,22 @@
+{
+  "fixture": "synthetic_knowledge.md",
+  "topK": 5,
+  "purpose": "Release holdout fixed before running the candidate-ID and confirmation implementation",
+  "reviewNote": "rn08 was initially misclassified as zero-evidence. DR-EVAL-06 explicitly says the key never reaches browser responses, so the question has evidence for a cited denial. Its original 3/3 zero-evidence failures remain recorded in the first capture; this correction is evaluated in a fresh run.",
+  "cases": [
+    {"id":"rp01","kind":"positive","question":"Which setting chooses legacy when rolling back retrieval?","relevantAnchors":["DR-EVAL-14"]},
+    {"id":"rp02","kind":"positive","question":"远程引用在哪些标识都能查到以后才被接受？","relevantAnchors":["DR-EVAL-16"]},
+    {"id":"rp03","kind":"positive","question":"哪一个错误码表示本次请求超过检索预算？","relevantAnchors":["DR-EVAL-21"]},
+    {"id":"rp04","kind":"positive","question":"What is shown for evidence when the parser gives no page number?","relevantAnchors":["DR-EVAL-10"]},
+    {"id":"rp05","kind":"positive","question":"Can the RAGFlow API key be copied into a browser response?","relevantAnchors":["DR-EVAL-06"]},
+    {"id":"rn01","kind":"zero-evidence","question":"Which named employee performed the unchanged SHA-256 upload?","relevantAnchors":[]},
+    {"id":"rn02","kind":"zero-evidence","question":"Which bank account pays the RAGFlow API key fees?","relevantAnchors":[]},
+    {"id":"rn03","kind":"zero-evidence","question":"What actual production retrieval default was set to 0.42?","relevantAnchors":[]},
+    {"id":"rn04","kind":"zero-evidence","question":"How many AWS regions host the dataset allowlist?","relevantAnchors":[]},
+    {"id":"rn05","kind":"zero-evidence","question":"On what calendar date did the remote parse fail as FAILED?","relevantAnchors":[]},
+    {"id":"rn06","kind":"zero-evidence","question":"Who personally reviewed batch 73018?","relevantAnchors":[]},
+    {"id":"rn07","kind":"zero-evidence","question":"ERR-P403 对应的真实管理员姓名和公司工号是什么？","relevantAnchors":[]},
+    {"id":"rn08","kind":"evidence-backed-safe-denial","question":"What browser version received a leaked RAGFlow API key?","denialEvidence":[{"id":"browser-boundary","evidencePhrases":["The RAGFlow API key stays on the server and is never copied into browser responses"]}],"answerContract":{"mustContainAny":["从未复制到浏览器","不会复制到浏览器","没有浏览器","无法提供","无法回答","无法基于参考材料回答","never copied into browser responses"],"mustNotContain":["Chrome","Safari","Firefox","浏览器版本为"],"citationRequired":true}},
+    {"id":"rn09","kind":"zero-evidence","question":"What operating system version was installed on the Java gateway server?","relevantAnchors":[]}
+  ]
+}

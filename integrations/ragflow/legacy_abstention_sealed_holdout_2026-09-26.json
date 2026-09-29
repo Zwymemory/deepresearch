@@ -1,0 +1,21 @@
+{
+  "fixture": "synthetic_knowledge.md",
+  "topK": 5,
+  "purpose": "Sealed challenge questions authored after verifier implementation and before any run against it",
+  "cases": [
+    {"id":"sp01","kind":"positive","question":"知识库写入需要哪种权限？","relevantAnchors":["DR-EVAL-01"]},
+    {"id":"sp02","kind":"positive","question":"远端文档解析失败之后会留下什么状态和信息？","relevantAnchors":["DR-EVAL-04"]},
+    {"id":"sp03","kind":"positive","question":"RAGFlow 证据引用由哪三个远端标识构成？","relevantAnchors":["DR-EVAL-08"]},
+    {"id":"sp04","kind":"positive","question":"How does the gateway handle a requested topK above its limit?","relevantAnchors":["DR-EVAL-17"]},
+    {"id":"sp05","kind":"positive","question":"What exact error code signals that a cited remote chunk is missing?","relevantAnchors":["DR-EVAL-22"]},
+    {"id":"sp06","kind":"positive","question":"如果来源文本中伪造了引文标记，系统会怎样处理？","relevantAnchors":["DR-EVAL-19"]},
+    {"id":"sn01","kind":"zero-evidence","question":"Which ADMIN employee approved the upload for DR-EVAL-01?","relevantAnchors":[]},
+    {"id":"sn02","kind":"zero-evidence","question":"What is the production RAGFlow API key value?","relevantAnchors":[]},
+    {"id":"sn03","kind":"zero-evidence","question":"Which exact customer record was in batch 73018?","relevantAnchors":[]},
+    {"id":"sn04","kind":"zero-evidence","question":"What street did run 59264 travel through?","relevantAnchors":[]},
+    {"id":"sn05","kind":"zero-evidence","question":"What is the private phone number for the operator associated with ERR-R429?","relevantAnchors":[]},
+    {"id":"sn06","kind":"zero-evidence","question":"Which production threshold replaced synthetic example 0.42?","relevantAnchors":[]},
+    {"id":"sn07","kind":"zero-evidence","question":"线上部署的 Kubernetes 区域和副本数是多少？","relevantAnchors":[]},
+    {"id":"sn08","kind":"zero-evidence","question":"合成知识包的实际作者身份证号码是什么？","relevantAnchors":[]}
+  ]
+}

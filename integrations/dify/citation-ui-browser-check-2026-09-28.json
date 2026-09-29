@@ -1,0 +1,206 @@
+{
+  "fixtureOnly": true,
+  "cases": [
+    {
+      "case": "web",
+      "passed": true,
+      "citations": 1,
+      "links": 1,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "multiple-web",
+      "passed": true,
+      "citations": 2,
+      "links": 2,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "body-marker-target",
+      "passed": true,
+      "citations": 2,
+      "links": 2,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "noncanonical-marker",
+      "passed": true,
+      "citations": 1,
+      "links": 1,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "knowledge",
+      "passed": true,
+      "citations": 1,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "knowledge-preview",
+      "passed": true,
+      "citations": 1,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "chinese-web-preview",
+      "passed": true,
+      "citations": 1,
+      "links": 1,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "mixed",
+      "passed": true,
+      "citations": 2,
+      "links": 1,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "missing-metadata",
+      "passed": true,
+      "citations": 1,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "wrong-source-id",
+      "passed": true,
+      "citations": 1,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "duplicate-metadata",
+      "passed": true,
+      "citations": 1,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "unsafe-url",
+      "passed": true,
+      "citations": 6,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "unverified-history",
+      "passed": true,
+      "citations": 1,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "escaped-text",
+      "passed": true,
+      "citations": 1,
+      "links": 1,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 0
+    },
+    {
+      "case": "legacy-details",
+      "passed": true,
+      "citations": 1,
+      "links": 1,
+      "createPosts": 1,
+      "refreshed": false,
+      "sseStreams": 0
+    },
+    {
+      "case": "sse-reconnect",
+      "passed": true,
+      "citations": 2,
+      "links": 1,
+      "createPosts": 1,
+      "refreshed": true,
+      "sseStreams": 2
+    },
+    {
+      "case": "DIFY_MODEL_OUTPUT_TRUNCATED",
+      "passed": true,
+      "citations": 0,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "safeReasonRendered": true
+    },
+    {
+      "case": "DIFY_MODEL_OUTPUT_EMPTY",
+      "passed": true,
+      "citations": 0,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "safeReasonRendered": true
+    },
+    {
+      "case": "DIFY_MODEL_OUTPUT_INVALID",
+      "passed": true,
+      "citations": 0,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "safeReasonRendered": true
+    },
+    {
+      "case": "DIFY_MODEL_PROVIDER_ERROR",
+      "passed": true,
+      "citations": 0,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "safeReasonRendered": true
+    },
+    {
+      "case": "CLAIM_EVIDENCE_INVALID",
+      "passed": true,
+      "citations": 0,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "safeReasonRendered": true
+    },
+    {
+      "case": "CLAIM_SUPPORT_INSUFFICIENT",
+      "passed": true,
+      "citations": 0,
+      "links": 0,
+      "createPosts": 1,
+      "refreshed": true,
+      "safeReasonRendered": true
+    }
+  ],
+  "checkedAt": "2026-09-28T09:41:59.916855+00:00",
+  "htmlSha256": "c5965c8563d59734fe4e5173623f707a432f59b6dc0e98cc0336367e7f8828ac",
+  "scriptSha256": "990d94b73d572e0312515c14df62444fc917c563e6d3d6290670f5aecca3cb7b"
+}

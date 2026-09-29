@@ -1,5 +1,6 @@
 package com.deepresearch.mcp;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.deepresearch.agent.KnowledgeBaseSearchTool;
 import com.deepresearch.mcp.McpKnowledgeClientService.McpClientFailure;
 import com.deepresearch.security.AuthPrincipal;
@@ -56,9 +57,13 @@ class McpKnowledgeLoopIT {
     private WorkflowMcpReceiptService receiptService;
 
     @Test
-    void negotiatesDiscoversSchemaAndCallsKnowledgeToolOverRealMcpTransport() {
+    void negotiatesDiscoversSchemaAndCallsKnowledgeToolOverRealMcpTransport() throws Exception {
         when(knowledgeBaseSearchTool.execute("MCP-7788"))
-                .thenReturn("[来源1] MCP-7788 是真实 MCP 闭环测试参数");
+                .thenReturn("""
+                        [来源1] MCP-7788
+                        chunkKey: mcp-7788-chunk
+                        证据: MCP-7788 是真实 MCP 闭环测试参数
+                        """);
         AuthPrincipal principal = new AuthPrincipal("tenant-a", "user-a", List.of("USER"));
         when(workflowAccessService.authenticateDelegation("delegation-token"))
                 .thenReturn(new WorkflowDelegationContext(
@@ -80,7 +85,14 @@ class McpKnowledgeLoopIT {
         assertThat(result.discoveredTools()).contains("kb_search", "web_search", "calculator");
         assertThat(result.inputSchema()).contains("query");
         assertThat(result.error()).isFalse();
-        assertThat(result.content()).contains("真实 MCP 闭环测试参数");
+        McpKnowledgeTools.McpToolResponse response = new ObjectMapper().readValue(
+                result.content(), McpKnowledgeTools.McpToolResponse.class);
+        assertThat(response.success()).isTrue();
+        assertThat(response.evidence()).singleElement().satisfies(evidence -> {
+            assertThat(evidence.evidenceId()).isEqualTo("mcp-7788-chunk");
+            assertThat(evidence.uriOrChunkKey()).isEqualTo("mcp-7788-chunk");
+            assertThat(evidence.excerpt()).isEqualTo("MCP-7788 是真实 MCP 闭环测试参数");
+        });
         verify(receiptService).begin(
                 argThat(context -> "tool-call-transport-0001".equals(context.callId())),
                 eq("kb_search"), eq(Map.of("query", "MCP-7788")));

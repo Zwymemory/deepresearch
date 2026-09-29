@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "codeSha": "b1d8a2e350f67a46454816b14de0c40481f4c246",
+  "dslPath": "integrations/dify/deepresearch-evidence-v1.yml",
+  "dslSha256": "eff710bbedd1e0b2f8a581655c62fd2c3e4c047a9601bff67d4f9da516d44bbb",
+  "appId": "7050c6b7-3a16-4b90-b87f-564a55ca8e41",
+  "publishedWorkflowId": "6cb30cea-2219-4dca-a6cf-983dd2a0d73d",
+  "markedName": "Evidence v6",
+  "createdAt": 1790565773,
+  "nodeCount": 32,
+  "edgeCount": 29,
+  "publishedGraphMatchesCommittedDsl": true,
+  "environmentVariables": [
+    {
+      "configured": true,
+      "name": "JAVA_INTERNAL_BASE_URL",
+      "type": "string"
+    },
+    {
+      "configured": true,
+      "name": "DIFY_TOOL_SERVICE_TOKEN",
+      "type": "secret"
+    }
+  ],
+  "providerPlugin": "langgenius/deepseek:0.0.24",
+  "llmNodes": [
+    {
+      "id": "planner",
+      "model": "deepseek-v4-flash",
+      "completionParams": {
+        "max_tokens": 4096,
+        "reasoning_effort": "high",
+        "response_format": "json_object",
+        "temperature": 0,
+        "thinking": true
+      },
+      "structuredOutputEnabled": false,
+      "retryEnabled": false
+    },
+    {
+      "id": "reviewer",
+      "model": "deepseek-v4-flash",
+      "completionParams": {
+        "max_tokens": 4096,
+        "reasoning_effort": "high",
+        "response_format": "json_object",
+        "temperature": 0,
+        "thinking": true
+      },
+      "structuredOutputEnabled": false,
+      "retryEnabled": false
+    },
+    {
+      "id": "synthesizer_direct",
+      "model": "deepseek-v4-flash",
+      "completionParams": {
+        "max_tokens": 4096,
+        "reasoning_effort": "high",
+        "response_format": "json_object",
+        "temperature": 0,
+        "thinking": false
+      },
+      "structuredOutputEnabled": false,
+      "retryEnabled": false
+    },
+    {
+      "id": "synthesizer",
+      "model": "deepseek-v4-flash",
+      "completionParams": {
+        "max_tokens": 4096,
+        "reasoning_effort": "high",
+        "response_format": "json_object",
+        "temperature": 0,
+        "thinking": false
+      },
+      "structuredOutputEnabled": false,
+      "retryEnabled": false
+    }
+  ]
+}

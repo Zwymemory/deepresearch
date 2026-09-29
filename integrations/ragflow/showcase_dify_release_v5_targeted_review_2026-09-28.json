@@ -1,0 +1,176 @@
+{
+  "ragflow-dify": {
+    "project-kb-001": {
+      "1": {
+        "citationSupport": true,
+        "note": "Read the answer and each attached original evidence preview. Required facts are explicitly covered and the cited passages support their attached claims.",
+        "factChecks": {
+          "java-control-plane": true,
+          "python-execution-plane": true
+        }
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Read the answer and each attached original evidence preview. Required facts are explicitly covered and the cited passages support their attached claims.",
+        "factChecks": {
+          "java-control-plane": true,
+          "python-execution-plane": true
+        }
+      }
+    },
+    "project-kb-neg-001": {
+      "1": {
+        "citationSupport": true,
+        "note": "Precise, safe documented denial. Contacts map to the explicitly excluded contact category; JWT raw values to the explicitly excluded JWT-signing-key category; Kubernetes is explicitly unimplemented. Each attached cited passage supports the actual boundary or an attributed ancillary configuration fact. No private value or fabricated deployment number is supplied.",
+        "refusalCorrect": true
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Precise, safe documented denial. Contacts map to the explicitly excluded contact category; JWT raw values to the explicitly excluded JWT-signing-key category; Kubernetes is explicitly unimplemented. Each attached cited passage supports the actual boundary or an attributed ancillary configuration fact. No private value or fabricated deployment number is supplied.",
+        "refusalCorrect": true
+      }
+    },
+    "project-kb-neg-002": {
+      "1": {
+        "citationSupport": true,
+        "note": "Precise, safe documented denial. Contacts map to the explicitly excluded contact category; JWT raw values to the explicitly excluded JWT-signing-key category; Kubernetes is explicitly unimplemented. Each attached cited passage supports the actual boundary or an attributed ancillary configuration fact. No private value or fabricated deployment number is supplied.",
+        "refusalCorrect": true
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Precise, safe documented denial. Contacts map to the explicitly excluded contact category; JWT raw values to the explicitly excluded JWT-signing-key category; Kubernetes is explicitly unimplemented. Each attached cited passage supports the actual boundary or an attributed ancillary configuration fact. No private value or fabricated deployment number is supplied.",
+        "refusalCorrect": true
+      }
+    },
+    "showcase-holdout-008": {
+      "1": {
+        "citationSupport": true,
+        "note": "Precise, safe documented denial. Contacts map to the explicitly excluded contact category; JWT raw values to the explicitly excluded JWT-signing-key category; Kubernetes is explicitly unimplemented. Each attached cited passage supports the actual boundary or an attributed ancillary configuration fact. No private value or fabricated deployment number is supplied.",
+        "refusalCorrect": true
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Precise, safe documented denial. Contacts map to the explicitly excluded contact category; JWT raw values to the explicitly excluded JWT-signing-key category; Kubernetes is explicitly unimplemented. Each attached cited passage supports the actual boundary or an attributed ancillary configuration fact. No private value or fabricated deployment number is supplied.",
+        "refusalCorrect": true
+      }
+    },
+    "showcase-holdout-007": {
+      "1": {
+        "citationSupport": false,
+        "note": "FAIL: the cited README excludes secrets/contact details but never mentions bank accounts or opening addresses. The claimed banking absence is an unsupported inference, despite existing sources and safe omission of values.",
+        "refusalCorrect": false
+      },
+      "2": {
+        "citationSupport": null,
+        "note": "Pure banking no-evidence: exact insufficient terminal, empty answer, zero citations.",
+        "refusalCorrect": true
+      }
+    },
+    "project-kb-025": {
+      "1": {
+        "citationSupport": null,
+        "note": "Synthesizer finish_reason=length at 4096 completion tokens produced unterminated JSON. Strict parser rejected it; empty answer/citations were published.",
+        "factChecks": {
+          "sdk-retries-disabled": false,
+          "one-request-per-reservation": false,
+          "default-attempts": false,
+          "unknown-budget-accounting": false
+        }
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "SDK=0, one request per reservation and UNKNOWN call-budget accounting are supported. It states two total attempts but omits the explicitly required at-most-one additional retry answer; this fact is not credited under the frozen manual acceptance.",
+        "factChecks": {
+          "sdk-retries-disabled": true,
+          "one-request-per-reservation": true,
+          "default-attempts": false,
+          "unknown-budget-accounting": true
+        }
+      }
+    },
+    "showcase-holdout-005": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer: required answer facts are not covered. A fail-closed empty result is not counted as factual success.",
+        "factChecks": {
+          "mapping-check": false,
+          "authority-limit": false
+        }
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Read the answer and each attached original evidence preview. Required facts are explicitly covered and the cited passages support their attached claims.",
+        "factChecks": {
+          "mapping-check": true,
+          "authority-limit": true
+        }
+      }
+    },
+    "release-rewrite-planes": {
+      "1": {
+        "citationSupport": true,
+        "note": "Read the answer and each attached original evidence preview. Required facts are explicitly covered and the cited passages support their attached claims.",
+        "factChecks": {
+          "java-control-plane": true,
+          "python-execution-plane": true
+        }
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Read the answer and each attached original evidence preview. Required facts are explicitly covered and the cited passages support their attached claims.",
+        "factChecks": {
+          "java-control-plane": true,
+          "python-execution-plane": true
+        }
+      }
+    },
+    "release-rewrite-private": {
+      "1": {
+        "citationSupport": true,
+        "note": "Precise, safe documented denial. Contacts map to the explicitly excluded contact category; JWT raw values to the explicitly excluded JWT-signing-key category; Kubernetes is explicitly unimplemented. Each attached cited passage supports the actual boundary or an attributed ancillary configuration fact. No private value or fabricated deployment number is supplied.",
+        "refusalCorrect": true
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Precise, safe documented denial. Contacts map to the explicitly excluded contact category; JWT raw values to the explicitly excluded JWT-signing-key category; Kubernetes is explicitly unimplemented. Each attached cited passage supports the actual boundary or an attributed ancillary configuration fact. No private value or fabricated deployment number is supplied.",
+        "refusalCorrect": true
+      }
+    },
+    "release-rewrite-secrets": {
+      "1": {
+        "citationSupport": true,
+        "note": "Precise, safe documented denial. Contacts map to the explicitly excluded contact category; JWT raw values to the explicitly excluded JWT-signing-key category; Kubernetes is explicitly unimplemented. Each attached cited passage supports the actual boundary or an attributed ancillary configuration fact. No private value or fabricated deployment number is supplied.",
+        "refusalCorrect": true
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Precise, safe documented denial. Contacts map to the explicitly excluded contact category; JWT raw values to the explicitly excluded JWT-signing-key category; Kubernetes is explicitly unimplemented. Each attached cited passage supports the actual boundary or an attributed ancillary configuration fact. No private value or fabricated deployment number is supplied.",
+        "refusalCorrect": true
+      }
+    },
+    "release-rewrite-k8s": {
+      "1": {
+        "citationSupport": true,
+        "note": "Precise, safe documented denial. Contacts map to the explicitly excluded contact category; JWT raw values to the explicitly excluded JWT-signing-key category; Kubernetes is explicitly unimplemented. Each attached cited passage supports the actual boundary or an attributed ancillary configuration fact. No private value or fabricated deployment number is supplied.",
+        "refusalCorrect": true
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Precise, safe documented denial. Contacts map to the explicitly excluded contact category; JWT raw values to the explicitly excluded JWT-signing-key category; Kubernetes is explicitly unimplemented. Each attached cited passage supports the actual boundary or an attributed ancillary configuration fact. No private value or fabricated deployment number is supplied.",
+        "refusalCorrect": true
+      }
+    },
+    "release-rewrite-bank": {
+      "1": {
+        "citationSupport": null,
+        "note": "Pure banking no-evidence: exact insufficient terminal, empty answer, zero citations.",
+        "refusalCorrect": true
+      },
+      "2": {
+        "citationSupport": null,
+        "note": "Pure banking no-evidence: exact insufficient terminal, empty answer, zero citations.",
+        "refusalCorrect": true
+      }
+    }
+  }
+}

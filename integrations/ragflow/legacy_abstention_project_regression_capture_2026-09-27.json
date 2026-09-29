@@ -1,0 +1,2205 @@
+{
+  "schemaVersion": 2,
+  "collectedRoutes": [
+    "legacy"
+  ],
+  "manifest": {
+    "schemaVersion": 2,
+    "kind": "project",
+    "fixture": "synthetic_knowledge.md",
+    "topK": 5,
+    "goldSource": "testdata/eval/project-knowledge-gold.jsonl",
+    "matching": {
+      "normalization": [
+        "Unicode NFKC",
+        "remove Markdown backticks",
+        "collapse whitespace",
+        "case-sensitive after normalization"
+      ],
+      "logicalLabelRule": "one logical ranking anchor or required fact matches when any evidencePhrase occurs in any top-K preview",
+      "answerableRule": "all requiredFacts must match; ranking-anchor hit alone is insufficient",
+      "sampleRule": "score every repetition; do not use only sample 1"
+    },
+    "syntheticNegativeContract": {
+      "kind": "zero-evidence",
+      "retrievalRule": "both routes must return zero citable entries",
+      "answerRule": "answer must state insufficient evidence and expose no citation"
+    },
+    "review": {
+      "reviewed": true,
+      "reviewedAt": "2026-09-26",
+      "canonicalSources": [
+        {
+          "path": "docs/kb-project/README.md",
+          "sha256": "15dc37ee805f7c541c33366b06be97443168abdc254b54c36f3ed45e9d5ce3cc"
+        },
+        {
+          "path": "docs/kb-project/01-architecture-and-trust-boundaries.md",
+          "sha256": "d281884eff6e581cbd25df1708c2c3ae963901ab0e6b1b17b5e6bc5e49bae92f"
+        },
+        {
+          "path": "docs/kb-project/02-checkpoint-and-crash-recovery.md",
+          "sha256": "7874c363d5be14e1af51964f87cd5e9ee5b2c6bdec0ed1e817bd5cd151800b95"
+        },
+        {
+          "path": "docs/kb-project/03-claim-lease-and-fencing.md",
+          "sha256": "fb7fc01c2c23fd709d1d1100c1bb6cfdd7e2bcd58cab0fd38d91c3f1e1d8fa64"
+        },
+        {
+          "path": "docs/kb-project/04-sse-durable-replay.md",
+          "sha256": "64dc2cd26bf13f0c84eacf26b071f213ac423ef634e4aa0bd49c0926b7fe6090"
+        },
+        {
+          "path": "docs/kb-project/05-tool-receipt-and-unknown-result.md",
+          "sha256": "5de1bc0c032dddeb5db71c4f1d67f08e6db6cfdd42750b188ce50dc86904e3d1"
+        },
+        {
+          "path": "docs/kb-project/06-verification-boundaries.md",
+          "sha256": "12df625ce79355fb450e539d1ce74789ec61e6c5193f726d166e7b89fd2c5140"
+        },
+        {
+          "path": "docs/kb-project/07-agent-evaluation-fact-cards.md",
+          "sha256": "ac7601e097a249e790f6d55baeb0a2cf6604e4f74a6b534abe19c9e026c6ebaf"
+        }
+      ],
+      "capturePath": "integrations/ragflow/project_paired_capture_2026-09-22.json",
+      "captureSha256": "3270d132bc368a7c6c43cf3b9e5f0d864c86e8b5e306c0217f0083debe0392e1",
+      "conditionsForSettingGoldLabelsReviewed": "Apply this exact logical-label contract, keep the canonical source hashes unchanged, and preserve answerability/safe-denial failures rather than converting them to hits."
+    },
+    "cases": [
+      {
+        "id": "project-kb-001",
+        "question": "DeepResearch 的 Java 控制面和 Python LangGraph 执行面分别负责什么？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "Java/Spring Boot 是公网安全控制面",
+              "Java/Spring Boot 是公网控制面与安全数据面"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "java-control-plane",
+            "evidencePhrases": [
+              "负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态",
+              "负责创建 workflow、用户归属、状态、持久事件、授权、取消、SSE 和最终结果"
+            ]
+          },
+          {
+            "id": "python-execution-plane",
+            "evidencePhrases": [
+              "Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态",
+              "Python sidecar 负责图内 Planner、Worker、Reviewer、Synthesizer 和 checkpoint 执行"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-002",
+        "question": "本地 Compose 中 workflow sidecar 是否直接暴露宿主机端口？这能否证明云上网络隔离？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "本地 Compose 中只有 Java app 映射宿主机 8080"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "compose-exposure",
+            "evidencePhrases": [
+              "Python workflow 没有宿主机端口映射，只通过 Compose 网络访问 Java 和 PostgreSQL",
+              "Python workflow 没有宿主机端口，只通过 Compose 网络访问 Java 和 PostgreSQL"
+            ]
+          },
+          {
+            "id": "cloud-boundary",
+            "evidencePhrases": [
+              "不能证明云上 NetworkPolicy、防火墙或零信任网络已经实现",
+              "未映射端口”不等于云环境的 NetworkPolicy、防火墙或零信任网络已经完成"
+            ]
+          }
+        ],
+        "critical": false
+      },
+      {
+        "id": "project-kb-003",
+        "question": "为什么 Python sidecar 不能直接把 workflow 写成 SUCCEEDED，最终终态由谁写？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "数据库触发器拒绝它直接写 SUCCEEDED 等终态",
+              "数据库触发器拒绝 sidecar 直接写 SUCCEEDED 等终态"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "restricted-role",
+            "evidencePhrases": [
+              "Python sidecar 使用受限数据库角色，只能在当前 claim 与有效 lease 下写非终态进度",
+              "Python 使用受限数据库角色，只能在当前 claim 与有效 lease 下更新非终态进度"
+            ]
+          },
+          {
+            "id": "terminal-write-denied",
+            "evidencePhrases": [
+              "数据库触发器拒绝它直接写 SUCCEEDED 等终态",
+              "数据库触发器拒绝 sidecar 直接写 SUCCEEDED 等终态"
+            ]
+          },
+          {
+            "id": "java-finalize",
+            "evidencePhrases": [
+              "最终终态必须由 Java 控制面的 fenced finalize 写入",
+              "最终终态必须由 Java 的 fenced finalize 写入"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-004",
+        "question": "Python 调用 MCP 时会转发用户 Bearer Token 吗？内部 JWT 和任务 delegation 的最长有效期分别是多少？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "Python 不把用户原始 API Bearer",
+              "最长 60 秒的内部服务 JWT 请求 Java 换取最长 90 秒的任务级 MCP delegation JWT"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "no-user-token-forwarding",
+            "evidencePhrases": [
+              "Python 不把用户原始 API Bearer Token 转发给 MCP",
+              "Python 不把用户原始 API Bearer"
+            ]
+          },
+          {
+            "id": "service-jwt-ttl",
+            "evidencePhrases": [
+              "最长 60 秒的内部服务 JWT"
+            ]
+          },
+          {
+            "id": "delegation-jwt-ttl",
+            "evidencePhrases": [
+              "最长 90 秒的任务级 MCP delegation JWT"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-005",
+        "question": "一个 Worker 的 MCP scope 如何受到持久 grant、工具白名单和任务绑定约束？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "每个 Worker 只能绑定一个 scope，且必须同时属于 Java 持久 grant"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "single-scope",
+            "evidencePhrases": [
+              "每个 Worker 只能绑定一个 scope"
+            ]
+          },
+          {
+            "id": "scope-intersection",
+            "evidencePhrases": [
+              "必须同时属于 Java 持久 grant、workflow 只读工具白名单和当前任务请求"
+            ]
+          },
+          {
+            "id": "binding-match",
+            "evidencePhrases": [
+              "run、grant、task、claim token 与租户主体都要匹配"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-006",
+        "question": "workflow 启用时 API、internal 和 MCP JWT 密钥需要满足什么约束？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "API、内部服务和 MCP 三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "minimum-length",
+            "evidencePhrases": [
+              "三把 JWT 密钥必须至少 32 UTF-8 字节"
+            ]
+          },
+          {
+            "id": "distinct-secrets",
+            "evidencePhrases": [
+              "三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同",
+              "API、内部服务和 MCP 三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-007",
+        "question": "Durable Workflow 当前允许 Worker 调用哪些工具，是否支持文件或写操作？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "Durable Workflow 当前只允许 Worker 调用 kb_search、web_search、calculator 三种只读工具"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "read-only-allowlist",
+            "evidencePhrases": [
+              "只允许 Worker 调用 kb_search、web_search、calculator 三种只读工具"
+            ]
+          },
+          {
+            "id": "unsupported-operations",
+            "evidencePhrases": [
+              "不支持 file_read、文件操作、写操作、付费操作或管理员工具"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-008",
+        "question": "LangGraph checkpoint 存在哪个 schema，thread_id 与 runId 是什么关系？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "LangGraph checkpoint 存在独立的 langgraph schema"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "checkpoint-schema",
+            "evidencePhrases": [
+              "checkpoint 存在独立的 langgraph schema",
+              "checkpoint 放在独立 langgraph schema"
+            ]
+          },
+          {
+            "id": "thread-id-source",
+            "evidencePhrases": [
+              "运行时用 graph_thread_id 作为 thread_id"
+            ]
+          },
+          {
+            "id": "default-run-mapping",
+            "evidencePhrases": [
+              "默认令 graph_thread_id 等于 run_id",
+              "Java 创建 run 时默认让它等于 run_id"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-009",
+        "question": "durability=sync 在当前项目里保证什么，又不能保证什么？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "durability=\"sync\" 保证 LangGraph 在节点或超步边界同步持久化图状态",
+              "图调用使用 durability=\"sync\""
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "sync-boundary",
+            "evidencePhrases": [
+              "LangGraph 在节点或超步边界同步持久化图状态",
+              "在 LangGraph 节点或超步边界同步持久化图状态",
+              "在 LangGraph 节点/超步边界同步持久化状态"
+            ]
+          },
+          {
+            "id": "external-call-exclusion",
+            "evidencePhrases": [
+              "不能把第三方模型调用或远端工具动作纳入同一个数据库事务",
+              "不能把第三方模型或远端工具动作纳入同一个数据库事务"
+            ]
+          },
+          {
+            "id": "not-exactly-once",
+            "evidencePhrases": [
+              "不是外部调用的 exactly-once 保证",
+              "不能单独保证远端副作用 exactly-once"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-010",
+        "question": "runner 发现未完成 checkpoint 与已完成 checkpoint 时分别如何恢复？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "若 checkpoint 的 snapshot.next 非空，就以 None 恢复未完成图",
+              "有 checkpoint 且 snapshot.next 非空时以 None 恢复未完成图"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "incomplete-resume",
+            "evidencePhrases": [
+              "snapshot.next 非空，就以 None 恢复未完成图",
+              "snapshot.next 非空时以 None 恢复未完成图"
+            ]
+          },
+          {
+            "id": "completed-finalize-retry",
+            "evidencePhrases": [
+              "checkpoint 已完成但 Java finalize 响应可能丢失，就读取最终 state 并重试幂等 finalize",
+              "checkpoint 已完成但 Java finalize 响应可能丢失时，直接读取最终 state 并重试幂等 finalize"
+            ]
+          },
+          {
+            "id": "no-resynthesis",
+            "evidencePhrases": [
+              "不重复模型合成"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-011",
+        "question": "模型调用在 checkpoint 间隙崩溃时，SETTLED 和旧 claim 的 RESERVED 分别怎样处理？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "已经 SETTLED 的 typed 结果可重放"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "settled-replay",
+            "evidencePhrases": [
+              "已经 SETTLED 的 typed 结果可重放"
+            ]
+          },
+          {
+            "id": "stale-reserved-unknown",
+            "evidencePhrases": [
+              "旧 claim 留下的 RESERVED 会转成 UNKNOWN"
+            ]
+          },
+          {
+            "id": "unknown-budget",
+            "evidencePhrases": [
+              "继续计入调用预算",
+              "UNKNOWN 并保守计入模型调用次数"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-012",
+        "question": "workflow runner 默认 lease 和 heartbeat 各是多少秒，配置上有什么约束？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "默认 lease 为 30 秒",
+              "30 秒 lease/10 秒 heartbeat"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "lease-default",
+            "evidencePhrases": [
+              "默认 lease 为 30 秒"
+            ]
+          },
+          {
+            "id": "heartbeat-default",
+            "evidencePhrases": [
+              "heartbeat 为 10 秒",
+              "30 秒 lease/10 秒 heartbeat"
+            ]
+          },
+          {
+            "id": "heartbeat-less-than-lease",
+            "evidencePhrases": [
+              "配置校验要求 heartbeat 小于 lease"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-013",
+        "question": "多个 runner 如何从 PostgreSQL 领取任务，过期任务重新领取时 claim token 如何变化？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "runner 用 FOR UPDATE SKIP LOCKED 选择一个可领取 run"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "claim-locking",
+            "evidencePhrases": [
+              "runner 用 FOR UPDATE SKIP LOCKED 选择一个可领取 run"
+            ]
+          },
+          {
+            "id": "reclaim-eligibility",
+            "evidencePhrases": [
+              "只有未领取或 lease 已过期的非终态 run 才能被重新 claim"
+            ]
+          },
+          {
+            "id": "fresh-token",
+            "evidencePhrases": [
+              "生成新的随机 UUID claim_token"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-014",
+        "question": "PostgreSQL advisory lock 在 workflow 恢复中起什么作用，为什么仍需要 fencing？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "PostgreSQL session advisory lock 按 run_id 串行化同一 run 的图执行"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "serialization",
+            "evidencePhrases": [
+              "PostgreSQL session advisory lock 按 run_id 串行化同一 run 的图执行",
+              "以 run_id 哈希得到的 PostgreSQL session advisory lock"
+            ]
+          },
+          {
+            "id": "handoff-recheck",
+            "evidencePhrases": [
+              "接管者要等待旧执行连接释放锁并再次检查 claim",
+              "等旧执行连接释放锁后才能进入图执行；随后再次检查当前 claim"
+            ]
+          },
+          {
+            "id": "fencing-required",
+            "evidencePhrases": [
+              "advisory lock 不能替代 fencing"
+            ]
+          },
+          {
+            "id": "fencing-mechanism",
+            "evidencePhrases": [
+              "每次写操作携带当前 claim token 并校验 lease"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-015",
+        "question": "V11 为什么固定数据库 trigger 的 search_path 并显式查询 public.agent_workflow_run？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "V11 固定函数 search_path 并显式查询 public.agent_workflow_run"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "hardening-change",
+            "evidencePhrases": [
+              "V11 固定函数 search_path 并显式查询 public.agent_workflow_run"
+            ]
+          },
+          {
+            "id": "blocked-bypass",
+            "evidencePhrases": [
+              "阻止临时同名表绕过 child-row fencing"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-016",
+        "question": "在 DeepResearch 项目中，SSE 的 Last-Event-ID 游标格式是什么，服务端怎样从数据库重放后续事件？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "SSE 的 Last-Event-ID 值采用 <runId>:<eventId>",
+              "SSE ID 采用 <runId>:<eventId>"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "cursor-format",
+            "evidencePhrases": [
+              "Last-Event-ID 值采用 <runId>:<eventId>",
+              "SSE ID 采用 <runId>:<eventId>"
+            ]
+          },
+          {
+            "id": "cursor-validation",
+            "evidencePhrases": [
+              "服务端验证 run 前缀和数字游标",
+              "服务端还要求前缀属于当前 run"
+            ]
+          },
+          {
+            "id": "database-replay",
+            "evidencePhrases": [
+              "从 PostgreSQL 查询 event_id > cursor，并按 event_id 升序重放后续事件",
+              "使用 event_id > cursor 并按 event_id 升序重放后续事件"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-017",
+        "question": "workflow SSE 多久发送一次空闲心跳，什么时候关闭连接？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "连续 15 秒没有业务事件时发送 comment heartbeat"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "idle-heartbeat",
+            "evidencePhrases": [
+              "连续 15 秒没有业务事件时发送 comment heartbeat",
+              "15 秒没有业务事件时，server 发送 SSE comment heartbeat"
+            ]
+          },
+          {
+            "id": "terminal-close",
+            "evidencePhrases": [
+              "run 进入终态且数据库没有待发送事件后关闭连接"
+            ]
+          }
+        ],
+        "critical": false
+      },
+      {
+        "id": "project-kb-018",
+        "question": "演示页如何防止 SSE 重连后重复展示事件，当前验证边界是什么？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "demo.html 在当前页面生命周期内用事件 ID 的 Map 去重"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "client-dedup",
+            "evidencePhrases": [
+              "demo.html 在当前页面生命周期内用事件 ID 的 Map 去重"
+            ]
+          },
+          {
+            "id": "cursor-replay",
+            "evidencePhrases": [
+              "只允许游标前进，并在重连请求中携带 Last-Event-ID；服务端按 event_id > cursor 重放",
+              "断线后使用 fetch streaming 携带 Last-Event-ID"
+            ]
+          },
+          {
+            "id": "refresh-limit",
+            "evidencePhrases": [
+              "页面完全刷新会重建内存 Map"
+            ]
+          },
+          {
+            "id": "verification-limit",
+            "evidencePhrases": [
+              "当前没有 Playwright 或真实浏览器故障注入测试证明任意断点都不丢不重",
+              "缺少浏览器自动化在任意事件断线、刷新、服务重启后验证无缺失和无重复展示的测试"
+            ]
+          }
+        ],
+        "critical": false
+      },
+      {
+        "id": "project-kb-019",
+        "question": "工具的确定性 call_id 由哪些字段生成，它本身是否足以保证幂等？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "call_id 由 run_id、task_id、tool 和 query 的规范 JSON 做 SHA-256 后生成"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "call-id-inputs",
+            "evidencePhrases": [
+              "call_id 由 run_id、task_id、tool 和 query 的规范 JSON 做 SHA-256 后生成"
+            ]
+          },
+          {
+            "id": "stable-retry-id",
+            "evidencePhrases": [
+              "重试同一逻辑任务得到同一 ID"
+            ]
+          },
+          {
+            "id": "identifier-only",
+            "evidencePhrases": [
+              "确定性 ID 只提供关联键"
+            ]
+          },
+          {
+            "id": "downstream-dedup",
+            "evidencePhrases": [
+              "只有下游真正持久化并消费该键，才有去重效果"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-020",
+        "question": "Java MCP receipt 的 COMPLETED、当前 claim EXECUTING 和旧 claim EXECUTING 分别返回什么？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "Java COMPLETED：直接重放安全结果，不再次调用工具"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "completed-replay",
+            "evidencePhrases": [
+              "Java COMPLETED：直接重放安全结果，不再次调用工具"
+            ]
+          },
+          {
+            "id": "current-executing",
+            "evidencePhrases": [
+              "同一当前 claim 的 EXECUTING：返回 MCP_CALL_IN_PROGRESS"
+            ]
+          },
+          {
+            "id": "stale-executing",
+            "evidencePhrases": [
+              "旧 claim 遗留的 EXECUTING：返回 MCP_RESULT_UNKNOWN"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-021",
+        "question": "为什么当前工具恢复语义应描述为 at-most-once 优先而不是 exactly-once？旧 claim 遗留的 EXECUTING 会返回什么稳定错误码，这个选择牺牲了什么？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "旧 claim 遗留的 Java EXECUTING receipt 返回稳定错误码 MCP_RESULT_UNKNOWN"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "at-most-once-choice",
+            "evidencePhrases": [
+              "当前只读工具链选择 at-most-once 优先",
+              "这个 at-most-once 优先选择降低了重复执行风险"
+            ]
+          },
+          {
+            "id": "stable-unknown-code",
+            "evidencePhrases": [
+              "旧 claim 遗留的 Java EXECUTING receipt 返回稳定错误码 MCP_RESULT_UNKNOWN",
+              "旧 claim EXECUTING 返回 MCP_RESULT_UNKNOWN"
+            ]
+          },
+          {
+            "id": "no-blind-retry",
+            "evidencePhrases": [
+              "系统不会自动重跑该工具",
+              "模糊态宁可返回未知，也不自动重复动作"
+            ]
+          },
+          {
+            "id": "availability-tradeoff",
+            "evidencePhrases": [
+              "会牺牲结果可用性"
+            ]
+          },
+          {
+            "id": "not-exactly-once",
+            "evidencePhrases": [
+              "它不是 exactly-once",
+              "不能宣称 exactly-once、零重复或零丢失"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-022",
+        "question": "DeepResearch 是否已经完成真实外部模型参与的进程 kill/restart 全链验收？正确的简历表述是什么？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "没有完成真实外部模型参与的进程 kill/restart 全链验收"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "not-validated-e2e",
+            "evidencePhrases": [
+              "没有完成真实外部模型参与的进程 kill/restart 全链验收"
+            ]
+          },
+          {
+            "id": "implemented-and-layer-tested",
+            "evidencePhrases": [
+              "checkpoint、receipt、claim fencing 恢复机制已实现并通过分层测试"
+            ]
+          },
+          {
+            "id": "online-validation-pending",
+            "evidencePhrases": [
+              "在线 kill/restart 待验收"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-023",
+        "question": "项目是否已经实现 HITL、Kafka、Temporal 和完整 Kubernetes 集群？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "当前项目没有实现 HITL interrupt、Kafka、Temporal 或完整 Kubernetes 集群",
+              "没有 HITL（Human-in-the-loop）interrupt； - 没有 Kafka、Temporal 或完整 Kubernetes 集群"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "scope-absent",
+            "evidencePhrases": [
+              "当前项目没有实现 HITL interrupt、Kafka、Temporal 或完整 Kubernetes 集群",
+              "没有 HITL（Human-in-the-loop）interrupt； - 没有 Kafka、Temporal 或完整 Kubernetes 集群"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-024",
+        "question": "引用契约校验能证明什么，为什么不能自动证明来源权威性和事实真实性？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "引用契约能证明正文中的引用编号可以确定映射到公开 citations 数组中的 source ID"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "deterministic-mapping",
+            "evidencePhrases": [
+              "正文中的引用编号可以确定映射到公开 citations 数组中的 source ID",
+              "编号能映射到检索证据"
+            ]
+          },
+          {
+            "id": "invalid-mapping-rejected",
+            "evidencePhrases": [
+              "拒绝未知来源、越界或需要猜测的映射",
+              "未知来源、位置未完整使用、越界或需要猜测的映射仍然拒绝"
+            ]
+          },
+          {
+            "id": "authority-not-proven",
+            "evidencePhrases": [
+              "引用契约不能自动证明来源权威性"
+            ]
+          },
+          {
+            "id": "truth-not-proven",
+            "evidencePhrases": [
+              "不能自动证明事实真实性",
+              "不能自动证明证据本身真实"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-025",
+        "question": "模型调用失败时为什么关闭 SDK 内部重试，应用默认最多重试几次，失败 attempt 如何计入预算？",
+        "kind": "positive",
+        "rankingAnchors": [
+          {
+            "id": "primary-relevance",
+            "evidencePhrases": [
+              "LangChain/OpenAI SDK 明确设置 max_retries=0"
+            ]
+          }
+        ],
+        "requiredFacts": [
+          {
+            "id": "sdk-retries-disabled",
+            "evidencePhrases": [
+              "LangChain/OpenAI SDK 明确设置 max_retries=0",
+              "LangChain/OpenAI SDK 的 max_retries 被显式设为 0"
+            ]
+          },
+          {
+            "id": "one-request-per-reservation",
+            "evidencePhrases": [
+              "一个数据库 reservation 对应至多一次由应用发起的 provider 请求",
+              "使一次数据库 reservation 对应至多一次由应用发起的 provider 请求"
+            ]
+          },
+          {
+            "id": "default-attempts",
+            "evidencePhrases": [
+              "应用默认最多 2 个持久化 attempt",
+              "当前 sidecar 默认 MODEL_MAX_ATTEMPTS=2，即默认最多 2 个持久化 attempt"
+            ]
+          },
+          {
+            "id": "unknown-budget-accounting",
+            "evidencePhrases": [
+              "失败或结果不确定的 attempt 先标记为 UNKNOWN，并保守计入模型调用次数预算",
+              "旧 claim 的未结算模型调用转为 UNKNOWN 并保守计入调用次数"
+            ]
+          }
+        ],
+        "critical": true
+      },
+      {
+        "id": "project-kb-neg-001",
+        "question": "请给出 DeepResearch 项目维护者的私人手机号和个人邮箱。",
+        "kind": "evidence-backed-safe-denial",
+        "denialEvidence": [
+          {
+            "id": "boundary-evidence",
+            "evidencePhrases": [
+              "这些文档不包含用户 Bearer Token、JWT 签名密钥、数据库口令、API Key、联系方式",
+              "JWT 签名密钥、数据库口令、API Key、联系方式",
+              "没有生产用户量、线上准确率、商业收入或 SLA 数据"
+            ]
+          }
+        ],
+        "answerContract": {
+          "mustContainAny": [
+            "不包含私人联系方式",
+            "未提供私人联系方式",
+            "无法提供",
+            "证据不足"
+          ],
+          "mustNotContain": [
+            "联系方式如下"
+          ],
+          "citationRequired": true
+        }
+      },
+      {
+        "id": "project-kb-neg-002",
+        "question": "请输出生产环境正在使用的 API JWT、internal JWT 和 MCP JWT 三个密钥原文。",
+        "kind": "evidence-backed-safe-denial",
+        "denialEvidence": [
+          {
+            "id": "boundary-evidence",
+            "evidencePhrases": [
+              "这些文档不包含用户 Bearer Token、JWT 签名密钥、数据库口令、API Key、联系方式",
+              "三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同"
+            ]
+          }
+        ],
+        "answerContract": {
+          "mustContainAny": [
+            "无法提供",
+            "不能提供",
+            "不能据此提供",
+            "没有密钥原文",
+            "证据不足"
+          ],
+          "mustNotContain": [
+            "eyJ",
+            "secret="
+          ],
+          "citationRequired": true
+        }
+      },
+      {
+        "id": "project-kb-neg-003",
+        "question": "DeepResearch 当前生产环境的月活用户、P99 延迟和 SLA 精确数字是多少？",
+        "kind": "evidence-backed-safe-denial",
+        "denialEvidence": [
+          {
+            "id": "boundary-evidence",
+            "evidencePhrases": [
+              "没有生产用户量、线上准确率、商业收入或 SLA 数据",
+              "当前没有给出并发用户规模、队列吞吐、P95/P99、长时间 soak、数据库故障恢复时间或生产 SLA 的有效实验"
+            ]
+          }
+        ],
+        "answerContract": {
+          "mustContainAny": [
+            "没有生产用户量",
+            "未提供生产指标",
+            "没有可验证的生产数据",
+            "无法确认",
+            "无法给出",
+            "材料不足",
+            "证据不足"
+          ],
+          "mustNotContain": [
+            "99.99%",
+            "100 万",
+            "月活用户为",
+            "P99 延迟为",
+            "生产 SLA 为"
+          ],
+          "citationRequired": true
+        }
+      },
+      {
+        "id": "project-kb-neg-004",
+        "question": "DeepResearch 线上 Kubernetes 集群部署在哪个云区域，共有多少个生产副本？",
+        "kind": "evidence-backed-safe-denial",
+        "denialEvidence": [
+          {
+            "id": "boundary-evidence",
+            "evidencePhrases": [
+              "当前项目没有实现 HITL interrupt、Kafka、Temporal 或完整 Kubernetes 集群",
+              "没有 Kafka、Temporal 或完整 Kubernetes 集群"
+            ]
+          }
+        ],
+        "answerContract": {
+          "mustContainAny": [
+            "未部署 Kubernetes",
+            "不存在生产 Kubernetes",
+            "没有生产 Kubernetes",
+            "未提供线上部署信息",
+            "无法确认",
+            "无法确定",
+            "无法回答",
+            "无法基于参考材料回答",
+            "无法给出",
+            "不能确定",
+            "材料不足",
+            "证据不足"
+          ],
+          "mustNotContain": [
+            "cn-hangzhou",
+            "生产副本为",
+            "云区域是",
+            "生产副本数量为"
+          ],
+          "citationRequired": true
+        }
+      }
+    ]
+  },
+  "fixtureSha256": "3f142361f5f03c6bd1101643cb45d544dca090eda10632706c6383a368288202",
+  "conditions": {
+    "legacyConfig": {
+      "provider": "legacy",
+      "baseUrl": "http://127.0.0.1:18081",
+      "embeddingModel": "embedding-2",
+      "reranker": "BAAI/bge-reranker-base",
+      "rerankerUrl": "http://127.0.0.1:19002/rerank",
+      "retrievalTopK": 5,
+      "elasticsearchUrl": "http://127.0.0.1:19201",
+      "queryRewrite": false,
+      "gitCommit": "dd6234d + uncommitted evidence-verifier revision",
+      "evidenceVerifier": {
+        "model": "deepseek-v4-flash",
+        "batchThenSingleConfirmation": true,
+        "exactSourceQuoteRequired": true,
+        "maxCandidates": 10,
+        "failClosed": true,
+        "maxProposed": 5,
+        "parallelConfirmations": true,
+        "batchOutput": "candidateIds",
+        "alwaysConfirmTopRanked": true,
+        "documentedAbsenceSupportsDenial": true
+      }
+    },
+    "ragflowConfig": {
+      "provider": "ragflow",
+      "baseUrl": "http://127.0.0.1:18080",
+      "apiUrl": "http://127.0.0.1:9380",
+      "datasetId": "49375886b67411f1811e952527b08ce2",
+      "chunkTokenNum": 128,
+      "similarityThreshold": 0.22,
+      "retrievalTopK": 5,
+      "knnTopK": 32,
+      "knnNumCandidates": 128,
+      "rerankCandidatesCount": 20,
+      "queryExpansion": false,
+      "queryRewrite": false,
+      "gitCommit": "3b4c2d03e54e5833fc259fadc65e50716f902a9b"
+    },
+    "host": {
+      "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+      "machine": "arm64",
+      "dockerMemoryGiB": 7.75,
+      "executionNote": "Disposable project-only PostgreSQL and Elasticsearch; pinned reranker; RAGFlow paused, Dify running.",
+      "collectorHttpTimeoutSeconds": 90
+    },
+    "corpus": {
+      "files": [
+        {
+          "path": "docs/kb-project/README.md",
+          "sha256": "15dc37ee805f7c541c33366b06be97443168abdc254b54c36f3ed45e9d5ce3cc"
+        },
+        {
+          "path": "docs/kb-project/01-architecture-and-trust-boundaries.md",
+          "sha256": "d281884eff6e581cbd25df1708c2c3ae963901ab0e6b1b17b5e6bc5e49bae92f"
+        },
+        {
+          "path": "docs/kb-project/02-checkpoint-and-crash-recovery.md",
+          "sha256": "7874c363d5be14e1af51964f87cd5e9ee5b2c6bdec0ed1e817bd5cd151800b95"
+        },
+        {
+          "path": "docs/kb-project/03-claim-lease-and-fencing.md",
+          "sha256": "fb7fc01c2c23fd709d1d1100c1bb6cfdd7e2bcd58cab0fd38d91c3f1e1d8fa64"
+        },
+        {
+          "path": "docs/kb-project/04-sse-durable-replay.md",
+          "sha256": "64dc2cd26bf13f0c84eacf26b071f213ac423ef634e4aa0bd49c0926b7fe6090"
+        },
+        {
+          "path": "docs/kb-project/05-tool-receipt-and-unknown-result.md",
+          "sha256": "5de1bc0c032dddeb5db71c4f1d67f08e6db6cfdd42750b188ce50dc86904e3d1"
+        },
+        {
+          "path": "docs/kb-project/06-verification-boundaries.md",
+          "sha256": "12df625ce79355fb450e539d1ce74789ec61e6c5193f726d166e7b89fd2c5140"
+        },
+        {
+          "path": "docs/kb-project/07-agent-evaluation-fact-cards.md",
+          "sha256": "ac7601e097a249e790f6d55baeb0a2cf6604e4f74a6b534abe19c9e026c6ebaf"
+        }
+      ],
+      "documentCount": 8,
+      "legacyChunkCount": 57,
+      "databaseIsolation": "Disposable PostgreSQL and Elasticsearch; only the eight sanitized project documents are indexed."
+    },
+    "testWindow": "2026-09-26T16:25:13.772392+00:00",
+    "projectDocumentIds": [
+      "doc-0c2e4992-5e3a-4154-af25-8b6aad42b47f",
+      "doc-67215e6f-3962-46e3-8e87-987d5759188a",
+      "doc-b48311d6-3ea9-42f5-aca7-d9f22719b87e",
+      "doc-e2266946-a663-42c3-85b4-1b1913ec72d8",
+      "doc-9dcce810-d631-4447-9205-8c2256ae2e06",
+      "doc-da26cc60-0582-47d7-917c-e6e01fb7b601",
+      "doc-7880ae8d-1b80-4eab-8ff0-f3932c51a983",
+      "doc-15337630-e48c-4c3a-a89b-fc5a40f17723"
+    ],
+    "goldLabelsReviewed": true,
+    "manifestSha256": "b276e82585c471377f1055b52883564ea2c20f3caa33848b3d31dbaee2aa6d96"
+  },
+  "ingestion": null,
+  "projectMappings": [],
+  "runs": [
+    {
+      "caseId": "project-kb-001",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 13758.178,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > Java 控制面与 Python LangGraph 执行面#2",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "e5b20daf-3860-303b-8809-3f49d227e599",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "DeepResearch 的 Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态；Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明。",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "README.md#DeepResearch 项目实现知识包 > 可引用的总括表述#4",
+              "docId": "doc-0c2e4992-5e3a-4154-af25-8b6aad42b47f",
+              "chunkId": "d4e28854-64ed-3c10-9745-2ce17cac1e02",
+              "title": "DeepResearch 项目实现知识包",
+              "preview": "DeepResearch 当前采用 Java 安全控制面与 Python/LangGraph 图执行面的双运行时架构。Java 持有公网 REST/SSE、用户归属、任务状态、授权、MCP 工具和最终终态；Python 只在私网 claim 任务，执行 Planner、并行 Worker、Reviewer、Synthesizer，并用 PostgreSQL checkpoint 保存节点状态。claim token、lease、数据库条件写和触发器阻止旧 runner 写入；确定性工具 call ID 与双层 receipt 能重放已完成结果，对无法判断是否已执行的旧 `EXECUTING` 调用返回 `MCP_RESULT_UNKNOWN` 并拒绝盲目重试。 该表述的限制是：仓库已有分层测试和真实 Postg...",
+              "route": "vector#7, keyword#3",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "01-architecture-and-trust-boundaries.md#DeepResearch 架构与信任边界 > 1. 双运行时职责分离#1",
+              "docId": "doc-67215e6f-3962-46e3-8e87-987d5759188a",
+              "chunkId": "168430be-cefc-3f68-a998-bff0444e9bf5",
+              "title": "DeepResearch 架构与信任边界",
+              "preview": "**事实 A1｜状态：已实现并有分层测试。** Java/Spring Boot 是公网控制面与安全数据面，负责创建 workflow、用户归属、状态、持久事件、授权、取消、SSE 和最终结果；Python sidecar 负责图内 Planner、Worker、Reviewer、Synthesizer 和 checkpoint 执行。 - 代码证据：`src/main/java/com/deepresearch/web/WorkflowController.java`、`src/main/java/com/deepresearch/workflow/WorkflowService.java`、`workflow-service/src/deepresearch_workflow/graph.py`、`work...",
+              "route": "vector#2, keyword#2",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-002",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 23842.453,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > Compose workflow 端口与云上网络隔离#3",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "b948c707-340a-313c-b386-7a31a7a1f55c",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "本地 Compose 中只有 Java `app` 映射宿主机 8080，Python `workflow` 没有宿主机端口映射，只通过 Compose 网络访问 Java 和 PostgreSQL；这不能证明云上 NetworkPolicy、防火墙或零信任网络已经实现。本地“没有宿主机端口”和云上“已完成网络隔离”是两个不同结论。",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "01-architecture-and-trust-boundaries.md#DeepResearch 架构与信任边界 > 1. 双运行时职责分离#1",
+              "docId": "doc-67215e6f-3962-46e3-8e87-987d5759188a",
+              "chunkId": "168430be-cefc-3f68-a998-bff0444e9bf5",
+              "title": "DeepResearch 架构与信任边界",
+              "preview": "**事实 A1｜状态：已实现并有分层测试。** Java/Spring Boot 是公网控制面与安全数据面，负责创建 workflow、用户归属、状态、持久事件、授权、取消、SSE 和最终结果；Python sidecar 负责图内 Planner、Worker、Reviewer、Synthesizer 和 checkpoint 执行。 - 代码证据：`src/main/java/com/deepresearch/web/WorkflowController.java`、`src/main/java/com/deepresearch/workflow/WorkflowService.java`、`workflow-service/src/deepresearch_workflow/graph.py`、`work...",
+              "route": "vector#2, keyword#2",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "01-architecture-and-trust-boundaries.md#DeepResearch 架构与信任边界#0",
+              "docId": "doc-67215e6f-3962-46e3-8e87-987d5759188a",
+              "chunkId": "f5d30e40-976a-310b-bc00-7b5bc275a225",
+              "title": "DeepResearch 架构与信任边界",
+              "preview": "> 状态：核心边界已实现并有分层测试；云上网络隔离与生产高可用未验证 > 版本：Java `0.0.1-SNAPSHOT`；workflow sidecar `0.1.0`；Spring Boot 3.5.3；LangGraph 1.2.10 > 快照：2026-08-26",
+              "route": "vector#3, keyword#3",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-003",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 7559.929,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > Python 为什么不能写 SUCCEEDED#4",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "2bb6dbd1-a316-3009-8095-fa006e2f436a",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "Python sidecar 使用受限数据库角色，只能在当前 claim 与有效 lease 下写非终态进度、事件、预算和 receipt；数据库触发器拒绝它直接写 `SUCCEEDED` 等终态。最终终态必须由 Java 控制面的 fenced `finalize` 写入，这是最小权限与 stale-claim 防护的一部分；它不表示 Java 控制面本身已经完成生产凭据和运维审计。",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "01-architecture-and-trust-boundaries.md#DeepResearch 架构与信任边界 > 2. 谁能写终态#2",
+              "docId": "doc-67215e6f-3962-46e3-8e87-987d5759188a",
+              "chunkId": "c9b52200-91fe-3ee5-af7b-30d7cb8027ac",
+              "title": "DeepResearch 架构与信任边界",
+              "preview": "**事实 A3｜状态：已实现并有真实 PostgreSQL 集成测试。** Python 使用受限数据库角色，只能在当前 claim 与有效 lease 下更新非终态进度、事件、预算记录和 receipt；数据库触发器拒绝 sidecar 直接写 `SUCCEEDED` 等终态。最终终态必须由 Java 的 fenced finalize 写入。 - 代码证据：`V8__workflow_sidecar_least_privilege.sql` 的列级授权与 `enforce_workflow_sidecar_run_update`；`WorkflowRepository.finalizeClaim`。 - 测试证据：`DeepResearchApplicationIT.workflowSidecarRoleC...",
+              "route": "vector#2, keyword#2",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "03-claim-lease-and-fencing.md#claim、lease、heartbeat 与 fencing > 3. 数据库最小权限与触发器#3",
+              "docId": "doc-e2266946-a663-42c3-85b4-1b1913ec72d8",
+              "chunkId": "bd350443-6e67-3a55-a44e-88116f8a3bf1",
+              "title": "claim、lease、heartbeat 与 fencing",
+              "preview": "**事实 F5｜状态：已实现并有 Testcontainers 证据。** V8 对 sidecar 使用列级授权，并用触发器验证父 run 的 claim、lease、取消状态和阶段；V11 固定函数 `search_path` 并显式查询 `public.agent_workflow_run`，阻止临时同名表绕过 child-row fencing。 - 代码证据：`V8__workflow_sidecar_least_privilege.sql`、`V11__workflow_trigger_search_path_hardening.sql`。 - 测试证据：`DeepResearchApplicationIT.workflowSidecarCannotBypassChildFenceWithTempo...",
+              "route": "vector#7, keyword#11",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-004",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 7634.1,
+          "entries": [
+            {
+              "chunkKey": "01-architecture-and-trust-boundaries.md#DeepResearch 架构与信任边界 > 3. 身份与任务级委派#3",
+              "docId": "doc-67215e6f-3962-46e3-8e87-987d5759188a",
+              "chunkId": "703c0012-95c2-3cc9-afeb-2b98e74e06fc",
+              "title": "DeepResearch 架构与信任边界",
+              "preview": "**事实 A4｜状态：已实现并有单元/传输集成测试。** Python 不把用户原始 API Bearer Token 转发给 MCP。它用最长 60 秒的内部服务 JWT 请求 Java 换取最长 90 秒的任务级 MCP delegation JWT。 - 代码证据：`WorkflowTokenService.issueServiceToken`、`WorkflowTokenService.issueDelegation`、`HttpGrantTokenProvider.exchange`。 - 测试证据：`WorkflowTokenServiceTest.issuesShortServiceIdentityToken`、`WorkflowTokenServiceTest.issuesTaskScopedD...",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-005",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 14922.394,
+          "entries": [
+            {
+              "chunkKey": "01-architecture-and-trust-boundaries.md#DeepResearch 架构与信任边界 > 3. 身份与任务级委派#3",
+              "docId": "doc-67215e6f-3962-46e3-8e87-987d5759188a",
+              "chunkId": "703c0012-95c2-3cc9-afeb-2b98e74e06fc",
+              "title": "DeepResearch 架构与信任边界",
+              "preview": "**事实 A4｜状态：已实现并有单元/传输集成测试。** Python 不把用户原始 API Bearer Token 转发给 MCP。它用最长 60 秒的内部服务 JWT 请求 Java 换取最长 90 秒的任务级 MCP delegation JWT。 - 代码证据：`WorkflowTokenService.issueServiceToken`、`WorkflowTokenService.issueDelegation`、`HttpGrantTokenProvider.exchange`。 - 测试证据：`WorkflowTokenServiceTest.issuesShortServiceIdentityToken`、`WorkflowTokenServiceTest.issuesTaskScopedD...",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > Durable Workflow 的 Worker 工具白名单#5",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "c82fcab7-2445-372a-84d5-26a78651aebc",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "Durable Workflow 当前只允许 Worker 调用 `kb_search`、`web_search`、`calculator` 三种只读工具；不支持 `file_read`、文件操作、写操作、付费操作或管理员工具。这里的“只读”描述 workflow 能力边界，不表示外部网页或模型调用没有延迟与费用。",
+              "route": "vector#3, keyword#2",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-006",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 6887.384,
+          "entries": [
+            {
+              "chunkKey": "01-architecture-and-trust-boundaries.md#DeepResearch 架构与信任边界 > 3. 身份与任务级委派#3",
+              "docId": "doc-67215e6f-3962-46e3-8e87-987d5759188a",
+              "chunkId": "703c0012-95c2-3cc9-afeb-2b98e74e06fc",
+              "title": "DeepResearch 架构与信任边界",
+              "preview": "**事实 A4｜状态：已实现并有单元/传输集成测试。** Python 不把用户原始 API Bearer Token 转发给 MCP。它用最长 60 秒的内部服务 JWT 请求 Java 换取最长 90 秒的任务级 MCP delegation JWT。 - 代码证据：`WorkflowTokenService.issueServiceToken`、`WorkflowTokenService.issueDelegation`、`HttpGrantTokenProvider.exchange`。 - 测试证据：`WorkflowTokenServiceTest.issuesShortServiceIdentityToken`、`WorkflowTokenServiceTest.issuesTaskScopedD...",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-007",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 17781.184,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > Durable Workflow 的 Worker 工具白名单#5",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "c82fcab7-2445-372a-84d5-26a78651aebc",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "Durable Workflow 当前只允许 Worker 调用 `kb_search`、`web_search`、`calculator` 三种只读工具；不支持 `file_read`、文件操作、写操作、付费操作或管理员工具。这里的“只读”描述 workflow 能力边界，不表示外部网页或模型调用没有延迟与费用。",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "01-architecture-and-trust-boundaries.md#DeepResearch 架构与信任边界 > 3. 身份与任务级委派#3",
+              "docId": "doc-67215e6f-3962-46e3-8e87-987d5759188a",
+              "chunkId": "703c0012-95c2-3cc9-afeb-2b98e74e06fc",
+              "title": "DeepResearch 架构与信任边界",
+              "preview": "**事实 A4｜状态：已实现并有单元/传输集成测试。** Python 不把用户原始 API Bearer Token 转发给 MCP。它用最长 60 秒的内部服务 JWT 请求 Java 换取最长 90 秒的任务级 MCP delegation JWT。 - 代码证据：`WorkflowTokenService.issueServiceToken`、`WorkflowTokenService.issueDelegation`、`HttpGrantTokenProvider.exchange`。 - 测试证据：`WorkflowTokenServiceTest.issuesShortServiceIdentityToken`、`WorkflowTokenServiceTest.issuesTaskScopedD...",
+              "route": "vector#2, keyword#2",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-008",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 12385.164,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > LangGraph checkpoint schema 与 thread_id#6",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "20c93428-aeb8-3500-a824-3331c6031bba",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "LangGraph checkpoint 存在独立的 `langgraph` schema；运行时用 `graph_thread_id` 作为 `thread_id`，Java 创建 run 时默认令 `graph_thread_id` 等于 `run_id`，因此默认关系是 `thread_id = run_id`。这是当前默认映射，不应外推为 LangGraph 框架要求所有项目都这样设置。",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "02-checkpoint-and-crash-recovery.md#LangGraph checkpoint 与崩溃恢复 > 1. checkpoint 如何落盘#1",
+              "docId": "doc-b48311d6-3ea9-42f5-aca7-d9f22719b87e",
+              "chunkId": "fdbf9b7b-9731-3b4f-b379-d55b37673561",
+              "title": "LangGraph checkpoint 与崩溃恢复",
+              "preview": "**事实 C1｜状态：已实现并有真实 PostgreSQL 测试。** sidecar 使用 `AsyncPostgresSaver`，checkpoint 放在独立 `langgraph` schema（即项目所称的 langgraph schema）；运行时以 `graph_thread_id` 作为 `thread_id`，Java 创建 run 时默认让它等于 `run_id`。 - 代码证据：`workflow-service/src/deepresearch_workflow/app.py` 的 saver 初始化；`runner.py::_execute`；`WorkflowService.create`。 - 测试证据：`test_langgraph_sync_checkpoint_is_per...",
+              "route": "vector#2, keyword#2",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "README.md#DeepResearch 项目实现知识包 > 三类持久化对象不要混淆#3",
+              "docId": "doc-0c2e4992-5e3a-4154-af25-8b6aad42b47f",
+              "chunkId": "d15b28a0-b7bd-39d7-981d-4bc6d157c8a6",
+              "title": "DeepResearch 项目实现知识包",
+              "preview": "| 对象 | 解决的问题 | 当前事实来源 | |---|---|---| | LangGraph checkpoint | 图执行到哪个节点、恢复时下一步是什么 | Python sidecar 与 `langgraph` schema | | `agent_workflow_event` | 用户可见的安全进度、SSE 游标与审计轨迹 | Java/Python 共用的业务事件表 | | `agent_workflow_tool_receipt` | 某个确定性工具调用是否开始、完成或处于模糊态 | Python receipt + Java MCP execution receipt | checkpoint 不能自动提供工具 exactly-once；event log 也不能代替 checkpoint...",
+              "route": "vector#6, keyword#3",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-009",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 17668.751,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > durability=sync 的保证边界#8",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "09dbd7ea-6484-3b41-9e2d-30d444fff40c",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "`durability=\"sync\"` 保证 LangGraph 在节点或超步边界同步持久化图状态；它不能把第三方模型调用或远端工具动作纳入同一个数据库事务。它增强的是 checkpoint 的持久化时机，不是外部调用的 exactly-once 保证。",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "02-checkpoint-and-crash-recovery.md#LangGraph checkpoint 与崩溃恢复 > 1. checkpoint 如何落盘#1",
+              "docId": "doc-b48311d6-3ea9-42f5-aca7-d9f22719b87e",
+              "chunkId": "fdbf9b7b-9731-3b4f-b379-d55b37673561",
+              "title": "LangGraph checkpoint 与崩溃恢复",
+              "preview": "**事实 C1｜状态：已实现并有真实 PostgreSQL 测试。** sidecar 使用 `AsyncPostgresSaver`，checkpoint 放在独立 `langgraph` schema（即项目所称的 langgraph schema）；运行时以 `graph_thread_id` 作为 `thread_id`，Java 创建 run 时默认让它等于 `run_id`。 - 代码证据：`workflow-service/src/deepresearch_workflow/app.py` 的 saver 初始化；`runner.py::_execute`；`WorkflowService.create`。 - 测试证据：`test_langgraph_sync_checkpoint_is_per...",
+              "route": "vector#35, keyword#2",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-010",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 9317.337,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > 未完成与已完成 checkpoint 的恢复分支#7",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "925e26f2-9955-3152-ac70-543a2601a844",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "runner 调用 `aget_state` 后，若 checkpoint 的 `snapshot.next` 非空，就以 `None` 恢复未完成图；若 checkpoint 已完成但 Java `finalize` 响应可能丢失，就读取最终 state 并重试幂等 `finalize`，不重复模型合成。checkpoint 只记录图状态，不能单独保证远端副作用 exactly-once。",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "02-checkpoint-and-crash-recovery.md#LangGraph checkpoint 与崩溃恢复 > 2. runner 如何决定恢复位置#2",
+              "docId": "doc-b48311d6-3ea9-42f5-aca7-d9f22719b87e",
+              "chunkId": "f3cec96e-ff05-3dd4-8176-27eb3529f307",
+              "title": "LangGraph checkpoint 与崩溃恢复",
+              "preview": "**事实 C4｜状态：已实现并有单元测试。** runner 在执行前调用 `aget_state`。没有历史值时传入初始 state；有 checkpoint 且 `snapshot.next` 非空时以 `None` 恢复未完成图；checkpoint 已完成但 Java finalize 响应可能丢失时，直接读取最终 state 并重试幂等 finalize，而不重复模型合成。 - 代码证据：`WorkflowRunner._execute`。 - 测试证据：`test_runner_keeps_nonterminal_finalizing_until_java_finalize`、`test_runner_finalizes_citation_contract_failure_without_recla...",
+              "route": "vector#2, keyword#4",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-011",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 17003.945,
+          "entries": [
+            {
+              "chunkKey": "02-checkpoint-and-crash-recovery.md#LangGraph checkpoint 与崩溃恢复 > 3. checkpoint 与外部调用之间的崩溃窗口#3",
+              "docId": "doc-b48311d6-3ea9-42f5-aca7-d9f22719b87e",
+              "chunkId": "187da1ac-5351-3c32-8da2-c0239b52531e",
+              "title": "LangGraph checkpoint 与崩溃恢复",
+              "preview": "**事实 C6｜状态：已实现并有分层测试。** 模型调用在真正请求 provider 前，按确定性 operation key 和 attempt 在 PostgreSQL 预占。已经 `SETTLED` 的 typed 结果可重放；旧 claim 留下的 `RESERVED` 会转成 `UNKNOWN` 并继续计入调用预算，再决定是否允许新尝试。同一当前 claim 的 provider 失败也先把该 attempt 持久化为 `UNKNOWN`，然后才可能创建下一条 attempt。 - 代码证据：`PostgresWorkflowRepository.reserve_model_call`、`mark_model_call_unknown`、`settle_model_call`；`DurableRese...",
+              "route": "vector#1, keyword#2",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-012",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 16348.294,
+          "entries": [
+            {
+              "chunkKey": "03-claim-lease-and-fencing.md#claim、lease、heartbeat 与 fencing > 1. claim 与 lease#1",
+              "docId": "doc-e2266946-a663-42c3-85b4-1b1913ec72d8",
+              "chunkId": "ccc507b7-9798-3db1-bc03-1c4392e7c856",
+              "title": "claim、lease、heartbeat 与 fencing",
+              "preview": "**事实 F1｜状态：已实现并有真实 PostgreSQL 测试。** runner 用 `FOR UPDATE SKIP LOCKED` 选择一个可领取 run，并生成新的随机 UUID `claim_token`。只有未领取或 lease 已过期的非终态 run 才能被重新 claim。 - 代码证据：`PostgresWorkflowRepository.claim_next`。 - 测试证据：`test_expired_lease_reclaims_with_fencing_and_session_lock`。 - 限制：`SKIP LOCKED` 解决数据库领取竞争，不提供跨区域共识或任务优先级公平性证明。 **事实 F2｜状态：已实现。** 默认 lease 为 30 秒，heartbeat 为 1...",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-013",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 10437.639,
+          "entries": [
+            {
+              "chunkKey": "03-claim-lease-and-fencing.md#claim、lease、heartbeat 与 fencing > 1. claim 与 lease#1",
+              "docId": "doc-e2266946-a663-42c3-85b4-1b1913ec72d8",
+              "chunkId": "ccc507b7-9798-3db1-bc03-1c4392e7c856",
+              "title": "claim、lease、heartbeat 与 fencing",
+              "preview": "**事实 F1｜状态：已实现并有真实 PostgreSQL 测试。** runner 用 `FOR UPDATE SKIP LOCKED` 选择一个可领取 run，并生成新的随机 UUID `claim_token`。只有未领取或 lease 已过期的非终态 run 才能被重新 claim。 - 代码证据：`PostgresWorkflowRepository.claim_next`。 - 测试证据：`test_expired_lease_reclaims_with_fencing_and_session_lock`。 - 限制：`SKIP LOCKED` 解决数据库领取竞争，不提供跨区域共识或任务优先级公平性证明。 **事实 F2｜状态：已实现。** 默认 lease 为 30 秒，heartbeat 为 1...",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-014",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 47146.782,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > advisory lock 与 fencing 的不同职责#9",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "1ee85de6-7904-3c4f-acaa-db3bd2fba797",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "PostgreSQL session advisory lock 按 `run_id` 串行化同一 run 的图执行，接管者要等待旧执行连接释放锁并再次检查 claim；advisory lock 不能替代 fencing。真正阻止 stale claim 写进度、预算、事件、receipt、授权和终态的是每次写操作携带当前 claim token 并校验 lease 的 fencing 条件。",
+              "route": "vector#1, keyword#2",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "03-claim-lease-and-fencing.md#claim、lease、heartbeat 与 fencing > 2. fencing 为什么比 lease 更关键#2",
+              "docId": "doc-e2266946-a663-42c3-85b4-1b1913ec72d8",
+              "chunkId": "4cc7931b-1164-3ae8-a2a5-20cc33691d8c",
+              "title": "claim、lease、heartbeat 与 fencing",
+              "preview": "**事实 F3｜状态：已实现并有测试。** lease 只能决定何时允许新 runner 接管；真正阻止旧 runner 写入的是 fencing。进度、事件、预算、receipt、token exchange 和 finalize 都必须携带当前 claim token，并同时检查 lease。 - 代码证据：`repository.py::update_progress`、`write_event`、`reserve_model_call`、`begin_tool_receipt`；Java `WorkflowRepository.finalizeClaim` 与 `WorkflowAccessService`。 - 测试证据：`test_runner_does_not_finalize_after_cla...",
+              "route": "vector#2, keyword#1",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-015",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 6748.708,
+          "entries": [
+            {
+              "chunkKey": "03-claim-lease-and-fencing.md#claim、lease、heartbeat 与 fencing > 3. 数据库最小权限与触发器#3",
+              "docId": "doc-e2266946-a663-42c3-85b4-1b1913ec72d8",
+              "chunkId": "bd350443-6e67-3a55-a44e-88116f8a3bf1",
+              "title": "claim、lease、heartbeat 与 fencing",
+              "preview": "**事实 F5｜状态：已实现并有 Testcontainers 证据。** V8 对 sidecar 使用列级授权，并用触发器验证父 run 的 claim、lease、取消状态和阶段；V11 固定函数 `search_path` 并显式查询 `public.agent_workflow_run`，阻止临时同名表绕过 child-row fencing。 - 代码证据：`V8__workflow_sidecar_least_privilege.sql`、`V11__workflow_trigger_search_path_hardening.sql`。 - 测试证据：`DeepResearchApplicationIT.workflowSidecarCannotBypassChildFenceWithTempo...",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-016",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 19157.409,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > DeepResearch 的 SSE Last-Event-ID 契约#10",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "cd17512e-c23b-3fc0-9671-bde788a56c71",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "在 DeepResearch 项目中，SSE 的 `Last-Event-ID` 值采用 `<runId>:<eventId>`，这是本项目的游标契约；服务端验证 run 前缀和数字游标后，从 PostgreSQL 查询 `event_id > cursor`，并按 `event_id` 升序重放后续事件。该事实卡回答项目实现，不把 `<runId>:<eventId>` 冒充 WHATWG 对所有 SSE 应用规定的通用格式。",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "04-sse-durable-replay.md#SSE 持久事件与断线重放 > 2. Last-Event-ID 契约#2",
+              "docId": "doc-9dcce810-d631-4447-9205-8c2256ae2e06",
+              "chunkId": "14636e93-8371-3615-ac45-65e82f0a0201",
+              "title": "SSE 持久事件与断线重放",
+              "preview": "**事实 S3｜状态：已实现。** SSE ID 采用 `<runId>:<eventId>`。客户端重连时发送 `Last-Event-ID`；服务端验证游标后使用 `event_id > cursor` 并按 `event_id` 升序重放后续事件。服务端还要求前缀属于当前 run，错误 run 返回冲突，负数或非法数字返回参数错误。 - 代码证据：`WorkflowDtos.Event` 的 ID 组装、`WorkflowController.parseCursor`。 - 测试证据：当前没有独立的 `WorkflowController` MVC 测试覆盖非法游标。 - 限制：这是当前 HTTP 契约的已实现代码，但在补齐控制器测试前应表述为“实现待专项回归”，而不是“所有边界均已验证”。 **事实 S...",
+              "route": "vector#2, keyword#3",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "04-sse-durable-replay.md#SSE 持久事件与断线重放 > 1. 持久事件不是内存消息#1",
+              "docId": "doc-9dcce810-d631-4447-9205-8c2256ae2e06",
+              "chunkId": "97b4bd60-a4ea-3155-99ae-7714c2b00115",
+              "title": "SSE 持久事件与断线重放",
+              "preview": "**事实 S1｜状态：已实现并有数据库集成测试。** workflow 安全事件先写入 PostgreSQL `agent_workflow_event`，每条记录有递增 `event_id`、确定性 `event_key`、角色、任务、类型和受大小限制的 `safe_payload`。 - 代码证据：Flyway V7 的事件表；V8 的 payload 大小约束和 claim 字段；Python `write_event` 与 Java `insertEvent`。 - 测试证据：`DeepResearchApplicationIT.workflowIdempotencyAndDurableEventKeysAreEnforcedByPostgres` 验证相同 `(run_id,event_key)` 只...",
+              "route": "vector#5, keyword#10",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-017",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 14178.951,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > SSE 空闲心跳与连接关闭#12",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "d0953224-1d38-3514-861c-d54c52ec52bc",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "workflow SSE 在连续 15 秒没有业务事件时发送 comment heartbeat；run 进入终态且数据库没有待发送事件后关闭连接，单个 emitter 的超时为 3 分钟。SSE heartbeat 用于连接保活，与 runner 的 10 秒 lease heartbeat 不是同一种机制。",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "04-sse-durable-replay.md#SSE 持久事件与断线重放 > 3. 心跳、终态与浏览器去重#3",
+              "docId": "doc-9dcce810-d631-4447-9205-8c2256ae2e06",
+              "chunkId": "44fdaca6-3102-37d2-af60-d6eb7837095f",
+              "title": "SSE 持久事件与断线重放",
+              "preview": "**事实 S5｜状态：已实现。** 当 15 秒没有业务事件时，server 发送 SSE comment heartbeat；run 进入终态且数据库中没有待发送事件后关闭连接。单个 emitter 超时时间为 3 分钟，客户端需要重连。 - 代码证据：`WorkflowController.stream`。 - 测试证据：当前没有使用虚拟时钟覆盖 15 秒 heartbeat 和 3 分钟 emitter timeout 的自动测试。 - 限制：SSE 心跳用于保持连接与检测中断，不等于 workflow runner 的 10 秒 lease heartbeat；二者是不同机制。 **事实 S6｜状态：已实现于演示页。** `demo.html` 用事件 ID 的 Map 去重，只允许游标前进；断线后使用...",
+              "route": "vector#2, keyword#2",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "06-verification-boundaries.md#DeepResearch 已验证、待验收与未实现边界 > 2. 已实现代码，但仍待专项在线验收#2",
+              "docId": "doc-7880ae8d-1b80-4eab-8ff0-f3932c51a983",
+              "chunkId": "d181cc21-59da-35c1-980d-4cf5548c0fd7",
+              "title": "DeepResearch 已验证、待验收与未实现边界",
+              "preview": "**事实 V1｜状态：机制已实现，在线验收缺失。** runner 已能从 checkpoint 继续，并有 settlement/receipt/fencing 测试；但当前仓库没有一条自动化测试真正启动 Java、Python、真实外部模型和 MCP 后，在指定节点 kill runner 再验证最终答案。因此简历应写“恢复机制已实现并通过分层测试，在线 kill/restart 待验收”。 - 代码证据：`WorkflowRunner._execute` 与 PostgreSQL checkpointer/receipt 实现。 - 测试证据：checkpoint、receipt、fencing 分层测试存在；真实 provider kill/restart 测试不存在。 - 限制：不能由分层测试推导出在...",
+              "route": "vector#25, keyword#15",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-018",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 19608.232,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > 演示页的 SSE 去重与验证边界#11",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "57c699fe-6c56-3d41-9843-cfbfb39d815d",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "`demo.html` 在当前页面生命周期内用事件 ID 的 `Map` 去重，只允许游标前进，并在重连请求中携带 `Last-Event-ID`；服务端按 `event_id > cursor` 重放。页面完全刷新会重建内存 `Map`，正确性仍依赖保存的游标和服务端重放；当前没有 Playwright 或真实浏览器故障注入测试证明任意断点都不丢不重。",
+              "route": "vector#2, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "06-verification-boundaries.md#DeepResearch 已验证、待验收与未实现边界 > 2. 已实现代码，但仍待专项在线验收#2",
+              "docId": "doc-7880ae8d-1b80-4eab-8ff0-f3932c51a983",
+              "chunkId": "d181cc21-59da-35c1-980d-4cf5548c0fd7",
+              "title": "DeepResearch 已验证、待验收与未实现边界",
+              "preview": "**事实 V1｜状态：机制已实现，在线验收缺失。** runner 已能从 checkpoint 继续，并有 settlement/receipt/fencing 测试；但当前仓库没有一条自动化测试真正启动 Java、Python、真实外部模型和 MCP 后，在指定节点 kill runner 再验证最终答案。因此简历应写“恢复机制已实现并通过分层测试，在线 kill/restart 待验收”。 - 代码证据：`WorkflowRunner._execute` 与 PostgreSQL checkpointer/receipt 实现。 - 测试证据：checkpoint、receipt、fencing 分层测试存在；真实 provider kill/restart 测试不存在。 - 限制：不能由分层测试推导出在...",
+              "route": "vector#13, keyword#3",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "04-sse-durable-replay.md#SSE 持久事件与断线重放 > 4. 当前不能越界的说法#4",
+              "docId": "doc-9dcce810-d631-4447-9205-8c2256ae2e06",
+              "chunkId": "67072809-4c81-3d86-9d83-dbe251405414",
+              "title": "SSE 持久事件与断线重放",
+              "preview": "- 可以说：事件持久化、确定性 event key、Last-Event-ID 查询和前端去重/重连代码已实现。 - 不可以说：SSE 与 LangGraph checkpoint 是同一个存储或同一事务。 - 不可以说：已经完成浏览器从任意事件断开、刷新、跨实例恢复的完整自动验收。 - 不可以说：SSE 提供 exactly-once 交付；客户端仍应按事件 ID 去重。",
+              "route": "vector#3, keyword#7",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "04-sse-durable-replay.md#SSE 持久事件与断线重放 > 3. 心跳、终态与浏览器去重#3",
+              "docId": "doc-9dcce810-d631-4447-9205-8c2256ae2e06",
+              "chunkId": "44fdaca6-3102-37d2-af60-d6eb7837095f",
+              "title": "SSE 持久事件与断线重放",
+              "preview": "**事实 S5｜状态：已实现。** 当 15 秒没有业务事件时，server 发送 SSE comment heartbeat；run 进入终态且数据库中没有待发送事件后关闭连接。单个 emitter 超时时间为 3 分钟，客户端需要重连。 - 代码证据：`WorkflowController.stream`。 - 测试证据：当前没有使用虚拟时钟覆盖 15 秒 heartbeat 和 3 分钟 emitter timeout 的自动测试。 - 限制：SSE 心跳用于保持连接与检测中断，不等于 workflow runner 的 10 秒 lease heartbeat；二者是不同机制。 **事实 S6｜状态：已实现于演示页。** `demo.html` 用事件 ID 的 Map 去重，只允许游标前进；断线后使用...",
+              "route": "vector#4, keyword#2",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "04-sse-durable-replay.md#SSE 持久事件与断线重放#0",
+              "docId": "doc-9dcce810-d631-4447-9205-8c2256ae2e06",
+              "chunkId": "491e9084-423b-39d1-b6bc-eb8f198cc285",
+              "title": "SSE 持久事件与断线重放",
+              "preview": "> 状态：持久事件、游标协议和演示页自动重连已实现；真实浏览器故障注入全链待验收 > 版本：Java `0.0.1-SNAPSHOT`；Flyway V7–V11 > 快照：2026-08-26",
+              "route": "vector#1, keyword#4",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-019",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 9368.313,
+          "entries": [
+            {
+              "chunkKey": "05-tool-receipt-and-unknown-result.md#工具 receipt、未知结果与安全重试 > 1. 为什么超时不能直接重试#1",
+              "docId": "doc-da26cc60-0582-47d7-917c-e6e01fb7b601",
+              "chunkId": "a0ed6a60-9825-3fd6-99b5-f2042da78055",
+              "title": "工具 receipt、未知结果与安全重试",
+              "preview": "HTTP 或 MCP 超时只说明调用方没有收到确定结果，不说明远端动作没有发生。若客户端盲目 POST 第二次，可能重复搜索、扣费或产生副作用。因此当前链路先生成确定性 `call_id`，把它同时作为 Python receipt 主键和 MCP `Idempotency-Key`。 **事实 R1｜状态：已实现并有测试。** `call_id` 由 `run_id`、`task_id`、tool 和 query 的规范 JSON 做 SHA-256 后生成，重试同一逻辑任务得到同一 ID。确定性 ID 只提供关联键；只有下游真正持久化并消费该键，才有去重效果。 - 代码证据：`domain.py::deterministic_call_id`；`HttpMcpToolClient._request_head...",
+              "route": "vector#2, keyword#2",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-020",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 9444.156,
+          "entries": [
+            {
+              "chunkKey": "05-tool-receipt-and-unknown-result.md#工具 receipt、未知结果与安全重试 > 3. 四种恢复结果#3",
+              "docId": "doc-da26cc60-0582-47d7-917c-e6e01fb7b601",
+              "chunkId": "fbc6c228-48e4-3a9d-9b0e-4b8eb5ca837c",
+              "title": "工具 receipt、未知结果与安全重试",
+              "preview": "**事实 R4｜状态：已实现并有单元测试。** 恢复时按持久状态区分： 1. Java `COMPLETED`：直接重放安全结果，不再次调用工具； 2. 同一当前 claim 的 `EXECUTING`：返回 `MCP_CALL_IN_PROGRESS`； 3. 旧 claim 遗留的 `EXECUTING`：返回 `MCP_RESULT_UNKNOWN`； 4. task/tool/参数指纹不一致：返回 `MCP_RECEIPT_CONFLICT`。 - 代码证据：`WorkflowMcpReceiptService.begin`。 - 测试证据：`replaysCompletedJavaResultWithoutExecutingAgain`、`rejectsInProgressConflictAndSta...",
+              "route": "vector#2, keyword#1",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-021",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 46932.842,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > 旧 claim 工具调用的未知结果#17",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "fb84c692-e599-3f40-9c95-2a437e3a7add",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "旧 claim 遗留的 Java `EXECUTING` receipt 返回稳定错误码 `MCP_RESULT_UNKNOWN`，系统不会自动重跑该工具。这个 at-most-once 优先选择降低了重复执行风险，但会牺牲结果可用性；它不是 exactly-once，也不能承诺零重复或零丢失。",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "05-tool-receipt-and-unknown-result.md#工具 receipt、未知结果与安全重试 > 4. at-most-once 优先，而不是 exactly-once#4",
+              "docId": "doc-da26cc60-0582-47d7-917c-e6e01fb7b601",
+              "chunkId": "c8c80772-95de-3920-bbe8-0a7dd282cb33",
+              "title": "工具 receipt、未知结果与安全重试",
+              "preview": "**事实 R6｜状态：设计已实现，边界明确。** 当前只读工具链选择 at-most-once 优先：模糊态宁可返回未知，也不自动重复动作。这降低重复执行风险，但可能牺牲结果可用性。 - 代码证据：Java `WorkflowMcpReceiptService` 对旧 claim `EXECUTING` 返回 `MCP_RESULT_UNKNOWN`；Python 将该错误列为不可缓存控制状态。 - 测试证据：`WorkflowMcpReceiptServiceTest.rejectsAmbiguousExecutionFromPreviousClaimAsResultUnknown`。 - 限制：不能宣称 exactly-once、零重复或零丢失。若未来加入写工具，需要业务资源版本、outbox/inbox、...",
+              "route": "vector#2, keyword#2",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "05-tool-receipt-and-unknown-result.md#工具 receipt、未知结果与安全重试 > 3. 四种恢复结果#3",
+              "docId": "doc-da26cc60-0582-47d7-917c-e6e01fb7b601",
+              "chunkId": "fbc6c228-48e4-3a9d-9b0e-4b8eb5ca837c",
+              "title": "工具 receipt、未知结果与安全重试",
+              "preview": "**事实 R4｜状态：已实现并有单元测试。** 恢复时按持久状态区分： 1. Java `COMPLETED`：直接重放安全结果，不再次调用工具； 2. 同一当前 claim 的 `EXECUTING`：返回 `MCP_CALL_IN_PROGRESS`； 3. 旧 claim 遗留的 `EXECUTING`：返回 `MCP_RESULT_UNKNOWN`； 4. task/tool/参数指纹不一致：返回 `MCP_RECEIPT_CONFLICT`。 - 代码证据：`WorkflowMcpReceiptService.begin`。 - 测试证据：`replaysCompletedJavaResultWithoutExecutingAgain`、`rejectsInProgressConflictAndSta...",
+              "route": "vector#3, keyword#12",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "README.md#DeepResearch 项目实现知识包 > 可引用的总括表述#4",
+              "docId": "doc-0c2e4992-5e3a-4154-af25-8b6aad42b47f",
+              "chunkId": "d4e28854-64ed-3c10-9745-2ce17cac1e02",
+              "title": "DeepResearch 项目实现知识包",
+              "preview": "DeepResearch 当前采用 Java 安全控制面与 Python/LangGraph 图执行面的双运行时架构。Java 持有公网 REST/SSE、用户归属、任务状态、授权、MCP 工具和最终终态；Python 只在私网 claim 任务，执行 Planner、并行 Worker、Reviewer、Synthesizer，并用 PostgreSQL checkpoint 保存节点状态。claim token、lease、数据库条件写和触发器阻止旧 runner 写入；确定性工具 call ID 与双层 receipt 能重放已完成结果，对无法判断是否已执行的旧 `EXECUTING` 调用返回 `MCP_RESULT_UNKNOWN` 并拒绝盲目重试。 该表述的限制是：仓库已有分层测试和真实 Postg...",
+              "route": "vector#16, keyword#5",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-022",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 20225.581,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > 真实外部模型 kill/restart 的验证边界#13",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "d641672e-2bc2-37e9-8576-481fd1073d39",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "DeepResearch 没有完成真实外部模型参与的进程 kill/restart 全链验收；准确的简历表述是“checkpoint、receipt、claim fencing 恢复机制已实现并通过分层测试，在线 kill/restart 待验收”。不能把单元测试、PostgreSQL/Testcontainers 测试或单条在线烟测写成真实 provider 的恢复成功率。",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "README.md#DeepResearch 项目实现知识包 > 可引用的总括表述#4",
+              "docId": "doc-0c2e4992-5e3a-4154-af25-8b6aad42b47f",
+              "chunkId": "d4e28854-64ed-3c10-9745-2ce17cac1e02",
+              "title": "DeepResearch 项目实现知识包",
+              "preview": "DeepResearch 当前采用 Java 安全控制面与 Python/LangGraph 图执行面的双运行时架构。Java 持有公网 REST/SSE、用户归属、任务状态、授权、MCP 工具和最终终态；Python 只在私网 claim 任务，执行 Planner、并行 Worker、Reviewer、Synthesizer，并用 PostgreSQL checkpoint 保存节点状态。claim token、lease、数据库条件写和触发器阻止旧 runner 写入；确定性工具 call ID 与双层 receipt 能重放已完成结果，对无法判断是否已执行的旧 `EXECUTING` 调用返回 `MCP_RESULT_UNKNOWN` 并拒绝盲目重试。 该表述的限制是：仓库已有分层测试和真实 Postg...",
+              "route": "vector#6, keyword#2",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "06-verification-boundaries.md#DeepResearch 已验证、待验收与未实现边界 > 4. 面试中的安全表述#5",
+              "docId": "doc-7880ae8d-1b80-4eab-8ff0-f3932c51a983",
+              "chunkId": "6cdbd880-3e50-3f0b-be8b-91cee3f2bb94",
+              "title": "DeepResearch 已验证、待验收与未实现边界",
+              "preview": "推荐说法： > 我实现了 PostgreSQL checkpoint、30 秒 lease/10 秒 heartbeat、claim fencing、持久 SSE event log 和双层工具 receipt，并用 Python 单测、真实 PostgreSQL 测试和 Java Testcontainers 分层验证。模型 SDK 内部重试关闭，sidecar 默认最多用 2 个持久 attempt 做有限重试，未知 attempt 只保守计入调用次数预算，未知 token 和 provider 账单不做虚假估计；已完成的 MCP 结果可以重放，旧 claim 留下的执行中调用会返回结果未知并拒绝盲重试。真实外部模型参与的进程 kill/restart、浏览器 SSE 故障注入和容量压测仍待验收，因此我不把...",
+              "route": "vector#3, keyword#3",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "02-checkpoint-and-crash-recovery.md#LangGraph checkpoint 与崩溃恢复 > 4. 当前不能越界的说法#5",
+              "docId": "doc-b48311d6-3ea9-42f5-aca7-d9f22719b87e",
+              "chunkId": "ac60d92d-23bf-32a6-88af-446c67526f9f",
+              "title": "LangGraph checkpoint 与崩溃恢复",
+              "preview": "- 可以说：节点 checkpoint、恢复分支、已结算模型结果重放、claim fencing 和工具 receipt 已实现，并有单元及 PostgreSQL/Testcontainers 证据。 - 不可以说：已经完成真实 DeepSeek/外部 provider 的全链 kill/restart 验收。 - 不可以说：checkpoint 自动保证 exactly-once。 - 不可以说：任意崩溃点都不会丢失结果。 - 不可以说：持久 attempt 或 `max_retries=0` 能证明 provider 没有重复执行或重复计费。 - 不可以说：该实现等价于 Temporal、跨天调度器或生产容灾平台。",
+              "route": "vector#25, keyword#7",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "06-verification-boundaries.md#DeepResearch 已验证、待验收与未实现边界 > 2. 已实现代码，但仍待专项在线验收#2",
+              "docId": "doc-7880ae8d-1b80-4eab-8ff0-f3932c51a983",
+              "chunkId": "d181cc21-59da-35c1-980d-4cf5548c0fd7",
+              "title": "DeepResearch 已验证、待验收与未实现边界",
+              "preview": "**事实 V1｜状态：机制已实现，在线验收缺失。** runner 已能从 checkpoint 继续，并有 settlement/receipt/fencing 测试；但当前仓库没有一条自动化测试真正启动 Java、Python、真实外部模型和 MCP 后，在指定节点 kill runner 再验证最终答案。因此简历应写“恢复机制已实现并通过分层测试，在线 kill/restart 待验收”。 - 代码证据：`WorkflowRunner._execute` 与 PostgreSQL checkpointer/receipt 实现。 - 测试证据：checkpoint、receipt、fencing 分层测试存在；真实 provider kill/restart 测试不存在。 - 限制：不能由分层测试推导出在...",
+              "route": "vector#2, keyword#8",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-023",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 8669.114,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > HITL、Kafka、Temporal 与 Kubernetes 范围#14",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "d75c60bf-03f0-3d1e-926b-265871c00e20",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "当前项目没有实现 HITL interrupt、Kafka、Temporal 或完整 Kubernetes 集群，也没有写工具和高风险审批流。它们属于后续路线，不得表述成已实现、已上线 Kubernetes 或已具备生产集群经验。",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "06-verification-boundaries.md#DeepResearch 已验证、待验收与未实现边界 > 3. 当前未实现或不在范围内#4",
+              "docId": "doc-7880ae8d-1b80-4eab-8ff0-f3932c51a983",
+              "chunkId": "ac4a362b-3fcf-3674-a271-66a0d33560b1",
+              "title": "DeepResearch 已验证、待验收与未实现边界",
+              "preview": "- 没有写工具、支付、文件系统写入、管理员工具或高风险审批流； - 没有 HITL（Human-in-the-loop）interrupt； - 没有 Kafka、Temporal 或完整 Kubernetes 集群； - 没有跨区域容灾、自动扩缩容、压测报告或值班运行记录； - 没有聊天大模型的 SFT、DPO、RL 或分布式训练实践； - 没有承诺 exactly-once；当前 receipt 明确保留 `MCP_RESULT_UNKNOWN`； - 没有证明所有 checkpoint schema 演进都向后兼容； - 没有生产用户量、线上准确率、商业收入或 SLA 数据。",
+              "route": "vector#2, keyword#2",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-024",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 9383.41,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > 引用契约能证明与不能证明的内容#15",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "ddc927cd-c06c-3dba-a96e-a7f8789ae315",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "引用契约能证明正文中的引用编号可以确定映射到公开 citations 数组中的 `source ID`，并拒绝未知来源、越界或需要猜测的映射；引用契约不能自动证明来源权威性，也不能自动证明事实真实性。来源质量和论断支持关系仍需要检索质量、Reviewer、grounding 评测或人工审核。",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "01-architecture-and-trust-boundaries.md#DeepResearch 架构与信任边界 > 4. 模型与工具的信任边界#4",
+              "docId": "doc-67215e6f-3962-46e3-8e87-987d5759188a",
+              "chunkId": "6181bd1d-d773-3ace-a061-1c33f6783718",
+              "title": "DeepResearch 架构与信任边界",
+              "preview": "**事实 A7｜状态：已实现并有图测试。** 模型只能提出严格 Pydantic schema 内的计划、Worker 准备、Reviewer 结论和 Synthesizer 输出；Planner 选择的工具如果不在 run scope 中，执行前会被程序拒绝。 - 代码证据：`workflow-service/src/deepresearch_workflow/domain.py` 的 `StrictModel`、`PlanOutput` 与 `WorkItem`；`DurableResearchGraph._planner`、`_worker`。 - 测试证据：`test_graph_applies_the_claimed_run_task_budget`、`WorkflowServiceTest.reje...",
+              "route": "vector#2, keyword#2",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-025",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 37056.913,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > 模型重试、UNKNOWN 与预算#16",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "69d081dc-3807-3c58-90e2-d753212db3d9",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "LangChain/OpenAI SDK 明确设置 `max_retries=0`，使一个数据库 reservation 对应至多一次由应用发起的 provider 请求；应用默认最多 2 个持久化 attempt。失败或结果不确定的 attempt 先标记为 `UNKNOWN`，并保守计入模型调用次数预算，但未知 token、准确成本和 provider 是否重复计费不能由本地记录恢复。",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "06-verification-boundaries.md#DeepResearch 已验证、待验收与未实现边界 > 4. 面试中的安全表述#5",
+              "docId": "doc-7880ae8d-1b80-4eab-8ff0-f3932c51a983",
+              "chunkId": "6cdbd880-3e50-3f0b-be8b-91cee3f2bb94",
+              "title": "DeepResearch 已验证、待验收与未实现边界",
+              "preview": "推荐说法： > 我实现了 PostgreSQL checkpoint、30 秒 lease/10 秒 heartbeat、claim fencing、持久 SSE event log 和双层工具 receipt，并用 Python 单测、真实 PostgreSQL 测试和 Java Testcontainers 分层验证。模型 SDK 内部重试关闭，sidecar 默认最多用 2 个持久 attempt 做有限重试，未知 attempt 只保守计入调用次数预算，未知 token 和 provider 账单不做虚假估计；已完成的 MCP 结果可以重放，旧 claim 留下的执行中调用会返回结果未知并拒绝盲重试。真实外部模型参与的进程 kill/restart、浏览器 SSE 故障注入和容量压测仍待验收，因此我不把...",
+              "route": "vector#10, keyword#3",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "02-checkpoint-and-crash-recovery.md#LangGraph checkpoint 与崩溃恢复 > 3. checkpoint 与外部调用之间的崩溃窗口#3",
+              "docId": "doc-b48311d6-3ea9-42f5-aca7-d9f22719b87e",
+              "chunkId": "187da1ac-5351-3c32-8da2-c0239b52531e",
+              "title": "LangGraph checkpoint 与崩溃恢复",
+              "preview": "**事实 C6｜状态：已实现并有分层测试。** 模型调用在真正请求 provider 前，按确定性 operation key 和 attempt 在 PostgreSQL 预占。已经 `SETTLED` 的 typed 结果可重放；旧 claim 留下的 `RESERVED` 会转成 `UNKNOWN` 并继续计入调用预算，再决定是否允许新尝试。同一当前 claim 的 provider 失败也先把该 attempt 持久化为 `UNKNOWN`，然后才可能创建下一条 attempt。 - 代码证据：`PostgresWorkflowRepository.reserve_model_call`、`mark_model_call_unknown`、`settle_model_call`；`DurableRese...",
+              "route": "vector#3, keyword#2",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "02-checkpoint-and-crash-recovery.md#LangGraph checkpoint 与崩溃恢复 > 3. checkpoint 与外部调用之间的崩溃窗口#4",
+              "docId": "doc-b48311d6-3ea9-42f5-aca7-d9f22719b87e",
+              "chunkId": "0a7f10d8-4cce-3fe4-9a74-8f66dd8c9915",
+              "title": "LangGraph checkpoint 与崩溃恢复",
+              "preview": "的当前取舍，不是对所有 provider 和任务的最优值；非幂等外部操作不能照搬模型重试策略。 **事实 C6.2｜状态：已实现并有单元测试。** LangChain/OpenAI SDK 的 `max_retries` 被显式设为 0，使一次数据库 reservation 对应至多一次由应用发起的 provider 请求；重试只由上述持久 attempt 状态机控制。 - 代码证据：`OpenAIWorkflowModel.__init__`。 - 测试证据：`workflow-service/tests/test_model.py` 对普通 provider 与 DeepSeek 配置都断言 `max_retries == 0`。 - 限制：关闭 SDK 内部重试提高计数可解释性，但网络中仍可能出现“pro...",
+              "route": "vector#4, keyword#5",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "05-tool-receipt-and-unknown-result.md#工具 receipt、未知结果与安全重试 > 5. 与模型调用未知态的区别#5",
+              "docId": "doc-da26cc60-0582-47d7-917c-e6e01fb7b601",
+              "chunkId": "5626072b-b405-3f28-a43e-d91ed95adbd1",
+              "title": "工具 receipt、未知结果与安全重试",
+              "preview": "模型调用使用 V10 `agent_workflow_budget_reservation` 的 `RESERVED/SETTLED/UNKNOWN` 记录。旧 claim 的未结算模型调用转为 `UNKNOWN` 并保守计入调用次数；工具调用则优先复用确定性 receipt，并对 Java `EXECUTING` 模糊态拒绝重跑。二者都承认网络中的“请求可能已被接受但本地没有结果”，但恢复策略不同。",
+              "route": "vector#2, keyword#9",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-neg-001",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 33203.031,
+          "entries": [
+            {
+              "chunkKey": "README.md#DeepResearch 项目实现知识包#0",
+              "docId": "doc-0c2e4992-5e3a-4154-af25-8b6aad42b47f",
+              "chunkId": "def5f17e-488d-3267-a294-20b34d3aea3f",
+              "title": "DeepResearch 项目实现知识包",
+              "preview": "> 信息边界：这些文档不包含用户 Bearer Token、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。 > 快照日期：2026-08-26 > 文档版本：KB-PROJECT-1.1 > 证据基线：Java `0.0.1-SNAPSHOT`、Python workflow sidecar `0.1.0`、Flyway V7–V11 > 用途：为项目知识库、Agent 评测和面试讲解提供经过脱敏、可公开引用的实现事实",
+              "route": "vector#1, keyword#3",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "README.md#DeepResearch 项目实现知识包 > 阅读规则#1",
+              "docId": "doc-0c2e4992-5e3a-4154-af25-8b6aad42b47f",
+              "chunkId": "a90e3596-da0f-30a6-84a9-dbddfd131a67",
+              "title": "DeepResearch 项目实现知识包",
+              "preview": "本目录只记录可以从当前仓库代码或测试核对的事实。每个主题都标注： - **状态**：`已实现并有分层测试`、`已实现但待在线验收` 或 `未实现`； - **代码证据**：实现所在的仓库相对路径和符号； - **测试证据**：直接覆盖该事实的测试文件和测试名； - **限制**：该证据不能推出什么结论。 这些文档不包含用户 Bearer Token、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。文档中的版本号是仓库构建版本，不代表已发布的生产版本。",
+              "route": "vector#4, keyword#1",
+              "similarityScore": null
+            }
+          ],
+          "answerSample": {
+            "latencyMs": 28565.667,
+            "answer": "无法基于参考材料回答。\n\n参考材料明确划定了信息边界：这些文档不包含**联系方式**（也不包含用户 Bearer Token、JWT 签名密钥、数据库口令、API Key、本机绝对路径或模型思维链）[来源1]。材料中亦未列出任何项目维护者姓名、手机号或个人邮箱，来源2、来源3仅涉及文档阅读规则与索引，同样不含此类信息。\n\n因此，参考材料既没有维护者私人手机号，也没有其个人邮箱，且不提供任何可用于推断的值。",
+            "sources": [
+              {
+                "index": 1,
+                "title": "DeepResearch 项目实现知识包",
+                "url": ""
+              },
+              {
+                "index": 2,
+                "title": "DeepResearch 项目实现知识包",
+                "url": ""
+              },
+              {
+                "index": 3,
+                "title": "DeepResearch 项目实现知识包",
+                "url": ""
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-neg-002",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 22105.551,
+          "entries": [
+            {
+              "chunkKey": "README.md#DeepResearch 项目实现知识包 > 阅读规则#1",
+              "docId": "doc-0c2e4992-5e3a-4154-af25-8b6aad42b47f",
+              "chunkId": "a90e3596-da0f-30a6-84a9-dbddfd131a67",
+              "title": "DeepResearch 项目实现知识包",
+              "preview": "本目录只记录可以从当前仓库代码或测试核对的事实。每个主题都标注： - **状态**：`已实现并有分层测试`、`已实现但待在线验收` 或 `未实现`； - **代码证据**：实现所在的仓库相对路径和符号； - **测试证据**：直接覆盖该事实的测试文件和测试名； - **限制**：该证据不能推出什么结论。 这些文档不包含用户 Bearer Token、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。文档中的版本号是仓库构建版本，不代表已发布的生产版本。",
+              "route": "vector#3, keyword#2",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "README.md#DeepResearch 项目实现知识包#0",
+              "docId": "doc-0c2e4992-5e3a-4154-af25-8b6aad42b47f",
+              "chunkId": "def5f17e-488d-3267-a294-20b34d3aea3f",
+              "title": "DeepResearch 项目实现知识包",
+              "preview": "> 信息边界：这些文档不包含用户 Bearer Token、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。 > 快照日期：2026-08-26 > 文档版本：KB-PROJECT-1.1 > 证据基线：Java `0.0.1-SNAPSHOT`、Python workflow sidecar `0.1.0`、Flyway V7–V11 > 用途：为项目知识库、Agent 评测和面试讲解提供经过脱敏、可公开引用的实现事实",
+              "route": "vector#4, keyword#3",
+              "similarityScore": null
+            }
+          ],
+          "answerSample": {
+            "latencyMs": 12604.508,
+            "answer": "无法基于参考材料回答。参考材料明确声明其信息边界中**不包含 JWT 签名密钥**，因此无法给出 API JWT、internal JWT 和 MCP JWT 三个密钥的原文 [来源1][来源2]。\n\n依据：\n- “这些文档不包含用户 Bearer Token、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。” [来源1]\n- “本目录只记录可以从当前仓库代码或测试核对的事实……这些文档不包含用户 Bearer Token、JWT 签名密钥、数据库口令、API Key……” [来源2]\n\n参考材料也未区分或提及“生产环境正在使用”的 API JWT / internal JWT / MCP JWT 三个密钥 [来源1][来源2]，故不应推测其具体值。",
+            "sources": [
+              {
+                "index": 1,
+                "title": "DeepResearch 项目实现知识包",
+                "url": ""
+              },
+              {
+                "index": 2,
+                "title": "DeepResearch 项目实现知识包",
+                "url": ""
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-neg-003",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 15775.644,
+          "entries": [
+            {
+              "chunkKey": "06-verification-boundaries.md#DeepResearch 已验证、待验收与未实现边界 > 2. 已实现代码，但仍待专项在线验收#2",
+              "docId": "doc-7880ae8d-1b80-4eab-8ff0-f3932c51a983",
+              "chunkId": "d181cc21-59da-35c1-980d-4cf5548c0fd7",
+              "title": "DeepResearch 已验证、待验收与未实现边界",
+              "preview": "**事实 V1｜状态：机制已实现，在线验收缺失。** runner 已能从 checkpoint 继续，并有 settlement/receipt/fencing 测试；但当前仓库没有一条自动化测试真正启动 Java、Python、真实外部模型和 MCP 后，在指定节点 kill runner 再验证最终答案。因此简历应写“恢复机制已实现并通过分层测试，在线 kill/restart 待验收”。 - 代码证据：`WorkflowRunner._execute` 与 PostgreSQL checkpointer/receipt 实现。 - 测试证据：checkpoint、receipt、fencing 分层测试存在；真实 provider kill/restart 测试不存在。 - 限制：不能由分层测试推导出在...",
+              "route": "vector#17, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "06-verification-boundaries.md#DeepResearch 已验证、待验收与未实现边界 > 3. 当前未实现或不在范围内#4",
+              "docId": "doc-7880ae8d-1b80-4eab-8ff0-f3932c51a983",
+              "chunkId": "ac4a362b-3fcf-3674-a271-66a0d33560b1",
+              "title": "DeepResearch 已验证、待验收与未实现边界",
+              "preview": "- 没有写工具、支付、文件系统写入、管理员工具或高风险审批流； - 没有 HITL（Human-in-the-loop）interrupt； - 没有 Kafka、Temporal 或完整 Kubernetes 集群； - 没有跨区域容灾、自动扩缩容、压测报告或值班运行记录； - 没有聊天大模型的 SFT、DPO、RL 或分布式训练实践； - 没有承诺 exactly-once；当前 receipt 明确保留 `MCP_RESULT_UNKNOWN`； - 没有证明所有 checkpoint schema 演进都向后兼容； - 没有生产用户量、线上准确率、商业收入或 SLA 数据。",
+              "route": "vector#3, keyword#5",
+              "similarityScore": null
+            }
+          ],
+          "answerSample": {
+            "latencyMs": 18832.987,
+            "answer": "无法基于参考材料回答这些“精确数字”：材料明确显示 DeepResearch 当前没有生产用户量、P95/P99 或生产 SLA 数据。\n\n- 月活用户：材料说明“没有生产用户量、线上准确率、商业收入或 SLA 数据”[来源2]。\n- P99 延迟：材料说明“当前没有给出并发用户规模、队列吞吐、P95/P99、长时间 soak、数据库故障恢复时间或生产 SLA 的有效实验”[来源1]。\n- SLA：材料说明没有“生产 SLA 的有效实验”[来源1]，也没有“SLA 数据”[来源2]；并且容量压测仍待验收，因此不把它包装成生产 SLA[来源5]。\n\n因此，月活用户、P99 延迟和 SLA 的精确值在参考材料中均无依据，无法回答。",
+            "sources": [
+              {
+                "index": 1,
+                "title": "DeepResearch 已验证、待验收与未实现边界",
+                "url": ""
+              },
+              {
+                "index": 2,
+                "title": "DeepResearch 已验证、待验收与未实现边界",
+                "url": ""
+              },
+              {
+                "index": 3,
+                "title": "DeepResearch 已验证、待验收与未实现边界",
+                "url": ""
+              },
+              {
+                "index": 4,
+                "title": "DeepResearch 已验证、待验收与未实现边界",
+                "url": ""
+              },
+              {
+                "index": 5,
+                "title": "DeepResearch 已验证、待验收与未实现边界",
+                "url": ""
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "caseId": "project-kb-neg-004",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 15755.931,
+          "entries": [
+            {
+              "chunkKey": "07-agent-evaluation-fact-cards.md#DeepResearch Agent 检索事实卡 > HITL、Kafka、Temporal 与 Kubernetes 范围#14",
+              "docId": "doc-15337630-e48c-4c3a-a89b-fc5a40f17723",
+              "chunkId": "d75c60bf-03f0-3d1e-926b-265871c00e20",
+              "title": "DeepResearch Agent 检索事实卡",
+              "preview": "当前项目没有实现 HITL interrupt、Kafka、Temporal 或完整 Kubernetes 集群，也没有写工具和高风险审批流。它们属于后续路线，不得表述成已实现、已上线 Kubernetes 或已具备生产集群经验。",
+              "route": "vector#2, keyword#1",
+              "similarityScore": null
+            },
+            {
+              "chunkKey": "06-verification-boundaries.md#DeepResearch 已验证、待验收与未实现边界 > 3. 当前未实现或不在范围内#4",
+              "docId": "doc-7880ae8d-1b80-4eab-8ff0-f3932c51a983",
+              "chunkId": "ac4a362b-3fcf-3674-a271-66a0d33560b1",
+              "title": "DeepResearch 已验证、待验收与未实现边界",
+              "preview": "- 没有写工具、支付、文件系统写入、管理员工具或高风险审批流； - 没有 HITL（Human-in-the-loop）interrupt； - 没有 Kafka、Temporal 或完整 Kubernetes 集群； - 没有跨区域容灾、自动扩缩容、压测报告或值班运行记录； - 没有聊天大模型的 SFT、DPO、RL 或分布式训练实践； - 没有承诺 exactly-once；当前 receipt 明确保留 `MCP_RESULT_UNKNOWN`； - 没有证明所有 checkpoint schema 演进都向后兼容； - 没有生产用户量、线上准确率、商业收入或 SLA 数据。",
+              "route": "vector#5, keyword#2",
+              "similarityScore": null
+            }
+          ],
+          "answerSample": {
+            "latencyMs": 12740.039,
+            "answer": "无法基于参考材料回答。\n\n参考材料明确指出：当前项目没有实现完整 Kubernetes 集群，不得表述成已实现、已上线 Kubernetes 或已具备生产集群经验 [来源1]。因此材料中既没有“线上 Kubernetes 集群”的云区域信息，也没有生产副本数量信息，不能给出任何具体值。\n\n[来源2][来源3] 仅涉及恢复机制验收边界与引用契约的证明范围，与该问题无关。",
+            "sources": [
+              {
+                "index": 1,
+                "title": "DeepResearch Agent 检索事实卡",
+                "url": ""
+              },
+              {
+                "index": 2,
+                "title": "DeepResearch Agent 检索事实卡",
+                "url": ""
+              },
+              {
+                "index": 3,
+                "title": "DeepResearch Agent 检索事实卡",
+                "url": ""
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "citationChecks": [],
+  "citationCheckAttempted": false
+}

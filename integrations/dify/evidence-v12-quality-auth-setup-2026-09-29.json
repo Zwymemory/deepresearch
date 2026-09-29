@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Pre-cohort auth setup, no model/tool/workflow created.",
+  "attempts": [
+    {
+      "operation": "Read existing v11 workflow",
+      "httpStatus": 401,
+      "tokenExpired": true,
+      "workflowCreated": false,
+      "modelCalled": false
+    },
+    {
+      "operation": "Routine refresh of same authorized QA USER identity",
+      "httpStatus": 200,
+      "roles": [
+        "USER"
+      ],
+      "ttlSeconds": 7200,
+      "accessExpanded": false,
+      "clientResult": "Response used token field; script initially expected accessToken and failed before saving or using it."
+    },
+    {
+      "operation": "Routine refresh with corrected response-field handling",
+      "httpStatus": 200,
+      "roles": [
+        "USER"
+      ],
+      "ttlSeconds": 7200,
+      "accessExpanded": false
+    },
+    {
+      "operation": "Read same existing workflow with refreshed token",
+      "httpStatus": 200,
+      "workflowCreated": false,
+      "modelCalled": false
+    }
+  ],
+  "privateEnvUnchanged": true
+}

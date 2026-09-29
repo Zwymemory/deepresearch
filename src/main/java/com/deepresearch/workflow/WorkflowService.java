@@ -12,6 +12,7 @@ import com.deepresearch.workflow.WorkflowDtos.View;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,13 +44,16 @@ public class WorkflowService {
     private final ObjectMapper objectMapper;
     private final boolean enabled;
     private final Duration deadline;
+    private final String engine;
 
+    @Autowired
     public WorkflowService(WorkflowRepository repository,
                            AgentStateService agentStateService,
                            UserContextService userContextService,
                            ObjectMapper objectMapper,
                            @Value("${deepresearch.workflow.enabled:false}") boolean enabled,
-                           @Value("${deepresearch.workflow.deadline:120s}") Duration deadline) {
+                           @Value("${deepresearch.workflow.deadline:120s}") Duration deadline,
+                           @Value("${deepresearch.workflow.engine:langgraph}") String engine) {
         this.repository = repository;
         this.agentStateService = agentStateService;
         this.userContextService = userContextService;
@@ -57,6 +61,17 @@ public class WorkflowService {
         this.enabled = enabled;
         this.deadline = deadline == null || deadline.isNegative() || deadline.isZero()
                 ? Duration.ofSeconds(120) : deadline;
+        if (!Set.of("langgraph", "dify").contains(engine)) {
+            throw new IllegalArgumentException("deepresearch.workflow.engine 只允许 langgraph 或 dify");
+        }
+        this.engine = engine;
+    }
+
+    /** Keeps existing in-process callers on the legacy engine. */
+    public WorkflowService(WorkflowRepository repository, AgentStateService agentStateService,
+                           UserContextService userContextService, ObjectMapper objectMapper,
+                           boolean enabled, Duration deadline) {
+        this(repository, agentStateService, userContextService, objectMapper, enabled, deadline, "langgraph");
     }
 
     @Transactional
@@ -84,8 +99,10 @@ public class WorkflowService {
         String contextJson = boundedContext(context);
         WorkflowRepository.NewRun newRun = new WorkflowRepository.NewRun(
                 runId, context.sessionId(), userId, request.question().trim(), contextJson,
-                ENDPOINT, key, fingerprint, runId, WorkflowStatus.QUEUED.name(),
-                WorkflowStatus.QUEUED.name(), deadlineAt, scopes, grantId);
+                ENDPOINT, key, fingerprint, runId,
+                "dify".equals(engine) ? WorkflowStatus.DIFY_DISPATCHING.name() : WorkflowStatus.QUEUED.name(),
+                "dify".equals(engine) ? WorkflowStatus.DIFY_DISPATCHING.name() : WorkflowStatus.QUEUED.name(),
+                deadlineAt, scopes, grantId);
         if (repository.insertRun(newRun) == 0) {
             WorkflowRepository.RunRow winner = repository.findByIdempotency(userId, ENDPOINT, key)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
@@ -94,8 +111,11 @@ public class WorkflowService {
         }
         repository.insertGrant(new WorkflowRepository.NewGrant(
                 grantId, runId, userId, scopes, 1, deadlineAt));
+        if ("dify".equals(engine)) {
+            repository.insertDifyMapping(runId);
+        }
         repository.insertEvent(runId, "workflow:queued", "SYSTEM", null, "QUEUED",
-                writeJson(Map.of("status", "QUEUED", "stage", "QUEUED")));
+                writeJson(Map.of("status", newRun.status(), "stage", newRun.stage())));
         return accepted(newRun.runId(), newRun.sessionId(), newRun.status(), newRun.stage(), false);
     }
 
@@ -283,7 +303,7 @@ public class WorkflowService {
         return new View(row.runId(), row.sessionId(), row.status(), row.stage(), progress(row.stage()),
                 row.requestedScopes(), repository.eventsAfter(row.runId(), 0, 50),
                 json(row.usageJson()), json(row.finalResponseJson()), row.errorCode(), row.errorMessage(),
-                row.createdAt(), row.updatedAt());
+                row.createdAt(), row.updatedAt(), repository.difyStopState(row.runId()).orElse(null));
     }
 
     private WorkflowRepository.RunRow owned(String runId, String userId) {
@@ -342,6 +362,9 @@ public class WorkflowService {
             case QUEUED -> 0;
             case PLANNING -> 10;
             case WORKING -> 40;
+            case DIFY_DISPATCHING -> 5;
+            case DIFY_WORKING -> 40;
+            case DISPATCH_UNKNOWN -> 5;
             case REVIEWING -> 65;
             case SYNTHESIZING -> 80;
             case FINALIZING -> 95;

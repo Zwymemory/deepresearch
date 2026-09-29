@@ -70,6 +70,24 @@ tavily:
   api-key: ${TAVILY_API_KEY:}
 
 deepresearch:
+  retrieval:
+    provider: ${DEEPRESEARCH_RETRIEVAL_PROVIDER:legacy}
+  ragflow:
+    # 容器部署时改为 host.docker.internal 或同网络服务名，不能使用容器内 localhost。
+    base-url: ${RAGFLOW_BASE_URL:http://127.0.0.1:9380}
+    api-key: ${RAGFLOW_API_KEY:}
+    dataset-ids: ${RAGFLOW_DATASET_IDS:}
+    connect-timeout: 3s
+    read-timeout: 15s
+    max-results: 20
+    knn-top-k: ${RAGFLOW_KNN_TOP_K:32}
+    knn-num-candidates: ${RAGFLOW_KNN_NUM_CANDIDATES:128}
+    rerank-candidates-count: ${RAGFLOW_RERANK_CANDIDATES_COUNT:20}
+    # RAGFlow keyword=true invokes a separate LLM query-expansion call. Its native
+    # lexical + dense hybrid retrieval remains enabled when query expansion is off.
+    query-expansion-enabled: ${RAGFLOW_QUERY_EXPANSION_ENABLED:false}
+    ingestion-mode: ${DEEPRESEARCH_RAGFLOW_INGESTION_MODE:builtin}
+    similarity-threshold: ${RAGFLOW_SIMILARITY_THRESHOLD:0.22}
   default-temperature: 0.3
   search-top-k: 5            # RAG 检索条数
   hybrid-candidate-top-k: 80  # W5.5：混合检索初召回候选数；公开评测需要更大的候选池
@@ -79,10 +97,11 @@ deepresearch:
     index-name: deepresearch_chunks
   rerank:
     enabled: true
-    url: http://localhost:9000/rerank
+    url: ${DEEPRESEARCH_RERANK_URL:http://localhost:9000/rerank}
     timeout-ms: 30000
     candidate-top-k: 20
     model: BAAI/bge-reranker-base
+    # Ranked chunks must also pass an answerability check before becoming evidence.
   context-expansion:
     enabled: true
     sibling-window: 1
@@ -106,7 +125,12 @@ deepresearch:
   workflow:
     # 安全发布：完成 sidecar、数据库和委派密钥配置后再显式开启。
     enabled: ${DEEPRESEARCH_WORKFLOW_ENABLED:false}
+    engine: ${DEEPRESEARCH_WORKFLOW_ENGINE:langgraph}
     deadline: 120s
+    dify:
+      base-url: ${DEEPRESEARCH_DIFY_BASE_URL:http://127.0.0.1:8081/v1}
+      api-key: ${DEEPRESEARCH_DIFY_APP_KEY:}
+      tool-service-token: ${DEEPRESEARCH_WORKFLOW_DIFY_TOOL_SERVICE_TOKEN:}
     sidecar-service-id: workflow-sidecar
     # 兼容旧的关闭状态；一旦 enabled=true，启动时强制校验三把密钥彼此不同。
     internal-jwt-secret: ${DEEPRESEARCH_INTERNAL_JWT_SECRET:${DEEPRESEARCH_JWT_SECRET}}

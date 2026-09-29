@@ -1,6 +1,8 @@
 package com.deepresearch.agent;
 
 import com.deepresearch.service.HybridRagService;
+import com.deepresearch.service.KnowledgeRetrievalGateway;
+import com.deepresearch.service.RetrievedEvidence;
 import com.deepresearch.web.dto.HybridDebugResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -20,15 +22,18 @@ public class KnowledgeBaseSearchTool implements Tool {
     private static final int PREVIEW_LIMIT = 420;
 
     private final HybridRagService hybridRagService;
+    private final KnowledgeRetrievalGateway gateway;
     private final int topK;
     private final int recallK;
     private final int candidateK;
 
     public KnowledgeBaseSearchTool(HybridRagService hybridRagService,
+                                   KnowledgeRetrievalGateway gateway,
                                    @Value("${deepresearch.agent.kb-search-top-k:3}") int topK,
                                    @Value("${deepresearch.agent.kb-search-recall-k:20}") int recallK,
                                    @Value("${deepresearch.agent.kb-search-candidate-k:10}") int candidateK) {
         this.hybridRagService = hybridRagService;
+        this.gateway = gateway;
         this.topK = topK;
         this.recallK = recallK;
         this.candidateK = candidateK;
@@ -56,6 +61,21 @@ public class KnowledgeBaseSearchTool implements Tool {
             return CitationAwareToolOutput.withoutSources("（知识库检索失败：查询为空）");
         }
         try {
+            if (gateway.ragflow()) {
+                List<RetrievedEvidence> evidence = gateway.retrieve(input.trim(), topK);
+                if (evidence.isEmpty()) return CitationAwareToolOutput.withoutSources("（知识库中没有检索到相关证据）");
+                StringBuilder text = new StringBuilder();
+                List<String> sourceIds = new ArrayList<>();
+                for (RetrievedEvidence item : evidence) {
+                    sourceIds.add(item.persistentSourceId());
+                    text.append(item.citation()).append(' ').append(item.title()).append('\n')
+                            .append("chunkKey: ").append(item.chunkKey()).append('\n')
+                            .append("召回路径: ragflow; score: ").append(item.score()).append('\n')
+                            .append(item.content()).append("\n\n");
+                }
+                return new CitationAwareToolOutput(
+                        ToolOutputSanitizer.markUntrusted("knowledge-base", text.toString().trim()), sourceIds);
+            }
             HybridDebugResponse debug = hybridRagService.debug(input.trim(), topK, recallK, candidateK, List.of());
             List<HybridDebugResponse.Entry> evidences = debug.compressedContext();
             if (evidences == null || evidences.isEmpty()) {

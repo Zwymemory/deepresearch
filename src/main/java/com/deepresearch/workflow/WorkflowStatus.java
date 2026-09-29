@@ -6,6 +6,9 @@ import java.util.Set;
 /** Public, durable workflow states. The Python runner and Java control plane share these names. */
 public enum WorkflowStatus {
     QUEUED,
+    DIFY_DISPATCHING,
+    DIFY_WORKING,
+    DISPATCH_UNKNOWN,
     PLANNING,
     WORKING,
     REVIEWING,
@@ -19,7 +22,8 @@ public enum WorkflowStatus {
     BUDGET_EXCEEDED;
 
     private static final Set<WorkflowStatus> TERMINAL = EnumSet.of(
-            SUCCEEDED, INSUFFICIENT_EVIDENCE, FAILED, CANCELLED, TIMED_OUT, BUDGET_EXCEEDED);
+            SUCCEEDED, INSUFFICIENT_EVIDENCE, FAILED, CANCELLED, TIMED_OUT,
+            BUDGET_EXCEEDED, DISPATCH_UNKNOWN);
 
     public boolean terminal() {
         return TERMINAL.contains(this);

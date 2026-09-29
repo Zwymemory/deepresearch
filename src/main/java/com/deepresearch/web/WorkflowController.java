@@ -6,6 +6,7 @@ import com.deepresearch.workflow.WorkflowDtos.Cancelled;
 import com.deepresearch.workflow.WorkflowDtos.CreateRequest;
 import com.deepresearch.workflow.WorkflowDtos.Event;
 import com.deepresearch.workflow.WorkflowService;
+import com.deepresearch.workflow.DifyWorkflowAdapter;
 import com.deepresearch.workflow.WorkflowStatus;
 import jakarta.validation.Valid;
 import jakarta.annotation.PreDestroy;
@@ -41,6 +42,7 @@ public class WorkflowController {
 
     private final WorkflowService workflowService;
     private final UserContextService userContextService;
+    private final DifyWorkflowAdapter difyAdapter;
     private final AtomicInteger sseThreadSequence = new AtomicInteger();
     private final ExecutorService sseExecutor = new ThreadPoolExecutor(
             4, 32, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<>(128), runnable -> {
@@ -50,9 +52,11 @@ public class WorkflowController {
                 return thread;
             }, new ThreadPoolExecutor.AbortPolicy());
 
-    public WorkflowController(WorkflowService workflowService, UserContextService userContextService) {
+    public WorkflowController(WorkflowService workflowService, UserContextService userContextService,
+                              DifyWorkflowAdapter difyAdapter) {
         this.workflowService = workflowService;
         this.userContextService = userContextService;
+        this.difyAdapter = difyAdapter;
     }
 
     @PostMapping
@@ -71,7 +75,9 @@ public class WorkflowController {
 
     @PostMapping("/{runId}/cancel")
     public Cancelled cancel(@PathVariable String runId) {
-        return workflowService.cancel(runId);
+        Cancelled result = workflowService.cancel(runId);
+        if (!result.alreadyTerminal()) difyAdapter.stop(runId);
+        return result;
     }
 
     @GetMapping(value = "/{runId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

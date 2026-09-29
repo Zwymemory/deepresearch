@@ -70,6 +70,10 @@ class SecurityAuthorizationTest {
                         .contentType("application/json")
                         .content("{\"question\":\"test\"}"))
                 .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/integrations/dify/retrieve")
+                        .contentType("application/json")
+                        .content("{\"question\":\"test\"}"))
+                .andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/kb/count"))
                 .andExpect(status().isUnauthorized());
     }

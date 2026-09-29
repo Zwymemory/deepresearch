@@ -15,6 +15,9 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -40,17 +43,27 @@ public class KnowledgeBaseService {
     private final KeywordSearchService keywordSearchService;
     private final DocumentParserService parserService;
     private final StructuralChunker chunker;
+    private final KnowledgeRetrievalGateway retrievalGateway;
+    private final RagflowIngestionService ragflowIngestion;
+    private final TransactionTemplate transactions;
 
     public KnowledgeBaseService(VectorStore vectorStore,
                                 JdbcTemplate jdbcTemplate,
                                 KeywordSearchService keywordSearchService,
                                 DocumentParserService parserService,
-                                StructuralChunker chunker) {
+                                StructuralChunker chunker,
+                                KnowledgeRetrievalGateway retrievalGateway,
+                                RagflowIngestionService ragflowIngestion,
+                                ObjectProvider<PlatformTransactionManager> transactions) {
         this.vectorStore = vectorStore;
         this.jdbcTemplate = jdbcTemplate;
         this.keywordSearchService = keywordSearchService;
         this.parserService = parserService;
         this.chunker = chunker;
+        this.retrievalGateway = retrievalGateway;
+        this.ragflowIngestion = ragflowIngestion;
+        PlatformTransactionManager manager = transactions.getIfAvailable();
+        this.transactions = manager == null ? null : new TransactionTemplate(manager);
     }
 
     public IngestResult ingest(String title, String text) {
@@ -60,12 +73,13 @@ public class KnowledgeBaseService {
 
     public IngestResult ingestFile(String title, String filename, byte[] bytes) {
         ParsedDocument document = parserService.parseFile(title, filename, bytes);
+        if (retrievalGateway.ragflow()) return ragflowIngestion.ingest(document, false, bytes, filename);
         return ingestParsed(document);
     }
 
-    @Transactional
     public IngestResult ingestParsed(ParsedDocument document) {
-        return ingestParsed(document, false);
+        if (retrievalGateway.ragflow()) return ragflowIngestion.ingest(document, false);
+        return transactions == null ? ingestParsed(document, false) : transactions.execute(status -> ingestParsed(document, false));
     }
 
     private IngestResult ingestParsed(ParsedDocument document, boolean forceReindex) {
@@ -125,9 +139,10 @@ public class KnowledgeBaseService {
     }
 
     public KnowledgeDocumentDetail getDocument(String docId) {
+        if (retrievalGateway.ragflow()) ragflowIngestion.reconcile(docId);
         KnowledgeDocumentSummary summary = findByDocId(docId)
                 .orElseThrow(() -> new IllegalArgumentException("文档不存在: " + docId));
-        List<KnowledgeChunkSummary> chunks = jdbcTemplate.query("""
+        List<KnowledgeChunkSummary> chunks = retrievalGateway.ragflow() ? List.of() : jdbcTemplate.query("""
                 SELECT id::text AS chunk_id,
                        content,
                        coalesce(metadata ->> 'title', '') AS title,
@@ -149,36 +164,77 @@ public class KnowledgeBaseService {
         return new KnowledgeDocumentDetail(summary, chunks);
     }
 
-    @Transactional
     public IngestResult reindexDocument(String docId) {
         DocumentRow row = readDocumentRow(docId);
         ParsedDocument document = parserService.parseStored(row.title(), row.sourceType(), row.filename(), row.rawContent());
-        return ingestParsed(document, true);
+        if (retrievalGateway.ragflow()) {
+            List<byte[]> files = jdbcTemplate.query("SELECT original_file FROM kb_ragflow_document WHERE legacy_doc_id=?",
+                    (rs, n) -> rs.getBytes(1), docId);
+            if (!files.isEmpty() && files.get(0) != null)
+                return ragflowIngestion.reindexExisting(docId, document, files.get(0), row.filename());
+            return ragflowIngestion.reindexExisting(docId, document, null, null);
+        }
+        return transactions == null ? ingestParsed(document, true) : transactions.execute(status -> ingestParsed(document, true));
     }
 
-    @Transactional
+    /** Explicit migration of a legacy document, addressed by its stable Java ID. */
+    public IngestResult syncRagflowDocument(String docId) {
+        DocumentRow row = readDocumentRow(docId);
+        ParsedDocument document = parserService.parseStored(row.title(), row.sourceType(), row.filename(), row.rawContent());
+        List<byte[]> files = jdbcTemplate.query("SELECT original_file FROM kb_ragflow_document WHERE legacy_doc_id=?",
+                (rs, n) -> rs.getBytes(1), docId);
+        if (!files.isEmpty() && files.get(0) != null)
+            return ragflowIngestion.ingestExisting(docId, document, files.get(0), row.filename());
+        return ragflowIngestion.ingestExisting(docId, document);
+    }
+
+    public Map<String, Object> ragflowSyncStatus(String docId) {
+        ragflowIngestion.reconcile(docId);
+        return ragflowIngestion.status(docId);
+    }
+
     public IngestResult deleteDocument(String docId) {
         KnowledgeDocumentSummary summary = findByDocId(docId)
                 .orElseThrow(() -> new IllegalArgumentException("文档不存在: " + docId));
-        deleteChunks(docId);
-        jdbcTemplate.update("DELETE FROM kb_document WHERE doc_id = ?", docId);
-        return new IngestResult(docId, IngestStatus.DELETED, summary.version(), 0, "文档已删除");
+        if (retrievalGateway.ragflow()) {
+            ragflowIngestion.delete(docId);
+            return new IngestResult(docId, IngestStatus.DELETED, summary.version(), 0, "文档已删除");
+        }
+        java.util.function.Supplier<IngestResult> legacyDelete = () -> {
+            deleteChunks(docId);
+            jdbcTemplate.update("DELETE FROM kb_document WHERE doc_id = ?", docId);
+            return new IngestResult(docId, IngestStatus.DELETED, summary.version(), 0, "文档已删除");
+        };
+        return transactions == null ? legacyDelete.get() : transactions.execute(status -> legacyDelete.get());
     }
 
     public long count() {
+        if (retrievalGateway.ragflow()) {
+            Long total = jdbcTemplate.queryForObject("""
+                    SELECT coalesce(sum(d.chunk_count),0) FROM kb_document d
+                    JOIN kb_ragflow_document m ON m.legacy_doc_id=d.doc_id
+                    WHERE m.sync_status='DONE' AND m.document_id IS NOT NULL
+                    """, Long.class);
+            return total == null ? 0 : total;
+        }
         Long n = jdbcTemplate.queryForObject("SELECT count(*) FROM vector_store", Long.class);
         return n == null ? 0 : n;
     }
 
-    @Transactional
     public void clear() {
-        jdbcTemplate.update("DELETE FROM vector_store");
-        jdbcTemplate.update("DELETE FROM kb_document");
-        keywordSearchService.clear();
-        log.debug("知识库已清空");
+        if (retrievalGateway.ragflow()) throw new IllegalStateException("RAGFlow 模式不支持批量清空；请逐个删除文档");
+        Runnable legacyClear = () -> {
+            jdbcTemplate.update("DELETE FROM vector_store");
+            jdbcTemplate.update("DELETE FROM kb_document");
+            keywordSearchService.clear();
+            log.debug("知识库已清空");
+        };
+        if (transactions == null) legacyClear.run();
+        else transactions.executeWithoutResult(status -> legacyClear.run());
     }
 
     public int reindexKeywordIndex() {
+        if (retrievalGateway.ragflow()) throw new IllegalStateException("关键词索引重建仅适用于 legacy 模式");
         List<Document> chunks = jdbcTemplate.query("""
                 SELECT id::text AS id,
                        content,

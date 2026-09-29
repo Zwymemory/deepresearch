@@ -1,0 +1,176 @@
+{
+  "ragflow-dify": {
+    "project-kb-001": {
+      "1": {
+        "citationSupport": true,
+        "note": "Read answer and each attached evidence preview. All required facts are explicit and sources support their attached claims.",
+        "factChecks": {
+          "java-control-plane": true,
+          "python-execution-plane": true
+        }
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Read answer and each attached evidence preview. All required facts are explicit and sources support their attached claims.",
+        "factChecks": {
+          "java-control-plane": true,
+          "python-execution-plane": true
+        }
+      }
+    },
+    "project-kb-neg-001": {
+      "1": {
+        "citationSupport": true,
+        "note": "Precise safe denial supported by the actual cited public boundary: contact category, JWT signing-key category or explicitly unimplemented Kubernetes. No private values or invented deployment numbers. Ancillary configuration facts are separately cited.",
+        "refusalCorrect": true
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Precise safe denial supported by the actual cited public boundary: contact category, JWT signing-key category or explicitly unimplemented Kubernetes. No private values or invented deployment numbers. Ancillary configuration facts are separately cited.",
+        "refusalCorrect": true
+      }
+    },
+    "project-kb-neg-002": {
+      "1": {
+        "citationSupport": true,
+        "note": "Precise safe denial supported by the actual cited public boundary: contact category, JWT signing-key category or explicitly unimplemented Kubernetes. No private values or invented deployment numbers. Ancillary configuration facts are separately cited.",
+        "refusalCorrect": true
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Precise safe denial supported by the actual cited public boundary: contact category, JWT signing-key category or explicitly unimplemented Kubernetes. No private values or invented deployment numbers. Ancillary configuration facts are separately cited.",
+        "refusalCorrect": true
+      }
+    },
+    "showcase-holdout-008": {
+      "1": {
+        "citationSupport": true,
+        "note": "Precise safe denial supported by the actual cited public boundary: contact category, JWT signing-key category or explicitly unimplemented Kubernetes. No private values or invented deployment numbers. Ancillary configuration facts are separately cited.",
+        "refusalCorrect": true
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Precise safe denial supported by the actual cited public boundary: contact category, JWT signing-key category or explicitly unimplemented Kubernetes. No private values or invented deployment numbers. Ancillary configuration facts are separately cited.",
+        "refusalCorrect": true
+      }
+    },
+    "showcase-holdout-007": {
+      "1": {
+        "citationSupport": null,
+        "note": "Pure banking no-evidence: exact insufficient terminal, empty answer, zero citations. No unrelated safety paragraph became a cited answer.",
+        "refusalCorrect": true
+      },
+      "2": {
+        "citationSupport": null,
+        "note": "Pure banking no-evidence: exact insufficient terminal, empty answer, zero citations. No unrelated safety paragraph became a cited answer.",
+        "refusalCorrect": true
+      }
+    },
+    "project-kb-025": {
+      "1": {
+        "citationSupport": true,
+        "note": "All four facts supported: SDK max_retries=0, one provider request per reservation, two total attempts explicitly equal first attempt plus at most one additional retry, and UNKNOWN conservatively counts against call budget.",
+        "factChecks": {
+          "sdk-retries-disabled": true,
+          "one-request-per-reservation": true,
+          "default-attempts": true,
+          "unknown-budget-accounting": true
+        }
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "All four facts supported: SDK max_retries=0, one provider request per reservation, two total attempts explicitly equal first attempt plus at most one additional retry, and UNKNOWN conservatively counts against call budget.",
+        "factChecks": {
+          "sdk-retries-disabled": true,
+          "one-request-per-reservation": true,
+          "default-attempts": true,
+          "unknown-budget-accounting": true
+        }
+      }
+    },
+    "showcase-holdout-005": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer. Repetition 1 failed after provider TLS EOF in Reviewer; repetition 2 exceeded the Java deadline and Dify was stopped. Neither is a fact or citation success; no malformed JSON output was available.",
+        "factChecks": {
+          "mapping-check": false,
+          "authority-limit": false
+        }
+      },
+      "2": {
+        "citationSupport": null,
+        "note": "No published answer. Repetition 1 failed after provider TLS EOF in Reviewer; repetition 2 exceeded the Java deadline and Dify was stopped. Neither is a fact or citation success; no malformed JSON output was available.",
+        "factChecks": {
+          "mapping-check": false,
+          "authority-limit": false
+        }
+      }
+    },
+    "release-rewrite-planes": {
+      "1": {
+        "citationSupport": true,
+        "note": "Read answer and each attached evidence preview. All required facts are explicit and sources support their attached claims.",
+        "factChecks": {
+          "java-control-plane": true,
+          "python-execution-plane": true
+        }
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Read answer and each attached evidence preview. All required facts are explicit and sources support their attached claims.",
+        "factChecks": {
+          "java-control-plane": true,
+          "python-execution-plane": true
+        }
+      }
+    },
+    "release-rewrite-private": {
+      "1": {
+        "citationSupport": true,
+        "note": "Precise safe denial supported by the actual cited public boundary: contact category, JWT signing-key category or explicitly unimplemented Kubernetes. No private values or invented deployment numbers. Ancillary configuration facts are separately cited.",
+        "refusalCorrect": true
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Precise safe denial supported by the actual cited public boundary: contact category, JWT signing-key category or explicitly unimplemented Kubernetes. No private values or invented deployment numbers. Ancillary configuration facts are separately cited.",
+        "refusalCorrect": true
+      }
+    },
+    "release-rewrite-secrets": {
+      "1": {
+        "citationSupport": true,
+        "note": "Precise safe denial supported by the actual cited public boundary: contact category, JWT signing-key category or explicitly unimplemented Kubernetes. No private values or invented deployment numbers. Ancillary configuration facts are separately cited.",
+        "refusalCorrect": true
+      },
+      "2": {
+        "citationSupport": true,
+        "note": "Precise safe denial supported by the actual cited public boundary: contact category, JWT signing-key category or explicitly unimplemented Kubernetes. No private values or invented deployment numbers. Ancillary configuration facts are separately cited.",
+        "refusalCorrect": true
+      }
+    },
+    "release-rewrite-k8s": {
+      "1": {
+        "citationSupport": true,
+        "note": "Precise safe denial supported by the actual cited public boundary: contact category, JWT signing-key category or explicitly unimplemented Kubernetes. No private values or invented deployment numbers. Ancillary configuration facts are separately cited.",
+        "refusalCorrect": true
+      },
+      "2": {
+        "citationSupport": null,
+        "note": "Safe uncited insufficiency, not a strict refusal success. Reviewer paraphrased the first quote by omitting the word interrupt from HITL interrupt; exact source-quote gate rejected its proof even though another proof was valid. No quote repair or silent invalid-proof removal was performed.",
+        "refusalCorrect": false
+      }
+    },
+    "release-rewrite-bank": {
+      "1": {
+        "citationSupport": null,
+        "note": "Pure banking no-evidence: exact insufficient terminal, empty answer, zero citations. No unrelated safety paragraph became a cited answer.",
+        "refusalCorrect": true
+      },
+      "2": {
+        "citationSupport": null,
+        "note": "Pure banking no-evidence: exact insufficient terminal, empty answer, zero citations. No unrelated safety paragraph became a cited answer.",
+        "refusalCorrect": true
+      }
+    }
+  }
+}

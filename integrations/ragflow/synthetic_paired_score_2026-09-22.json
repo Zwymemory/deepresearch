@@ -1,0 +1,1256 @@
+{
+  "schemaVersion": 1,
+  "fixtureSha256": "3f142361f5f03c6bd1101643cb45d544dca090eda10632706c6383a368288202",
+  "conditions": {
+    "legacyConfig": {
+      "provider": "legacy",
+      "baseUrl": "http://127.0.0.1:8082",
+      "embeddingModel": "embedding-2",
+      "reranker": "BAAI/bge-reranker-base",
+      "rerankerUrl": "http://127.0.0.1:19002/rerank",
+      "retrievalTopK": 5
+    },
+    "ragflowConfig": {
+      "provider": "ragflow",
+      "baseUrl": "http://127.0.0.1:8080",
+      "apiUrl": "http://127.0.0.1:9380",
+      "datasetId": "49375886b67411f1811e952527b08ce2",
+      "chunkTokenNum": 128,
+      "similarityThreshold": 0.22,
+      "retrievalTopK": 5
+    },
+    "host": {
+      "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+      "machine": "arm64",
+      "dockerMemoryGiB": 7.75
+    },
+    "corpus": {
+      "files": [
+        {
+          "path": "docs/kb-project/README.md",
+          "sha256": "9bf9b4e98771e5ab6f2df7c60e331e57c382ce9b40634b68ad8dbdd61a7dbebd"
+        },
+        {
+          "path": "docs/kb-project/01-architecture-and-trust-boundaries.md",
+          "sha256": "d281884eff6e581cbd25df1708c2c3ae963901ab0e6b1b17b5e6bc5e49bae92f"
+        },
+        {
+          "path": "docs/kb-project/02-checkpoint-and-crash-recovery.md",
+          "sha256": "7874c363d5be14e1af51964f87cd5e9ee5b2c6bdec0ed1e817bd5cd151800b95"
+        },
+        {
+          "path": "docs/kb-project/03-claim-lease-and-fencing.md",
+          "sha256": "fb7fc01c2c23fd709d1d1100c1bb6cfdd7e2bcd58cab0fd38d91c3f1e1d8fa64"
+        },
+        {
+          "path": "docs/kb-project/04-sse-durable-replay.md",
+          "sha256": "64dc2cd26bf13f0c84eacf26b071f213ac423ef634e4aa0bd49c0926b7fe6090"
+        },
+        {
+          "path": "docs/kb-project/05-tool-receipt-and-unknown-result.md",
+          "sha256": "6b0e232d31b4d0eaf81e6a721a8632d63d921e4c76d85f4c0876dca82b72e04b"
+        },
+        {
+          "path": "docs/kb-project/06-verification-boundaries.md",
+          "sha256": "12df625ce79355fb450e539d1ce74789ec61e6c5193f726d166e7b89fd2c5140"
+        },
+        {
+          "path": "docs/kb-project/07-agent-evaluation-fact-cards.md",
+          "sha256": "ac7601e097a249e790f6d55baeb0a2cf6604e4f74a6b534abe19c9e026c6ebaf"
+        }
+      ],
+      "documentCount": 8,
+      "legacyChunkCount": 57,
+      "ragflowChunkCount": 129,
+      "databaseIsolation": "separate PostgreSQL volumes; shared Elasticsearch contains legacy index only",
+      "syntheticFixtureSha256": "3f142361f5f03c6bd1101643cb45d544dca090eda10632706c6383a368288202",
+      "syntheticFixtureName": "synthetic_knowledge_pair_20260922.md",
+      "note": "Both routes contain the same eight project files; this distinct-name synthetic fixture is added through Java for this run and removed afterward."
+    },
+    "testWindow": "2026-09-22T11:24:19.770745+00:00",
+    "projectDocumentIds": [],
+    "goldLabelsReviewed": false
+  },
+  "metrics": {
+    "legacy": {
+      "positiveCount": 25,
+      "negativeCount": 3,
+      "answerableCaseCount": 0,
+      "answerableAtK": null,
+      "hitRateAtK": 1.0,
+      "recallAtK": 1.0,
+      "mrrAtK": 0.98,
+      "ndcgAtK": 0.9852371901428583,
+      "negativeCleanRate": 0.0,
+      "p95Ms": 304.158,
+      "latencySamples": 84,
+      "unstableCases": 0
+    },
+    "ragflow": {
+      "positiveCount": 25,
+      "negativeCount": 3,
+      "answerableCaseCount": 0,
+      "answerableAtK": null,
+      "hitRateAtK": 1.0,
+      "recallAtK": 1.0,
+      "mrrAtK": 0.97,
+      "ndcgAtK": 0.9772270623229358,
+      "negativeCleanRate": 1.0,
+      "p95Ms": 1196.707,
+      "latencySamples": 84,
+      "unstableCases": 0
+    }
+  },
+  "cases": [
+    {
+      "id": "p01",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          280.167,
+          285.365,
+          276.729
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          1036.941,
+          954.939,
+          1020.806
+        ]
+      }
+    },
+    {
+      "id": "p02",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          261.628,
+          261.905,
+          300.257
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          839.483,
+          1026.465,
+          754.653
+        ]
+      }
+    },
+    {
+      "id": "p03",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          258.001,
+          269.681,
+          291.289
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          877.92,
+          1069.438,
+          1154.882
+        ]
+      }
+    },
+    {
+      "id": "p04",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          228.928,
+          247.391,
+          300.292
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          960.348,
+          1033.731,
+          734.194
+        ]
+      }
+    },
+    {
+      "id": "p05",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          215.862,
+          341.83,
+          277.878
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          1109.614,
+          755.749,
+          934.898
+        ]
+      }
+    },
+    {
+      "id": "p06",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          304.158,
+          232.116,
+          286.637
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          1183.479,
+          952.862,
+          716.694
+        ]
+      }
+    },
+    {
+      "id": "p07",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          2
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          248.776,
+          335.207,
+          274.54
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          4
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          949.861,
+          1097.758,
+          924.551
+        ]
+      }
+    },
+    {
+      "id": "p08",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          257.829,
+          283.997,
+          229.614
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          1080.6,
+          1081.996,
+          860.323
+        ]
+      }
+    },
+    {
+      "id": "p09",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          300.626,
+          250.757,
+          286.81
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          897.721,
+          1110.403,
+          1196.707
+        ]
+      }
+    },
+    {
+      "id": "p10",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          308.217,
+          260.616,
+          246.067
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          1114.412,
+          1043.096,
+          872.0
+        ]
+      }
+    },
+    {
+      "id": "p11",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          274.206,
+          271.958,
+          275.143
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          995.344,
+          907.964,
+          930.984
+        ]
+      }
+    },
+    {
+      "id": "p12",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          256.552,
+          211.462,
+          232.897
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          1179.44,
+          1017.307,
+          1150.509
+        ]
+      }
+    },
+    {
+      "id": "p13",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          263.828,
+          279.157,
+          303.213
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          819.893,
+          793.792,
+          1024.566
+        ]
+      }
+    },
+    {
+      "id": "p14",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          288.845,
+          204.227,
+          278.615
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          1061.345,
+          756.242,
+          962.082
+        ]
+      }
+    },
+    {
+      "id": "p15",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          321.06,
+          270.532,
+          248.975
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          690.678,
+          798.11,
+          725.497
+        ]
+      }
+    },
+    {
+      "id": "p16",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          199.788,
+          281.27,
+          252.246
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          928.477,
+          1169.12,
+          674.877
+        ]
+      }
+    },
+    {
+      "id": "p17",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          248.005,
+          264.268,
+          203.829
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          1224.964,
+          1231.529,
+          1571.81
+        ]
+      }
+    },
+    {
+      "id": "p18",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          276.978,
+          267.165,
+          260.779
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          773.857,
+          623.018,
+          976.863
+        ]
+      }
+    },
+    {
+      "id": "p19",
+      "critical": false,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          274.11,
+          255.71,
+          272.808
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          1208.68,
+          1144.945,
+          1093.577
+        ]
+      }
+    },
+    {
+      "id": "p20",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          279.081,
+          216.634,
+          279.291
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          1184.208,
+          982.817,
+          751.267
+        ]
+      }
+    },
+    {
+      "id": "p21",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          256.616,
+          266.302,
+          232.665
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          741.07,
+          1007.213,
+          1038.745
+        ]
+      }
+    },
+    {
+      "id": "p22",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          292.121,
+          284.698,
+          277.344
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          611.797,
+          647.289,
+          836.76
+        ]
+      }
+    },
+    {
+      "id": "p23",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          267.315,
+          290.342,
+          245.093
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          959.456,
+          1105.87,
+          758.797
+        ]
+      }
+    },
+    {
+      "id": "p24",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          281.308,
+          297.17,
+          255.144
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          861.496,
+          929.586,
+          724.934
+        ]
+      }
+    },
+    {
+      "id": "p25",
+      "critical": true,
+      "positive": true,
+      "legacy": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          243.88,
+          274.961,
+          253.131
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [
+          1
+        ],
+        "hit": true,
+        "negativeClean": null,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          1041.787,
+          1113.617,
+          810.929
+        ]
+      }
+    },
+    {
+      "id": "n01",
+      "critical": false,
+      "positive": false,
+      "legacy": {
+        "relevantRanks": [],
+        "hit": null,
+        "negativeClean": false,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          227.391,
+          242.196,
+          212.985
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [],
+        "hit": null,
+        "negativeClean": true,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          887.231,
+          836.024,
+          919.859
+        ]
+      }
+    },
+    {
+      "id": "n02",
+      "critical": false,
+      "positive": false,
+      "legacy": {
+        "relevantRanks": [],
+        "hit": null,
+        "negativeClean": false,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          235.721,
+          291.269,
+          235.448
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [],
+        "hit": null,
+        "negativeClean": true,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          984.225,
+          1099.417,
+          606.757
+        ]
+      }
+    },
+    {
+      "id": "n03",
+      "critical": false,
+      "positive": false,
+      "legacy": {
+        "relevantRanks": [],
+        "hit": null,
+        "negativeClean": false,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          246.403,
+          257.328,
+          252.673
+        ]
+      },
+      "ragflow": {
+        "relevantRanks": [],
+        "hit": null,
+        "negativeClean": true,
+        "unstable": false,
+        "requiredFactRanks": {},
+        "answerableAtK": null,
+        "latenciesMs": [
+          1025.608,
+          1004.962,
+          909.515
+        ]
+      }
+    }
+  ],
+  "newMisses": [],
+  "criticalNewMisses": [],
+  "newAnswerabilityMisses": [],
+  "criticalNewAnswerabilityMisses": [],
+  "citationVerification": {
+    "total": 35,
+    "verified": 35,
+    "checks": [
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:3115ab32b67811f1ba03fd6d46900022:47e099e8e7a591c0",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:3115ab32b67811f1ba03fd6d46900022:5a043944de0aba52",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:3115ab32b67811f1ba03fd6d46900022:89bc69e1a0908fc1",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:3115ab32b67811f1ba03fd6d46900022:bb12007869a7872e",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:3115ab32b67811f1ba03fd6d46900022:d50ac488ab155295",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:3115ab32b67811f1ba03fd6d46900022:e0e11824975adf0b",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:3115ab32b67811f1ba03fd6d46900022:ff0b7270b30b26dc",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75c29a0ab67411f1811e952527b08ce2:3fa6b2ca0949354d",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75c29a0ab67411f1811e952527b08ce2:6a97a7e1c5ecc8ab",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75c29a0ab67411f1811e952527b08ce2:83d7d440f8ab9125",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75c29a0ab67411f1811e952527b08ce2:f0281a47da284429",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75d6dd44b67411f1811e952527b08ce2:14793a22f8de29f8",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75d6dd44b67411f1811e952527b08ce2:3e0f30b4d81cbad3",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75d6dd44b67411f1811e952527b08ce2:709d98d18f1f409a",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75d6dd44b67411f1811e952527b08ce2:c7c1e984b214f8c0",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75e5a072b67411f1811e952527b08ce2:b7214ba4f27a9162",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75e5a072b67411f1811e952527b08ce2:f4690b6694e91ec6",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75e5a072b67411f1811e952527b08ce2:f786fbf885110b7e",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75f16a2eb67411f1811e952527b08ce2:40d326172afc5aa2",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75fc2dd8b67411f1811e952527b08ce2:498c26b3dcd96fbf",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75fc2dd8b67411f1811e952527b08ce2:81f44dfdf925ee77",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75fc2dd8b67411f1811e952527b08ce2:9231a2cc18ea0d34",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:75fc2dd8b67411f1811e952527b08ce2:b91cc0d642b6289e",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:76069304b67411f1811e952527b08ce2:1e807d6e20aceea3",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:76069304b67411f1811e952527b08ce2:3834194f5260784e",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:76069304b67411f1811e952527b08ce2:5bd2f20ad781d26b",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:76069304b67411f1811e952527b08ce2:7951c69007ae5518",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:76069304b67411f1811e952527b08ce2:92ee18b5c2a09199",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:7612728cb67411f1811e952527b08ce2:47252f4abd259db6",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:1274bacf47be704d",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:6033251fc4445c85",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:7c913f2311bf96c6",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:b00b5c8913448983",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:e39e42abd94b8e68",
+        "verified": true
+      },
+      {
+        "sourceId": "kb:ragflow:49375886b67411f1811e952527b08ce2:761d053ab67411f1811e952527b08ce2:ff5952d59e4df2f3",
+        "verified": true
+      }
+    ],
+    "attempted": true
+  },
+  "ingestion": {
+    "legacy": {
+      "docId": "doc-e87bb9eb-b9d2-4c0c-8d7a-e9cde1aa0ce4",
+      "status": "DONE",
+      "chunkCount": 26,
+      "error": null
+    },
+    "ragflow": {
+      "docId": "doc-e78af444-5bcd-4d6c-a56f-736813f4bdf6",
+      "status": "DONE",
+      "chunkCount": null,
+      "error": null
+    }
+  },
+  "projectMappings": [],
+  "parseCompletionRate": 1.0,
+  "gates": {
+    "atLeast25ProjectPositives": false,
+    "goldLabelsReviewed": false,
+    "positiveHitsBoth": true,
+    "newMissesAtMostOne": true,
+    "criticalNoNewMisses": true,
+    "negativeCasesPresent": true,
+    "negativeNoEvidence": false,
+    "citationVerified": true,
+    "p95Within1_5x": false,
+    "fixtureParsedBoth": true,
+    "projectMappingsDone": false,
+    "stableRanking": true
+  },
+  "readyToSwitch": false
+}

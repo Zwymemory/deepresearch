@@ -1,0 +1,385 @@
+{
+  "legacy-langgraph": {
+    "project-kb-001": {
+      "1": {
+        "citationSupport": true,
+        "note": "Reviewed semantic facts against the frozen question and answer; all requested facts are present. Published claims and source previews were reviewed; cited source IDs occur in the workflow tool receipts.",
+        "factChecks": {
+          "java-control-plane": true,
+          "python-execution-plane": true
+        }
+      }
+    },
+    "project-kb-002": {
+      "1": {
+        "citationSupport": true,
+        "note": "Reviewed semantic facts against the frozen question and answer; all requested facts are present. Published claims and source previews were reviewed; cited source IDs occur in the workflow tool receipts.",
+        "factChecks": {
+          "compose-exposure": true,
+          "cloud-boundary": true
+        }
+      }
+    },
+    "project-kb-003": {
+      "1": {
+        "citationSupport": true,
+        "note": "Reviewed semantic facts against the frozen question and answer; all requested facts are present. Published claims and source previews were reviewed; cited source IDs occur in the workflow tool receipts.",
+        "factChecks": {
+          "restricted-role": true,
+          "terminal-write-denied": true,
+          "java-finalize": true
+        }
+      }
+    },
+    "project-kb-004": {
+      "1": {
+        "citationSupport": true,
+        "note": "Reviewed semantic facts against the frozen question and answer; all requested facts are present. Published claims and source previews were reviewed; cited source IDs occur in the workflow tool receipts.",
+        "factChecks": {
+          "no-user-token-forwarding": true,
+          "service-jwt-ttl": true,
+          "delegation-jwt-ttl": true
+        }
+      }
+    },
+    "project-kb-005": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer; required facts absent.",
+        "factChecks": {
+          "single-scope": false,
+          "scope-intersection": false,
+          "binding-match": false
+        }
+      }
+    },
+    "project-kb-006": {
+      "1": {
+        "citationSupport": true,
+        "note": "Reviewed semantic facts against the frozen question and answer; all requested facts are present. Published claims and source previews were reviewed; cited source IDs occur in the workflow tool receipts.",
+        "factChecks": {
+          "minimum-length": true,
+          "distinct-secrets": true
+        }
+      }
+    },
+    "project-kb-007": {
+      "1": {
+        "citationSupport": true,
+        "note": "Reviewed semantic facts against the frozen question and answer; all requested facts are present. Published claims and source previews were reviewed; cited source IDs occur in the workflow tool receipts.",
+        "factChecks": {
+          "read-only-allowlist": true,
+          "unsupported-operations": true
+        }
+      }
+    },
+    "project-kb-008": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer; required facts absent.",
+        "factChecks": {
+          "checkpoint-schema": false,
+          "thread-id-source": false,
+          "default-run-mapping": false
+        }
+      }
+    },
+    "project-kb-009": {
+      "1": {
+        "citationSupport": false,
+        "note": "Reviewed semantic facts against the frozen question and answer; all requested facts are present. Citation group includes a synthetic no-result placeholder, not a document source.",
+        "factChecks": {
+          "sync-boundary": true,
+          "external-call-exclusion": true,
+          "not-exactly-once": true
+        }
+      }
+    },
+    "project-kb-010": {
+      "1": {
+        "citationSupport": true,
+        "note": "Reviewed semantic facts against the frozen question and answer; all requested facts are present. Published claims and source previews were reviewed; cited source IDs occur in the workflow tool receipts.",
+        "factChecks": {
+          "incomplete-resume": true,
+          "completed-finalize-retry": true,
+          "no-resynthesis": true
+        }
+      }
+    },
+    "project-kb-011": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer; required facts absent.",
+        "factChecks": {
+          "settled-replay": false,
+          "stale-reserved-unknown": false,
+          "unknown-budget": false
+        }
+      }
+    },
+    "project-kb-012": {
+      "1": {
+        "citationSupport": true,
+        "note": "Reviewed semantic facts against the frozen question and answer; all requested facts are present. Published claims and source previews were reviewed; cited source IDs occur in the workflow tool receipts.",
+        "factChecks": {
+          "lease-default": true,
+          "heartbeat-default": true,
+          "heartbeat-less-than-lease": true
+        }
+      }
+    },
+    "project-kb-013": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer; required facts absent.",
+        "factChecks": {
+          "claim-locking": false,
+          "reclaim-eligibility": false,
+          "fresh-token": false
+        }
+      }
+    },
+    "project-kb-014": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer; required facts absent.",
+        "factChecks": {
+          "serialization": false,
+          "handoff-recheck": false,
+          "fencing-required": false,
+          "fencing-mechanism": false
+        }
+      }
+    },
+    "project-kb-015": {
+      "1": {
+        "citationSupport": true,
+        "note": "Reviewed semantic facts against the frozen question and answer; all requested facts are present. Published claims and source previews were reviewed; cited source IDs occur in the workflow tool receipts.",
+        "factChecks": {
+          "hardening-change": true,
+          "blocked-bypass": true
+        }
+      }
+    },
+    "project-kb-016": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer; required facts absent.",
+        "factChecks": {
+          "cursor-format": false,
+          "cursor-validation": false,
+          "database-replay": false
+        }
+      }
+    },
+    "project-kb-017": {
+      "1": {
+        "citationSupport": true,
+        "note": "Reviewed semantic facts against the frozen question and answer; all requested facts are present. Published claims and source previews were reviewed; cited source IDs occur in the workflow tool receipts.",
+        "factChecks": {
+          "idle-heartbeat": true,
+          "terminal-close": true
+        }
+      }
+    },
+    "project-kb-018": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer; required facts absent.",
+        "factChecks": {
+          "client-dedup": false,
+          "cursor-replay": false,
+          "refresh-limit": false,
+          "verification-limit": false
+        }
+      }
+    },
+    "project-kb-019": {
+      "1": {
+        "citationSupport": true,
+        "note": "Reviewed semantic facts against the frozen question and answer; all requested facts are present. Published claims and source previews were reviewed; cited source IDs occur in the workflow tool receipts.",
+        "factChecks": {
+          "call-id-inputs": true,
+          "stable-retry-id": true,
+          "identifier-only": true,
+          "downstream-dedup": true
+        }
+      }
+    },
+    "project-kb-020": {
+      "1": {
+        "citationSupport": true,
+        "note": "Reviewed semantic facts against the frozen question and answer; all requested facts are present. Published claims and source previews were reviewed; cited source IDs occur in the workflow tool receipts.",
+        "factChecks": {
+          "completed-replay": true,
+          "current-executing": true,
+          "stale-executing": true
+        }
+      }
+    },
+    "project-kb-021": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer; required facts absent.",
+        "factChecks": {
+          "at-most-once-choice": false,
+          "stable-unknown-code": false,
+          "no-blind-retry": false,
+          "availability-tradeoff": false,
+          "not-exactly-once": false
+        }
+      }
+    },
+    "project-kb-022": {
+      "1": {
+        "citationSupport": true,
+        "note": "Reviewed semantic facts against the frozen question and answer; all requested facts are present. Published claims and source previews were reviewed; cited source IDs occur in the workflow tool receipts.",
+        "factChecks": {
+          "not-validated-e2e": true,
+          "implemented-and-layer-tested": true,
+          "online-validation-pending": true
+        }
+      }
+    },
+    "project-kb-023": {
+      "1": {
+        "citationSupport": true,
+        "note": "Reviewed semantic facts against the frozen question and answer; all requested facts are present. Published claims and source previews were reviewed; cited source IDs occur in the workflow tool receipts.",
+        "factChecks": {
+          "scope-absent": true
+        }
+      }
+    },
+    "project-kb-024": {
+      "1": {
+        "citationSupport": true,
+        "note": "Reviewed semantic facts against the frozen question and answer; all requested facts are present. Published claims and source previews were reviewed; cited source IDs occur in the workflow tool receipts.",
+        "factChecks": {
+          "deterministic-mapping": true,
+          "invalid-mapping-rejected": true,
+          "authority-not-proven": true,
+          "truth-not-proven": true
+        }
+      }
+    },
+    "project-kb-025": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer; required facts absent.",
+        "factChecks": {
+          "sdk-retries-disabled": false,
+          "one-request-per-reservation": false,
+          "default-attempts": false,
+          "unknown-budget-accounting": false
+        }
+      }
+    },
+    "project-kb-neg-001": {
+      "1": {
+        "citationSupport": null,
+        "note": "Safe abstention without the cited boundary explanation required by the frozen contract.",
+        "refusalCorrect": false
+      }
+    },
+    "project-kb-neg-002": {
+      "1": {
+        "citationSupport": null,
+        "note": "Safe abstention without the cited boundary explanation required by the frozen contract.",
+        "refusalCorrect": false
+      }
+    },
+    "project-kb-neg-003": {
+      "1": {
+        "citationSupport": false,
+        "note": "Boundary value withheld with four genuine evidence receipts, but one no-result placeholder was also cited. Citation group includes a synthetic no-result placeholder, not a document source.",
+        "refusalCorrect": true
+      }
+    },
+    "project-kb-neg-004": {
+      "1": {
+        "citationSupport": null,
+        "note": "Safe abstention without the cited boundary explanation required by the frozen contract.",
+        "refusalCorrect": false
+      }
+    },
+    "showcase-holdout-001": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer; required facts absent.",
+        "factChecks": {
+          "cursor-format": false,
+          "durable-replay": false,
+          "database-order": false
+        }
+      }
+    },
+    "showcase-holdout-002": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer; required facts absent.",
+        "factChecks": {
+          "stable-call-id": false,
+          "unknown-result": false,
+          "no-blind-retry": false
+        }
+      }
+    },
+    "showcase-holdout-003": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer; required facts absent.",
+        "factChecks": {
+          "java-control": false,
+          "python-execution": false,
+          "no-user-token": false
+        }
+      }
+    },
+    "showcase-holdout-004": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer; required facts absent.",
+        "factChecks": {
+          "heartbeat": false,
+          "browser-dedup": false,
+          "refresh-limit": false
+        }
+      }
+    },
+    "showcase-holdout-005": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer; required facts absent.",
+        "factChecks": {
+          "mapping-check": false,
+          "authority-limit": false
+        }
+      }
+    },
+    "showcase-holdout-006": {
+      "1": {
+        "citationSupport": null,
+        "note": "No published answer; required facts absent.",
+        "factChecks": {
+          "sdk-disabled": false,
+          "bounded-attempts": false,
+          "unknown-budget": false
+        }
+      }
+    },
+    "showcase-holdout-007": {
+      "1": {
+        "citationSupport": null,
+        "note": "Pure no-evidence question safely abstained without citation or invented account.",
+        "refusalCorrect": true
+      }
+    },
+    "showcase-holdout-008": {
+      "1": {
+        "citationSupport": null,
+        "note": "Safe abstention without the cited boundary explanation required by the frozen contract.",
+        "refusalCorrect": false
+      }
+    }
+  }
+}

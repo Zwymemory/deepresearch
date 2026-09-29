@@ -1,0 +1,421 @@
+{
+  "app": {
+    "description": "Evidence v1 contract fixture. Always refuses to publish unverified claims.",
+    "icon": "🔎",
+    "icon_background": "#E8F4FF",
+    "mode": "workflow",
+    "name": "DeepResearch Evidence v1 fixture",
+    "use_icon_as_answer_icon": false
+  },
+  "dependencies": [],
+  "kind": "app",
+  "version": "0.3.1",
+  "workflow": {
+    "conversation_variables": [],
+    "environment_variables": [],
+    "features": {
+      "file_upload": {
+        "enabled": false
+      },
+      "opening_statement": "",
+      "retriever_resource": {
+        "enabled": false
+      },
+      "sensitive_word_avoidance": {
+        "enabled": false
+      },
+      "speech_to_text": {
+        "enabled": false
+      },
+      "suggested_questions": [],
+      "suggested_questions_after_answer": {
+        "enabled": false
+      },
+      "text_to_speech": {
+        "enabled": false
+      }
+    },
+    "graph": {
+      "edges": [
+        {
+          "id": "start-planner",
+          "source": "start",
+          "sourceHandle": "source",
+          "target": "planner",
+          "targetHandle": "target",
+          "type": "custom",
+          "zIndex": 0,
+          "data": {
+            "isInIteration": false,
+            "isInLoop": false,
+            "sourceType": "start",
+            "targetType": "code"
+          }
+        },
+        {
+          "id": "planner-worker",
+          "source": "planner",
+          "sourceHandle": "source",
+          "target": "worker",
+          "targetHandle": "target",
+          "type": "custom",
+          "zIndex": 0,
+          "data": {
+            "isInIteration": false,
+            "isInLoop": false,
+            "sourceType": "code",
+            "targetType": "code"
+          }
+        },
+        {
+          "id": "worker-reviewer",
+          "source": "worker",
+          "sourceHandle": "source",
+          "target": "reviewer",
+          "targetHandle": "target",
+          "type": "custom",
+          "zIndex": 0,
+          "data": {
+            "isInIteration": false,
+            "isInLoop": false,
+            "sourceType": "code",
+            "targetType": "code"
+          }
+        },
+        {
+          "id": "reviewer-synth",
+          "source": "reviewer",
+          "sourceHandle": "source",
+          "target": "synth",
+          "targetHandle": "target",
+          "type": "custom",
+          "zIndex": 0,
+          "data": {
+            "isInIteration": false,
+            "isInLoop": false,
+            "sourceType": "code",
+            "targetType": "code"
+          }
+        },
+        {
+          "id": "synth-end",
+          "source": "synth",
+          "sourceHandle": "source",
+          "target": "end",
+          "targetHandle": "target",
+          "type": "custom",
+          "zIndex": 0,
+          "data": {
+            "isInIteration": false,
+            "isInLoop": false,
+            "sourceType": "code",
+            "targetType": "end"
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "custom",
+          "data": {
+            "title": "Start",
+            "desc": "",
+            "type": "start",
+            "selected": false,
+            "variables": [
+              {
+                "label": "question",
+                "variable": "question",
+                "type": "paragraph",
+                "required": true,
+                "max_length": null,
+                "options": []
+              },
+              {
+                "label": "java_run_id",
+                "variable": "java_run_id",
+                "type": "text-input",
+                "required": true,
+                "max_length": null,
+                "options": []
+              },
+              {
+                "label": "allowed_tools",
+                "variable": "allowed_tools",
+                "type": "text-input",
+                "required": false,
+                "max_length": null,
+                "options": []
+              },
+              {
+                "label": "session_summary",
+                "variable": "session_summary",
+                "type": "paragraph",
+                "required": false,
+                "max_length": null,
+                "options": []
+              },
+              {
+                "label": "fixture_evidence",
+                "variable": "fixture_evidence",
+                "type": "paragraph",
+                "required": false,
+                "max_length": null,
+                "options": []
+              }
+            ]
+          },
+          "height": 90,
+          "width": 244,
+          "position": {
+            "x": 30,
+            "y": 220
+          },
+          "positionAbsolute": {
+            "x": 30,
+            "y": 220
+          },
+          "sourcePosition": "right",
+          "targetPosition": "left",
+          "selected": false
+        },
+        {
+          "id": "planner",
+          "type": "custom",
+          "data": {
+            "title": "Planner fixture",
+            "desc": "",
+            "type": "code",
+            "selected": false,
+            "code": "def main(question: str) -> dict:\n    question=question.strip()\n    if not question:\n        return {\"tasks\":\"[]\"}\n    return {\"tasks\": \"[\" + \",\".join([\"\\\"\" + question[:300].replace(\"\\\"\", \"\") + \"\\\"\"]) + \"]\"}\n",
+            "code_language": "python3",
+            "variables": [
+              {
+                "variable": "question",
+                "value_selector": [
+                  "start",
+                  "question"
+                ]
+              }
+            ],
+            "outputs": {
+              "tasks": {
+                "type": "string",
+                "children": null
+              }
+            }
+          },
+          "height": 90,
+          "width": 244,
+          "position": {
+            "x": 330,
+            "y": 220
+          },
+          "positionAbsolute": {
+            "x": 330,
+            "y": 220
+          },
+          "sourcePosition": "right",
+          "targetPosition": "left",
+          "selected": false
+        },
+        {
+          "id": "worker",
+          "type": "custom",
+          "data": {
+            "title": "Worker fixture",
+            "desc": "",
+            "type": "code",
+            "selected": false,
+            "code": "import json\ndef main(tasks: str, fixture_evidence: str) -> dict:\n    try:\n        evidence=json.loads(fixture_evidence or \"[]\")\n        if not isinstance(evidence,list): evidence=[]\n        evidence=evidence[:4]\n        evidence=[e for e in evidence if isinstance(e,dict) and e.get(\"untrusted\") is True and e.get(\"route\")==\"ragflow\"]\n        return {\"evidence\":json.dumps(evidence,ensure_ascii=False)}\n    except Exception:\n        return {\"evidence\":\"[]\"}\n",
+            "code_language": "python3",
+            "variables": [
+              {
+                "variable": "tasks",
+                "value_selector": [
+                  "planner",
+                  "tasks"
+                ]
+              },
+              {
+                "variable": "fixture_evidence",
+                "value_selector": [
+                  "start",
+                  "fixture_evidence"
+                ]
+              }
+            ],
+            "outputs": {
+              "evidence": {
+                "type": "string",
+                "children": null
+              }
+            }
+          },
+          "height": 90,
+          "width": 244,
+          "position": {
+            "x": 630,
+            "y": 220
+          },
+          "positionAbsolute": {
+            "x": 630,
+            "y": 220
+          },
+          "sourcePosition": "right",
+          "targetPosition": "left",
+          "selected": false
+        },
+        {
+          "id": "reviewer",
+          "type": "custom",
+          "data": {
+            "title": "Reviewer fixture",
+            "desc": "",
+            "type": "code",
+            "selected": false,
+            "code": "import json\ndef main(evidence: str) -> dict:\n    try:\n        rows=json.loads(evidence)\n        valid=bool(rows) and all(isinstance(e.get(\"chunkKey\"),str) and e[\"chunkKey\"].startswith(\"ragflow:\") for e in rows)\n        return {\"verdict\":\"SUFFICIENT\" if valid else \"INSUFFICIENT_EVIDENCE\"}\n    except Exception:\n        return {\"verdict\":\"INSUFFICIENT_EVIDENCE\"}\n",
+            "code_language": "python3",
+            "variables": [
+              {
+                "variable": "evidence",
+                "value_selector": [
+                  "worker",
+                  "evidence"
+                ]
+              }
+            ],
+            "outputs": {
+              "verdict": {
+                "type": "string",
+                "children": null
+              }
+            }
+          },
+          "height": 90,
+          "width": 244,
+          "position": {
+            "x": 930,
+            "y": 220
+          },
+          "positionAbsolute": {
+            "x": 930,
+            "y": 220
+          },
+          "sourcePosition": "right",
+          "targetPosition": "left",
+          "selected": false
+        },
+        {
+          "id": "synth",
+          "type": "custom",
+          "data": {
+            "title": "Synthesizer fixture",
+            "desc": "",
+            "type": "code",
+            "selected": false,
+            "code": "import json\ndef main(verdict: str, evidence: str) -> dict:\n    if verdict!=\"SUFFICIENT\": return {\"status\":\"INSUFFICIENT_EVIDENCE\",\"answer\":\"\",\"citations\":[]}\n    try:\n        rows=json.loads(evidence)\n        citations=[]\n        for e in rows:\n            key=e[\"chunkKey\"]\n            source=\"kb:\"+key\n            if source not in citations: citations.append(source)\n        # Fixture verifies the contract only; no model-generated claims are published.\n        return {\"status\":\"INSUFFICIENT_EVIDENCE\",\"answer\":\"\",\"citations\":[]}\n    except Exception:\n        return {\"status\":\"FAILED\",\"answer\":\"\",\"citations\":[]}\n",
+            "code_language": "python3",
+            "variables": [
+              {
+                "variable": "verdict",
+                "value_selector": [
+                  "reviewer",
+                  "verdict"
+                ]
+              },
+              {
+                "variable": "evidence",
+                "value_selector": [
+                  "worker",
+                  "evidence"
+                ]
+              }
+            ],
+            "outputs": {
+              "status": {
+                "type": "string",
+                "children": null
+              },
+              "answer": {
+                "type": "string",
+                "children": null
+              },
+              "citations": {
+                "type": "array[string]",
+                "children": null
+              }
+            }
+          },
+          "height": 90,
+          "width": 244,
+          "position": {
+            "x": 1230,
+            "y": 220
+          },
+          "positionAbsolute": {
+            "x": 1230,
+            "y": 220
+          },
+          "sourcePosition": "right",
+          "targetPosition": "left",
+          "selected": false
+        },
+        {
+          "id": "end",
+          "type": "custom",
+          "data": {
+            "title": "End",
+            "desc": "",
+            "type": "end",
+            "selected": false,
+            "outputs": [
+              {
+                "variable": "status",
+                "value_selector": [
+                  "synth",
+                  "status"
+                ],
+                "value_type": "string"
+              },
+              {
+                "variable": "answer",
+                "value_selector": [
+                  "synth",
+                  "answer"
+                ],
+                "value_type": "string"
+              },
+              {
+                "variable": "citations",
+                "value_selector": [
+                  "synth",
+                  "citations"
+                ],
+                "value_type": "array[string]"
+              }
+            ]
+          },
+          "height": 90,
+          "width": 244,
+          "position": {
+            "x": 1530,
+            "y": 220
+          },
+          "positionAbsolute": {
+            "x": 1530,
+            "y": 220
+          },
+          "sourcePosition": "right",
+          "targetPosition": "left",
+          "selected": false
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "zoom": 0.7
+      }
+    }
+  }
+}

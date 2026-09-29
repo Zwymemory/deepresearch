@@ -1,0 +1,937 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Development checks of v10 resolved snapshot options and documented-refusal coverage. No whole-run retry; separate from frozen live cohort.",
+  "dslSha256": "435721c3b798f198df84b20de1fcfb85e79ee2448d9eab5072a637738e1e60eb",
+  "attempts": [
+    {
+      "fixtureId": "missing-single-thread",
+      "question": "根据 Python 官方公开资料，asyncio 用于哪类并发编程、适合哪类任务？",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "asyncio 用于编写单线程并发代码，使用 async/await 语法。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n"
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "用于哪类并发编程"
+          },
+          {
+            "index": 2,
+            "question_part": "适合哪类任务"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": []
+      },
+      "candidate": {
+        "claims": [
+          {
+            "text": "asyncio 用于编写单线程并发代码，使用 async/await 语法。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n"
+              }
+            ]
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "requirements": [
+          "用于哪类并发编程",
+          "适合哪类任务"
+        ],
+        "evidences": [
+          {
+            "sourceId": "来源1",
+            "citationId": "web:tavily:d8a4102f47d3b9be000f270ab0e79f6770a01d299c9b771c936d87c344fcddd6",
+            "title": "asyncio --- 异步I/O — Python 3.14.7 文档",
+            "content": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n有关 asyncio 的基础介绍。\n\nasyncio 提供一组 高层级 API 用于：\n\n并发地 运行 Python 协程 并对其执行过程实现完全控制;\n\n执行 网络 IO 和 IPC;\n\n控制 子进程;\n\n通过 队列 分发任务;\n\n同步 并发代码;\n\nFor introspection, asyncio provides APIs and tools for: [...] inspecting the async call graph of tasks and futures;\n\ninspecting tasks in another running Python process with\ncommand-line tools;\n\n此外，还有一些 低层级 API 以支持 库和框架的开发者 实现：\n\n创建和管理 事件循环，它提供用于 连接网络, 运行 子进程, 处理 OS 信号 等功能的异步 API；\n\n使用 transports 实现高效率协议;\n\n通过 async/await 语法 桥接 基于回调的库和代码。\n\n适用范围: not WASI.\n\n此模块在 WebAssembly 平台上无效或不可用。请参阅 WebAssembly 平台 了解详情。\n\nasyncio REPL\n\n你可以在 REPL 中尝试使用 `asyncio` 并发上下文：\n\n`asyncio`\n\n这个 REPL 提供了与 `PYTHON_BASIC_REPL` 的有限兼容性。推荐使用默认的 REPL 以获得完整功能和最新特性。\n\n`PYTHON_BASIC_REPL`",
+            "url": "https://docs.python.org/zh-cn/3/library/asyncio.html"
+          }
+        ]
+      },
+      "expectedSupported": [
+        false
+      ],
+      "expectedCoverage": false,
+      "httpStatus": 200,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": false
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": []
+          },
+          {
+            "requirement_index": 2,
+            "claim_indices": []
+          }
+        ]
+      },
+      "rawOutputSha256": "e3ded28200745a32e18aad0ddbf4e3764ed26eee84ca6be3af8b94abea7e5492",
+      "usage": {
+        "completion_tokens": 43,
+        "prompt_tokens": 836,
+        "total_tokens": 879
+      },
+      "finalStatus": "INSUFFICIENT_EVIDENCE",
+      "matchesExpected": true
+    },
+    {
+      "fixtureId": "minimal-supported-concurrency",
+      "question": "根据 Python 官方公开资料，asyncio 用于哪类并发编程、适合哪类任务？",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "asyncio 用于编写并发代码，使用 async/await 语法。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n"
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "用于哪类并发编程"
+          },
+          {
+            "index": 2,
+            "question_part": "适合哪类任务"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": []
+      },
+      "candidate": {
+        "claims": [
+          {
+            "text": "asyncio 用于编写并发代码，使用 async/await 语法。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n"
+              }
+            ]
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "requirements": [
+          "用于哪类并发编程",
+          "适合哪类任务"
+        ],
+        "evidences": [
+          {
+            "sourceId": "来源1",
+            "citationId": "web:tavily:d8a4102f47d3b9be000f270ab0e79f6770a01d299c9b771c936d87c344fcddd6",
+            "title": "asyncio --- 异步I/O — Python 3.14.7 文档",
+            "content": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n有关 asyncio 的基础介绍。\n\nasyncio 提供一组 高层级 API 用于：\n\n并发地 运行 Python 协程 并对其执行过程实现完全控制;\n\n执行 网络 IO 和 IPC;\n\n控制 子进程;\n\n通过 队列 分发任务;\n\n同步 并发代码;\n\nFor introspection, asyncio provides APIs and tools for: [...] inspecting the async call graph of tasks and futures;\n\ninspecting tasks in another running Python process with\ncommand-line tools;\n\n此外，还有一些 低层级 API 以支持 库和框架的开发者 实现：\n\n创建和管理 事件循环，它提供用于 连接网络, 运行 子进程, 处理 OS 信号 等功能的异步 API；\n\n使用 transports 实现高效率协议;\n\n通过 async/await 语法 桥接 基于回调的库和代码。\n\n适用范围: not WASI.\n\n此模块在 WebAssembly 平台上无效或不可用。请参阅 WebAssembly 平台 了解详情。\n\nasyncio REPL\n\n你可以在 REPL 中尝试使用 `asyncio` 并发上下文：\n\n`asyncio`\n\n这个 REPL 提供了与 `PYTHON_BASIC_REPL` 的有限兼容性。推荐使用默认的 REPL 以获得完整功能和最新特性。\n\n`PYTHON_BASIC_REPL`",
+            "url": "https://docs.python.org/zh-cn/3/library/asyncio.html"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true
+      ],
+      "expectedCoverage": false,
+      "httpStatus": 200,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          },
+          {
+            "requirement_index": 2,
+            "claim_indices": []
+          }
+        ]
+      },
+      "rawOutputSha256": "5acb5d32f0f230aa668a0a977ea2b04fc62eebe53e3b0d47af8c58f4dcfd40ab",
+      "usage": {
+        "completion_tokens": 44,
+        "prompt_tokens": 834,
+        "total_tokens": 878
+      },
+      "finalStatus": "INSUFFICIENT_EVIDENCE",
+      "matchesExpected": true
+    },
+    {
+      "fixtureId": "unsupported-universal",
+      "question": "根据 Python 官方公开资料，asyncio 用于哪类并发编程、适合哪类任务？",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "asyncio 是所有网络任务的唯一最佳选择。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n"
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "用于哪类并发编程"
+          },
+          {
+            "index": 2,
+            "question_part": "适合哪类任务"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": []
+      },
+      "candidate": {
+        "claims": [
+          {
+            "text": "asyncio 是所有网络任务的唯一最佳选择。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n"
+              }
+            ]
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "requirements": [
+          "用于哪类并发编程",
+          "适合哪类任务"
+        ],
+        "evidences": [
+          {
+            "sourceId": "来源1",
+            "citationId": "web:tavily:d8a4102f47d3b9be000f270ab0e79f6770a01d299c9b771c936d87c344fcddd6",
+            "title": "asyncio --- 异步I/O — Python 3.14.7 文档",
+            "content": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n有关 asyncio 的基础介绍。\n\nasyncio 提供一组 高层级 API 用于：\n\n并发地 运行 Python 协程 并对其执行过程实现完全控制;\n\n执行 网络 IO 和 IPC;\n\n控制 子进程;\n\n通过 队列 分发任务;\n\n同步 并发代码;\n\nFor introspection, asyncio provides APIs and tools for: [...] inspecting the async call graph of tasks and futures;\n\ninspecting tasks in another running Python process with\ncommand-line tools;\n\n此外，还有一些 低层级 API 以支持 库和框架的开发者 实现：\n\n创建和管理 事件循环，它提供用于 连接网络, 运行 子进程, 处理 OS 信号 等功能的异步 API；\n\n使用 transports 实现高效率协议;\n\n通过 async/await 语法 桥接 基于回调的库和代码。\n\n适用范围: not WASI.\n\n此模块在 WebAssembly 平台上无效或不可用。请参阅 WebAssembly 平台 了解详情。\n\nasyncio REPL\n\n你可以在 REPL 中尝试使用 `asyncio` 并发上下文：\n\n`asyncio`\n\n这个 REPL 提供了与 `PYTHON_BASIC_REPL` 的有限兼容性。推荐使用默认的 REPL 以获得完整功能和最新特性。\n\n`PYTHON_BASIC_REPL`",
+            "url": "https://docs.python.org/zh-cn/3/library/asyncio.html"
+          }
+        ]
+      },
+      "expectedSupported": [
+        false
+      ],
+      "expectedCoverage": false,
+      "httpStatus": 200,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": false
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": []
+          },
+          {
+            "requirement_index": 2,
+            "claim_indices": []
+          }
+        ]
+      },
+      "rawOutputSha256": "e3ded28200745a32e18aad0ddbf4e3764ed26eee84ca6be3af8b94abea7e5492",
+      "usage": {
+        "completion_tokens": 43,
+        "prompt_tokens": 829,
+        "total_tokens": 872
+      },
+      "finalStatus": "INSUFFICIENT_EVIDENCE",
+      "matchesExpected": true
+    },
+    {
+      "fixtureId": "explicit-single-thread",
+      "question": "Python 3.6 的这段资料如何描述 asyncio 的并发代码？",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "这段 Python 3.6 资料描述 asyncio 为使用协程编写单线程并发代码提供基础设施。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "This module provides infrastructure for writing single-threaded concurrent\ncode using coroutines, multiplexing I/O access over sockets and other\nresources, running network clients and servers, and other related primitives.\nHere is a more detailed list of the package contents:\n\n"
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "Python 3.6 的这段资料如何描述 asyncio 的并发代码？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": []
+      },
+      "candidate": {
+        "claims": [
+          {
+            "text": "这段 Python 3.6 资料描述 asyncio 为使用协程编写单线程并发代码提供基础设施。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "This module provides infrastructure for writing single-threaded concurrent\ncode using coroutines, multiplexing I/O access over sockets and other\nresources, running network clients and servers, and other related primitives.\nHere is a more detailed list of the package contents:\n\n"
+              }
+            ]
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "requirements": [
+          "Python 3.6 的这段资料如何描述 asyncio 的并发代码？"
+        ],
+        "evidences": [
+          {
+            "sourceId": "来源1",
+            "citationId": "web:tavily:02b8a5ba4053ca3d320f66e262a6fea27910800f2784704be2423ee5a527a429",
+            "title": "18.5. asyncio --- Asynchronous I/O, event loop, coroutines and tasks — Dokumentasi Python 3.6.15",
+            "content": "### Navigasi\n\n# 18.5. `asyncio` --- Asynchronous I/O, event loop, coroutines and tasks¶\n\n`asyncio`\n\nBaru pada versi 3.4.\n\nSource code: Lib/asyncio/\n\nThis module provides infrastructure for writing single-threaded concurrent\ncode using coroutines, multiplexing I/O access over sockets and other\nresources, running network clients and servers, and other related primitives.\nHere is a more detailed list of the package contents:\n\na pluggable event loop with various system-specific\nimplementations; [...] `yield from`\n\ncancellation support for `Future`s and coroutines;\n\n`Future`\n\nsynchronization primitives for use between coroutines in\na single thread, mimicking those in the `threading` module;\n\n`threading`\n\nan interface for passing work off to a threadpool, for times when\nyou absolutely, positively have to use a library that makes blocking\nI/O calls. [...] transport and protocol abstractions\n(similar to those in Twisted);\n\nconcrete support for TCP, UDP, SSL, subprocess pipes, delayed calls, and\nothers (some may be system-dependent);\n\na `Future` class that mimics the one in the `concurrent.futures`\nmodule, but adapted for use with the event loop;\n\n`Future`\n`concurrent.futures`\n\ncoroutines and tasks based on `yield from` (PEP 380), to help write\nconcurrent code in a sequential fashion;\n\n`yield from`",
+            "url": "https://docs.python.org/id/3.6/library/asyncio.html"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true
+      ],
+      "expectedCoverage": true,
+      "httpStatus": 200,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "34b44905a35c266df75c795dd6b4a2555407f7fffe246ea2f4ef28f7a339da22",
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 736,
+        "total_tokens": 768
+      },
+      "finalStatus": "SUCCEEDED",
+      "matchesExpected": true
+    },
+    {
+      "fixtureId": "wrong-count",
+      "question": "这段资料描述每个线程运行多少个事件循环？",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "这段资料描述每个线程运行两个事件循环。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n"
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "这段资料描述每个线程运行多少个事件循环？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": []
+      },
+      "candidate": {
+        "claims": [
+          {
+            "text": "这段资料描述每个线程运行两个事件循环。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n"
+              }
+            ]
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "requirements": [
+          "这段资料描述每个线程运行多少个事件循环？"
+        ],
+        "evidences": [
+          {
+            "sourceId": "来源1",
+            "citationId": "web:tavily:643dd68acb0762cf7a21e1dd18a220d0425bec7da8e85ebcd340ad10d74dbcfd",
+            "title": "asyncio and free-threaded Python — Python 3.14.7 documentation",
+            "content": "asyncio uses an event loop as a scheduler to enable highly efficient\nconcurrency by switching between tasks to allow non-blocking I/O\noperations. This results in better performance for I/O-bound use\ncases. It also allows off-loading CPU-bound work to a thread or\nprocess pool, but that is still limited by the global\ninterpreter lock in CPython. [...] A single event loop on one core can handle many connections\nconcurrently, but the Python code that runs to handle each one still\nexecutes serially. Once requests involve a non-trivial amount of\nper-request computation, that handling becomes the bottleneck, and a\nsingle core can no longer keep up. Combining asyncio with threads is\nmost useful here: by running an event loop per thread, the handling of\ndifferent requests can run in parallel across multiple CPU cores. It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n\nHere’s an example of how to use asyncio with threads:",
+            "url": "https://docs.python.org/3/library/asyncio-threading.html"
+          }
+        ]
+      },
+      "expectedSupported": [
+        false
+      ],
+      "expectedCoverage": false,
+      "httpStatus": 200,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": false
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": []
+          }
+        ]
+      },
+      "rawOutputSha256": "7e3c6493bda19620db8ae5b09be3fdfadcb48af9aab14af5f2021a6c61d8b1f6",
+      "usage": {
+        "completion_tokens": 31,
+        "prompt_tokens": 707,
+        "total_tokens": 738
+      },
+      "finalStatus": "INSUFFICIENT_EVIDENCE",
+      "matchesExpected": true
+    },
+    {
+      "fixtureId": "right-count",
+      "question": "这段资料描述每个线程运行多少个事件循环？",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "这段资料描述每个线程运行一个事件循环。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n"
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "这段资料描述每个线程运行多少个事件循环？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": []
+      },
+      "candidate": {
+        "claims": [
+          {
+            "text": "这段资料描述每个线程运行一个事件循环。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n"
+              }
+            ]
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "requirements": [
+          "这段资料描述每个线程运行多少个事件循环？"
+        ],
+        "evidences": [
+          {
+            "sourceId": "来源1",
+            "citationId": "web:tavily:643dd68acb0762cf7a21e1dd18a220d0425bec7da8e85ebcd340ad10d74dbcfd",
+            "title": "asyncio and free-threaded Python — Python 3.14.7 documentation",
+            "content": "asyncio uses an event loop as a scheduler to enable highly efficient\nconcurrency by switching between tasks to allow non-blocking I/O\noperations. This results in better performance for I/O-bound use\ncases. It also allows off-loading CPU-bound work to a thread or\nprocess pool, but that is still limited by the global\ninterpreter lock in CPython. [...] A single event loop on one core can handle many connections\nconcurrently, but the Python code that runs to handle each one still\nexecutes serially. Once requests involve a non-trivial amount of\nper-request computation, that handling becomes the bottleneck, and a\nsingle core can no longer keep up. Combining asyncio with threads is\nmost useful here: by running an event loop per thread, the handling of\ndifferent requests can run in parallel across multiple CPU cores. It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n\nHere’s an example of how to use asyncio with threads:",
+            "url": "https://docs.python.org/3/library/asyncio-threading.html"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true
+      ],
+      "expectedCoverage": true,
+      "httpStatus": 200,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "34b44905a35c266df75c795dd6b4a2555407f7fffe246ea2f4ef28f7a339da22",
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 707,
+        "total_tokens": 739
+      },
+      "finalStatus": "SUCCEEDED",
+      "matchesExpected": true
+    },
+    {
+      "fixtureId": "wrong-environment",
+      "question": "这段资料描述什么环境下可利用多个 CPU 核心？",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "这段资料描述任意 Python 环境都可以利用多个 CPU 核心。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n"
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "这段资料描述什么环境下可利用多个 CPU 核心？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": []
+      },
+      "candidate": {
+        "claims": [
+          {
+            "text": "这段资料描述任意 Python 环境都可以利用多个 CPU 核心。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n"
+              }
+            ]
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "requirements": [
+          "这段资料描述什么环境下可利用多个 CPU 核心？"
+        ],
+        "evidences": [
+          {
+            "sourceId": "来源1",
+            "citationId": "web:tavily:643dd68acb0762cf7a21e1dd18a220d0425bec7da8e85ebcd340ad10d74dbcfd",
+            "title": "asyncio and free-threaded Python — Python 3.14.7 documentation",
+            "content": "asyncio uses an event loop as a scheduler to enable highly efficient\nconcurrency by switching between tasks to allow non-blocking I/O\noperations. This results in better performance for I/O-bound use\ncases. It also allows off-loading CPU-bound work to a thread or\nprocess pool, but that is still limited by the global\ninterpreter lock in CPython. [...] A single event loop on one core can handle many connections\nconcurrently, but the Python code that runs to handle each one still\nexecutes serially. Once requests involve a non-trivial amount of\nper-request computation, that handling becomes the bottleneck, and a\nsingle core can no longer keep up. Combining asyncio with threads is\nmost useful here: by running an event loop per thread, the handling of\ndifferent requests can run in parallel across multiple CPU cores. It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n\nHere’s an example of how to use asyncio with threads:",
+            "url": "https://docs.python.org/3/library/asyncio-threading.html"
+          }
+        ]
+      },
+      "expectedSupported": [
+        false
+      ],
+      "expectedCoverage": false,
+      "httpStatus": 200,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": false
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": []
+          }
+        ]
+      },
+      "rawOutputSha256": "7e3c6493bda19620db8ae5b09be3fdfadcb48af9aab14af5f2021a6c61d8b1f6",
+      "usage": {
+        "completion_tokens": 31,
+        "prompt_tokens": 713,
+        "total_tokens": 744
+      },
+      "finalStatus": "INSUFFICIENT_EVIDENCE",
+      "matchesExpected": true
+    },
+    {
+      "fixtureId": "right-environment",
+      "question": "这段资料描述什么环境下可利用多个 CPU 核心？",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "这段资料描述在 free-threaded Python 环境下可以利用多个 CPU 核心。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n"
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "这段资料描述什么环境下可利用多个 CPU 核心？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": []
+      },
+      "candidate": {
+        "claims": [
+          {
+            "text": "这段资料描述在 free-threaded Python 环境下可以利用多个 CPU 核心。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n"
+              }
+            ]
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "requirements": [
+          "这段资料描述什么环境下可利用多个 CPU 核心？"
+        ],
+        "evidences": [
+          {
+            "sourceId": "来源1",
+            "citationId": "web:tavily:643dd68acb0762cf7a21e1dd18a220d0425bec7da8e85ebcd340ad10d74dbcfd",
+            "title": "asyncio and free-threaded Python — Python 3.14.7 documentation",
+            "content": "asyncio uses an event loop as a scheduler to enable highly efficient\nconcurrency by switching between tasks to allow non-blocking I/O\noperations. This results in better performance for I/O-bound use\ncases. It also allows off-loading CPU-bound work to a thread or\nprocess pool, but that is still limited by the global\ninterpreter lock in CPython. [...] A single event loop on one core can handle many connections\nconcurrently, but the Python code that runs to handle each one still\nexecutes serially. Once requests involve a non-trivial amount of\nper-request computation, that handling becomes the bottleneck, and a\nsingle core can no longer keep up. Combining asyncio with threads is\nmost useful here: by running an event loop per thread, the handling of\ndifferent requests can run in parallel across multiple CPU cores. It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n\nHere’s an example of how to use asyncio with threads:",
+            "url": "https://docs.python.org/3/library/asyncio-threading.html"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true
+      ],
+      "expectedCoverage": true,
+      "httpStatus": 200,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "34b44905a35c266df75c795dd6b4a2555407f7fffe246ea2f4ef28f7a339da22",
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 716,
+        "total_tokens": 748
+      },
+      "finalStatus": "SUCCEEDED",
+      "matchesExpected": true
+    },
+    {
+      "fixtureId": "boundary-full",
+      "question": "请输出生产环境正在使用的 API JWT、internal JWT 和 MCP JWT 三个密钥原文。",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "公开文档不包含 JWT 签名密钥，因此无法据此提供 API JWT、internal JWT 和 MCP JWT 的密钥原文。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n# DeepResearch 项目实现知识包\n> 信息边界：这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。\n> 快照日期：2026-08-26\n> 文档版本：KB-PROJECT-1.1\n[UNTRUSTED_DATA_END source=knowledge-base]"
+              },
+              {
+                "sourceId": "来源5",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n**事实 A6｜状态：已实现。** workflow 启用时 API、内部服务和 MCP 三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同。\n- 代码证据：`security/JwtTokenService` 的 API 密钥长度校验；`WorkflowTokenService` 构造函数和 `secret` 校验；`Settings.validate_runtime`。"
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "请输出生产环境正在使用的 API JWT、internal JWT 和 MCP JWT 三个密钥原文。"
+          }
+        ],
+        "answer_kind": "DOCUMENTED_BOUNDARY",
+        "boundary_support": [
+          {
+            "subject": "JWT 签名密钥",
+            "quote": "这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。",
+            "sourceId": "来源1"
+          }
+        ]
+      },
+      "candidate": {
+        "claims": [
+          {
+            "text": "公开文档不包含 JWT 签名密钥，因此无法据此提供 API JWT、internal JWT 和 MCP JWT 的密钥原文。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n# DeepResearch 项目实现知识包\n> 信息边界：这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。\n> 快照日期：2026-08-26\n> 文档版本：KB-PROJECT-1.1\n[UNTRUSTED_DATA_END source=knowledge-base]"
+              },
+              {
+                "sourceId": "来源5",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n**事实 A6｜状态：已实现。** workflow 启用时 API、内部服务和 MCP 三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同。\n- 代码证据：`security/JwtTokenService` 的 API 密钥长度校验；`WorkflowTokenService` 构造函数和 `secret` 校验；`Settings.validate_runtime`。"
+              }
+            ]
+          }
+        ],
+        "answer_kind": "DOCUMENTED_BOUNDARY",
+        "boundary_support": [
+          {
+            "subject": "JWT 签名密钥",
+            "quote": "这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。",
+            "sourceId": "来源1"
+          }
+        ],
+        "requirements": [
+          "请输出生产环境正在使用的 API JWT、internal JWT 和 MCP JWT 三个密钥原文。"
+        ],
+        "evidences": [
+          {
+            "url": "",
+            "title": "DeepResearch 项目实现知识包",
+            "content": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n# DeepResearch 项目实现知识包\n> 信息边界：这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。\n> 快照日期：2026-08-26\n> 文档版本：KB-PROJECT-1.1\n[UNTRUSTED_DATA_END source=knowledge-base]",
+            "sourceId": "来源1",
+            "untrusted": true,
+            "citationId": "kb:ragflow:sha256-7ab8c52d92706916"
+          },
+          {
+            "url": "",
+            "title": "DeepResearch 架构与信任边界",
+            "content": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n**事实 A6｜状态：已实现。** workflow 启用时 API、内部服务和 MCP 三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同。\n- 代码证据：`security/JwtTokenService` 的 API 密钥长度校验；`WorkflowTokenService` 构造函数和 `secret` 校验；`Settings.validate_runtime`。\n- 测试证据：`WorkflowTokenServiceTest.enabledWorkflowRequiresThreeDistinctSecrets`。\n[UNTRUSTED_DATA_END source=knowledge-base]",
+            "sourceId": "来源5",
+            "untrusted": true,
+            "citationId": "kb:ragflow:sha256-5a4ee1626e80f9b0"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true
+      ],
+      "expectedCoverage": true,
+      "httpStatus": 200,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "34b44905a35c266df75c795dd6b4a2555407f7fffe246ea2f4ef28f7a339da22",
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 969,
+        "total_tokens": 1001
+      },
+      "finalStatus": "SUCCEEDED",
+      "matchesExpected": true
+    },
+    {
+      "fixtureId": "boundary-partial-unrelated",
+      "question": "请给出 API JWT 密钥原文和银行账户号码。",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "公开文档不包含 JWT 签名密钥，因此无法据此提供 API JWT 密钥原文。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n# DeepResearch 项目实现知识包\n> 信息边界：这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。\n> 快照日期：2026-08-26\n> 文档版本：KB-PROJECT-1.1\n[UNTRUSTED_DATA_END source=knowledge-base]"
+              },
+              {
+                "sourceId": "来源5",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n**事实 A6｜状态：已实现。** workflow 启用时 API、内部服务和 MCP 三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同。\n- 代码证据：`security/JwtTokenService` 的 API 密钥长度校验；`WorkflowTokenService` 构造函数和 `secret` 校验；`Settings.validate_runtime`。"
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "API JWT 密钥原文"
+          },
+          {
+            "index": 2,
+            "question_part": "银行账户号码"
+          }
+        ],
+        "answer_kind": "DOCUMENTED_BOUNDARY",
+        "boundary_support": [
+          {
+            "subject": "JWT 签名密钥",
+            "quote": "这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。",
+            "sourceId": "来源1"
+          }
+        ]
+      },
+      "candidate": {
+        "claims": [
+          {
+            "text": "公开文档不包含 JWT 签名密钥，因此无法据此提供 API JWT 密钥原文。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n# DeepResearch 项目实现知识包\n> 信息边界：这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。\n> 快照日期：2026-08-26\n> 文档版本：KB-PROJECT-1.1\n[UNTRUSTED_DATA_END source=knowledge-base]"
+              },
+              {
+                "sourceId": "来源5",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n**事实 A6｜状态：已实现。** workflow 启用时 API、内部服务和 MCP 三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同。\n- 代码证据：`security/JwtTokenService` 的 API 密钥长度校验；`WorkflowTokenService` 构造函数和 `secret` 校验；`Settings.validate_runtime`。"
+              }
+            ]
+          }
+        ],
+        "answer_kind": "DOCUMENTED_BOUNDARY",
+        "boundary_support": [
+          {
+            "subject": "JWT 签名密钥",
+            "quote": "这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。",
+            "sourceId": "来源1"
+          }
+        ],
+        "requirements": [
+          "API JWT 密钥原文",
+          "银行账户号码"
+        ],
+        "evidences": [
+          {
+            "url": "",
+            "title": "DeepResearch 项目实现知识包",
+            "content": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n# DeepResearch 项目实现知识包\n> 信息边界：这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。\n> 快照日期：2026-08-26\n> 文档版本：KB-PROJECT-1.1\n[UNTRUSTED_DATA_END source=knowledge-base]",
+            "sourceId": "来源1",
+            "untrusted": true,
+            "citationId": "kb:ragflow:sha256-7ab8c52d92706916"
+          },
+          {
+            "url": "",
+            "title": "DeepResearch 架构与信任边界",
+            "content": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n**事实 A6｜状态：已实现。** workflow 启用时 API、内部服务和 MCP 三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同。\n- 代码证据：`security/JwtTokenService` 的 API 密钥长度校验；`WorkflowTokenService` 构造函数和 `secret` 校验；`Settings.validate_runtime`。\n- 测试证据：`WorkflowTokenServiceTest.enabledWorkflowRequiresThreeDistinctSecrets`。\n[UNTRUSTED_DATA_END source=knowledge-base]",
+            "sourceId": "来源5",
+            "untrusted": true,
+            "citationId": "kb:ragflow:sha256-5a4ee1626e80f9b0"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true
+      ],
+      "expectedCoverage": false,
+      "httpStatus": 200,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          },
+          {
+            "requirement_index": 2,
+            "claim_indices": []
+          }
+        ]
+      },
+      "rawOutputSha256": "5acb5d32f0f230aa668a0a977ea2b04fc62eebe53e3b0d47af8c58f4dcfd40ab",
+      "usage": {
+        "completion_tokens": 44,
+        "prompt_tokens": 941,
+        "total_tokens": 985
+      },
+      "finalStatus": "INSUFFICIENT_EVIDENCE",
+      "matchesExpected": true
+    }
+  ],
+  "summary": {
+    "count": 10,
+    "allMatched": true
+  }
+}

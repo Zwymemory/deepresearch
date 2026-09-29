@@ -1,0 +1,813 @@
+{
+  "schemaVersion": 2,
+  "collectedRoutes": [
+    "legacy"
+  ],
+  "manifest": {
+    "fixture": "synthetic_knowledge.md",
+    "topK": 5,
+    "purpose": "Final untouched challenge set fixed after the cross-language rule and before its live run",
+    "cases": [
+      {
+        "id": "fp01",
+        "kind": "positive",
+        "question": "如果上传的内容摘要没有变化，系统怎样处理文档版本？",
+        "relevantAnchors": [
+          "DR-EVAL-02"
+        ]
+      },
+      {
+        "id": "fp02",
+        "kind": "positive",
+        "question": "解析完成到哪一种状态以后文档才可检索？",
+        "relevantAnchors": [
+          "DR-EVAL-03"
+        ]
+      },
+      {
+        "id": "fp03",
+        "kind": "positive",
+        "question": "服务端凭据是否会进入浏览器响应？",
+        "relevantAnchors": [
+          "DR-EVAL-06"
+        ]
+      },
+      {
+        "id": "fp04",
+        "kind": "positive",
+        "question": "系统用什么状态表示没有任何检索证据？",
+        "relevantAnchors": [
+          "DR-EVAL-12"
+        ]
+      },
+      {
+        "id": "fp05",
+        "kind": "positive",
+        "question": "找不到被引用的远程片段时使用什么错误码？",
+        "relevantAnchors": [
+          "DR-EVAL-22"
+        ]
+      },
+      {
+        "id": "fp06",
+        "kind": "positive",
+        "question": "What exact value does the synthetic threshold example specify?",
+        "relevantAnchors": [
+          "DR-EVAL-25"
+        ]
+      },
+      {
+        "id": "fp07",
+        "kind": "positive",
+        "question": "Which role can perform a knowledge-base upload?",
+        "relevantAnchors": [
+          "DR-EVAL-01"
+        ]
+      },
+      {
+        "id": "fp08",
+        "kind": "positive",
+        "question": "What happens to citation-looking text embedded in a retrieved document?",
+        "relevantAnchors": [
+          "DR-EVAL-19"
+        ]
+      },
+      {
+        "id": "fn01",
+        "kind": "zero-evidence",
+        "question": "What is the private mobile number of the ADMIN who uploaded this document?",
+        "relevantAnchors": []
+      },
+      {
+        "id": "fn02",
+        "kind": "zero-evidence",
+        "question": "Which real production system uses threshold 0.42 today?",
+        "relevantAnchors": []
+      },
+      {
+        "id": "fn03",
+        "kind": "zero-evidence",
+        "question": "What was the lunch menu served to the team during batch 73018?",
+        "relevantAnchors": []
+      },
+      {
+        "id": "fn04",
+        "kind": "zero-evidence",
+        "question": "Who drove run 59264 in a real vehicle?",
+        "relevantAnchors": []
+      },
+      {
+        "id": "fn05",
+        "kind": "zero-evidence",
+        "question": "What is the employee payroll account for the person who triggered ERR-P403?",
+        "relevantAnchors": []
+      },
+      {
+        "id": "fn06",
+        "kind": "zero-evidence",
+        "question": "Which hospital treated the RAGFlow operator after ERR-R429?",
+        "relevantAnchors": []
+      },
+      {
+        "id": "fn07",
+        "kind": "zero-evidence",
+        "question": "Where is the office street address of the Java gateway maintainer?",
+        "relevantAnchors": []
+      },
+      {
+        "id": "fn08",
+        "kind": "zero-evidence",
+        "question": "What date was the synthetic migration document first published online?",
+        "relevantAnchors": []
+      },
+      {
+        "id": "fn09",
+        "kind": "zero-evidence",
+        "question": "知识包作者的私人邮箱地址是什么？",
+        "relevantAnchors": []
+      },
+      {
+        "id": "fn10",
+        "kind": "zero-evidence",
+        "question": "73018 批次的真实客户订单总金额是多少？",
+        "relevantAnchors": []
+      },
+      {
+        "id": "fn11",
+        "kind": "zero-evidence",
+        "question": "ERR-C404 发生时用户所在地的天气如何？",
+        "relevantAnchors": []
+      },
+      {
+        "id": "fn12",
+        "kind": "zero-evidence",
+        "question": "哪个真实银行为这个项目提供工资账户？",
+        "relevantAnchors": []
+      }
+    ]
+  },
+  "fixtureSha256": "3f142361f5f03c6bd1101643cb45d544dca090eda10632706c6383a368288202",
+  "conditions": {
+    "legacyConfig": {
+      "provider": "legacy",
+      "baseUrl": "http://127.0.0.1:18081",
+      "embeddingModel": "embedding-2",
+      "reranker": "BAAI/bge-reranker-base",
+      "rerankerUrl": "http://127.0.0.1:19002/rerank",
+      "retrievalTopK": 5,
+      "elasticsearchUrl": "http://127.0.0.1:19201",
+      "queryRewrite": false,
+      "gitCommit": "dd6234d + uncommitted cross-language evidence revision",
+      "relevanceGate": {
+        "model": "BAAI/bge-reranker-base",
+        "minimumEvidenceScore": -5.0,
+        "lexicalRescueScore": -6.5,
+        "lexicalRescueCoverage": 0.3333333333333333,
+        "failClosed": true,
+        "crossLanguageScore": 3.0,
+        "lexicalTitleSupport": false
+      }
+    },
+    "ragflowConfig": {
+      "provider": "ragflow",
+      "baseUrl": "http://127.0.0.1:18080",
+      "apiUrl": "http://127.0.0.1:9380",
+      "datasetId": "4b43ea48b67111f1811e952527b08ce2",
+      "chunkTokenNum": 128,
+      "similarityThreshold": 0.22,
+      "retrievalTopK": 5,
+      "knnTopK": 32,
+      "knnNumCandidates": 128,
+      "rerankCandidatesCount": 20,
+      "queryExpansion": false,
+      "queryRewrite": false,
+      "gitCommit": "dd6234d5f584e11d74e124e29450967c62723e20"
+    },
+    "host": {
+      "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+      "machine": "arm64",
+      "dockerMemoryGiB": 7.75,
+      "executionNote": "Same isolated synthetic-only legacy corpus and pinned reranker; final challenge questions fixed before this live run."
+    },
+    "corpus": {
+      "files": [
+        {
+          "path": "integrations/ragflow/synthetic_knowledge.md",
+          "sha256": "3f142361f5f03c6bd1101643cb45d544dca090eda10632706c6383a368288202"
+        }
+      ],
+      "documentCount": 1,
+      "databaseIsolation": "Disposable PostgreSQL and legacy Elasticsearch; only the synthetic fixture is indexed."
+    },
+    "projectDocumentIds": [],
+    "testWindow": "2026-09-26T15:47:17.700244+00:00",
+    "goldLabelsReviewed": false,
+    "manifestSha256": "acbc6ec050199ca8c548fccb5fec252c1c3341580fb3362d927d89597506ddce"
+  },
+  "ingestion": null,
+  "projectMappings": [],
+  "runs": [
+    {
+      "caseId": "fp01",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 3849.925,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Upload checksum#2",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "8d410b44-e321-33fa-a39b-6da0e2651af2",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-02: An unchanged content SHA-256 hash reuses the existing document version instead of triggering another parse.",
+              "route": "vector#1, keyword#18",
+              "similarityScore": null
+            }
+          ]
+        },
+        {
+          "latencyMs": 3767.447,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Upload checksum#2",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "8d410b44-e321-33fa-a39b-6da0e2651af2",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-02: An unchanged content SHA-256 hash reuses the existing document version instead of triggering another parse.",
+              "route": "vector#1, keyword#18",
+              "similarityScore": null
+            }
+          ]
+        },
+        {
+          "latencyMs": 3328.559,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Upload checksum#2",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "8d410b44-e321-33fa-a39b-6da0e2651af2",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-02: An unchanged content SHA-256 hash reuses the existing document version instead of triggering another parse.",
+              "route": "vector#1, keyword#18",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "fp02",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 3817.776,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Parse state#3",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "64e2bd64-5ab8-3b82-91f2-24b6cf4f1e53",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-03: A remote document is ready for retrieval only after its parse state becomes DONE.",
+              "route": "vector#1, keyword#8",
+              "similarityScore": null
+            }
+          ]
+        },
+        {
+          "latencyMs": 3731.087,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Parse state#3",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "64e2bd64-5ab8-3b82-91f2-24b6cf4f1e53",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-03: A remote document is ready for retrieval only after its parse state becomes DONE.",
+              "route": "vector#1, keyword#8",
+              "similarityScore": null
+            }
+          ]
+        },
+        {
+          "latencyMs": 3583.721,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Parse state#3",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "64e2bd64-5ab8-3b82-91f2-24b6cf4f1e53",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-03: A remote document is ready for retrieval only after its parse state becomes DONE.",
+              "route": "vector#1, keyword#8",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "fp03",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 3278.858,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Client secret#6",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "fef1e653-216a-3c6f-bc72-eb69dc6b3dca",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-06: The RAGFlow API key stays on the server and is never copied into browser responses.",
+              "route": "vector#1",
+              "similarityScore": null
+            }
+          ]
+        },
+        {
+          "latencyMs": 3963.971,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Client secret#6",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "fef1e653-216a-3c6f-bc72-eb69dc6b3dca",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-06: The RAGFlow API key stays on the server and is never copied into browser responses.",
+              "route": "vector#1",
+              "similarityScore": null
+            }
+          ]
+        },
+        {
+          "latencyMs": 3514.746,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Client secret#6",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "fef1e653-216a-3c6f-bc72-eb69dc6b3dca",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-06: The RAGFlow API key stays on the server and is never copied into browser responses.",
+              "route": "vector#1",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "fp04",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 3838.791,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Empty evidence#12",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "ae314458-9116-3d6a-8950-918f4dcae678",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-12: When no chunks are returned, the evidence list is empty and the answer status is INSUFFICIENT_EVIDENCE.",
+              "route": "vector#1",
+              "similarityScore": null
+            }
+          ]
+        },
+        {
+          "latencyMs": 4145.354,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Empty evidence#12",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "ae314458-9116-3d6a-8950-918f4dcae678",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-12: When no chunks are returned, the evidence list is empty and the answer status is INSUFFICIENT_EVIDENCE.",
+              "route": "vector#1",
+              "similarityScore": null
+            }
+          ]
+        },
+        {
+          "latencyMs": 3067.981,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Empty evidence#12",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "ae314458-9116-3d6a-8950-918f4dcae678",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-12: When no chunks are returned, the evidence list is empty and the answer status is INSUFFICIENT_EVIDENCE.",
+              "route": "vector#1",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "fp05",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 3998.354,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Error code C404#22",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "b5201546-1c8e-386c-804c-767bcf23ab9e",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-22: ERR-C404 means a cited chunk could not be found on the remote document.",
+              "route": "vector#1",
+              "similarityScore": null
+            }
+          ]
+        },
+        {
+          "latencyMs": 3989.322,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Error code C404#22",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "b5201546-1c8e-386c-804c-767bcf23ab9e",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-22: ERR-C404 means a cited chunk could not be found on the remote document.",
+              "route": "vector#1",
+              "similarityScore": null
+            }
+          ]
+        },
+        {
+          "latencyMs": 4272.807,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Error code C404#22",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "b5201546-1c8e-386c-804c-767bcf23ab9e",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-22: ERR-C404 means a cited chunk could not be found on the remote document.",
+              "route": "vector#1",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "fp06",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 3201.05,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Threshold number 0.42#25",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "8dd9a64f-518e-3b5e-a684-9f97425a6c36",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-25: The synthetic retrieval threshold example is 0.42 and must not be copied into production defaults.",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            }
+          ]
+        },
+        {
+          "latencyMs": 3685.962,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Threshold number 0.42#25",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "8dd9a64f-518e-3b5e-a684-9f97425a6c36",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-25: The synthetic retrieval threshold example is 0.42 and must not be copied into production defaults.",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            }
+          ]
+        },
+        {
+          "latencyMs": 3686.949,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Threshold number 0.42#25",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "8dd9a64f-518e-3b5e-a684-9f97425a6c36",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-25: The synthetic retrieval threshold example is 0.42 and must not be copied into production defaults.",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "fp07",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 4615.225,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Ingest authorization#1",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "3ca178e7-47c0-3284-b28a-f32ca6576a04",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-01: Only an ADMIN may upload a knowledge-base document through the Java API.",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            }
+          ]
+        },
+        {
+          "latencyMs": 10038.398,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Ingest authorization#1",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "3ca178e7-47c0-3284-b28a-f32ca6576a04",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-01: Only an ADMIN may upload a knowledge-base document through the Java API.",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            }
+          ]
+        },
+        {
+          "latencyMs": 3690.84,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Ingest authorization#1",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "3ca178e7-47c0-3284-b28a-f32ca6576a04",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-01: Only an ADMIN may upload a knowledge-base document through the Java API.",
+              "route": "vector#1, keyword#1",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "fp08",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 4006.136,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Prompt marker injection#19",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "421772df-aceb-301c-969f-dbbe6a33c929",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-19: Citation-like strings inside source text are neutralized so they cannot impersonate answer citations.",
+              "route": "vector#1, keyword#3",
+              "similarityScore": null
+            }
+          ]
+        },
+        {
+          "latencyMs": 3479.773,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Prompt marker injection#19",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "421772df-aceb-301c-969f-dbbe6a33c929",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-19: Citation-like strings inside source text are neutralized so they cannot impersonate answer citations.",
+              "route": "vector#1, keyword#3",
+              "similarityScore": null
+            }
+          ]
+        },
+        {
+          "latencyMs": 2884.396,
+          "entries": [
+            {
+              "chunkKey": "synthetic_knowledge.md#DeepResearch migration evaluation fixture > Prompt marker injection#19",
+              "docId": "doc-b0a42403-4201-4041-8399-121de9284054",
+              "chunkId": "421772df-aceb-301c-969f-dbbe6a33c929",
+              "title": "synthetic_knowledge",
+              "preview": "DR-EVAL-19: Citation-like strings inside source text are neutralized so they cannot impersonate answer citations.",
+              "route": "vector#1, keyword#3",
+              "similarityScore": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "fn01",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 1351.047,
+          "entries": []
+        },
+        {
+          "latencyMs": 1951.139,
+          "entries": []
+        },
+        {
+          "latencyMs": 1765.789,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "fn02",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 4411.394,
+          "entries": []
+        },
+        {
+          "latencyMs": 4812.433,
+          "entries": []
+        },
+        {
+          "latencyMs": 4403.909,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "fn03",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 2347.191,
+          "entries": []
+        },
+        {
+          "latencyMs": 1849.414,
+          "entries": []
+        },
+        {
+          "latencyMs": 2048.402,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "fn04",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 2045.152,
+          "entries": []
+        },
+        {
+          "latencyMs": 1946.387,
+          "entries": []
+        },
+        {
+          "latencyMs": 1945.533,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "fn05",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 2071.651,
+          "entries": []
+        },
+        {
+          "latencyMs": 1868.06,
+          "entries": []
+        },
+        {
+          "latencyMs": 1916.128,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "fn06",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 2092.668,
+          "entries": []
+        },
+        {
+          "latencyMs": 1743.981,
+          "entries": []
+        },
+        {
+          "latencyMs": 1800.184,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "fn07",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 2009.188,
+          "entries": []
+        },
+        {
+          "latencyMs": 1858.543,
+          "entries": []
+        },
+        {
+          "latencyMs": 1571.099,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "fn08",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 2217.215,
+          "entries": []
+        },
+        {
+          "latencyMs": 1639.569,
+          "entries": []
+        },
+        {
+          "latencyMs": 2291.736,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "fn09",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 2007.54,
+          "entries": []
+        },
+        {
+          "latencyMs": 1638.339,
+          "entries": []
+        },
+        {
+          "latencyMs": 1975.429,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "fn10",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 2947.346,
+          "entries": []
+        },
+        {
+          "latencyMs": 2347.631,
+          "entries": []
+        },
+        {
+          "latencyMs": 2251.798,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "fn11",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 1841.755,
+          "entries": []
+        },
+        {
+          "latencyMs": 1767.306,
+          "entries": []
+        },
+        {
+          "latencyMs": 1614.264,
+          "entries": []
+        }
+      ]
+    },
+    {
+      "caseId": "fn12",
+      "route": "legacy",
+      "samples": [
+        {
+          "latencyMs": 1638.856,
+          "entries": []
+        },
+        {
+          "latencyMs": 1638.24,
+          "entries": []
+        },
+        {
+          "latencyMs": 2013.316,
+          "entries": []
+        }
+      ]
+    }
+  ],
+  "citationChecks": [],
+  "citationCheckAttempted": false
+}

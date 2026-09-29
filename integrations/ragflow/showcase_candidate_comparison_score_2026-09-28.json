@@ -1,0 +1,2704 @@
+{
+  "schemaVersion": 1,
+  "suiteHashes": [
+    "b276e82585c471377f1055b52883564ea2c20f3caa33848b3d31dbaee2aa6d96",
+    "2f06a5a2a8e0821e8bf420434853f012ef86660d5f7ded9d2e94eea37581519c"
+  ],
+  "conditionsByMode": {
+    "legacy-langgraph": {
+      "mode": "legacy-langgraph",
+      "codeSha": "8677dfdf46db5d28f5224db3255878b15d0109c0",
+      "retrievalProvider": "legacy",
+      "workflowEngine": "langgraph",
+      "model": {
+        "name": "deepseek-v4-flash",
+        "temperature": 0
+      },
+      "corpus": {
+        "name": "project-knowledge",
+        "sourceHashes": [
+          {
+            "path": "docs/kb-project/README.md",
+            "sha256": "15dc37ee805f7c541c33366b06be97443168abdc254b54c36f3ed45e9d5ce3cc"
+          },
+          {
+            "path": "docs/kb-project/01-architecture-and-trust-boundaries.md",
+            "sha256": "d281884eff6e581cbd25df1708c2c3ae963901ab0e6b1b17b5e6bc5e49bae92f"
+          },
+          {
+            "path": "docs/kb-project/02-checkpoint-and-crash-recovery.md",
+            "sha256": "7874c363d5be14e1af51964f87cd5e9ee5b2c6bdec0ed1e817bd5cd151800b95"
+          },
+          {
+            "path": "docs/kb-project/03-claim-lease-and-fencing.md",
+            "sha256": "fb7fc01c2c23fd709d1d1100c1bb6cfdd7e2bcd58cab0fd38d91c3f1e1d8fa64"
+          },
+          {
+            "path": "docs/kb-project/04-sse-durable-replay.md",
+            "sha256": "64dc2cd26bf13f0c84eacf26b071f213ac423ef634e4aa0bd49c0926b7fe6090"
+          },
+          {
+            "path": "docs/kb-project/05-tool-receipt-and-unknown-result.md",
+            "sha256": "5de1bc0c032dddeb5db71c4f1d67f08e6db6cfdd42750b188ce50dc86904e3d1"
+          },
+          {
+            "path": "docs/kb-project/06-verification-boundaries.md",
+            "sha256": "12df625ce79355fb450e539d1ce74789ec61e6c5193f726d166e7b89fd2c5140"
+          },
+          {
+            "path": "docs/kb-project/07-agent-evaluation-fact-cards.md",
+            "sha256": "ac7601e097a249e790f6d55baeb0a2cf6604e4f74a6b534abe19c9e026c6ebaf"
+          }
+        ],
+        "documentCount": 8,
+        "datasetFingerprint": "sha256:4aa81e80e2fd505e9efe3c72566d919fd6953f21423ed64b4bc48e9c14dcdb0f"
+      },
+      "budgets": {
+        "topK": 5,
+        "maxWorkerCalls": 4,
+        "maxRevisionCycles": 1,
+        "javaDeadlineSeconds": 120,
+        "modelCallLimit": 24,
+        "maxToolCalls": 16
+      },
+      "host": {
+        "class": "local Docker Desktop macOS",
+        "memoryGiB": 7.75
+      },
+      "testWindow": "2026-09-27T18:21:33.098862+00:00",
+      "notes": "Same eight frozen project Markdown sources; isolated cloned PostgreSQL database contains exactly eight DONE documents and 57 chunks, with a separate Elasticsearch index of 57 documents. Local reranker and LangGraph sidecar are live. Run sequentially after RAGFlow/Dify with Docker memory 7.75 GiB; orchestration and retrieval both differ, so this is a whole-path comparison, not a component attribution."
+    },
+    "ragflow-dify": {
+      "mode": "ragflow-dify",
+      "codeSha": "8677dfdf46db5d28f5224db3255878b15d0109c0",
+      "retrievalProvider": "ragflow",
+      "workflowEngine": "dify",
+      "model": {
+        "name": "deepseek-v4-flash",
+        "temperature": 0
+      },
+      "corpus": {
+        "name": "project-knowledge",
+        "sourceHashes": [
+          {
+            "path": "docs/kb-project/README.md",
+            "sha256": "15dc37ee805f7c541c33366b06be97443168abdc254b54c36f3ed45e9d5ce3cc"
+          },
+          {
+            "path": "docs/kb-project/01-architecture-and-trust-boundaries.md",
+            "sha256": "d281884eff6e581cbd25df1708c2c3ae963901ab0e6b1b17b5e6bc5e49bae92f"
+          },
+          {
+            "path": "docs/kb-project/02-checkpoint-and-crash-recovery.md",
+            "sha256": "7874c363d5be14e1af51964f87cd5e9ee5b2c6bdec0ed1e817bd5cd151800b95"
+          },
+          {
+            "path": "docs/kb-project/03-claim-lease-and-fencing.md",
+            "sha256": "fb7fc01c2c23fd709d1d1100c1bb6cfdd7e2bcd58cab0fd38d91c3f1e1d8fa64"
+          },
+          {
+            "path": "docs/kb-project/04-sse-durable-replay.md",
+            "sha256": "64dc2cd26bf13f0c84eacf26b071f213ac423ef634e4aa0bd49c0926b7fe6090"
+          },
+          {
+            "path": "docs/kb-project/05-tool-receipt-and-unknown-result.md",
+            "sha256": "5de1bc0c032dddeb5db71c4f1d67f08e6db6cfdd42750b188ce50dc86904e3d1"
+          },
+          {
+            "path": "docs/kb-project/06-verification-boundaries.md",
+            "sha256": "12df625ce79355fb450e539d1ce74789ec61e6c5193f726d166e7b89fd2c5140"
+          },
+          {
+            "path": "docs/kb-project/07-agent-evaluation-fact-cards.md",
+            "sha256": "ac7601e097a249e790f6d55baeb0a2cf6604e4f74a6b534abe19c9e026c6ebaf"
+          }
+        ],
+        "documentCount": 8,
+        "datasetFingerprint": "sha256:4aa81e80e2fd505e9efe3c72566d919fd6953f21423ed64b4bc48e9c14dcdb0f"
+      },
+      "budgets": {
+        "topK": 5,
+        "maxWorkerCalls": 4,
+        "maxRevisionCycles": 1,
+        "javaDeadlineSeconds": 120,
+        "modelCallLimit": "Dify graph bounded by nodes; no shared call ledger"
+      },
+      "host": {
+        "class": "local Docker Desktop macOS",
+        "memoryGiB": 7.75
+      },
+      "testWindow": "2026-09-27T17:56:12.117799+00:00",
+      "notes": "Project RAGFlow dataset selected from eight DONE local mappings; ignored .env points to another dataset. Dify published Evidence v4 workflow 67e2b92c-02f2-475d-9e2a-83ab53ef7c30 (2026-09-28 01:55 CST)."
+    }
+  },
+  "summaryByMode": {
+    "legacy-langgraph": {
+      "sampleCount": 37,
+      "caseCount": 37,
+      "full37Once": true,
+      "answerP95Ms": 43612.253,
+      "answerP95SampleCount": 37,
+      "retrievalProbeP95Ms": 17151.984,
+      "retrievalFactCoverageMean": 0.3763440860215054,
+      "reviewedAnswerFactCoverageMean": 0.5161290322580645,
+      "reviewedPositiveSampleCount": 31,
+      "reviewedRefusalsCorrect": 2,
+      "reviewedRefusalSampleCount": 6,
+      "reviewedCitationsSupported": 15,
+      "reviewedCitationSampleCount": 17,
+      "citationContractValid": 17,
+      "citationSourceExistenceChecked": 17,
+      "citationSourceExists": 15,
+      "automaticRefusalsCorrect": 2,
+      "negativeSampleCount": 6,
+      "usageObserved": {
+        "totalTokens": [
+          7854,
+          8662,
+          6319,
+          9398,
+          5838,
+          8011,
+          8160,
+          4759,
+          5859,
+          9307,
+          7795,
+          11072,
+          3729,
+          3798,
+          4675,
+          3622,
+          5647,
+          6515,
+          6581,
+          5859,
+          4558,
+          9333,
+          13835,
+          7173,
+          4590,
+          2777,
+          5648,
+          8495,
+          3519,
+          4568,
+          3711,
+          7928,
+          4632,
+          2860,
+          3713,
+          6351,
+          5386
+        ],
+        "modelCalls": [
+          5,
+          5,
+          4,
+          6,
+          6,
+          5,
+          5,
+          4,
+          5,
+          6,
+          7,
+          5,
+          4,
+          4,
+          4,
+          4,
+          4,
+          7,
+          5,
+          4,
+          5,
+          6,
+          7,
+          5,
+          5,
+          3,
+          6,
+          6,
+          4,
+          5,
+          4,
+          7,
+          5,
+          3,
+          4,
+          7,
+          6
+        ],
+        "toolCalls": [
+          2,
+          2,
+          1,
+          3,
+          4,
+          2,
+          2,
+          2,
+          2,
+          3,
+          4,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          4,
+          2,
+          1,
+          3,
+          3,
+          4,
+          2,
+          3,
+          1,
+          3,
+          2,
+          2,
+          3,
+          2,
+          4,
+          3,
+          1,
+          2,
+          4,
+          3
+        ],
+        "estimatedCost": [
+          0.008877,
+          0.009579,
+          0.007011,
+          0.010318,
+          0.006781,
+          0.008807,
+          0.009158,
+          0.005567,
+          0.006892,
+          0.01042,
+          0.009142,
+          0.011858,
+          0.004535,
+          0.004644,
+          0.00536,
+          0.004334,
+          0.006235,
+          0.007707,
+          0.00742,
+          0.006694,
+          0.005431,
+          0.010516,
+          0.014792,
+          0.0082,
+          0.005494,
+          0.003199,
+          0.006722,
+          0.009595,
+          0.004193,
+          0.00547,
+          0.004482,
+          0.009353,
+          0.005575,
+          0.003531,
+          0.004497,
+          0.007468,
+          0.006314
+        ]
+      }
+    },
+    "ragflow-dify": {
+      "sampleCount": 37,
+      "caseCount": 37,
+      "full37Once": true,
+      "answerP95Ms": 26624.154,
+      "answerP95SampleCount": 37,
+      "retrievalProbeP95Ms": 398.557,
+      "retrievalFactCoverageMean": 0.9784946236559139,
+      "reviewedAnswerFactCoverageMean": 0.967741935483871,
+      "reviewedPositiveSampleCount": 31,
+      "reviewedRefusalsCorrect": 4,
+      "reviewedRefusalSampleCount": 6,
+      "reviewedCitationsSupported": 33,
+      "reviewedCitationSampleCount": 33,
+      "citationContractValid": 33,
+      "citationSourceExistenceChecked": 33,
+      "citationSourceExists": 33,
+      "automaticRefusalsCorrect": 4,
+      "negativeSampleCount": 6,
+      "usageObserved": {
+        "totalTokens": [
+          235,
+          6461,
+          6060,
+          7288,
+          8317,
+          5066,
+          5253,
+          5815,
+          8824,
+          4443,
+          7108,
+          3877,
+          9523,
+          9791,
+          5779,
+          4854,
+          3871,
+          8537,
+          5119,
+          5355,
+          8560,
+          7342,
+          7068,
+          5098,
+          9786,
+          238,
+          299,
+          5222,
+          5464,
+          5631,
+          8775,
+          8915,
+          10576,
+          6180,
+          11098,
+          949,
+          5216
+        ],
+        "modelCalls": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "toolCalls": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "estimatedCost": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    }
+  },
+  "comparability": {
+    "model": true,
+    "corpus": true,
+    "budgets": false,
+    "host": true
+  },
+  "samples": [
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-001",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 24240.013,
+      "retrievalLatencyMs": 17151.984,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "inputTokens": 6831,
+        "outputTokens": 1023,
+        "totalTokens": 7854,
+        "modelCalls": 5,
+        "toolCalls": 2,
+        "estimatedCost": 0.008877,
+        "currency": "CNY",
+        "durationMs": 23345
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "java-control-plane": null,
+        "python-execution-plane": null
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "java-control-plane": false,
+        "python-execution-plane": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-002",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 21618.188,
+      "retrievalLatencyMs": 17096.522,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "inputTokens": 7745,
+        "outputTokens": 917,
+        "totalTokens": 8662,
+        "modelCalls": 5,
+        "toolCalls": 2,
+        "estimatedCost": 0.009579,
+        "currency": "CNY",
+        "durationMs": 20407
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "compose-exposure": null,
+        "cloud-boundary": null
+      },
+      "answerExactPhraseCoverage": 1.0,
+      "answerExactPhraseHits": {
+        "compose-exposure": true,
+        "cloud-boundary": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-003",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 13377.431,
+      "retrievalLatencyMs": 11513.124,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "inputTokens": 5627,
+        "outputTokens": 692,
+        "totalTokens": 6319,
+        "modelCalls": 4,
+        "toolCalls": 1,
+        "estimatedCost": 0.007011,
+        "currency": "CNY",
+        "durationMs": 13096
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "restricted-role": 1,
+        "terminal-write-denied": 1,
+        "java-finalize": 1
+      },
+      "answerExactPhraseCoverage": 0.3333333333333333,
+      "answerExactPhraseHits": {
+        "restricted-role": false,
+        "terminal-write-denied": false,
+        "java-finalize": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-004",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 17994.522,
+      "retrievalLatencyMs": 4414.075,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "inputTokens": 8478,
+        "outputTokens": 920,
+        "totalTokens": 9398,
+        "modelCalls": 6,
+        "toolCalls": 3,
+        "estimatedCost": 0.010318,
+        "currency": "CNY",
+        "durationMs": 17108
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "no-user-token-forwarding": 1,
+        "service-jwt-ttl": 1,
+        "delegation-jwt-ttl": 1
+      },
+      "answerExactPhraseCoverage": 0.6666666666666666,
+      "answerExactPhraseHits": {
+        "no-user-token-forwarding": true,
+        "service-jwt-ttl": true,
+        "delegation-jwt-ttl": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-005",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 42656.946,
+      "retrievalLatencyMs": 10718.036,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 4895,
+        "outputTokens": 943,
+        "totalTokens": 5838,
+        "modelCalls": 6,
+        "toolCalls": 4,
+        "estimatedCost": 0.006781,
+        "currency": "CNY",
+        "durationMs": 41551
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "single-scope": null,
+        "scope-intersection": null,
+        "binding-match": null
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "single-scope": false,
+        "scope-intersection": false,
+        "binding-match": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-006",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 18593.087,
+      "retrievalLatencyMs": 6381.572,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "inputTokens": 7215,
+        "outputTokens": 796,
+        "totalTokens": 8011,
+        "modelCalls": 5,
+        "toolCalls": 2,
+        "estimatedCost": 0.008807,
+        "currency": "CNY",
+        "durationMs": 17950
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "minimum-length": null,
+        "distinct-secrets": null
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "minimum-length": false,
+        "distinct-secrets": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-007",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 22051.874,
+      "retrievalLatencyMs": 17130.306,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "inputTokens": 7162,
+        "outputTokens": 998,
+        "totalTokens": 8160,
+        "modelCalls": 5,
+        "toolCalls": 2,
+        "estimatedCost": 0.009158,
+        "currency": "CNY",
+        "durationMs": 20758
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "read-only-allowlist": null,
+        "unsupported-operations": null
+      },
+      "answerExactPhraseCoverage": 1.0,
+      "answerExactPhraseHits": {
+        "read-only-allowlist": true,
+        "unsupported-operations": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-008",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 23121.949,
+      "retrievalLatencyMs": 6645.318,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 3951,
+        "outputTokens": 808,
+        "totalTokens": 4759,
+        "modelCalls": 4,
+        "toolCalls": 2,
+        "estimatedCost": 0.005567,
+        "currency": "CNY",
+        "durationMs": 22148
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "checkpoint-schema": 1,
+        "thread-id-source": 1,
+        "default-run-mapping": 1
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "checkpoint-schema": false,
+        "thread-id-source": false,
+        "default-run-mapping": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-009",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 24163.957,
+      "retrievalLatencyMs": 17151.46,
+      "citationContractValid": true,
+      "citationSourceExists": false,
+      "usage": {
+        "inputTokens": 4826,
+        "outputTokens": 1033,
+        "totalTokens": 5859,
+        "modelCalls": 5,
+        "toolCalls": 2,
+        "estimatedCost": 0.006892,
+        "currency": "CNY",
+        "durationMs": 22842
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "sync-boundary": null,
+        "external-call-exclusion": null,
+        "not-exactly-once": null
+      },
+      "answerExactPhraseCoverage": 1.0,
+      "answerExactPhraseHits": {
+        "sync-boundary": true,
+        "external-call-exclusion": true,
+        "not-exactly-once": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": false
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-010",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 39027.68,
+      "retrievalLatencyMs": 6051.424,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "inputTokens": 8194,
+        "outputTokens": 1113,
+        "totalTokens": 9307,
+        "modelCalls": 6,
+        "toolCalls": 3,
+        "estimatedCost": 0.01042,
+        "currency": "CNY",
+        "durationMs": 38203
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "incomplete-resume": 1,
+        "completed-finalize-retry": 1,
+        "no-resynthesis": 1
+      },
+      "answerExactPhraseCoverage": 0.3333333333333333,
+      "answerExactPhraseHits": {
+        "incomplete-resume": false,
+        "completed-finalize-retry": false,
+        "no-resynthesis": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-011",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 43716.401,
+      "retrievalLatencyMs": 17080.07,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 6448,
+        "outputTokens": 1347,
+        "totalTokens": 7795,
+        "modelCalls": 7,
+        "toolCalls": 4,
+        "estimatedCost": 0.009142,
+        "currency": "CNY",
+        "durationMs": 42880
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "settled-replay": null,
+        "stale-reserved-unknown": null,
+        "unknown-budget": null
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "settled-replay": false,
+        "stale-reserved-unknown": false,
+        "unknown-budget": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-012",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 22572.613,
+      "retrievalLatencyMs": 11249.472,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "inputTokens": 10286,
+        "outputTokens": 786,
+        "totalTokens": 11072,
+        "modelCalls": 5,
+        "toolCalls": 2,
+        "estimatedCost": 0.011858,
+        "currency": "CNY",
+        "durationMs": 21766
+      },
+      "retrievalFactCoverage": 0.3333333333333333,
+      "retrievalFactRanks": {
+        "lease-default": 1,
+        "heartbeat-default": null,
+        "heartbeat-less-than-lease": null
+      },
+      "answerExactPhraseCoverage": 0.6666666666666666,
+      "answerExactPhraseHits": {
+        "lease-default": true,
+        "heartbeat-default": true,
+        "heartbeat-less-than-lease": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-013",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 24117.309,
+      "retrievalLatencyMs": 17096.633,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 2923,
+        "outputTokens": 806,
+        "totalTokens": 3729,
+        "modelCalls": 4,
+        "toolCalls": 2,
+        "estimatedCost": 0.004535,
+        "currency": "CNY",
+        "durationMs": 22680
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "claim-locking": null,
+        "reclaim-eligibility": null,
+        "fresh-token": null
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "claim-locking": false,
+        "reclaim-eligibility": false,
+        "fresh-token": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-014",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 24126.485,
+      "retrievalLatencyMs": 17119.013,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 2952,
+        "outputTokens": 846,
+        "totalTokens": 3798,
+        "modelCalls": 4,
+        "toolCalls": 2,
+        "estimatedCost": 0.004644,
+        "currency": "CNY",
+        "durationMs": 23324
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "serialization": null,
+        "handoff-recheck": null,
+        "fencing-required": null,
+        "fencing-mechanism": null
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "serialization": false,
+        "handoff-recheck": false,
+        "fencing-required": false,
+        "fencing-mechanism": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-015",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 8223.132,
+      "retrievalLatencyMs": 5447.819,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "inputTokens": 3990,
+        "outputTokens": 685,
+        "totalTokens": 4675,
+        "modelCalls": 4,
+        "toolCalls": 1,
+        "estimatedCost": 0.00536,
+        "currency": "CNY",
+        "durationMs": 7886
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "hardening-change": 1,
+        "blocked-bypass": 1
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "hardening-change": false,
+        "blocked-bypass": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-016",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 22551.864,
+      "retrievalLatencyMs": 14369.138,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 2910,
+        "outputTokens": 712,
+        "totalTokens": 3622,
+        "modelCalls": 4,
+        "toolCalls": 2,
+        "estimatedCost": 0.004334,
+        "currency": "CNY",
+        "durationMs": 21446
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "cursor-format": 1,
+        "cursor-validation": 1,
+        "database-replay": 1
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "cursor-format": false,
+        "cursor-validation": false,
+        "database-replay": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-017",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 8748.009,
+      "retrievalLatencyMs": 4515.737,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "inputTokens": 5059,
+        "outputTokens": 588,
+        "totalTokens": 5647,
+        "modelCalls": 4,
+        "toolCalls": 1,
+        "estimatedCost": 0.006235,
+        "currency": "CNY",
+        "durationMs": 8198
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "idle-heartbeat": 1,
+        "terminal-close": 1
+      },
+      "answerExactPhraseCoverage": 0.5,
+      "answerExactPhraseHits": {
+        "idle-heartbeat": false,
+        "terminal-close": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-018",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 43612.253,
+      "retrievalLatencyMs": 17114.746,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 5323,
+        "outputTokens": 1192,
+        "totalTokens": 6515,
+        "modelCalls": 7,
+        "toolCalls": 4,
+        "estimatedCost": 0.007707,
+        "currency": "CNY",
+        "durationMs": 42929
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "client-dedup": null,
+        "cursor-replay": null,
+        "refresh-limit": null,
+        "verification-limit": null
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "client-dedup": false,
+        "cursor-replay": false,
+        "refresh-limit": false,
+        "verification-limit": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-019",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 20529.691,
+      "retrievalLatencyMs": 8418.968,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "inputTokens": 5742,
+        "outputTokens": 839,
+        "totalTokens": 6581,
+        "modelCalls": 5,
+        "toolCalls": 2,
+        "estimatedCost": 0.00742,
+        "currency": "CNY",
+        "durationMs": 19905
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "call-id-inputs": 1,
+        "stable-retry-id": 1,
+        "identifier-only": 1,
+        "downstream-dedup": 1
+      },
+      "answerExactPhraseCoverage": 0.5,
+      "answerExactPhraseHits": {
+        "call-id-inputs": true,
+        "stable-retry-id": false,
+        "identifier-only": false,
+        "downstream-dedup": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-020",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 15379.184,
+      "retrievalLatencyMs": 17123.186,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "inputTokens": 5024,
+        "outputTokens": 835,
+        "totalTokens": 5859,
+        "modelCalls": 4,
+        "toolCalls": 1,
+        "estimatedCost": 0.006694,
+        "currency": "CNY",
+        "durationMs": 14149
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "completed-replay": null,
+        "current-executing": null,
+        "stale-executing": null
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "completed-replay": false,
+        "current-executing": false,
+        "stale-executing": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-021",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 40010.569,
+      "retrievalLatencyMs": 16248.928,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 3685,
+        "outputTokens": 873,
+        "totalTokens": 4558,
+        "modelCalls": 5,
+        "toolCalls": 3,
+        "estimatedCost": 0.005431,
+        "currency": "CNY",
+        "durationMs": 39166
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "at-most-once-choice": 1,
+        "stable-unknown-code": 1,
+        "no-blind-retry": 1,
+        "availability-tradeoff": 1,
+        "not-exactly-once": 1
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "at-most-once-choice": false,
+        "stable-unknown-code": false,
+        "no-blind-retry": false,
+        "availability-tradeoff": false,
+        "not-exactly-once": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-022",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 33348.98,
+      "retrievalLatencyMs": 17121.523,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "inputTokens": 8150,
+        "outputTokens": 1183,
+        "totalTokens": 9333,
+        "modelCalls": 6,
+        "toolCalls": 3,
+        "estimatedCost": 0.010516,
+        "currency": "CNY",
+        "durationMs": 32518
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "not-validated-e2e": null,
+        "implemented-and-layer-tested": null,
+        "online-validation-pending": null
+      },
+      "answerExactPhraseCoverage": 1.0,
+      "answerExactPhraseHits": {
+        "not-validated-e2e": true,
+        "implemented-and-layer-tested": true,
+        "online-validation-pending": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-023",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 32300.178,
+      "retrievalLatencyMs": 5982.83,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "inputTokens": 12878,
+        "outputTokens": 957,
+        "totalTokens": 13835,
+        "modelCalls": 7,
+        "toolCalls": 4,
+        "estimatedCost": 0.014792,
+        "currency": "CNY",
+        "durationMs": 31167
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "scope-absent": 1
+      },
+      "answerExactPhraseCoverage": 1.0,
+      "answerExactPhraseHits": {
+        "scope-absent": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-024",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 25122.025,
+      "retrievalLatencyMs": 5880.422,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "inputTokens": 6146,
+        "outputTokens": 1027,
+        "totalTokens": 7173,
+        "modelCalls": 5,
+        "toolCalls": 2,
+        "estimatedCost": 0.0082,
+        "currency": "CNY",
+        "durationMs": 24245
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "deterministic-mapping": 1,
+        "invalid-mapping-rejected": 1,
+        "authority-not-proven": 1,
+        "truth-not-proven": 1
+      },
+      "answerExactPhraseCoverage": 0.5,
+      "answerExactPhraseHits": {
+        "deterministic-mapping": false,
+        "invalid-mapping-rejected": true,
+        "authority-not-proven": false,
+        "truth-not-proven": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-025",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 41067.855,
+      "retrievalLatencyMs": 17100.845,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 3686,
+        "outputTokens": 904,
+        "totalTokens": 4590,
+        "modelCalls": 5,
+        "toolCalls": 3,
+        "estimatedCost": 0.005494,
+        "currency": "CNY",
+        "durationMs": 40083
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "sdk-retries-disabled": null,
+        "one-request-per-reservation": null,
+        "default-attempts": null,
+        "unknown-budget-accounting": null
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "sdk-retries-disabled": false,
+        "one-request-per-reservation": false,
+        "default-attempts": false,
+        "unknown-budget-accounting": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-neg-001",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 10263.123,
+      "retrievalLatencyMs": 5190.983,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 2355,
+        "outputTokens": 422,
+        "totalTokens": 2777,
+        "modelCalls": 3,
+        "toolCalls": 1,
+        "estimatedCost": 0.003199,
+        "currency": "CNY",
+        "durationMs": 9446
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": false,
+      "reviewedRefusalCorrect": false,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-neg-002",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 42048.989,
+      "retrievalLatencyMs": 6200.589,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 4574,
+        "outputTokens": 1074,
+        "totalTokens": 5648,
+        "modelCalls": 6,
+        "toolCalls": 3,
+        "estimatedCost": 0.006722,
+        "currency": "CNY",
+        "durationMs": 40956
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": false,
+      "reviewedRefusalCorrect": false,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-neg-003",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "SUCCEEDED",
+      "latencyMs": 39496.325,
+      "retrievalLatencyMs": 13086.075,
+      "citationContractValid": true,
+      "citationSourceExists": false,
+      "usage": {
+        "inputTokens": 7395,
+        "outputTokens": 1100,
+        "totalTokens": 8495,
+        "modelCalls": 6,
+        "toolCalls": 2,
+        "estimatedCost": 0.009595,
+        "currency": "CNY",
+        "durationMs": 38267
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": false
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "project-kb-neg-004",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 22560.047,
+      "retrievalLatencyMs": 9090.235,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 2845,
+        "outputTokens": 674,
+        "totalTokens": 3519,
+        "modelCalls": 4,
+        "toolCalls": 2,
+        "estimatedCost": 0.004193,
+        "currency": "CNY",
+        "durationMs": 21724
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": false,
+      "reviewedRefusalCorrect": false,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "showcase-holdout-001",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 30260.646,
+      "retrievalLatencyMs": 17152.181,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 3666,
+        "outputTokens": 902,
+        "totalTokens": 4568,
+        "modelCalls": 5,
+        "toolCalls": 3,
+        "estimatedCost": 0.00547,
+        "currency": "CNY",
+        "durationMs": 29485
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "cursor-format": null,
+        "durable-replay": null,
+        "database-order": null
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "cursor-format": false,
+        "durable-replay": false,
+        "database-order": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "showcase-holdout-002",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 22563.005,
+      "retrievalLatencyMs": 17105.026,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 2940,
+        "outputTokens": 771,
+        "totalTokens": 3711,
+        "modelCalls": 4,
+        "toolCalls": 2,
+        "estimatedCost": 0.004482,
+        "currency": "CNY",
+        "durationMs": 21646
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "stable-call-id": null,
+        "unknown-result": null,
+        "no-blind-retry": null
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "stable-call-id": false,
+        "unknown-result": false,
+        "no-blind-retry": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "showcase-holdout-003",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 43555.806,
+      "retrievalLatencyMs": 9773.203,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 6503,
+        "outputTokens": 1425,
+        "totalTokens": 7928,
+        "modelCalls": 7,
+        "toolCalls": 4,
+        "estimatedCost": 0.009353,
+        "currency": "CNY",
+        "durationMs": 43337
+      },
+      "retrievalFactCoverage": 0.3333333333333333,
+      "retrievalFactRanks": {
+        "java-control": null,
+        "python-execution": null,
+        "no-user-token": 1
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "java-control": false,
+        "python-execution": false,
+        "no-user-token": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "showcase-holdout-004",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 41067.658,
+      "retrievalLatencyMs": 17134.218,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 3689,
+        "outputTokens": 943,
+        "totalTokens": 4632,
+        "modelCalls": 5,
+        "toolCalls": 3,
+        "estimatedCost": 0.005575,
+        "currency": "CNY",
+        "durationMs": 39764
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "heartbeat": null,
+        "browser-dedup": null,
+        "refresh-limit": null
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "heartbeat": false,
+        "browser-dedup": false,
+        "refresh-limit": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "showcase-holdout-005",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 21024.578,
+      "retrievalLatencyMs": 8605.083,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 2189,
+        "outputTokens": 671,
+        "totalTokens": 2860,
+        "modelCalls": 3,
+        "toolCalls": 1,
+        "estimatedCost": 0.003531,
+        "currency": "CNY",
+        "durationMs": 20889
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "mapping-check": null,
+        "authority-limit": null
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "mapping-check": false,
+        "authority-limit": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "showcase-holdout-006",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 23551.313,
+      "retrievalLatencyMs": 17082.444,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 2929,
+        "outputTokens": 784,
+        "totalTokens": 3713,
+        "modelCalls": 4,
+        "toolCalls": 2,
+        "estimatedCost": 0.004497,
+        "currency": "CNY",
+        "durationMs": 22464
+      },
+      "retrievalFactCoverage": 0.0,
+      "retrievalFactRanks": {
+        "sdk-disabled": null,
+        "bounded-attempts": null,
+        "unknown-budget": null
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "sdk-disabled": false,
+        "bounded-attempts": false,
+        "unknown-budget": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "showcase-holdout-007",
+      "repetition": 1,
+      "kind": "zero-evidence",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 25148.077,
+      "retrievalLatencyMs": 5131.223,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 5234,
+        "outputTokens": 1117,
+        "totalTokens": 6351,
+        "modelCalls": 7,
+        "toolCalls": 4,
+        "estimatedCost": 0.007468,
+        "currency": "CNY",
+        "durationMs": 24245
+      },
+      "retrievalNegativeClean": true,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "legacy-langgraph",
+      "caseId": "showcase-holdout-008",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 41007.59,
+      "retrievalLatencyMs": 13420.725,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "inputTokens": 4458,
+        "outputTokens": 928,
+        "totalTokens": 5386,
+        "modelCalls": 6,
+        "toolCalls": 3,
+        "estimatedCost": 0.006314,
+        "currency": "CNY",
+        "durationMs": 40358
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": false,
+      "reviewedRefusalCorrect": false,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-001",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "FAILED",
+      "latencyMs": 3088.091,
+      "retrievalLatencyMs": 343.057,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "totalTokens": 235
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "java-control-plane": 1,
+        "python-execution-plane": 1
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "java-control-plane": false,
+        "python-execution-plane": false
+      },
+      "reviewedAnswerFactCoverage": 0.0,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-002",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 12324.11,
+      "retrievalLatencyMs": 396.134,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 6461
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "compose-exposure": 1,
+        "cloud-boundary": 1
+      },
+      "answerExactPhraseCoverage": 0.5,
+      "answerExactPhraseHits": {
+        "compose-exposure": true,
+        "cloud-boundary": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-003",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 10292.696,
+      "retrievalLatencyMs": 310.169,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 6060
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "restricted-role": 1,
+        "terminal-write-denied": 1,
+        "java-finalize": 1
+      },
+      "answerExactPhraseCoverage": 0.6666666666666666,
+      "answerExactPhraseHits": {
+        "restricted-role": false,
+        "terminal-write-denied": true,
+        "java-finalize": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-004",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 8232.645,
+      "retrievalLatencyMs": 404.31,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 7288
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "no-user-token-forwarding": 1,
+        "service-jwt-ttl": 1,
+        "delegation-jwt-ttl": 1
+      },
+      "answerExactPhraseCoverage": 0.6666666666666666,
+      "answerExactPhraseHits": {
+        "no-user-token-forwarding": true,
+        "service-jwt-ttl": true,
+        "delegation-jwt-ttl": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-005",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 15884.437,
+      "retrievalLatencyMs": 323.927,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 8317
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "single-scope": 1,
+        "scope-intersection": 1,
+        "binding-match": 1
+      },
+      "answerExactPhraseCoverage": 1.0,
+      "answerExactPhraseHits": {
+        "single-scope": true,
+        "scope-intersection": true,
+        "binding-match": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-006",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 8726.569,
+      "retrievalLatencyMs": 326.014,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 5066
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "minimum-length": 1,
+        "distinct-secrets": 1
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "minimum-length": false,
+        "distinct-secrets": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-007",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 8753.038,
+      "retrievalLatencyMs": 317.003,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 5253
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "read-only-allowlist": 1,
+        "unsupported-operations": 1
+      },
+      "answerExactPhraseCoverage": 1.0,
+      "answerExactPhraseHits": {
+        "read-only-allowlist": true,
+        "unsupported-operations": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-008",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 11258.462,
+      "retrievalLatencyMs": 334.454,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 5815
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "checkpoint-schema": 1,
+        "thread-id-source": 1,
+        "default-run-mapping": 1
+      },
+      "answerExactPhraseCoverage": 0.6666666666666666,
+      "answerExactPhraseHits": {
+        "checkpoint-schema": true,
+        "thread-id-source": false,
+        "default-run-mapping": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-009",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 19524.456,
+      "retrievalLatencyMs": 362.884,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 8824
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "sync-boundary": 1,
+        "external-call-exclusion": 1,
+        "not-exactly-once": 1
+      },
+      "answerExactPhraseCoverage": 0.6666666666666666,
+      "answerExactPhraseHits": {
+        "sync-boundary": false,
+        "external-call-exclusion": true,
+        "not-exactly-once": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-010",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 10744.918,
+      "retrievalLatencyMs": 344.68,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 4443
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "incomplete-resume": 1,
+        "completed-finalize-retry": 1,
+        "no-resynthesis": 1
+      },
+      "answerExactPhraseCoverage": 0.3333333333333333,
+      "answerExactPhraseHits": {
+        "incomplete-resume": false,
+        "completed-finalize-retry": false,
+        "no-resynthesis": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-011",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 8229.761,
+      "retrievalLatencyMs": 323.084,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 7108
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "settled-replay": 1,
+        "stale-reserved-unknown": 1,
+        "unknown-budget": 1
+      },
+      "answerExactPhraseCoverage": 0.3333333333333333,
+      "answerExactPhraseHits": {
+        "settled-replay": false,
+        "stale-reserved-unknown": false,
+        "unknown-budget": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-012",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 6654.384,
+      "retrievalLatencyMs": 324.419,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 3877
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "lease-default": 1,
+        "heartbeat-default": 1,
+        "heartbeat-less-than-lease": 1
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "lease-default": false,
+        "heartbeat-default": false,
+        "heartbeat-less-than-lease": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-013",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 22029.658,
+      "retrievalLatencyMs": 336.531,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 9523
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "claim-locking": 3,
+        "reclaim-eligibility": 3,
+        "fresh-token": 3
+      },
+      "answerExactPhraseCoverage": 1.0,
+      "answerExactPhraseHits": {
+        "claim-locking": true,
+        "reclaim-eligibility": true,
+        "fresh-token": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-014",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 21539.566,
+      "retrievalLatencyMs": 320.158,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 9791
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "serialization": 1,
+        "handoff-recheck": 1,
+        "fencing-required": 1,
+        "fencing-mechanism": 1
+      },
+      "answerExactPhraseCoverage": 0.25,
+      "answerExactPhraseHits": {
+        "serialization": true,
+        "handoff-recheck": false,
+        "fencing-required": false,
+        "fencing-mechanism": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-015",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 10273.273,
+      "retrievalLatencyMs": 325.665,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 5779
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "hardening-change": 1,
+        "blocked-bypass": 1
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "hardening-change": false,
+        "blocked-bypass": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-016",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 10755.508,
+      "retrievalLatencyMs": 337.162,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 4854
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "cursor-format": 1,
+        "cursor-validation": 1,
+        "database-replay": 1
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "cursor-format": false,
+        "cursor-validation": false,
+        "database-replay": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-017",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 18999.94,
+      "retrievalLatencyMs": 301.055,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 3871
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "idle-heartbeat": 1,
+        "terminal-close": 1
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "idle-heartbeat": false,
+        "terminal-close": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-018",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 17990.993,
+      "retrievalLatencyMs": 398.557,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 8537
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "client-dedup": 1,
+        "cursor-replay": 1,
+        "refresh-limit": 1,
+        "verification-limit": 1
+      },
+      "answerExactPhraseCoverage": 0.5,
+      "answerExactPhraseHits": {
+        "client-dedup": false,
+        "cursor-replay": false,
+        "refresh-limit": true,
+        "verification-limit": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-019",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 10226.951,
+      "retrievalLatencyMs": 352.39,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 5119
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "call-id-inputs": 1,
+        "stable-retry-id": 1,
+        "identifier-only": 1,
+        "downstream-dedup": 1
+      },
+      "answerExactPhraseCoverage": 0.5,
+      "answerExactPhraseHits": {
+        "call-id-inputs": false,
+        "stable-retry-id": false,
+        "identifier-only": true,
+        "downstream-dedup": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-020",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 7168.63,
+      "retrievalLatencyMs": 275.089,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 5355
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "completed-replay": 1,
+        "current-executing": 1,
+        "stale-executing": 1
+      },
+      "answerExactPhraseCoverage": 0.6666666666666666,
+      "answerExactPhraseHits": {
+        "completed-replay": false,
+        "current-executing": true,
+        "stale-executing": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-021",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 17980.373,
+      "retrievalLatencyMs": 299.584,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 8560
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "at-most-once-choice": 1,
+        "stable-unknown-code": 1,
+        "no-blind-retry": 1,
+        "availability-tradeoff": 1,
+        "not-exactly-once": 1
+      },
+      "answerExactPhraseCoverage": 0.2,
+      "answerExactPhraseHits": {
+        "at-most-once-choice": false,
+        "stable-unknown-code": false,
+        "no-blind-retry": true,
+        "availability-tradeoff": false,
+        "not-exactly-once": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-022",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 14885.556,
+      "retrievalLatencyMs": 351.947,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 7342
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "not-validated-e2e": 1,
+        "implemented-and-layer-tested": 1,
+        "online-validation-pending": 1
+      },
+      "answerExactPhraseCoverage": 0.6666666666666666,
+      "answerExactPhraseHits": {
+        "not-validated-e2e": false,
+        "implemented-and-layer-tested": true,
+        "online-validation-pending": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-023",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 8213.316,
+      "retrievalLatencyMs": 308.891,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 7068
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "scope-absent": 1
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "scope-absent": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-024",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 11813.767,
+      "retrievalLatencyMs": 324.315,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 5098
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "deterministic-mapping": 1,
+        "invalid-mapping-rejected": 1,
+        "authority-not-proven": 1,
+        "truth-not-proven": 1
+      },
+      "answerExactPhraseCoverage": 0.75,
+      "answerExactPhraseHits": {
+        "deterministic-mapping": true,
+        "invalid-mapping-rejected": true,
+        "authority-not-proven": false,
+        "truth-not-proven": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-025",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 26624.154,
+      "retrievalLatencyMs": 325.067,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 9786
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "sdk-retries-disabled": 2,
+        "one-request-per-reservation": 2,
+        "default-attempts": 2,
+        "unknown-budget-accounting": 2
+      },
+      "answerExactPhraseCoverage": 0.25,
+      "answerExactPhraseHits": {
+        "sdk-retries-disabled": false,
+        "one-request-per-reservation": true,
+        "default-attempts": false,
+        "unknown-budget-accounting": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-neg-001",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 3593.426,
+      "retrievalLatencyMs": 297.932,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "totalTokens": 238
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": false,
+      "reviewedRefusalCorrect": false,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-neg-002",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 3069.826,
+      "retrievalLatencyMs": 329.215,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "totalTokens": 299
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": false,
+      "reviewedRefusalCorrect": false,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-neg-003",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "SUCCEEDED",
+      "latencyMs": 9232.191,
+      "retrievalLatencyMs": 337.242,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 5222
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "project-kb-neg-004",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "SUCCEEDED",
+      "latencyMs": 10774.346,
+      "retrievalLatencyMs": 308.25,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 5464
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "showcase-holdout-001",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 10746.671,
+      "retrievalLatencyMs": 388.104,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 5631
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "cursor-format": 4,
+        "durable-replay": 2,
+        "database-order": 4
+      },
+      "answerExactPhraseCoverage": 1.0,
+      "answerExactPhraseHits": {
+        "cursor-format": true,
+        "durable-replay": true,
+        "database-order": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "showcase-holdout-002",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 17940.297,
+      "retrievalLatencyMs": 331.482,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 8775
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "stable-call-id": 5,
+        "unknown-result": 1,
+        "no-blind-retry": 3
+      },
+      "answerExactPhraseCoverage": 0.6666666666666666,
+      "answerExactPhraseHits": {
+        "stable-call-id": true,
+        "unknown-result": true,
+        "no-blind-retry": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "showcase-holdout-003",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 17924.28,
+      "retrievalLatencyMs": 332.336,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 8915
+      },
+      "retrievalFactCoverage": 0.6666666666666666,
+      "retrievalFactRanks": {
+        "java-control": 4,
+        "python-execution": 4,
+        "no-user-token": null
+      },
+      "answerExactPhraseCoverage": 0.0,
+      "answerExactPhraseHits": {
+        "java-control": false,
+        "python-execution": false,
+        "no-user-token": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "showcase-holdout-004",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 23021.939,
+      "retrievalLatencyMs": 333.104,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 10576
+      },
+      "retrievalFactCoverage": 0.6666666666666666,
+      "retrievalFactRanks": {
+        "heartbeat": 1,
+        "browser-dedup": 2,
+        "refresh-limit": null
+      },
+      "answerExactPhraseCoverage": 0.6666666666666666,
+      "answerExactPhraseHits": {
+        "heartbeat": true,
+        "browser-dedup": true,
+        "refresh-limit": false
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "showcase-holdout-005",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 19435.332,
+      "retrievalLatencyMs": 338.573,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 6180
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "mapping-check": 3,
+        "authority-limit": 3
+      },
+      "answerExactPhraseCoverage": 0.5,
+      "answerExactPhraseHits": {
+        "mapping-check": false,
+        "authority-limit": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "showcase-holdout-006",
+      "repetition": 1,
+      "kind": "positive",
+      "status": "SUCCEEDED",
+      "latencyMs": 27618.226,
+      "retrievalLatencyMs": 288.164,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 11098
+      },
+      "retrievalFactCoverage": 1.0,
+      "retrievalFactRanks": {
+        "sdk-disabled": 4,
+        "bounded-attempts": 4,
+        "unknown-budget": 1
+      },
+      "answerExactPhraseCoverage": 0.6666666666666666,
+      "answerExactPhraseHits": {
+        "sdk-disabled": true,
+        "bounded-attempts": false,
+        "unknown-budget": true
+      },
+      "reviewedAnswerFactCoverage": 1.0,
+      "reviewedCitationSupport": true
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "showcase-holdout-007",
+      "repetition": 1,
+      "kind": "zero-evidence",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "latencyMs": 7674.923,
+      "retrievalLatencyMs": 281.437,
+      "citationContractValid": false,
+      "citationSourceExists": null,
+      "usage": {
+        "totalTokens": 949
+      },
+      "retrievalNegativeClean": false,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": null
+    },
+    {
+      "mode": "ragflow-dify",
+      "caseId": "showcase-holdout-008",
+      "repetition": 1,
+      "kind": "evidence-backed-safe-denial",
+      "status": "SUCCEEDED",
+      "latencyMs": 8227.511,
+      "retrievalLatencyMs": 379.551,
+      "citationContractValid": true,
+      "citationSourceExists": true,
+      "usage": {
+        "totalTokens": 5216
+      },
+      "retrievalDenialEvidenceCoverage": 1.0,
+      "automaticRefusalCorrect": true,
+      "reviewedRefusalCorrect": true,
+      "reviewedCitationSupport": true
+    }
+  ],
+  "interpretation": "Workflow retrieval probes are separate debug calls. Exact answer phrase scores are lower bounds; semantic fact and factual citation support require recorded review. Compare latency only under matched model, corpus and budgets."
+}

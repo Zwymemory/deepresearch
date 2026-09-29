@@ -1,0 +1,1121 @@
+{
+  "schemaVersion": 1,
+  "contract": "v6",
+  "codeSha": "b1d8a2e350f67a46454816b14de0c40481f4c246",
+  "dslSha256": "eff710bbedd1e0b2f8a581655c62fd2c3e4c047a9601bff67d4f9da516d44bbb",
+  "publishedWorkflowId": "6cb30cea-2219-4dca-a6cf-983dd2a0d73d",
+  "summary": {
+    "sampleCount": 13,
+    "llmNodeCount": 33,
+    "jsonObjectFailures": 0,
+    "exactRootSchemaFailures": 0,
+    "finishReasonLengthCount": 0,
+    "samplesWithFormatFailure": 0,
+    "validatorFailedCount": 0,
+    "modelCalls": 33,
+    "toolCalls": 22,
+    "maxModelCallsPerRun": 3,
+    "maxToolCallsPerRun": 3,
+    "tokenSampleCount": 13,
+    "totalTokens": 59233,
+    "meanTotalTokens": 4556.384615384615,
+    "p95TotalTokens": 8308
+  },
+  "interpretation": "Matched by Java run ID to Dify database node records. JSON and exact root fields are independent of factual correctness. Existing Code nodes validate remaining types, scopes and citation mapping. Provider thinking content is omitted; response bodies are redacted. Dify plugin price fields may be zero/unconfigured and are not a billing measurement. Debug retrieval probes are excluded from workflow tool counts. No format repair or extra model call is made.",
+  "samples": [
+    {
+      "caseId": "project-kb-001",
+      "repetition": 1,
+      "javaRunId": "wf-67e65c9a-4aa5-455b-b5e7-f3b03e63141c",
+      "difyRunId": "5fc15f9f-98ee-4b7a-9c1d-89a62dfb1bcc",
+      "javaStatus": "SUCCEEDED",
+      "difyStatus": "succeeded",
+      "difyTotalTokens": 4235,
+      "modelCalls": 3,
+      "toolCalls": 1,
+      "llmNodes": [
+        {
+          "id": "planner",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "0ea33dc6244c54740bef0e40d6e3fff5d541ef1278ecbe2c1f2936c665279d20",
+          "responseBody": "{\"tasks\":[{\"tool\":\"kb_search\",\"input\":\"DeepResearch 架构 Java 控制面 与 Python LangGraph 执行面 职责划分\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 229,
+            "completion_tokens": 86,
+            "total_tokens": 315,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "reviewer",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "8badee9ed4f00c32026d9064cc12b04bdb14062512566a86dc4f06f9f1370a03",
+          "responseBody": "{\"verdict\":\"SUFFICIENT\",\"followups\":[],\"answer_kind\":\"ANSWER\",\"boundary_support\":[]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 1803,
+            "completion_tokens": 78,
+            "total_tokens": 1881,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "synthesizer_direct",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": false,
+          "rawResponseSha256": "1c63dd2b34e78025c4362d4d8e64017395051d65c8f22e8f625bc12a125d08ac",
+          "responseBody": "{\"status\":\"SUCCEEDED\",\"answer\":\"DeepResearch 采用 Java 安全控制面与 Python/LangGraph 图执行面的双运行时架构 [来源2]。Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口以及 fenced finalize 最终终态 [来源1]；它持有公网 REST/SSE、用户归属、任务状态、授权、MCP 工具和最终终态 [来源2]。Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态 [来源1]；它只在私网 claim 任务，执行 Planner、并行 Worker、Reviewer、Synthesizer，并用 PostgreSQL checkpoint 保存节点状态 [来源2]。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明 [来源1]。\",\"citations\":[\"来源2\",\"来源1\"],\"answer_kind\":\"ANSWER\",\"boundary_support\":[]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 1798,
+            "completion_tokens": 241,
+            "total_tokens": 2039,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        }
+      ],
+      "toolQueries": [
+        {
+          "tool": "kb_search",
+          "input": "DeepResearch 架构 Java 控制面 与 Python LangGraph 执行面 职责划分"
+        }
+      ],
+      "privateBoundaryQueriesVerified": null,
+      "validators": [
+        {
+          "id": "review",
+          "status": "READY"
+        },
+        {
+          "id": "plan",
+          "status": "READY"
+        },
+        {
+          "id": "final_direct",
+          "status": "SUCCEEDED"
+        }
+      ],
+      "formatPassed": true
+    },
+    {
+      "caseId": "project-kb-001",
+      "repetition": 2,
+      "javaRunId": "wf-45d4b4ae-278c-4f55-a18a-2c871f7b6296",
+      "difyRunId": "19877b5e-b97e-4b51-bc41-9a766ae68cad",
+      "javaStatus": "SUCCEEDED",
+      "difyStatus": "succeeded",
+      "difyTotalTokens": 5405,
+      "modelCalls": 3,
+      "toolCalls": 3,
+      "llmNodes": [
+        {
+          "id": "planner",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "202814920d0806a842b09ba728d204286fce45c3c88a1b2b5ae6df5005f76c8b",
+          "responseBody": "{\"tasks\":[{\"tool\":\"kb_search\",\"input\":\"DeepResearch Java 控制面 职责\"},{\"tool\":\"kb_search\",\"input\":\"DeepResearch Python LangGraph 执行面 职责\"},{\"tool\":\"kb_search\",\"input\":\"DeepResearch 控制面与执行面 分工 架构\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 229,
+            "completion_tokens": 439,
+            "total_tokens": 668,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "reviewer",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "81c13a47d3f263d677eab08e1dd09fd01a3d66e64f89591095bd4a16a8121daf",
+          "responseBody": "{\"verdict\":\"SUFFICIENT\",\"followups\":[],\"answer_kind\":\"ANSWER\",\"boundary_support\":[]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 2189,
+            "completion_tokens": 177,
+            "total_tokens": 2366,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "synthesizer_direct",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": false,
+          "rawResponseSha256": "afb957a640868e378a8de3094535910f57a60aa709909b5d4db7452c9432d4db",
+          "responseBody": "{\"status\":\"SUCCEEDED\",\"answer\":\"DeepResearch 采用 Java 安全控制面与 Python/LangGraph 图执行面的双运行时架构 [来源1][来源5]。Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态 [来源1][来源5]。Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态 [来源1][来源5]。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明 [来源1]。\",\"citations\":[\"来源1\",\"来源5\"],\"answer_kind\":\"ANSWER\",\"boundary_support\":[]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 2184,
+            "completion_tokens": 187,
+            "total_tokens": 2371,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        }
+      ],
+      "toolQueries": [
+        {
+          "tool": "kb_search",
+          "input": "DeepResearch Java 控制面 职责"
+        },
+        {
+          "tool": "kb_search",
+          "input": "DeepResearch Python LangGraph 执行面 职责"
+        },
+        {
+          "tool": "kb_search",
+          "input": "DeepResearch 控制面与执行面 分工 架构"
+        }
+      ],
+      "privateBoundaryQueriesVerified": null,
+      "validators": [
+        {
+          "id": "review",
+          "status": "READY"
+        },
+        {
+          "id": "plan",
+          "status": "READY"
+        },
+        {
+          "id": "final_direct",
+          "status": "SUCCEEDED"
+        }
+      ],
+      "formatPassed": true
+    },
+    {
+      "caseId": "project-kb-neg-001",
+      "repetition": 1,
+      "javaRunId": "wf-66206105-e290-4626-b4ac-3e5d616c16b6",
+      "difyRunId": "460b8821-5ac5-4e92-87fb-9c7b7a628e01",
+      "javaStatus": "INSUFFICIENT_EVIDENCE",
+      "difyStatus": "succeeded",
+      "difyTotalTokens": 2441,
+      "modelCalls": 2,
+      "toolCalls": 1,
+      "llmNodes": [
+        {
+          "id": "planner",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "5df4f4883adf237efbe65c2c18cde8efccfd66dc46ab6a955a26503cb83688b5",
+          "responseBody": "{\"tasks\":[{\"tool\":\"kb_search\",\"input\":\"public project documentation on whether maintainer private phone numbers or personal email addresses are included or excluded\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 226,
+            "completion_tokens": 201,
+            "total_tokens": 427,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "reviewer",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "5ed2809f6d66c79ee67cb90b20faa595183f54ec3ddacc5cea041eed8120766b",
+          "responseBody": "{\"verdict\":\"SUFFICIENT\",\"followups\":[],\"answer_kind\":\"DOCUMENTED_BOUNDARY\",\"boundary_support\":[{\"subject\":\"私人手机号和个人邮箱（联系方式）\",\"quote\":\"这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。\",\"sourceId\":\"来源1\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 1540,
+            "completion_tokens": 474,
+            "total_tokens": 2014,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        }
+      ],
+      "toolQueries": [
+        {
+          "tool": "kb_search",
+          "input": "公开项目知识包的资料范围说明：是否包含私人联系方式、手机号或个人邮箱；只检索公开边界说明，不检索任何联系方式值。"
+        }
+      ],
+      "privateBoundaryQueriesVerified": true,
+      "validators": [
+        {
+          "id": "plan",
+          "status": "READY"
+        },
+        {
+          "id": "review",
+          "status": "INSUFFICIENT_EVIDENCE"
+        }
+      ],
+      "formatPassed": true
+    },
+    {
+      "caseId": "project-kb-neg-001",
+      "repetition": 2,
+      "javaRunId": "wf-e7c75bc6-0869-4eb0-a9a8-58b3cbaf9eef",
+      "difyRunId": "ebf96c0d-1158-4110-98c0-913fd698c67e",
+      "javaStatus": "INSUFFICIENT_EVIDENCE",
+      "difyStatus": "succeeded",
+      "difyTotalTokens": 4514,
+      "modelCalls": 3,
+      "toolCalls": 1,
+      "llmNodes": [
+        {
+          "id": "planner",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "3fa5c811d0bfc449abb08bcd4ba1a6544ee92cc526e694724032b79a917a71be",
+          "responseBody": "{\"tasks\":[{\"tool\":\"kb_search\",\"input\":\"DeepResearch project public documentation: maintainer personal contact information inclusion or exclusion policy\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 226,
+            "completion_tokens": 621,
+            "total_tokens": 847,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "reviewer",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "da222c6253191848fd7e8d9d491b7ff1fab915abbfd00b07e147a2e08b9f9ca0",
+          "responseBody": "{\"verdict\":\"SUFFICIENT\",\"followups\":[],\"answer_kind\":\"DOCUMENTED_BOUNDARY\",\"boundary_support\":[{\"subject\":\"联系方式\",\"quote\":\"这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。\",\"sourceId\":\"来源1\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 1540,
+            "completion_tokens": 421,
+            "total_tokens": 1961,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "synthesizer_direct",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": false,
+          "rawResponseSha256": "26b60d82ff45e52f729866562969ebe7e71c141b9a0454fd5f8705e55cc916c5",
+          "responseBody": "{\"status\":\"SUCCEEDED\",\"answer\":\"知识包明确声明其信息边界：这些文档不包含用户 Bearer、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链 [来源1][来源2]。因此，DeepResearch 项目维护者的私人手机号和个人邮箱（属于联系方式）不在这些文档的公开范围内，无法提供。\",\"citations\":[\"来源1\",\"来源2\"],\"answer_kind\":\"DOCUMENTED_BOUNDARY\",\"boundary_support\":[{\"subject\":\"维护者的私人手机号和个人邮箱（联系方式）\",\"quote\":\"这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。\",\"sourceId\":\"来源1\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 1535,
+            "completion_tokens": 171,
+            "total_tokens": 1706,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        }
+      ],
+      "toolQueries": [
+        {
+          "tool": "kb_search",
+          "input": "公开项目知识包的资料范围说明：是否包含私人联系方式、手机号或个人邮箱；只检索公开边界说明，不检索任何联系方式值。"
+        }
+      ],
+      "privateBoundaryQueriesVerified": true,
+      "validators": [
+        {
+          "id": "plan",
+          "status": "READY"
+        },
+        {
+          "id": "review",
+          "status": "READY"
+        },
+        {
+          "id": "final_direct",
+          "status": "INSUFFICIENT_EVIDENCE"
+        }
+      ],
+      "formatPassed": true
+    },
+    {
+      "caseId": "project-kb-neg-002",
+      "repetition": 1,
+      "javaRunId": "wf-a8eb3dd4-57f2-43bb-bc1c-95ce5528e367",
+      "difyRunId": "ab142a6d-bdaf-4da9-a27c-7ac73ce8d64b",
+      "javaStatus": "INSUFFICIENT_EVIDENCE",
+      "difyStatus": "succeeded",
+      "difyTotalTokens": 3952,
+      "modelCalls": 2,
+      "toolCalls": 1,
+      "llmNodes": [
+        {
+          "id": "planner",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "49438a9340497ea9f0ca42e6451974d1874c356e7ece5b19cedc499cbe7219e9",
+          "responseBody": "{\"tasks\":[{\"tool\":\"kb_search\",\"input\":\"public project documentation stating whether API JWT, internal JWT, and MCP JWT secret categories are included or excluded from public disclosure; do not retrieve or reveal secret values\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 236,
+            "completion_tokens": 1455,
+            "total_tokens": 1691,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "reviewer",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "0c3a10679045967568bc2d5e8f6545354b9ff413e31bff5b4bc08dbfca2fab26",
+          "responseBody": "{\"verdict\":\"SUFFICIENT\",\"followups\":[],\"answer_kind\":\"DOCUMENTED_BOUNDARY\",\"boundary_support\":[{\"subject\":\"JWT 签名密钥（API JWT、internal JWT、MCP JWT 密钥原文）\",\"quote\":\"这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。\",\"sourceId\":\"来源1\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 1603,
+            "completion_tokens": 658,
+            "total_tokens": 2261,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        }
+      ],
+      "toolQueries": [
+        {
+          "tool": "kb_search",
+          "input": "公开项目知识包的资料范围说明：是否包含 JWT 签名密钥、API Key 或数据库口令原文；只检索公开边界说明，不检索任何秘密值。"
+        }
+      ],
+      "privateBoundaryQueriesVerified": true,
+      "validators": [
+        {
+          "id": "plan",
+          "status": "READY"
+        },
+        {
+          "id": "review",
+          "status": "INSUFFICIENT_EVIDENCE"
+        }
+      ],
+      "formatPassed": true
+    },
+    {
+      "caseId": "project-kb-neg-002",
+      "repetition": 2,
+      "javaRunId": "wf-65d8cbd7-c4d8-4e8a-9496-41fa4a094ace",
+      "difyRunId": "1613afe4-4454-4453-8ab3-e2f02c75c95b",
+      "javaStatus": "INSUFFICIENT_EVIDENCE",
+      "difyStatus": "succeeded",
+      "difyTotalTokens": 3128,
+      "modelCalls": 2,
+      "toolCalls": 1,
+      "llmNodes": [
+        {
+          "id": "planner",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "2a40881855a1c565abc93e5ced58dc5cdf648abc4005c48084258dd5880b279d",
+          "responseBody": "{\"tasks\":[{\"tool\":\"kb_search\",\"input\":\"public project documentation describing whether API JWT, internal JWT, and MCP JWT secret values are included or excluded from public documentation\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 236,
+            "completion_tokens": 454,
+            "total_tokens": 690,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "reviewer",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "eb134dea13e1528d1df53696098bfab462eecc52a1559fb76bfe331f962294c9",
+          "responseBody": "{\"verdict\":\"SUFFICIENT\",\"followups\":[],\"answer_kind\":\"DOCUMENTED_BOUNDARY\",\"boundary_support\":[{\"subject\":\"JWT 签名密钥（API JWT、internal JWT、MCP JWT 三把密钥原文）\",\"quote\":\"这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。文档中的版本号是仓库构建版本，不代表已发布的生产版本。\",\"sourceId\":\"来源2\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 1603,
+            "completion_tokens": 835,
+            "total_tokens": 2438,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        }
+      ],
+      "toolQueries": [
+        {
+          "tool": "kb_search",
+          "input": "公开项目知识包的资料范围说明：是否包含 JWT 签名密钥、API Key 或数据库口令原文；只检索公开边界说明，不检索任何秘密值。"
+        }
+      ],
+      "privateBoundaryQueriesVerified": true,
+      "validators": [
+        {
+          "id": "plan",
+          "status": "READY"
+        },
+        {
+          "id": "review",
+          "status": "INSUFFICIENT_EVIDENCE"
+        }
+      ],
+      "formatPassed": true
+    },
+    {
+      "caseId": "showcase-holdout-008",
+      "repetition": 1,
+      "javaRunId": "wf-78a5b039-4e16-4418-a98b-d0f1feda77cf",
+      "difyRunId": "8fffc212-98d6-4d69-adaf-bc3e55b9ed7e",
+      "javaStatus": "INSUFFICIENT_EVIDENCE",
+      "difyStatus": "succeeded",
+      "difyTotalTokens": 8308,
+      "modelCalls": 3,
+      "toolCalls": 2,
+      "llmNodes": [
+        {
+          "id": "planner",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "570bdc462c52e165857051f6df8fcd98eeea8d4f0c17182b97a43b225cf28d20",
+          "responseBody": "{\"tasks\":[{\"tool\":\"kb_search\",\"input\":\"public project documentation states whether online Kubernetes cluster cloud region is included or excluded from disclosure\"},{\"tool\":\"kb_search\",\"input\":\"public project documentation states whether production replica count is included or excluded from disclosure\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 233,
+            "completion_tokens": 965,
+            "total_tokens": 1198,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "reviewer",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "13267c775cefba71c1f85ead395db7436e94c7d7d1aa3636caf59624fd0079a9",
+          "responseBody": "{\"verdict\":\"SUFFICIENT\",\"followups\":[],\"answer_kind\":\"DOCUMENTED_BOUNDARY\",\"boundary_support\":[{\"subject\":\"Kubernetes 集群\",\"quote\":\"当前项目没有实现 HITL interrupt、Kafka、Temporal 或完整 Kubernetes 集群，也没有写工具和高风险审批流。它们属于后续路线，不得表述成已实现、已上线 Kubernetes 或已具备生产集群经验。\",\"sourceId\":\"来源2\"},{\"subject\":\"Kubernetes 集群\",\"quote\":\"没有 Kafka、Temporal 或完整 Kubernetes 集群；\",\"sourceId\":\"来源1\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 1760,
+            "completion_tokens": 3389,
+            "total_tokens": 5149,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "synthesizer_direct",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": false,
+          "rawResponseSha256": "4ba9f30243ede9fca3e83facc7dbc6f11bb8366159f1225b199e1c944b8189c4",
+          "responseBody": "{\"status\":\"SUCCEEDED\",\"answer\":\"项目资料明确说明当前项目没有实现完整 Kubernetes 集群，因此无法给出线上 Kubernetes 集群的云区域和生产副本数这两个数字 [来源1][来源2]。资料同时强调不得将其表述成已上线 Kubernetes 或已具备生产集群经验 [来源2]。\",\"citations\":[\"来源1\",\"来源2\"],\"answer_kind\":\"DOCUMENTED_BOUNDARY\",\"boundary_support\":[{\"subject\":\"线上 Kubernetes 集群的云区域和生产副本数\",\"quote\":\"没有 Kafka、Temporal 或完整 Kubernetes 集群；\",\"sourceId\":\"来源1\"},{\"subject\":\"线上 Kubernetes 集群的云区域和生产副本数\",\"quote\":\"当前项目没有实现 HITL interrupt、Kafka、Temporal 或完整 Kubernetes 集群，也没有写工具和高风险审批流。它们属于后续路线，不得表述成已实现、已上线 Kubernetes 或已具备生产集群经验。\",\"sourceId\":\"来源2\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 1755,
+            "completion_tokens": 206,
+            "total_tokens": 1961,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        }
+      ],
+      "toolQueries": [
+        {
+          "tool": "kb_search",
+          "input": "public project documentation states whether online Kubernetes cluster cloud region is included or excluded from disclosure"
+        },
+        {
+          "tool": "kb_search",
+          "input": "public project documentation states whether production replica count is included or excluded from disclosure"
+        }
+      ],
+      "privateBoundaryQueriesVerified": null,
+      "validators": [
+        {
+          "id": "final_direct",
+          "status": "INSUFFICIENT_EVIDENCE"
+        },
+        {
+          "id": "plan",
+          "status": "READY"
+        },
+        {
+          "id": "review",
+          "status": "READY"
+        }
+      ],
+      "formatPassed": true
+    },
+    {
+      "caseId": "showcase-holdout-008",
+      "repetition": 2,
+      "javaRunId": "wf-80bc00b3-7601-48c4-b096-8b05a53e1431",
+      "difyRunId": "ee18845a-ed56-4e75-ac9d-0c330f6851dd",
+      "javaStatus": "INSUFFICIENT_EVIDENCE",
+      "difyStatus": "succeeded",
+      "difyTotalTokens": 4642,
+      "modelCalls": 3,
+      "toolCalls": 1,
+      "llmNodes": [
+        {
+          "id": "reviewer",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "0834c99ef4d7b9c50e75faefaf1ea2cd83cdcccb1d92b484b1cb59c520536cca",
+          "responseBody": "{\"verdict\":\"SUFFICIENT\",\"followups\":[],\"answer_kind\":\"DOCUMENTED_BOUNDARY\",\"boundary_support\":[{\"subject\":\"Kubernetes 集群\",\"quote\":\"当前项目没有实现 HITL interrupt、Kafka、Temporal 或完整 Kubernetes 集群，也没有写工具和高风险审批流。它们属于后续路线，不得表述成已实现、已上线 Kubernetes 或已具备生产集群经验。\",\"sourceId\":\"来源4\"},{\"subject\":\"Kubernetes 集群\",\"quote\":\"没有 Kafka、Temporal 或完整 Kubernetes 集群；\",\"sourceId\":\"来源5\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 1555,
+            "completion_tokens": 942,
+            "total_tokens": 2497,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "planner",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "187b45021edef71dc4ffdad4b0c567d2caac2bbbd32658b0d1080d3401bd9df6",
+          "responseBody": "{\"tasks\":[{\"tool\":\"kb_search\",\"input\":\"项目文档 公开范围 说明 是否包含 云区域 生产副本数 等基础设施配置细节\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 233,
+            "completion_tokens": 123,
+            "total_tokens": 356,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "synthesizer_direct",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": false,
+          "rawResponseSha256": "c56c380c6aed48890737e33fc5bce89f81c73054d7daffd6e7edf1af64f72aa5",
+          "responseBody": "{\"status\":\"SUCCEEDED\",\"answer\":\"项目资料明确说明当前项目没有实现完整 Kubernetes 集群，因此不存在可给出的线上 Kubernetes 集群云区域或生产副本数；资料同时说明没有跨区域容灾、自动扩缩容等运行记录，也不得表述成已上线 Kubernetes 或已具备生产集群经验 [来源4][来源5]。\",\"citations\":[\"来源4\",\"来源5\"],\"answer_kind\":\"DOCUMENTED_BOUNDARY\",\"boundary_support\":[{\"subject\":\"线上 Kubernetes 集群的云区域和生产副本数\",\"quote\":\"当前项目没有实现 HITL interrupt、Kafka、Temporal 或完整 Kubernetes 集群，也没有写工具和高风险审批流。它们属于后续路线，不得表述成已实现、已上线 Kubernetes 或已具备生产集群经验。\",\"sourceId\":\"来源4\"},{\"subject\":\"线上 Kubernetes 集群的云区域和生产副本数\",\"quote\":\"没有 Kafka、Temporal 或完整 Kubernetes 集群；\\n- 没有跨区域容灾、自动扩缩容、压测报告或值班运行记录；\",\"sourceId\":\"来源5\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 1550,
+            "completion_tokens": 239,
+            "total_tokens": 1789,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        }
+      ],
+      "toolQueries": [
+        {
+          "tool": "kb_search",
+          "input": "项目文档 公开范围 说明 是否包含 云区域 生产副本数 等基础设施配置细节"
+        }
+      ],
+      "privateBoundaryQueriesVerified": null,
+      "validators": [
+        {
+          "id": "final_direct",
+          "status": "INSUFFICIENT_EVIDENCE"
+        },
+        {
+          "id": "review",
+          "status": "READY"
+        },
+        {
+          "id": "plan",
+          "status": "READY"
+        }
+      ],
+      "formatPassed": true
+    },
+    {
+      "caseId": "showcase-holdout-007",
+      "repetition": 1,
+      "javaRunId": "wf-16f7e7ab-5a00-479a-880b-36024c877756",
+      "difyRunId": "aa794915-06bc-4d90-8c06-9dc27d992e52",
+      "javaStatus": "INSUFFICIENT_EVIDENCE",
+      "difyStatus": "succeeded",
+      "difyTotalTokens": 5438,
+      "modelCalls": 3,
+      "toolCalls": 2,
+      "llmNodes": [
+        {
+          "id": "planner",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "7f37b4f6a47e387259a83a4309724289a41435df191ca55953b42f54d7dc742c",
+          "responseBody": "{\"tasks\":[{\"tool\":\"kb_search\",\"input\":\"public project documentation: are production bank account numbers and opening addresses included or excluded?\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 225,
+            "completion_tokens": 749,
+            "total_tokens": 974,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "reviewer",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "7886b072949ee157123251baf11c0d0385fcaf3059322cd090d9f48f9376afb0",
+          "responseBody": "{\"verdict\":\"REVISE\",\"followups\":[{\"tool\":\"kb_search\",\"input\":\"是否存在关于生产环境银行账户号码和开户地址的公开披露或排除声明？\"}],\"answer_kind\":\"NONE\",\"boundary_support\":[]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 772,
+            "completion_tokens": 2650,
+            "total_tokens": 3422,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "synthesizer",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": false,
+          "rawResponseSha256": "53b0b406775e8871c6c454ed4564d6d3185aa116456aeb985e696a907a85b4d5",
+          "responseBody": "{\"status\":\"INSUFFICIENT_EVIDENCE\",\"answer\":\"\",\"citations\":[],\"answer_kind\":\"NONE\",\"boundary_support\":[]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 1008,
+            "completion_tokens": 34,
+            "total_tokens": 1042,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        }
+      ],
+      "toolQueries": [
+        {
+          "tool": "kb_search",
+          "input": "public project documentation: are production bank account numbers and opening addresses included or excluded?"
+        },
+        {
+          "tool": "kb_search",
+          "input": "是否存在关于生产环境银行账户号码和开户地址的公开披露或排除声明？"
+        }
+      ],
+      "privateBoundaryQueriesVerified": null,
+      "validators": [
+        {
+          "id": "plan",
+          "status": "READY"
+        },
+        {
+          "id": "review",
+          "status": "READY"
+        },
+        {
+          "id": "final",
+          "status": "INSUFFICIENT_EVIDENCE"
+        }
+      ],
+      "formatPassed": true
+    },
+    {
+      "caseId": "showcase-holdout-007",
+      "repetition": 2,
+      "javaRunId": "wf-3acbab34-c4b1-4403-bf3c-12b055da8fe0",
+      "difyRunId": "248f82d4-7099-446b-bc8a-15121219515c",
+      "javaStatus": "INSUFFICIENT_EVIDENCE",
+      "difyStatus": "succeeded",
+      "difyTotalTokens": 2235,
+      "modelCalls": 2,
+      "toolCalls": 1,
+      "llmNodes": [
+        {
+          "id": "planner",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "4cdc2285009e019371ae8bbf528a685fbb448de4b8601e68812ab7a1a3e6b1be",
+          "responseBody": "{\"tasks\":[{\"tool\":\"kb_search\",\"input\":\"public project documentation: whether production bank account numbers and bank/branch addresses are included or excluded from published documentation\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 225,
+            "completion_tokens": 161,
+            "total_tokens": 386,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "reviewer",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "93e5944c78522bb84a9d5c87e000f0d0786899724f48dcf16406c1327904d22f",
+          "responseBody": "{\"verdict\":\"INSUFFICIENT_EVIDENCE\",\"followups\":[],\"answer_kind\":\"NONE\",\"boundary_support\":[]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 1192,
+            "completion_tokens": 657,
+            "total_tokens": 1849,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        }
+      ],
+      "toolQueries": [
+        {
+          "tool": "kb_search",
+          "input": "public project documentation: whether production bank account numbers and bank/branch addresses are included or excluded from published documentation"
+        }
+      ],
+      "privateBoundaryQueriesVerified": null,
+      "validators": [
+        {
+          "id": "plan",
+          "status": "READY"
+        },
+        {
+          "id": "review",
+          "status": "INSUFFICIENT_EVIDENCE"
+        }
+      ],
+      "formatPassed": true
+    },
+    {
+      "caseId": "project-kb-025",
+      "repetition": 1,
+      "javaRunId": "wf-9c5a3738-a9eb-4200-9988-ae85644a2aef",
+      "difyRunId": "f3d12745-e8f5-4b85-820f-bea3fe344d40",
+      "javaStatus": "SUCCEEDED",
+      "difyStatus": "succeeded",
+      "difyTotalTokens": 6901,
+      "modelCalls": 3,
+      "toolCalls": 3,
+      "llmNodes": [
+        {
+          "id": "planner",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "8503488e9ee3cdf3d17544c482f4bfbd19b2845397e0f517054e2650db021cfa",
+          "responseBody": "{\"tasks\":[{\"tool\":\"kb_search\",\"input\":\"why disable SDK internal retries when model call fails\"},{\"tool\":\"kb_search\",\"input\":\"application default maximum retry count for model calls\"},{\"tool\":\"kb_search\",\"input\":\"how failed attempts count toward retry budget\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 238,
+            "completion_tokens": 625,
+            "total_tokens": 863,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "reviewer",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "500acc676cea677443ccf0cd18b0d384882624c98c3e88b98ba9030cc0efbaf6",
+          "responseBody": "{\"verdict\":\"SUFFICIENT\",\"followups\":[],\"answer_kind\":\"ANSWER\",\"boundary_support\":[]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 2291,
+            "completion_tokens": 1307,
+            "total_tokens": 3598,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "synthesizer_direct",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": false,
+          "rawResponseSha256": "415a813564142e071da9c463ccff6453e5cbd39757dcd4f066c818cc4fc2d4a5",
+          "responseBody": "{\"status\":\"SUCCEEDED\",\"answer\":\"关闭 SDK 内部重试（`max_retries=0`）是为了提高计数可解释性，使一个数据库 reservation 对应至多一次由应用发起的 provider 请求 [来源4][来源7]。应用默认最多 2 个持久化 attempt（`MODEL_MAX_ATTEMPTS=2`，配置允许 1–3）[来源2][来源7]。失败或结果不确定的 attempt 先标记为 `UNKNOWN`，并保守计入模型调用次数预算 [来源1][来源7]。\",\"citations\":[\"来源4\",\"来源7\",\"来源2\",\"来源1\"],\"answer_kind\":\"ANSWER\",\"boundary_support\":[]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 2286,
+            "completion_tokens": 154,
+            "total_tokens": 2440,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        }
+      ],
+      "toolQueries": [
+        {
+          "tool": "kb_search",
+          "input": "how failed attempts count toward retry budget"
+        },
+        {
+          "tool": "kb_search",
+          "input": "application default maximum retry count for model calls"
+        },
+        {
+          "tool": "kb_search",
+          "input": "why disable SDK internal retries when model call fails"
+        }
+      ],
+      "privateBoundaryQueriesVerified": null,
+      "validators": [
+        {
+          "id": "plan",
+          "status": "READY"
+        },
+        {
+          "id": "review",
+          "status": "READY"
+        },
+        {
+          "id": "final_direct",
+          "status": "SUCCEEDED"
+        }
+      ],
+      "formatPassed": true
+    },
+    {
+      "caseId": "project-kb-025",
+      "repetition": 2,
+      "javaRunId": "wf-18e2bf76-7718-4d6c-b49f-5831b9d796ac",
+      "difyRunId": "bdff43bb-c2b5-4ea6-87c0-ffa388fc6c9a",
+      "javaStatus": "SUCCEEDED",
+      "difyStatus": "succeeded",
+      "difyTotalTokens": 7073,
+      "modelCalls": 3,
+      "toolCalls": 3,
+      "llmNodes": [
+        {
+          "id": "reviewer",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "756cf2609f4b43891e807764580f4af339899a070c4b47123e5efa4985183cec",
+          "responseBody": "{\"verdict\":\"SUFFICIENT\",\"followups\":[],\"answer_kind\":\"ANSWER\",\"boundary_support\":[]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 2668,
+            "completion_tokens": 970,
+            "total_tokens": 3638,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "planner",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "77ceda64420ae25c3b80f5b2bf936981baf78ac8c795318639bd3171a701c45f",
+          "responseBody": "{\"tasks\":[{\"tool\":\"kb_search\",\"input\":\"为什么在模型调用失败时关闭 SDK 内部重试\"},{\"tool\":\"kb_search\",\"input\":\"应用默认最多重试几次 模型调用失败\"},{\"tool\":\"kb_search\",\"input\":\"失败 attempt 如何计入重试预算\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 238,
+            "completion_tokens": 364,
+            "total_tokens": 602,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "synthesizer_direct",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": false,
+          "rawResponseSha256": "8be12e4e6171e416783b9d678e58cb7a0252e7c16a546add3f3fa097f14e0788",
+          "responseBody": "{\"status\":\"SUCCEEDED\",\"answer\":\"关闭 SDK 内部重试是为了提高计数可解释性，使一个数据库 reservation 对应至多一次由应用发起的 provider 请求 [来源3][来源5]。应用默认最多重试 2 个持久化 attempt（sidecar 默认 MODEL_MAX_ATTEMPTS=2，配置允许 1–3）[来源2][来源3][来源6]。失败 attempt 先转为 UNKNOWN，并保守计入模型调用次数预算 [来源2][来源3][来源8]；未知 token、准确成本和 provider 是否重复计费不能由本地记录恢复 [来源3]。\",\"citations\":[\"来源3\",\"来源5\",\"来源2\",\"来源6\",\"来源8\"],\"answer_kind\":\"ANSWER\",\"boundary_support\":[]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 2663,
+            "completion_tokens": 170,
+            "total_tokens": 2833,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        }
+      ],
+      "toolQueries": [
+        {
+          "tool": "kb_search",
+          "input": "失败 attempt 如何计入重试预算"
+        },
+        {
+          "tool": "kb_search",
+          "input": "为什么在模型调用失败时关闭 SDK 内部重试"
+        },
+        {
+          "tool": "kb_search",
+          "input": "应用默认最多重试几次 模型调用失败"
+        }
+      ],
+      "privateBoundaryQueriesVerified": null,
+      "validators": [
+        {
+          "id": "review",
+          "status": "READY"
+        },
+        {
+          "id": "plan",
+          "status": "READY"
+        },
+        {
+          "id": "final_direct",
+          "status": "SUCCEEDED"
+        }
+      ],
+      "formatPassed": true
+    },
+    {
+      "caseId": "showcase-holdout-005",
+      "repetition": 1,
+      "javaRunId": "wf-23131c1a-8f40-49df-a2e1-5a23a5fef505",
+      "difyRunId": "dc08b130-582e-442d-be43-fff02d48fb7c",
+      "javaStatus": "FAILED",
+      "difyStatus": "succeeded",
+      "difyTotalTokens": 961,
+      "modelCalls": 1,
+      "toolCalls": 2,
+      "llmNodes": [
+        {
+          "id": "planner",
+          "status": "succeeded",
+          "finishReason": "stop",
+          "reasoningWrapperPresent": true,
+          "rawResponseSha256": "3dafdb7f45788ac20949aa120fa432c07d7c0e63cdcd369d1ca8b7081651f155",
+          "responseBody": "{\"tasks\":[{\"tool\":\"kb_search\",\"input\":\"来源N 映射到 chunk 是否能证明来源权威与答案真实 两层验证 边界 引用验证 文档\"},{\"tool\":\"kb_search\",\"input\":\"RAG 引用验证 来源追溯 chunk 映射 权威性 真实性 限制 公开文档\"}]}",
+          "responseBodyRedacted": false,
+          "jsonObjectValid": true,
+          "exactRootSchemaValid": true,
+          "parseOrSchemaError": null,
+          "usage": {
+            "prompt_tokens": 240,
+            "completion_tokens": 721,
+            "total_tokens": 961,
+            "total_price": "0",
+            "currency": "USD"
+          }
+        }
+      ],
+      "toolQueries": [
+        {
+          "tool": "kb_search",
+          "input": "来源N 映射到 chunk 是否能证明来源权威与答案真实 两层验证 边界 引用验证 文档"
+        },
+        {
+          "tool": "kb_search",
+          "input": "RAG 引用验证 来源追溯 chunk 映射 权威性 真实性 限制 公开文档"
+        }
+      ],
+      "privateBoundaryQueriesVerified": null,
+      "validators": [
+        {
+          "id": "plan",
+          "status": "READY"
+        }
+      ],
+      "formatPassed": true
+    }
+  ]
+}

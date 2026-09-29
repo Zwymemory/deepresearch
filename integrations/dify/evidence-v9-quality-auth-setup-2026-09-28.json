@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Frozen version consecutive original-question cohort and affected targeted regressions; every attempt retained.",
+  "conditions": {
+    "implementationSha": "37a6f180ce4f7d56b28cc829841f277cf558c18c",
+    "dslSha256": "c87f8ac133bf20f28f843680695415dd7a6eb1cf0bb2d51881b54661f679b41b",
+    "frozenCasesSha256": "51586f65fe525404f2dde852b5f32aa2fdc9ac772008a09fc2f2199fe8c6e57b",
+    "publication": {
+      "id": "2436720d-01f2-43e0-9465-3afd6d947436",
+      "name": "Evidence v9 Claims",
+      "createdAt": 1790584211,
+      "graphMatches": true,
+      "nodes": 40,
+      "edges": 37
+    },
+    "imageId": "sha256:352b4139b1537332f7e49d6de4338855b7b9e1df31ece6d082216b97c995ceb6",
+    "model": "deepseek-v4-flash",
+    "thinking": false,
+    "temperature": 0,
+    "maxModelCalls": 4,
+    "completionBudget": 9216,
+    "maxWorkers": 4,
+    "javaDeadlineSeconds": 120,
+    "retries": false
+  },
+  "startedAt": "2026-09-28T08:32:26.320555+00:00",
+  "attempts": [
+    {
+      "id": "original-01",
+      "question": "根据 Python 官方公开资料，asyncio 用于哪类并发编程、适合哪类任务？",
+      "requestedTools": [
+        "web_search"
+      ],
+      "expectedStatus": "SUCCEEDED",
+      "captureFailure": "RuntimeError"
+    }
+  ],
+  "summary": {
+    "status": "authenticationSetupFailure",
+    "acceptedWorkflowCount": 0,
+    "providerCalls": 0,
+    "toolCalls": 0
+  },
+  "diagnosis": "Existing validation token expired; HTTP401 before workflow creation. Refreshed same USER principal with same token duration; private .env unchanged."
+}
