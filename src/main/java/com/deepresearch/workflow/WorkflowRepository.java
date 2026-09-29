@@ -94,6 +94,9 @@ public class WorkflowRepository {
             if (current.isEmpty() || !com.deepresearch.evidence.EvidenceJson.canonical(com.deepresearch.evidence.EvidenceJson.JSON.valueToTree(current))
                     .equals(com.deepresearch.evidence.EvidenceJson.canonical(sealed.get().path("goals"))))
                 return Optional.empty();
+            if (!com.deepresearch.evidence.EvidenceJson.canonical(new AgentResearchStateService(jdbcTemplate).proofForRun(runId))
+                    .equals(com.deepresearch.evidence.EvidenceJson.canonical(sealed.get().path("research_state"))))
+                return Optional.empty();
             return sealed;
         } catch (com.fasterxml.jackson.core.JsonProcessingException invalid) {
             throw new IllegalArgumentException("publication citations invalid",invalid);

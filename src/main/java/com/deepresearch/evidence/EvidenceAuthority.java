@@ -14,6 +14,8 @@ public interface EvidenceAuthority {
     default Candidate originalCandidate(Grant grant, String sourceId, String parentReceiptId) { throw EvidenceException.denied(); }
     /** Native control-plane goals; request/model bodies cannot declare their own completion. */
     default List<ReportGoal> reportGoals(Grant grant) { throw EvidenceException.denied(); }
+    /** Current server-owned proof covering all research, including unbound and failed investigations. */
+    default JsonNode reportState(Grant grant) { throw EvidenceException.denied(); }
     /** Joins B's database transaction: fence + complete the budgeted read_source receipt. */
     void commitRead(Grant grant, String sourceId, JsonNode evidence, String receiptId);
     /** Verify A's completed budgeted check call binds these exact request/response bytes. */

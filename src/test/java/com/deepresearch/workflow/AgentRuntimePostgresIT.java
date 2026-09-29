@@ -179,10 +179,16 @@ class AgentRuntimePostgresIT {
     }
 
     private EvidenceDtos.RecordResult completePrepared(Bridge b,EvidenceDtos.Identifiers ids,EvidenceDtos.PreparedCheck prepared,String modelId) {
+        return completePrepared(b,ids,prepared,modelId,false);
+    }
+    private EvidenceDtos.RecordResult completePrepared(Bridge b,EvidenceDtos.Identifiers ids,EvidenceDtos.PreparedCheck prepared,String modelId,boolean contrary) {
         var proposals=new java.util.ArrayList<JsonNode>();
         for(var claim:prepared.request().path("claims")) {
             var relations=new java.util.ArrayList<JsonNode>();
-            for(var evidence:prepared.request().path("evidence")) relations.add(object("evidence_id",evidence.path("evidence_id"),"relation","supports","quote",evidence.path("snapshot").path("text").asText(),"reason","Complete original contains the selected fact"));
+            for(var evidence:prepared.request().path("evidence")) {
+                String original=evidence.path("snapshot").path("text").asText();
+                relations.add(object("evidence_id",evidence.path("evidence_id"),"relation",contrary && original.contains("50 requests")?"refutes":"supports","quote",original,"reason","Exact original contains the selected limit or its contrary value"));
+            }
             proposals.add(object("claim_id",claim.path("claim_id"),"relations",relations,"limitations",List.of()));
         }
         var response=object("claims",proposals,"follow_up_actions",List.of());
@@ -192,6 +198,139 @@ class AgentRuntimePostgresIT {
         var result=b.service.complete("Bearer fixture-service",new EvidenceDtos.CompleteRequest(ids,prepared.check_id(),modelId,response));
         b.authority.settle(b.authority.authorize("Bearer fixture-service","check_claims",ids),object("records",result.records(),"check_id",prepared.check_id(),"gaps",List.of()));
         return result;
+    }
+    record UnboundResearch(Bridge b,EvidenceDtos.PublishRequest publication,EvidenceDtos.PreparedCheck root,
+                           List<EvidenceDtos.ClaimSpec> claims,JsonNode original,JsonNode sealed) { }
+    private UnboundResearch unboundResearch(boolean seal,String text) {
+        Bridge b=bridge(16);
+        var original=b.service.read("Bearer fixture-service",new EvidenceDtos.ReadRequest(operation(b,4,"TOOL"),"ragflow:dataset:document:chunk"));
+        var first=operation(b,5,"TOOL");
+        var scope=object("subject","API limits","version",known("2.0"),"valid_at",unknown("No applicable date"),"conditions",List.of());
+        var claims=List.of(new EvidenceDtos.ClaimSpec(text,"factual",scope));
+        var root=b.service.prepare("Bearer fixture-service",new EvidenceDtos.PrepareRequest(first,claims,List.of(original.path("evidence_id").asText()),0,null));
+        b.db.update("INSERT INTO agent_research_investigation_progress(run_id,investigation,current_call_id,claim_token) VALUES (?,?,?,?::uuid)",first.run_id(),root.investigation_id(),first.call_id(),first.claim_token());
+        completePrepared(b,first,root,"model:unbound-root");
+        var publication=supportedPacket(b);
+        var result=seal?b.publication.publish("Bearer fixture-service",publication):null;
+        if(seal) {
+            assertThat(result.path("report_status").asText()).isEqualTo("complete");assertThat(result.path("claims")).hasSize(2);
+            int reads=b.reads.get();assertThat(b.publication.publish("Bearer fixture-service",publication)).isEqualTo(result);
+            assertThat(b.reads.get()).isEqualTo(reads);
+        }
+        return new UnboundResearch(b,publication,root,claims,original,result);
+    }
+    private EvidenceDtos.Identifiers advanceUnbound(UnboundResearch context,String state) {
+        var b=context.b;var next=operation(b,6,"TOOL");
+        b.db.update("UPDATE agent_research_investigation_progress SET current_call_id=?,claim_token=?::uuid WHERE run_id=? AND investigation=?",next.call_id(),next.claim_token(),next.run_id(),context.root.investigation_id());
+        if(state.equals("pending")) b.service.prepare("Bearer fixture-service",new EvidenceDtos.PrepareRequest(next,context.claims,List.of(context.original.path("evidence_id").asText()),1,context.root.check_id()));
+        else if(state.equals("failed")) b.authority.settle(b.authority.authorize("Bearer fixture-service","check_claims",next),object("errorCode","CHECK_OPERATION_FAILED"));
+        else if(state.equals("unknown")) b.db.update("UPDATE agent_research_operation SET status='UNKNOWN',settled_at=now() WHERE run_id=? AND operation_key=?",next.run_id(),next.call_id());
+        return next;
+    }
+    private void rejectStaleUnboundReport(UnboundResearch context) {
+        var b=context.b;
+        var grant=b.authority.authorize("Bearer fixture-service","publish_evidence",context.publication.identifiers());
+        assertThat(canonical(JSON.valueToTree(b.authority.reportGoals(grant)))).isEqualTo(canonical(context.sealed.path("goals")));
+        assertThatThrownBy(()->b.publication.publish("Bearer fixture-service",context.publication)).isInstanceOf(EvidenceException.class).hasMessageContaining("REPORT_STATE_CHANGED");
+        var repository=new WorkflowRepository(b.db,JSON);var citations=List.of("kb:ragflow:dataset:document:chunk");
+        assertThat(repository.sealedAgentReport(b.ids.run_id(),context.sealed.path("answer").asText(),citations,"SUCCEEDED")).isEmpty();
+        var workflows=new WorkflowService(repository,mock(AgentStateService.class),mock(UserContextService.class),JSON,true,Duration.ofSeconds(180));
+        assertThatThrownBy(()->b.tx.executeWithoutResult(status->{
+            b.db.update("UPDATE agent_workflow_run SET status='FINALIZING',stage='FINALIZING' WHERE run_id=?",b.ids.run_id());
+            workflows.finalizeRun(b.ids.run_id(),new WorkflowDtos.FinalizeRequest(b.ids.claim_token(),"SUCCEEDED",context.sealed.path("answer").asText(),citations,null,null,null));
+        })).isInstanceOf(org.springframework.web.server.ResponseStatusException.class).hasMessageContaining("发布证明");
+        assertThat(b.db.queryForObject("SELECT status FROM agent_workflow_run WHERE run_id=?",String.class,b.ids.run_id())).isEqualTo("WORKING");
+        assertThat(b.db.queryForObject("SELECT count(*) FROM agent_research_publication WHERE run_id=? AND status='COMPLETED'",Integer.class,b.ids.run_id())).isEqualTo(1);
+    }
+    @Test void unboundPendingSupplementInvalidatesWholeSealedReportAndActualFinalize() {
+        var context=unboundResearch(true,"Document version is 2.0.");advanceUnbound(context,"pending");rejectStaleUnboundReport(context);
+        var fresh=context.b.publication.publish("Bearer fixture-service",new EvidenceDtos.ReportRequest(operation(context.b,7,"PUBLICATION")));
+        assertThat(fresh.path("report_status").asText()).isEqualTo("partial");assertThat(fresh.path("unfinished_goals").toString()).contains("pending");
+    }
+    @Test void unboundFailedSupplementInvalidatesWholeSealedReportAndActualFinalize() {
+        var context=unboundResearch(true,"Document version is 2.0.");advanceUnbound(context,"failed");rejectStaleUnboundReport(context);
+    }
+    @Test void unboundUnknownSupplementInvalidatesWholeSealedReportAndActualFinalize() {
+        var context=unboundResearch(true,"Document version is 2.0.");advanceUnbound(context,"unknown");rejectStaleUnboundReport(context);
+    }
+    private void assertUnboundGapBeforeReport(String state) {
+        var context=unboundResearch(false,"Document version is 2.0.");advanceUnbound(context,state);var b=context.b;
+        var report=b.publication.publish("Bearer fixture-service",context.publication);
+        assertThat(report.path("report_status").asText()).isEqualTo("partial");assertThat(report.path("claims")).hasSize(2);
+        assertThat(report.path("unfinished_goals").toString()).contains(state.equals("pending")?"pending":"failed");
+        int reads=b.reads.get();assertThat(b.publication.publish("Bearer fixture-service",context.publication)).isEqualTo(report);assertThat(b.reads.get()).isEqualTo(reads);
+        var repository=new WorkflowRepository(b.db,JSON);var citations=List.of("kb:ragflow:dataset:document:chunk");
+        assertThat(repository.sealedAgentReport(b.ids.run_id(),report.path("answer").asText(),citations,"INSUFFICIENT_EVIDENCE")).isPresent();
+        var workflows=new WorkflowService(repository,mock(AgentStateService.class),mock(UserContextService.class),JSON,true,Duration.ofSeconds(180));
+        b.db.update("UPDATE agent_workflow_run SET status='FINALIZING',stage='FINALIZING' WHERE run_id=?",b.ids.run_id());
+        var request=new WorkflowDtos.FinalizeRequest(b.ids.claim_token(),"INSUFFICIENT_EVIDENCE",report.path("answer").asText(),citations,null,null,null);
+        assertThat(b.tx.execute(status->workflows.finalizeRun(b.ids.run_id(),request)).replayed()).isFalse();
+        assertThat(b.tx.execute(status->workflows.finalizeRun(b.ids.run_id(),request)).replayed()).isTrue();
+    }
+    @Test void failedUnboundAttemptBeforeReportKeepsGapAndPartialReportCanFinalizeAndReplay() {assertUnboundGapBeforeReport("failed");}
+    @Test void unknownUnboundAttemptBeforeReportKeepsGapAndPartialReportCanFinalizeAndReplay() {assertUnboundGapBeforeReport("unknown");}
+    @Test void pendingUnboundAttemptBeforeReportKeepsGapAndPartialReportCanFinalizeAndReplay() {assertUnboundGapBeforeReport("pending");}
+    @Test void unboundContestedSupplementInvalidatesWholeSealedReportWithoutChangingGoals() {
+        var context=unboundResearch(true,"The independent API limit is 100 requests.");var b=context.b;
+        var search=operation(b,8,"TOOL");var hits=object("success",true,"tool","kb_search","evidence",List.of(object("evidenceId","ragflow:dataset:counter:counter","uriOrChunkKey","ragflow:dataset:counter:counter","title","Contrary managed source")));
+        b.db.update("INSERT INTO agent_workflow_tool_receipt(run_id,call_id,task_id,tool_name,request_fingerprint,status,safe_result,completed_at,claim_token,mcp_execution_status,mcp_safe_result,mcp_claim_token,mcp_started_at,mcp_completed_at) VALUES (?,?,'task-main','kb_search',?,'COMPLETED','{}',now(),?::uuid,'COMPLETED',?::jsonb,?::uuid,now(),now())",search.run_id(),search.call_id(),sha("counter-search"),search.claim_token(),canonical(hits),search.claim_token());
+        b.authority.settle(b.authority.authorize("Bearer fixture-service","check_claims",search),hits);
+        SourceReader reader=(g,c)->{
+            b.reads.incrementAndGet();String text=c.documentId().equals("counter")?"Document version: 2.0\nVersion 2.0 allows 50 requests.\n":b.text;
+            return new SourceReader.Document(text,c.title(),object("kind","knowledge_chunk","dataset_id",c.datasetId(),"document_id",c.documentId(),"chunk_id",c.chunkId()),"document_chunk",Instant.now(),sha(text),false,false);
+        };
+        var manager=new DataSourceTransactionManager(b.db.getDataSource());var service=new EvidenceService(b.authority,new JdbcEvidenceStore(b.db,b.tx),reader);
+        var counter=service.read("Bearer fixture-service",new EvidenceDtos.ReadRequest(operation(b,7,"TOOL"),"ragflow:dataset:counter:counter"));
+        var next=advanceUnbound(context,"start");
+        var prepared=service.prepare("Bearer fixture-service",new EvidenceDtos.PrepareRequest(next,context.claims,List.of(context.original.path("evidence_id").asText(),counter.path("evidence_id").asText()),1,context.root.check_id()));
+        var combined=new Bridge(b.db,b.tx,b.authority,service,new AgentPublicationController(b.authority,service,b.db,manager),b.ids,b.reads,b.text);
+        var outcome=completePrepared(combined,next,prepared,"model:unbound-contrary",true);
+        assertThat(outcome.records().stream().filter(r->r.path("record_type").asText().equals("Claim")).findFirst().orElseThrow().path("decision_status").asText()).isEqualTo("contested");
+        rejectStaleUnboundReport(context);
+        var fresh=combined.publication.publish("Bearer fixture-service",new EvidenceDtos.ReportRequest(operation(b,9,"PUBLICATION")));
+        assertThat(fresh.path("report_status").asText()).isEqualTo("partial");assertThat(fresh.path("answer").asText()).contains("仍有争议");
+    }
+    @Test void unboundFailureDuringReportSourceRevalidationCannotSealOldState() {
+        var context=unboundResearch(false,"Document version is 2.0.");var b=context.b;var changed=new java.util.concurrent.atomic.AtomicBoolean();
+        SourceReader reader=(g,c)->{
+            if(changed.compareAndSet(false,true)) advanceUnbound(context,"failed");
+            return new SourceReader.Document(b.text,c.title(),object("kind","knowledge_chunk","dataset_id",c.datasetId(),"document_id",c.documentId(),"chunk_id",c.chunkId()),"document_chunk",Instant.now(),sha(b.text),false,false);
+        };
+        var manager=new DataSourceTransactionManager(b.db.getDataSource());var service=new EvidenceService(b.authority,new JdbcEvidenceStore(b.db,b.tx),reader);
+        var publication=new AgentPublicationController(b.authority,service,b.db,manager);
+        assertThatThrownBy(()->publication.publish("Bearer fixture-service",context.publication)).isInstanceOf(EvidenceException.class).hasMessageContaining("REPORT_STATE_CHANGED");
+        assertThat(b.db.queryForObject("SELECT count(*) FROM agent_research_publication WHERE run_id=? AND status='COMPLETED'",Integer.class,b.ids.run_id())).isZero();
+    }
+    @Test void unboundFailureAfterReportGenerationButBeforeSealCannotSealOldState() {
+        var context=unboundResearch(false,"Document version is 2.0.");var b=context.b;
+        SourceReader reader=(g,c)->new SourceReader.Document(b.text,c.title(),object("kind","knowledge_chunk","dataset_id",c.datasetId(),"document_id",c.documentId(),"chunk_id",c.chunkId()),"document_chunk",Instant.now(),sha(b.text),false,false);
+        var manager=new DataSourceTransactionManager(b.db.getDataSource());var snapshots=new AtomicInteger();var injected=new java.util.concurrent.atomic.AtomicBoolean();
+        var authority=new AgentEvidenceAuthority(new AgentRunAuthorization(mock(WorkflowAccessService.class),b.db),b.db,manager) {
+            @Override public JsonNode reportState(EvidenceAuthority.Grant g) {snapshots.incrementAndGet();return super.reportState(g);}
+            @Override public void lock(EvidenceAuthority.Grant g) {
+                if(snapshots.get()==2 && injected.compareAndSet(false,true)) {
+                    try {java.util.concurrent.CompletableFuture.runAsync(()->advanceUnbound(context,"failed")).get(5,TimeUnit.SECONDS);}
+                    catch(Exception failed){throw new AssertionError("concurrent investigation did not commit before seal",failed);}
+                }
+                super.lock(g);
+            }
+        };
+        var service=new EvidenceService(authority,new JdbcEvidenceStore(b.db,b.tx),reader);
+        var publication=new AgentPublicationController(authority,service,b.db,manager);
+        assertThatThrownBy(()->publication.publish("Bearer fixture-service",context.publication)).isInstanceOf(EvidenceException.class).hasMessageContaining("REPORT_STATE_CHANGED");
+        assertThat(b.db.queryForObject("SELECT count(*) FROM agent_research_publication WHERE run_id=? AND status='COMPLETED'",Integer.class,b.ids.run_id())).isZero();
+        assertThat(injected.get()).isTrue();
+        assertThat(b.db.queryForObject("SELECT status FROM agent_research_operation WHERE run_id=? AND operation_key=?",String.class,b.ids.run_id(),"tool-"+"6".repeat(32))).isEqualTo("SETTLED");
+    }
+    @Test void sealedPartialReportBecomesStaleWhenUnboundAttemptChangesAgain() {
+        var context=unboundResearch(false,"Document version is 2.0.");var b=context.b;advanceUnbound(context,"failed");
+        var partial=b.publication.publish("Bearer fixture-service",context.publication);
+        var next=operation(b,7,"TOOL");
+        b.db.update("UPDATE agent_research_investigation_progress SET current_call_id=?,claim_token=?::uuid WHERE run_id=? AND investigation=?",next.call_id(),next.claim_token(),next.run_id(),context.root.investigation_id());
+        b.service.prepare("Bearer fixture-service",new EvidenceDtos.PrepareRequest(next,context.claims,List.of(context.original.path("evidence_id").asText()),1,context.root.check_id()));
+        var repository=new WorkflowRepository(b.db,JSON);
+        assertThat(repository.sealedAgentReport(b.ids.run_id(),partial.path("answer").asText(),List.of("kb:ragflow:dataset:document:chunk"),"INSUFFICIENT_EVIDENCE")).isEmpty();
+        assertThatThrownBy(()->b.publication.publish("Bearer fixture-service",context.publication)).isInstanceOf(EvidenceException.class).hasMessageContaining("REPORT_STATE_CHANGED");
     }
     @Test void storedDoneAndOneRealClaimCannotCoverAnAdditionalNativeStandard() {
         Bridge b=bridge(16);var publication=supportedPacket(b);

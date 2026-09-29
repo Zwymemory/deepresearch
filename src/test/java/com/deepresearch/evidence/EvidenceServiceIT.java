@@ -92,6 +92,9 @@ class EvidenceServiceIT {
             return original;
         }
         public List<ReportGoal> reportGoals(Grant g) { return goals; }
+        public JsonNode reportState(Grant g) {
+            return new com.deepresearch.workflow.AgentResearchStateService(db).proof(g,goals);
+        }
         public void commitRead(Grant g,String source,JsonNode evidence,String receipt) {
             assertThat(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()).isTrue();
             db.update("UPDATE agent_workflow_tool_receipt SET status='COMPLETED',safe_result=?::jsonb,completed_at=now() WHERE run_id=? AND call_id=?",
