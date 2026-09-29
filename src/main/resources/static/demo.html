@@ -871,7 +871,8 @@
       }
       if (type === "AGENT_OBSERVATION") return payload.action + " · " + (payload.errorCode || (payload.newEvidence ? "取得新证据" : "没有新增证据"));
       if (type === "AGENT_STOPPED_WITH_GAPS") return (payload.gaps || []).join("；");
-      if (type === "AGENT_PUBLICATION_VALIDATED") return "服务端已核查发布内容，引用 " + payload.citationCount + " 条";
+      if (type === "AGENT_PUBLICATION_VALIDATED") return "服务端已核查报告，" +
+        (payload.reportStatus === "complete" ? "全部目标完成" : "仍有未完成目标或争议") + "，引用 " + payload.citationCount + " 条";
       if (type === "STAGE_CHANGED") {
         return "工作流进入“" + (STAGE_LABELS[codeKey(payload.stage)] || payload.stage || "下一") + "”阶段。";
       }
@@ -1465,7 +1466,7 @@
       var note = document.createElement("div");
       note.className = "citation-contract-note" + (indexed || refusedForMissingEvidence ? "" : " unverified");
       note.textContent = refusedForMissingEvidence ?
-        "系统因证据不足拒答，本次没有可展示的引用。" : indexed ?
+        "本次报告保留争议与待核查事项，没有可发布的支持来源。" : indexed ?
         "点击正文中的 [来源N] 可查看对应来源。核对结论时，请同时查看摘录。" :
         "历史结果缺少可验证的引用映射，暂不能打开来源链接。";
       root.appendChild(note);
@@ -1594,7 +1595,7 @@
         $("runDescription").textContent = "刷新页面或短暂断网不会重新创建任务，事件会从持久游标恢复。";
       } else if (state.runId || state.legacy) {
         $("runTitle").textContent = state.status === "SUCCEEDED" ? "研究任务已完成" :
-          (state.status === "INSUFFICIENT_EVIDENCE" ? "可信证据不足" :
+          (state.status === "INSUFFICIENT_EVIDENCE" ? (response.report_status === "partial" ? "研究已有部分成果" : "研究仍有待核查事项") :
             (failureMeta ? failureMeta.label : "研究任务已结束"));
         $("runDescription").textContent = state.status === "SUCCEEDED" ?
           "最终答案、引用与 usage 已持久化，可通过 runId 再次读取。" :
@@ -1619,8 +1620,10 @@
       var icon = "✓";
       if (state.status === "INSUFFICIENT_EVIDENCE") {
         resultClass += " warning";
-        resultTitle = "证据不足";
-        resultMessage = failureMeta ? failureMeta.description : "系统拒绝在缺少可信证据时补全答案";
+        resultTitle = response.report_status === "partial" ? "部分成果，尚未全部完成" : "仍有待核查事项";
+        resultMessage = response.report_status ? "报告保留已支持、被反驳、争议和不足的结论及各自范围。未完成目标：" +
+          (Array.isArray(response.unfinished_goals) ? response.unfinished_goals.length : 0) :
+          (failureMeta ? failureMeta.description : "系统拒绝在缺少可信证据时补全答案");
         icon = "!";
       } else if (TERMINAL.has(state.status) && state.status !== "SUCCEEDED") {
         resultClass += " error";

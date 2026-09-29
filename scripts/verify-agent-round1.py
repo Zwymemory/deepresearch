@@ -47,7 +47,7 @@ print("source_bundle="+str(bundle),flush=True)
 print("peer_sha="+sha,flush=True)
 if args.prepare_only: raise SystemExit(0)
 environment={**os.environ,"AGENT_PYTHON":args.python,"PYTHONPATH":str(bundle/"workflow-service/src"),"PYTHONDONTWRITEBYTECODE":"1"}
-subprocess.run([args.python,"-B","-m","pytest","tests/test_agent_runtime.py","tests/test_agent_model.py","tests/test_evidence_client.py",
+subprocess.run([args.python,"-B","-m","pytest","tests/test_agent_runtime.py","tests/test_agent_investigations.py","tests/test_agent_model.py","tests/test_evidence_client.py",
                 "tests/test_runner.py","tests/test_domain.py"],cwd=bundle/"workflow-service",env=environment,check=True)
 subprocess.run(["mvn","-q","-Pintegration","-DskipTests=false","-Dtest="+args.java_tests,
                 "-Dit.test="+args.integration_tests,"verify"],cwd=bundle,env=environment,check=True)

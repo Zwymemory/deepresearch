@@ -257,6 +257,10 @@ class EvidenceSubstitute:
         )
         return {
             "status": result.value["status"],
+            "records": [
+                {"record_type": "Claim", **claim, "decision_status": result.value["status"]}
+                for claim in claims
+            ],
             "gaps": [] if result.value["status"] == "supported" else ["counterevidence required"],
             "follow_up_actions": []
             if result.value["status"] == "supported"
@@ -264,12 +268,24 @@ class EvidenceSubstitute:
         }
 
     async def publish(self, state, task, call_id, decision):
-        assert state["packet"]["status"] == "supported"
+        from deepresearch_workflow.agent_investigations import current_packets
+
         self.publications.append(call_id)
+        packets = current_packets(state)
+        supported = any(p.get("status") == "supported" for p in packets)
+        complete = (
+            bool(packets)
+            and all(p.get("status") == "supported" for p in packets)
+            and all(t["status"] == "done" for t in state["tasks"])
+        )
         return {
             "approved": True,
-            "answer": "测试裁决的条件性结论[来源1]",
-            "citations": [state["evidence"][-1]["source"]["source_id"]],
+            "report_status": "complete" if complete else "partial" if supported else "insufficient",
+            "terminal_status": "SUCCEEDED" if complete else "INSUFFICIENT_EVIDENCE",
+            "answer": "测试裁决的条件性结论[来源1]"
+            if supported
+            else "仍有待核查事项：测试来源未解决",
+            "citations": [state["evidence"][-1]["source"]["source_id"]] if supported else [],
         }
 
 
@@ -336,7 +352,9 @@ def setup(case, *, budget=None, events=None):
     "case,status",
     [
         ("empty-retrieval", "INSUFFICIENT_EVIDENCE"),
-        ("wrong-material", "SUCCEEDED"),
+        # The substitute resolves its claim but leaves its added native goal pending.
+        # Whole-run publication must expose that incompleteness.
+        ("wrong-material", "INSUFFICIENT_EVIDENCE"),
         ("version-difference", "SUCCEEDED"),
         ("unresolved-conflict", "INSUFFICIENT_EVIDENCE"),
     ],

@@ -64,6 +64,8 @@ class AgentDecision(StrictModel):
         description="Brief public action rationale; no private reasoning",
     )
     task_id: str | None = Field(default=None, max_length=64)
+    investigation_id: Identifier | None = None
+    evidence_ids: list[Identifier] = Field(default_factory=list, max_length=32)
     query: str | None = Field(default=None, min_length=1, max_length=1000)
     tool: Literal["kb_search", "web_search", "calculator"] | None = None
     source_id: str | None = Field(default=None, max_length=300)
@@ -80,7 +82,7 @@ class AgentDecision(StrictModel):
             "read_source": bool(self.source_id),
             "revise_plan": bool(self.tasks),
             "check_claims": bool(self.claims),
-            "finish": bool(self.answer and self.citations),
+            "finish": True,
             "stop_with_gaps": bool(self.gaps),
         }
         if not required[self.action]:
@@ -125,11 +127,14 @@ class AgentState(TypedDict, total=False):
     candidates: list[dict[str, Any]]
     evidence: list[dict[str, Any]]
     packet: dict[str, Any]
+    investigations: dict[str, dict[str, Any]]
+    task_investigations: dict[str, str]
     no_progress: int
     conflict_rounds: int
     agent_usage: dict[str, Any]
     final_answer: str
     citations: list[str]
     final_status: str
+    report: dict[str, Any]
     error_code: str | None
     error_message: str | None

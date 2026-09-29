@@ -113,6 +113,7 @@ class AgentRuntimePostgresIT {
         b.db.update("INSERT INTO agent_research_operation(run_id,operation_key,attempt,kind,purpose,request_hash,status,input_reserved,output_reserved,claim_token) VALUES (?,'model:check',1,'MODEL','CHECK',?,'RESERVED',100,100,?::uuid)",check.run_id(),"b".repeat(64),check.claim_token());
         b.db.update("UPDATE agent_research_operation SET status='SETTLED',safe_result=?::jsonb,actual_usage='{}',settled_at=now() WHERE run_id=? AND operation_key='model:check'",canonical(model),check.run_id());
         b.service.complete("Bearer fixture-service",new EvidenceDtos.CompleteRequest(check,prepared.check_id(),"model:check",response));
+        b.db.update("UPDATE agent_research_task SET status='done' WHERE run_id=? AND task_id=?",check.run_id(),check.task_id());
         var packet=b.service.packet("Bearer fixture-service",new EvidenceDtos.PacketRequest(check,List.of(prepared.check_id())));
         var publish=operation(b,3,"PUBLICATION");
         return new EvidenceDtos.PublishRequest(publish,packet.path("packet_id").asText(),List.of(claim));

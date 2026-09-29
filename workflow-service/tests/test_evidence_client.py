@@ -166,3 +166,131 @@ async def test_supplement_cannot_silently_change_claim_scope_or_reset_rounds():
             state, {"task_id": "task"}, "call", [{"text": "original"}], None
         )
         assert result["errorCode"] == "DISPUTE_LIMIT"
+
+
+@pytest.mark.parametrize("selected", [[], ["new-1", "new-2", "new-3", "new-4"]])
+async def test_cumulative_counterevidence_overflow_is_explicit_and_never_truncated(selected):
+    calls = []
+    current = {
+        "investigation_id": "server-investigation",
+        "check_id": "prior-check",
+        "dispute_round": 0,
+        "claim_specs": [{"text": "Original"}],
+        "required_evidence_ids": ["counter"],
+        "check_ids": ["prior-check"],
+    }
+
+    def transport(request):
+        calls.append(request.url.path)
+        assert request.url.path.endswith("investigations")
+        return httpx.Response(200, json=current)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(transport)) as client:
+        backend = HttpEvidenceBackend(
+            client=client,
+            java_base_url="http://server.test",
+            service_tokens=SimpleNamespace(authorization_header=lambda: "Bearer substitute"),
+        )
+        state = {
+            "run_id": "run",
+            "claim_token": "claim",
+            "context_snapshot": {"agent_scope": {"project_id": "project"}},
+            "packet": current,
+            "evidence": [
+                {"evidence_id": i} for i in ["counter", "new-1", "new-2", "new-3", "new-4"]
+            ],
+            "selected_evidence_ids": selected,
+        }
+        result = await backend.check(
+            state, {"task_id": "task"}, "call", [{"text": "Original"}], None
+        )
+    assert result["errorCode"] == "EVIDENCE_CAPACITY_EXCEEDED" and len(calls) == 1
+
+
+async def test_independent_investigation_selects_relevant_material_and_carries_required_originals():
+    payloads = []
+    current = {
+        "investigation_id": "server-investigation",
+        "check_id": "prior-check",
+        "dispute_round": 0,
+        "claim_specs": [{"text": "Original"}],
+        "required_evidence_ids": ["counter"],
+        "check_ids": ["prior-check"],
+    }
+
+    def transport(request):
+        body = json.loads(request.content)
+        payloads.append((request.url.path, body))
+        if request.url.path.endswith("investigations"):
+            return httpx.Response(200, json=current)
+        if request.url.path.endswith("prepare"):
+            assert body["evidence_ids"] == ["counter", "new-material"]
+            assert body["parent_check_id"] == "prior-check" and body["dispute_round"] == 1
+            assert body["investigation_id"] == "server-investigation"
+            return httpx.Response(
+                200,
+                json={
+                    "check_id": "new-check",
+                    "requires_model": False,
+                    "immediate_result": {"records": []},
+                    "investigation_id": "server-investigation",
+                    "required_evidence_ids": ["counter", "new-material"],
+                },
+            )
+        return httpx.Response(200, json={"packet_id": "packet", "gaps": ["Conflict remains"]})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(transport)) as client:
+        backend = HttpEvidenceBackend(
+            client=client,
+            java_base_url="http://server.test",
+            service_tokens=SimpleNamespace(authorization_header=lambda: "Bearer substitute"),
+        )
+        state = {
+            "run_id": "run",
+            "claim_token": "claim",
+            "context_snapshot": {"agent_scope": {"project_id": "project"}},
+            "packet": current,
+            "evidence": [
+                {"evidence_id": i}
+                for i in ["counter", "new-material", "unrelated-1", "unrelated-2", "unrelated-3"]
+            ],
+            "selected_evidence_ids": ["new-material"],
+        }
+        result = await backend.check(
+            state, {"task_id": "task"}, "call", [{"text": "Original"}], None
+        )
+    assert result["check_ids"] == ["prior-check", "new-check"] and result["gaps"]
+    assert result["required_evidence_ids"] == ["counter", "new-material"] and len(payloads) == 3
+
+
+async def test_publication_requests_all_server_investigations_without_claim_selection():
+    def transport(request):
+        body = json.loads(request.content)
+        assert request.url.path == "/internal/agent/publication" and set(body) == {"identifiers"}
+        return httpx.Response(
+            200,
+            json={
+                "approved": True,
+                "terminal_status": "INSUFFICIENT_EVIDENCE",
+                "report_status": "partial",
+            },
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(transport)) as client:
+        backend = HttpEvidenceBackend(
+            client=client,
+            java_base_url="http://server.test",
+            service_tokens=SimpleNamespace(authorization_header=lambda: "Bearer substitute"),
+        )
+        result = await backend.publish(
+            {
+                "run_id": "run",
+                "claim_token": "claim",
+                "context_snapshot": {"agent_scope": {"project_id": "project"}},
+                "packet": {},
+            },
+            {"task_id": "task"},
+            "call",
+            None,
+        )
+    assert result["terminal_status"] == "INSUFFICIENT_EVIDENCE"

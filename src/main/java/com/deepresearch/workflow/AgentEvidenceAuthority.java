@@ -58,13 +58,21 @@ public class AgentEvidenceAuthority implements EvidenceAuthority {
                 String.class,g.runId(),g.callId());
     }
     @Override public Candidate candidate(Grant g,String sourceId) {
+        return resolveCandidate(g,sourceId,null);
+    }
+    @Override public Candidate originalCandidate(Grant g,String sourceId,String parentReceiptId) {
+        if (parentReceiptId==null || parentReceiptId.isBlank()) throw EvidenceException.denied();
+        return resolveCandidate(g,sourceId,parentReceiptId);
+    }
+    private Candidate resolveCandidate(Grant g,String sourceId,String parentReceiptId) {
         if (!active(g)) throw EvidenceException.denied();
         var receipts=db.queryForList("""
             SELECT r.call_id,r.tool_name,r.mcp_safe_result::text AS body FROM agent_workflow_tool_receipt r
             JOIN agent_research_operation o ON o.run_id=r.run_id AND o.operation_key=r.call_id
             WHERE r.run_id=? AND r.mcp_execution_status='COMPLETED' AND o.status='SETTLED'
-              AND o.kind='TOOL' AND o.purpose='TOOL' AND r.tool_name IN ('kb_search','web_search') ORDER BY r.mcp_completed_at DESC
-            """,g.runId());
+              AND o.kind='TOOL' AND o.purpose='TOOL' AND r.tool_name IN ('kb_search','web_search')
+              AND (?::text IS NULL OR r.call_id=?) ORDER BY r.mcp_completed_at DESC
+            """,g.runId(),parentReceiptId,parentReceiptId);
         for (var row:receipts) {
             JsonNode body;
             try { body=EvidenceJson.JSON.readTree((String)row.get("body")); }
@@ -91,6 +99,13 @@ public class AgentEvidenceAuthority implements EvidenceAuthority {
             }
         }
         throw EvidenceException.denied();
+    }
+    @Override public List<ReportGoal> reportGoals(Grant g) {
+        if (!active(g) || !purpose(g).equals("PUBLICATION")) throw EvidenceException.denied();
+        return db.query("""
+            SELECT task_id,objective,status FROM agent_research_task WHERE run_id=?
+            ORDER BY plan_version,task_id
+            """,(rs,n)->new ReportGoal(rs.getString(1),rs.getString(2),rs.getString(3)),g.runId());
     }
     @Override public PublicationReadPermit publicationRead(Grant g,JsonNode evidence) {
         return tx.execute(status->{

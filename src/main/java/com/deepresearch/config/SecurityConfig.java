@@ -59,6 +59,8 @@ public class SecurityConfig {
                             "/internal/agent/evidence/checks/prepare",
                             "/internal/agent/evidence/checks/complete",
                             "/internal/agent/evidence/packets",
+                            "/internal/agent/evidence/investigations",
+                            "/internal/agent/evidence/reports",
                             "/internal/agent/evidence/publish",
                             "/internal/agent/publication").permitAll();
                     auth.requestMatchers("/internal/**").denyAll();
