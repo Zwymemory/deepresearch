@@ -1411,11 +1411,14 @@
     }
 
     function citationPreview(value) {
-      var text = String(value || "");
+      var text = String(value || "")
+        .replace(/^\s*\[UNTRUSTED_DATA_BEGIN source=knowledge-base\]\s*\n/, "")
+        .replace(/\n\s*\[UNTRUSTED_DATA_END source=knowledge-base\]\s*$/, "");
       // Skip short navigation paragraphs in the preview; the complete saved
       // excerpt stays available below without changing the evidence snapshot.
       var paragraph = text.split(/\n\s*\n/).find(function (part) {
-        return part.replace(/\s+/g, " ").trim().length >= 80;
+        var minimum = /[\u3400-\u9fff]/.test(part) ? 40 : 80;
+        return part.replace(/\s+/g, " ").trim().length >= minimum;
       }) || text;
       var compact = paragraph.replace(/\s+/g, " ").trim();
       return compact.length > 280 ? compact.slice(0, 280) + "…" : compact;

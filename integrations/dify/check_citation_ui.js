@@ -10,6 +10,10 @@ async (page) => {
   const other = {...web, sourceId: otherId, title: "Python documentation index", url: "https://www.python.org/doc/"};
   const kb = {sourceId: kbId, kind: "KNOWLEDGE_CHUNK", title: "architecture.md",
     excerpt: "Synthetic knowledge excerpt. The document belongs to the knowledge base and has no public web link."};
+  const chinesePreview = "合成中文片段：这段文字用于验证摘录预览跳过导航并保留知识库内容，不能作为真实问答或来源支持的证明。";
+  const wrappedKnowledge = {...kb, excerpt: "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 合成标题\n\n" +
+    chinesePreview + "\n\n[UNTRUSTED_DATA_END source=knowledge-base]"};
+  const chineseWeb = {...web, excerpt: "Logo\n\n### 导航\n\n" + chinesePreview + "\n\n合成尾段"};
   const unsafe = ["javascript:alert(1)", "data:text/html,unsafe", "file:///private/fixture",
     "//invalid.test/document", "https://user:pass@invalid.test/document", "https://invalid.test/\ndocument"];
   const cases = [
@@ -18,6 +22,8 @@ async (page) => {
     {name: "body-marker-target", ids: [webId, otherId], details: [other, web], links: [web.url, other.url]},
     {name: "noncanonical-marker", ids: [webId], details: [web], links: [web.url]},
     {name: "knowledge", ids: [kbId], details: [kb], links: []},
+    {name: "knowledge-preview", ids: [kbId], details: [wrappedKnowledge], links: [], preview: chinesePreview},
+    {name: "chinese-web-preview", ids: [webId], details: [chineseWeb], links: [web.url], preview: chinesePreview},
     {name: "mixed", ids: [webId, kbId], details: [kb, web], links: [web.url]},
     {name: "missing-metadata", ids: [webId], details: [], links: [], missing: true},
     {name: "wrong-source-id", ids: [webId], details: [other], links: [], missing: true},
@@ -113,6 +119,7 @@ async (page) => {
         title: card.querySelector(".citation-title").textContent,
         kind: card.querySelector(".citation-kind").textContent,
         preview: card.querySelector(".citation-excerpt")?.textContent || "",
+        fullExcerpt: card.querySelector(".citation-full-excerpt")?.textContent || "",
         missing: card.querySelector(".citation-missing")?.textContent || "",
         href: card.querySelector("a")?.href || "", target: card.querySelector("a")?.target || "",
         rel: card.querySelector("a")?.rel || "", collapsed: !card.querySelector("details").open,
@@ -132,6 +139,8 @@ async (page) => {
       if (fixture.missing) assert(card.missing && card.title === "来源信息不足", fixture.name + ": guessed metadata");
       if (fixture.ids[i] === kbId) assert(card.kind === "知识库文档" && card.title === kb.title && !card.href, fixture.name + ": invented KB web link");
     });
+    if (fixture.preview) assert(before[0].preview === fixture.preview && before[0].fullExcerpt === fixture.details[0].excerpt,
+      fixture.name + ": preview exposed wrapper/navigation or altered saved excerpt");
     if (fixture.name === "multiple-web") assert(before[0].title === web.title && before[1].title === other.title, "Matched metadata by position");
     if (fixture.name === "noncanonical-marker") {
       assert(await page.locator("#answerText a.answer-citation").count() === 1 &&
