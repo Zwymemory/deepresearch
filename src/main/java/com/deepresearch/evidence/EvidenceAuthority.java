@@ -30,7 +30,15 @@ public interface EvidenceAuthority {
     /** Trusted tool observation obtained by the port, never accepted from an HTTP/model body. */
     record Observation(String artifactId, String text, Instant observedAt) { }
     record PublicationReadPermit(String operationId, String completedSnapshotHash) { }
-    record ReportGoal(String taskId, String text, String status) { }
+    record ReportCriterion(String criterionId, String text, String status,
+                           List<String> checkIds, List<String> claimIds, List<String> gaps) { }
+    record ReportGoal(String taskId, String text, String status, boolean completionVerified,
+                      List<ReportCriterion> criteria, List<String> gaps) {
+        /** Legacy status strings do not prove coverage of the native acceptance criteria. */
+        public ReportGoal(String taskId, String text, String status) {
+            this(taskId, text, status, false, List.of(), List.of("Legacy goal has no verified acceptance-criterion mapping"));
+        }
+    }
 
     static EvidenceAuthority denyAll() {
         return new EvidenceAuthority() {
