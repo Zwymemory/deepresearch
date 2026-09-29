@@ -64,7 +64,7 @@ Dify API/worker 和 HTTP Request 的 SSRF proxy 必须能解析并访问 Java or
 
 发布 Workflow，在 **API Access** 取得 Service API App Key，填入 `.env` 的 `DEEPRESEARCH_DIFY_APP_KEY`。它与管理员登录 Token、工具服务密钥用途不同。导出 DSL 时 Secret 值保持为空，不提交私有导出。
 
-以[Dify 指南](../../integrations/dify/README.md)和[质量修复记录](../../integrations/dify/WEB_QUALITY_REPAIR_2026-09-28.md)标明的源 DSL、发布身份及 hash 为准。当前候选加入独立逐条支持与完整原问题覆盖核验，Java 须包含 V16 网页来源迁移与配套发布校验。升级既有环境时同步部署 Java 和发布 DSL，保留已有 `.env` 与数据卷；旧 V7 完整评测不能当作新代码的全量结果。
+以[Dify 指南](../../integrations/dify/README.md)和[质量修复记录](../../integrations/dify/WEB_QUALITY_REPAIR_2026-09-28.md)标明的源 DSL、发布身份及 hash 为准。当前发布为 Evidence v15 Query，DSL SHA256 `87a3e241456c34dbf5dcb772fd0667b08e527650f586ee097411676b0fc05033`，40 节点/37 边；加入独立逐条支持与完整原问题覆盖核验，Java 须包含 V16 网页来源迁移与配套发布校验。升级既有环境时同步部署 Java 和发布 DSL，保留已有 `.env` 与数据卷；旧 V7 完整评测不能当作新代码的全量结果。
 
 ## 4. 启动与语料导入
 

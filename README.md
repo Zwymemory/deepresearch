@@ -245,7 +245,7 @@ bash scripts/import-project-kb.sh
 
 历史 [Evidence v8.1 Web 定向验收](integrations/dify/WEB_SEARCH_ACCEPTANCE_2026-09-28.md)补齐真实网页搜索、KB+Web 混合引用及明确的故障原因码。五项冻结 API 运行均达到预期终态，严格逐句支持 4/5（纯网页样本多了所引摘要未说明的“单线程”限定）；15 个引用条目均完成 run 绑定/来源复查，浏览器同一 Run 的 SSE 断线恢复通过。初版两次真实超时等全部 12 次尝试保留；未重跑 full37 或将历史 v7 统计当作新版本结果。
 
-[最新质量修复](integrations/dify/WEB_QUALITY_REPAIR_2026-09-28.md)分别记录偶发模型空输出、逐条论断的自身证据支持、完整原问题覆盖及各版保留失败。独立核验只读该论断的原文与 Code 绑定的同次同来源有限连续上下文；真实题名仅识别主题，不能补数量、职责、API 层级或单线程等限定。固定版本的 10+6 是定向验收，不能代替新的全 37 题或普遍语义保证。[引用呈现](integrations/dify/CITATION_UI_ACCEPTANCE_2026-09-28.md)区分 22 个离线浏览器场景、隔离客户端准备检查与统一服务后的真实保存结果；来源存在、语义支持和页面展示分别报告。
+[最新质量修复](integrations/dify/WEB_QUALITY_REPAIR_2026-09-28.md)分别记录偶发模型空输出、逐条论断的自身证据支持、完整原问题覆盖及各版保留失败。当前 Evidence v15 Query 在不变的 10+6 中达到 16/16 预期终态与内容记录审阅，47 条发布论断完成 Codex 对话间交叉复核。独立核验只读该论断的原文与 Code 绑定的同次同来源有限连续上下文；真实题名仅识别主题，不能补数量、职责、API 层级或单线程等限定。原生省略摘要及 Python 3.6.15 存档的范围保留；实际输入用量增加，费用仍未知。固定版本的 10+6 是定向验收，不能代替新的全 37 题、独立人类裁决或普遍语义保证。[引用呈现](integrations/dify/CITATION_UI_ACCEPTANCE_2026-09-28.md)区分 22 个离线浏览器场景、隔离客户端准备检查与统一服务后的真实保存结果；来源存在、语义支持和页面展示分别报告。
 
 较早的[项目配对检索](integrations/ragflow/PROJECT_CASE_CLOSURE_2026-09-26.md)、[前端冒烟](integrations/dify/LIVE_RAGFLOW_FRONTEND_SMOKE_2026-09-27.md)、[Evidence v4](docs/showcase/LIVE_CANDIDATE_2026-09-28.md)与 [Legacy 整体链路对照](docs/showcase/LIVE_COMPARISON_2026-09-28.md)保留各自条件。Legacy 的 15 秒证据核验截止时间多次触发安全降级，且两条路径预算不同，不能单独归因于检索或编排。完整时间线见[证据状态](docs/showcase/EVIDENCE.md)；题目与工具见[答案级评测](integrations/ragflow/README.md#showcase-答案级评测)。
 
