@@ -25,7 +25,7 @@ DeepResearch 对应实现了：
 - Sibling Expansion 与 Context Packing；
 - Spring AI 原生结构化 Tool Calling 和标准 MCP 工具发现/调用；
 - LangGraph Planner → 并行 Worker → Reviewer → Synthesizer 工作流；
-- 可选 Dify Planner → Worker → Reviewer → Synthesizer Workflow；
+- 可选 Dify Planner → Worker → Reviewer → Synthesizer → 独立支持与覆盖核验 Workflow；
 - 幂等请求、持久事件、SSE 重放、lease / heartbeat / claim fencing；
 - token、时间、工具次数和估算费用预算；
 - 检索评测与 Agent Harness 证据级回归。
@@ -61,7 +61,7 @@ flowchart LR
     end
 
     subgraph F["可选: Dify Workflow"]
-        DP["Planner"] --> DW["Worker"] --> DR["Reviewer"] --> DS["Synthesizer"]
+        DP["Planner"] --> DW["Worker"] --> DR["Reviewer"] --> DS["Synthesizer"] --> DC["独立论断支持与整问覆盖核验"]
     end
 
     DB --> P
@@ -69,7 +69,7 @@ flowchart LR
     W -->|"短期委派 JWT + MCP"| MCP
     DW -->|"服务身份 + Java 工具回执"| MCP
     S -->|"原子 finalize"| J
-    DS -->|"Java 核验后发布"| J
+    DC -->|"Code 整理批准论断，Java 核验后发布"| J
     SSE --> U
 ```
 
@@ -101,7 +101,7 @@ Python sidecar 使用官方 MCP SDK 通过 SSE 调用同一服务，并携带任
 
 ## 快速复现 RAGFlow + Dify
 
-从 GitHub 克隆本仓库并检出准备演示的候选版提交；命令从仓库根目录执行。完整版本、资源与陌生环境步骤见[复现指南](docs/showcase/REPRODUCE.md)。[新目录验收](docs/showcase/RELEASE_REPRODUCTION_2026-09-28.md)记录此前 KB 版本；当前网页与混合路径见 [v8.1 Web 验收](integrations/dify/WEB_SEARCH_ACCEPTANCE_2026-09-28.md)。首次下载镜像、配置模型和解析知识包属于准备工作，简短介绍可直接使用已归档实测记录。
+从 GitHub 克隆本仓库并检出准备演示的候选版提交；命令从仓库根目录执行。完整版本、资源与陌生环境步骤见[复现指南](docs/showcase/REPRODUCE.md)。[新目录验收](docs/showcase/RELEASE_REPRODUCTION_2026-09-28.md)记录此前 KB 版本；最新论断与覆盖机制见[质量修复记录](integrations/dify/WEB_QUALITY_REPAIR_2026-09-28.md)，标题、链接和恢复呈现见[前端引用验收](integrations/dify/CITATION_UI_ACCEPTANCE_2026-09-28.md)。[v8.1 Web 验收](integrations/dify/WEB_SEARCH_ACCEPTANCE_2026-09-28.md)保留历史 4/5 和全部失败。首次下载镜像、配置模型和解析知识包属于准备工作，简短介绍可直接使用已归档实测记录。
 
 ### 先离线检查
 
@@ -243,7 +243,9 @@ bash scripts/import-project-kb.sh
 
 此前的 [Dify Evidence v7 固定版本评测](integrations/dify/RELEASE_QUALITY_2026-09-28.md)保留 24 次定向重复及随后唯一一轮完整 37 题：34 成功、2 证据不足、1 失败；31 道正例中 29 道完整覆盖事实，严格拒答 5/6，34 组发布引用全部来源存在、33 组支持全部对应论断。端到端 p95 为 16.871826 秒（n=37）。重试次数表述矛盾、Reviewer 多余字段失败和一次无引用边界拒答均计入结果；没有替换失败或调整标签。
 
-当前本地 [Evidence v8.1 Web 定向验收](integrations/dify/WEB_SEARCH_ACCEPTANCE_2026-09-28.md)补齐真实网页搜索、KB+Web 混合引用及明确的故障原因码。五项冻结 API 运行均达到预期终态，严格逐句支持 4/5（纯网页样本多了所引摘要未说明的“单线程”限定）；15 个引用条目均完成 run 绑定/来源复查，浏览器同一 Run 的 SSE 断线恢复通过。初版两次真实超时等全部 12 次尝试保留；未重跑 full37 或将历史 v7 统计当作新版本结果。
+历史 [Evidence v8.1 Web 定向验收](integrations/dify/WEB_SEARCH_ACCEPTANCE_2026-09-28.md)补齐真实网页搜索、KB+Web 混合引用及明确的故障原因码。五项冻结 API 运行均达到预期终态，严格逐句支持 4/5（纯网页样本多了所引摘要未说明的“单线程”限定）；15 个引用条目均完成 run 绑定/来源复查，浏览器同一 Run 的 SSE 断线恢复通过。初版两次真实超时等全部 12 次尝试保留；未重跑 full37 或将历史 v7 统计当作新版本结果。
+
+[最新质量修复](integrations/dify/WEB_QUALITY_REPAIR_2026-09-28.md)分别记录偶发模型空输出、逐条论断的自身证据支持、完整原问题覆盖及各版保留失败。独立核验只读该论断的原文与 Code 绑定的同次同来源有限连续上下文；真实题名仅识别主题，不能补数量、职责、API 层级或单线程等限定。固定版本的 10+6 是定向验收，不能代替新的全 37 题或普遍语义保证。[引用呈现](integrations/dify/CITATION_UI_ACCEPTANCE_2026-09-28.md)区分 22 个离线浏览器场景、隔离客户端准备检查与统一服务后的真实保存结果；来源存在、语义支持和页面展示分别报告。
 
 较早的[项目配对检索](integrations/ragflow/PROJECT_CASE_CLOSURE_2026-09-26.md)、[前端冒烟](integrations/dify/LIVE_RAGFLOW_FRONTEND_SMOKE_2026-09-27.md)、[Evidence v4](docs/showcase/LIVE_CANDIDATE_2026-09-28.md)与 [Legacy 整体链路对照](docs/showcase/LIVE_COMPARISON_2026-09-28.md)保留各自条件。Legacy 的 15 秒证据核验截止时间多次触发安全降级，且两条路径预算不同，不能单独归因于检索或编排。完整时间线见[证据状态](docs/showcase/EVIDENCE.md)；题目与工具见[答案级评测](integrations/ragflow/README.md#showcase-答案级评测)。
 

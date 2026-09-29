@@ -64,7 +64,7 @@ Dify API/worker 和 HTTP Request 的 SSRF proxy 必须能解析并访问 Java or
 
 发布 Workflow，在 **API Access** 取得 Service API App Key，填入 `.env` 的 `DEEPRESEARCH_DIFY_APP_KEY`。它与管理员登录 Token、工具服务密钥用途不同。导出 DSL 时 Secret 值保持为空，不提交私有导出。
 
-当前源 DSL 为 Evidence v8.1 Web，Java 须包含 V16 网页来源迁移与配套发布校验。升级既有环境时同步部署 Java 和发布 DSL，保留已有 `.env` 与数据卷；旧 V7 完整评测不能当作新代码的全量结果。
+以[Dify 指南](../../integrations/dify/README.md)和[质量修复记录](../../integrations/dify/WEB_QUALITY_REPAIR_2026-09-28.md)标明的源 DSL、发布身份及 hash 为准。当前候选加入独立逐条支持与完整原问题覆盖核验，Java 须包含 V16 网页来源迁移与配套发布校验。升级既有环境时同步部署 Java 和发布 DSL，保留已有 `.env` 与数据卷；旧 V7 完整评测不能当作新代码的全量结果。
 
 ## 4. 启动与语料导入
 
@@ -114,7 +114,7 @@ python3 scripts/preflight-showcase.py --corpus
 2. 银行账户题：`INSUFFICIENT_EVIDENCE`，不捏造号码或来源。
 3. 仍运行时点 **断线演练**：同一 run 自动重连，events 请求带旧游标，没有重建任务。
 
-网页或混合检索另运行 `python3 scripts/preflight-showcase.py --require-web-search --online --corpus`，再选择页面的网页搜索。纯网页可问 asyncio 的并发/I/O 用途；检查引用是否显示实际 URL、标题、摘要，摘要是否支持每句话。网页来源只证明来自本 run 已完成且获授权的搜索回执，不等于抓取全文或证明事实正确。当前五项定向终态通过、严格逐句支持 4/5，全部 12 次尝试和初版超时见 [v8.1 验收](../../integrations/dify/WEB_SEARCH_ACCEPTANCE_2026-09-28.md)。
+网页或混合检索另运行 `python3 scripts/preflight-showcase.py --require-web-search --online --corpus`，再选择页面的网页搜索。纯网页可问 asyncio 的并发/I/O 用途；检查引用是否显示实际 URL、标题、搜索摘要，正文编号是否定位自己的来源卡片，以及完整保存摘录是否支持每句话。知识库卡片显示实际文档名，不生成公网链接。网页来源只证明来自本 run 已完成且获授权的搜索回执，不等于抓取全文或证明事实正确。最新定向 10+6、逐版未通过记录及支持口径见[质量修复](../../integrations/dify/WEB_QUALITY_REPAIR_2026-09-28.md)，真实页面与离线场景的不同范围见[前端引用验收](../../integrations/dify/CITATION_UI_ACCEPTANCE_2026-09-28.md)。历史五项终态、严格逐句支持 4/5、全部 12 次尝试和初版超时仍见 [v8.1 验收](../../integrations/dify/WEB_SEARCH_ACCEPTANCE_2026-09-28.md)。
 
 预检只说明依赖条件，不证明答案质量或恢复能力。一次成功不能代替固定评测、引用支持性审阅或生产门禁；最新结果见[EVIDENCE](EVIDENCE.md)。
 
