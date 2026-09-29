@@ -5,7 +5,8 @@
   "a_parent_commit": "ef08be02b77ddbdcc564afe72436ecf166693e07",
   "a_version_binding": "Exact final commit is recorded in the external runtime handoff; source digests below bind executable gate inputs to that commit.",
   "peer_committed_sha": "9e606b16302cbddcc02d2e8763002bbcc73bfe19",
-  "source_bundle": "/Users/zwy/Claude/Projects/deepresearch-github/target/agent-round1-aejjfimu",
+  "source_bundle": "target/agent-round1-aejjfimu",
+  "public_path_redaction": "Local checkout prefix removed for publication; recorded input digests and historical results are unchanged.",
   "branch_merge_performed": false,
   "python_runtime_protocol_tests": {
     "tests": 46,

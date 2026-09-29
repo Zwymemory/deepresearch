@@ -27,7 +27,7 @@ class SafeWebReaderTest {
     @Test void invalidUrlsNeverReachTransport() {
         var calls = new AtomicInteger();
         var reader = new SafeWebReader(h -> List.of(ip("8.8.8.8")), (u,a,t,m) -> { calls.incrementAndGet(); return null; });
-        for (String url : List.of("file:///secret","ftp://example.org/x","https://user:pass@example.org/x","http://example.org:8080/x","https://example.org/x#part"))
+        for (String url : List.of("file:///secret","ftp://example.org/x","https://user:pass@example.test/x","http://example.org:8080/x","https://example.org/x#part"))
             assertThatThrownBy(() -> reader.read(null,candidate(url))).isInstanceOf(EvidenceException.class);
         assertThat(calls).hasValue(0);
     }

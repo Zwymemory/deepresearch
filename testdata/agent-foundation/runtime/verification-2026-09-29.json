@@ -129,7 +129,8 @@
     "gate_result": {
       "status": "offline_contracts_passed",
       "schema_engine": "jsonschema Draft202012Validator with registered local date-time/uri profiles; remote resolution forbidden",
-      "peer_checkout": "/Users/zwy/Claude/Projects/deepresearch-ragflow",
+      "peer_checkout": "<peer-checkout>",
+      "public_path_redaction": "Only the local checkout path was redacted for publication; the recorded gate_output_sha256 refers to the original local output.",
       "runtime_fixtures": [
         {
           "fixture_id": "runtime-foundation",
