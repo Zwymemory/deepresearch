@@ -81,8 +81,11 @@ class SqlAgentLedger:
                             "该操作仍在执行", error_code="AGENT_OPERATION_IN_PROGRESS"
                         )
                     await conn.execute(
-                        """UPDATE agent_research_operation SET status='UNKNOWN',
-                        claim_token=%s::uuid, settled_at=now() WHERE run_id=%s AND operation_key=%s AND attempt=%s""",
+                        (
+                            "UPDATE agent_research_operation SET status='UNKNOWN',\n"
+                            "                        claim_token=%s::uuid, settled_at=now() WHERE "
+                            "run_id=%s AND operation_key=%s AND attempt=%s"
+                        ),
                         (claim_token, run_id, key, latest["attempt"]),
                     )
                 if latest and (kind == "TOOL" or latest["attempt"] >= 2):
@@ -126,7 +129,8 @@ class SqlAgentLedger:
                     return {"replay": None, "attempt": attempt}
         if ambiguous:
             raise WorkflowExecutionError(
-                "上次操作结果未知，需对账，禁止重复外部调用", error_code="AGENT_OPERATION_UNKNOWN"
+                "上次操作结果未知\uff0c需对账\uff0c禁止重复外部调用",
+                error_code="AGENT_OPERATION_UNKNOWN",
             )
 
     async def settle(self, run_id, claim_token, key, attempt, value, usage, *, unknown=False):
@@ -136,7 +140,10 @@ class SqlAgentLedger:
             async with conn.transaction():
                 await self.repository._lock_active_budget_run(conn, run_id, claim_token)
                 cursor = await conn.execute(
-                    "SELECT * FROM agent_research_operation WHERE run_id=%s AND operation_key=%s AND attempt=%s",
+                    (
+                        "SELECT * FROM agent_research_operation WHERE run_id=%s AND "
+                        "operation_key=%s AND attempt=%s"
+                    ),
                     (run_id, key, attempt),
                 )
                 row = await cursor.fetchone()
@@ -149,12 +156,16 @@ class SqlAgentLedger:
                     if canonical(row["safe_result"]) == canonical(value) and canonical(
                         row["actual_usage"]
                     ) == canonical(usage):
-                        return  # Java can settle read/publication atomically with its authoritative record.
+                        # Java settles reads/publications with the authoritative record.
+                        return
                 if not row or row["status"] != "RESERVED" or str(row["claim_token"]) != claim_token:
                     raise StaleClaimError("Agent 预留已失效")
                 await conn.execute(
-                    """UPDATE agent_research_operation SET status=%s, safe_result=%s,
-                    actual_usage=%s, settled_at=now() WHERE run_id=%s AND operation_key=%s AND attempt=%s""",
+                    (
+                        "UPDATE agent_research_operation SET status=%s, safe_result=%s,\n"
+                        "                    actual_usage=%s, settled_at=now() WHERE run_id=%s AND "
+                        "operation_key=%s AND attempt=%s"
+                    ),
                     (
                         "UNKNOWN" if unknown else "SETTLED",
                         None if unknown else Jsonb(value),
@@ -168,16 +179,25 @@ class SqlAgentLedger:
     @staticmethod
     async def _totals(conn, run_id):
         cursor = await conn.execute(
-            """SELECT count(*) FILTER (WHERE kind='MODEL') AS model_calls,
-            count(*) FILTER (WHERE kind='TOOL') AS tool_calls,
-            count(DISTINCT operation_key) FILTER (WHERE purpose='DECISION') AS decision_steps,
-            COALESCE(sum(COALESCE((actual_usage->>'input_tokens')::bigint,input_reserved)),0) AS input_charged,
-            COALESCE(sum(COALESCE((actual_usage->>'output_tokens')::bigint,output_reserved)),0) AS output_charged,
-            count(*) FILTER (WHERE kind='MODEL' AND actual_usage->>'input_tokens' IS NULL) AS input_unknown,
-            count(*) FILTER (WHERE kind='MODEL' AND actual_usage->>'output_tokens' IS NULL) AS output_unknown,
-            COALESCE(sum((actual_usage->>'input_tokens')::bigint),0) AS input_measured,
-            COALESCE(sum((actual_usage->>'output_tokens')::bigint),0) AS output_measured
-            FROM agent_research_operation WHERE run_id=%s""",
+            (
+                "SELECT count(*) FILTER (WHERE kind='MODEL') AS model_calls,\n"
+                "            count(*) FILTER (WHERE kind='TOOL') AS tool_calls,\n"
+                "            count(DISTINCT operation_key) FILTER (WHERE purpose='DECISION') AS "
+                "decision_steps,\n"
+                "            COALESCE(sum(COALESCE((actual_usage->>'input_tokens')::bigint,"
+                "input_reserved)),0) AS input_charged,\n"
+                "            COALESCE(sum(COALESCE((actual_usage->>'output_tokens')::bigint,"
+                "output_reserved)),0) AS output_charged,\n"
+                "            count(*) FILTER (WHERE kind='MODEL' AND actual_usage->>'input_tokens' "
+                "IS NULL) AS input_unknown,\n"
+                "            count(*) FILTER (WHERE kind='MODEL' AND "
+                "actual_usage->>'output_tokens' IS NULL) AS output_unknown,\n"
+                "            COALESCE(sum((actual_usage->>'input_tokens')::bigint),0) AS "
+                "input_measured,\n"
+                "            COALESCE(sum((actual_usage->>'output_tokens')::bigint),0) AS "
+                "output_measured\n"
+                "            FROM agent_research_operation WHERE run_id=%s"
+            ),
             (run_id,),
         )
         return dict(await cursor.fetchone())
@@ -209,15 +229,24 @@ class SqlAgentLedger:
                 await self.repository._lock_active_budget_run(conn, run_id, claim_token)
                 for task in tasks:
                     cursor = await conn.execute(
-                        """INSERT INTO agent_research_task
-                        (run_id,task_id,objective,dependencies,status,acceptance_criteria,evidence_ids,plan_version,task_json,claim_token)
-                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::uuid)
-                        ON CONFLICT (run_id,task_id) DO UPDATE SET status=EXCLUDED.status,
-                        evidence_ids=EXCLUDED.evidence_ids,task_json=EXCLUDED.task_json,claim_token=EXCLUDED.claim_token,
-                        updated_at=now() WHERE agent_research_task.plan_version=EXCLUDED.plan_version
-                        AND agent_research_task.objective=EXCLUDED.objective
-                        AND agent_research_task.dependencies=EXCLUDED.dependencies
-                        AND agent_research_task.acceptance_criteria=EXCLUDED.acceptance_criteria""",
+                        (
+                            "INSERT INTO agent_research_task\n"
+                            "                        (run_id,task_id,objective,dependencies,status,"
+                            "acceptance_criteria,evidence_ids,plan_version,task_json,claim_token)\n"
+                            "                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::uuid)\n"
+                            "                        ON CONFLICT (run_id,task_id) DO UPDATE SET "
+                            "status=EXCLUDED.status,\n"
+                            "                        evidence_ids=EXCLUDED.evidence_ids,"
+                            "task_json=EXCLUDED.task_json,claim_token=EXCLUDED.claim_token,\n"
+                            "                        updated_at=now() WHERE "
+                            "agent_research_task.plan_version=EXCLUDED.plan_version\n"
+                            "                        AND "
+                            "agent_research_task.objective=EXCLUDED.objective\n"
+                            "                        AND "
+                            "agent_research_task.dependencies=EXCLUDED.dependencies\n"
+                            "                        AND "
+                            "agent_research_task.acceptance_criteria=EXCLUDED.acceptance_criteria"
+                        ),
                         (
                             run_id,
                             task["task_id"],
@@ -389,7 +418,7 @@ class AgentBudgetGateway:
                     self.run_id, self.claim_token, key, reservation["attempt"], {}, {}, unknown=True
                 )
         raise WorkflowExecutionError(
-            "Agent 模型结果无法解析，已计入重试预算", error_code="AGENT_MODEL_INVALID"
+            "Agent 模型结果无法解析\uff0c已计入重试预算", error_code="AGENT_MODEL_INVALID"
         )
 
     async def tool_call(
@@ -423,7 +452,7 @@ class AgentBudgetGateway:
                 self.run_id, self.claim_token, key, reservation["attempt"], {}, {}, unknown=True
             )
             raise WorkflowExecutionError(
-                "外部操作结果未知，需对账后继续", error_code="AGENT_OPERATION_UNKNOWN"
+                "外部操作结果未知\uff0c需对账后继续", error_code="AGENT_OPERATION_UNKNOWN"
             ) from None
 
     @staticmethod
@@ -431,4 +460,4 @@ class AgentBudgetGateway:
         if (result.input_tokens is not None and result.input_tokens > input_reserved) or (
             result.output_tokens is not None and result.output_tokens > output_reserved
         ):
-            raise RunBudgetExceededError("Provider 用量超出预留边界，停止后续调用")
+            raise RunBudgetExceededError("Provider 用量超出预留边界\uff0c停止后续调用")

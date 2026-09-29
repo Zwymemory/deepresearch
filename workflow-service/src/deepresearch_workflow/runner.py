@@ -14,11 +14,11 @@ import httpx
 
 from .control_plane import FinalizeRejectedError
 from .domain import (
+    AgentRunBudget,
     ClaimedRun,
     EventRecord,
     FinalizeRequest,
     RunBudget,
-    AgentRunBudget,
     UsageDelta,
     WorkflowStage,
     WorkflowState,
@@ -235,8 +235,16 @@ class WorkflowRunner:
         """Apply process safety ceilings without replacing the persisted snapshot."""
 
         if isinstance(snapshot,AgentRunBudget):
-            return snapshot.model_copy(update={"max_model_calls":min(snapshot.max_model_calls,self._settings.max_model_calls),
-                "max_tool_calls":min(snapshot.max_tool_calls,self._settings.max_tool_calls)})
+            return snapshot.model_copy(
+                update={
+                    "max_model_calls": min(
+                        snapshot.max_model_calls, self._settings.max_model_calls
+                    ),
+                    "max_tool_calls": min(
+                        snapshot.max_tool_calls, self._settings.max_tool_calls
+                    ),
+                }
+            )
         return RunBudget(
             max_tasks=min(snapshot.max_tasks, self._settings.max_tasks),
             max_concurrency=min(
@@ -552,9 +560,17 @@ class WorkflowRunner:
         if not isinstance(run.budget,AgentRunBudget):
             return self._wire_usage(usage,started)
         from .agent_budget import SqlAgentLedger
-        ledger = self._agent_ledger_factory(self._repository) if self._agent_ledger_factory else SqlAgentLedger(self._repository)
+        ledger = (
+            self._agent_ledger_factory(self._repository)
+            if self._agent_ledger_factory
+            else SqlAgentLedger(self._repository)
+        )
         value=await ledger.summary(run.run_id,run.claim_token)
-        value["totalTokens"]=None if value["inputTokens"] is None or value["outputTokens"] is None else value["inputTokens"]+value["outputTokens"]
+        value["totalTokens"] = (
+            None
+            if value["inputTokens"] is None or value["outputTokens"] is None
+            else value["inputTokens"] + value["outputTokens"]
+        )
         value["durationMs"]=max(0,int((time.monotonic()-started)*1000))
         return value
 

@@ -14,12 +14,12 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.checkpoint.serde._msgpack import SAFE_MSGPACK_TYPES
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 
-from .auth import ServiceJwtProvider
-from .control_plane import HttpControlPlaneClient
-from .domain import RunBudget, AgentRunBudget
 from .agent_budget import SqlAgentLedger
 from .agent_model import OpenAIAgentModel
 from .agent_runtime import AutonomousResearchGraph
+from .auth import ServiceJwtProvider
+from .control_plane import HttpControlPlaneClient
+from .domain import AgentRunBudget, RunBudget
 from .evidence_client import HttpEvidenceBackend
 from .graph import DurableResearchGraph, GraphRuntime
 from .mcp import HttpGrantTokenProvider, HttpMcpToolClient, ReceiptCachingToolClient
@@ -91,7 +91,11 @@ class ServiceRuntime:
         model = OpenAIWorkflowModel(self.settings)
         agent_model = OpenAIAgentModel(self.settings,http_client)
         ledger = SqlAgentLedger(repository)
-        evidence = HttpEvidenceBackend(client=http_client,java_base_url=self.settings.java_base_url,service_tokens=service_tokens)
+        evidence = HttpEvidenceBackend(
+            client=http_client,
+            java_base_url=self.settings.java_base_url,
+            service_tokens=service_tokens,
+        )
         events = RepositoryEventSink(repository)
         control_plane = HttpControlPlaneClient(
             client=http_client,

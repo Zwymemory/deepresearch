@@ -13,11 +13,11 @@ from psycopg.types.json import Jsonb
 from psycopg_pool import AsyncConnectionPool
 
 from .domain import (
+    AgentRunBudget,
     ClaimedRun,
     EventRecord,
     ModelBudgetReservation,
     RunBudget,
-    AgentRunBudget,
     ToolExecutionResult,
     UsageDelta,
 )
@@ -755,7 +755,9 @@ class PostgresWorkflowRepository:
         ):
             raise BudgetClaimConflictError("budget reservation claim is stale")
         data = row.get("budget") or {}
-        return (AgentRunBudget if data.get("runtime") == "agent" else RunBudget).model_validate(data)
+        return (AgentRunBudget if data.get("runtime") == "agent" else RunBudget).model_validate(
+            data
+        )
 
     async def write_event(self, event: EventRecord, claim_token: str) -> bool:
         async with self.pool.connection() as connection:

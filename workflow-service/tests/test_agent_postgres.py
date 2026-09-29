@@ -41,6 +41,14 @@ pytestmark = [
 ]
 
 
+def _read_version_fixture():
+    path = (
+        Path(__file__).resolve().parents[2]
+        / "testdata/agent-foundation/evidence/version-difference.json"
+    )
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 async def seed(budget):
     run = "agent-it-" + uuid4().hex
     claim = str(uuid4())
@@ -50,15 +58,24 @@ async def seed(budget):
         async with conn.transaction():
             await conn.execute("SET CONSTRAINTS ALL DEFERRED")
             await conn.execute(
-                "INSERT INTO agent_session(session_id,user_id,title) VALUES (%s,'tenant:owner','isolated test')",
+                (
+                    "INSERT INTO agent_session(session_id,user_id,title) VALUES (%s,'tenant:owner',"
+                    "'isolated test')"
+                ),
                 (session,),
             )
             await conn.execute(
-                """INSERT INTO agent_workflow_run
-                (run_id,session_id,user_id,question,context_snapshot,endpoint,idempotency_key,request_fingerprint,
-                 graph_thread_id,status,stage,deadline_at,requested_scopes,grant_id,claim_token,lease_until,budget)
-                VALUES (%s,%s,'tenant:owner','question','{}','/api/research/agents',%s,%s,%s,'WORKING','WORKING',
-                    now()+interval '180 seconds',ARRAY['web_search','read_source','check_claims'],%s,%s::uuid,now()+interval '60 seconds',%s)""",
+                (
+                    "INSERT INTO agent_workflow_run\n"
+                    "                (run_id,session_id,user_id,question,context_snapshot,endpoint,"
+                    "idempotency_key,request_fingerprint,\n"
+                    "                 graph_thread_id,status,stage,deadline_at,requested_scopes,"
+                    "grant_id,claim_token,lease_until,budget)\n"
+                    "                VALUES (%s,%s,'tenant:owner','question','{}',"
+                    "'/api/research/agents',%s,%s,%s,'WORKING','WORKING',\n"
+                    "                    now()+interval '180 seconds',ARRAY['web_search',"
+                    "'read_source','check_claims'],%s,%s::uuid,now()+interval '60 seconds',%s)"
+                ),
                 (
                     run,
                     session,
@@ -71,15 +88,25 @@ async def seed(budget):
                 ),
             )
             await conn.execute(
-                "INSERT INTO agent_workflow_grant(grant_id,run_id,subject,scopes,expires_at) VALUES (%s,%s,'tenant:owner',ARRAY['web_search','read_source','check_claims'],now()+interval '180 seconds')",
+                (
+                    "INSERT INTO agent_workflow_grant(grant_id,run_id,subject,scopes,expires_at) "
+                    "VALUES (%s,%s,'tenant:owner',ARRAY['web_search','read_source','check_claims'],"
+                    "now()+interval '180 seconds')"
+                ),
                 (grant, run),
             )
             await conn.execute(
-                "INSERT INTO research_project(project_id,tenant_id,owner_id,session_id) VALUES (%s,'tenant','owner',%s)",
+                (
+                    "INSERT INTO research_project(project_id,tenant_id,owner_id,session_id) VALUES "
+                    "(%s,'tenant','owner',%s)"
+                ),
                 (run, session),
             )
             await conn.execute(
-                "INSERT INTO agent_research_run(run_id,project_id,tenant_id,owner_id) VALUES (%s,%s,'tenant','owner')",
+                (
+                    "INSERT INTO agent_research_run(run_id,project_id,tenant_id,owner_id) VALUES "
+                    "(%s,%s,'tenant','owner')"
+                ),
                 (run, run),
             )
     repo = PostgresWorkflowRepository(URL)
@@ -296,12 +323,7 @@ async def test_real_role_postgres_checkpoint_recovery_reuses_authorized_calls():
     await connections.open(wait=True)
     saver = AsyncPostgresSaver(connections)
     await saver.setup()
-    fixture = json.loads(
-        (
-            Path(__file__).resolve().parents[2]
-            / "testdata/agent-foundation/evidence/version-difference.json"
-        ).read_text()
-    )
+    fixture = await asyncio.to_thread(_read_version_fixture)
     records = [r for r in fixture["records"] if r["record_type"] == "Evidence"]
     model = ObservationDrivenModel()
     tools = SourceTransport(records, repository)
@@ -363,7 +385,10 @@ async def test_real_role_postgres_checkpoint_recovery_reuses_authorized_calls():
         recovered = str(uuid4())
         async with await psycopg.AsyncConnection.connect(URL) as conn:
             await conn.execute(
-                "UPDATE agent_workflow_run SET claim_token=%s::uuid,lease_until=now()+interval '60 seconds' WHERE run_id=%s",
+                (
+                    "UPDATE agent_workflow_run SET claim_token=%s::uuid,lease_until=now()+interval "
+                    "'60 seconds' WHERE run_id=%s"
+                ),
                 (recovered, run),
             )
         # Fresh pools and saver read the committed checkpoint, with no in-memory ledger.
@@ -380,7 +405,11 @@ async def test_real_role_postgres_checkpoint_recovery_reuses_authorized_calls():
         )
         await runner.run_claimed(
             claimed.model_copy(
-                update={"claim_token": recovered, "status": WorkflowStatus.WORKING, "stage": "WORKING"}
+                update={
+                    "claim_token": recovered,
+                    "status": WorkflowStatus.WORKING,
+                    "stage": "WORKING",
+                }
             )
         )
         assert (

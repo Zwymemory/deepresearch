@@ -134,7 +134,7 @@ class ObservationDrivenModel:
                 value = {
                     "action": "read_source",
                     "source_id": unread[0]["source_id"],
-                    "reason": "摘要缺少完整适用条件，读取原文",
+                    "reason": "摘要缺少完整适用条件\uff0c读取原文",
                 }
             elif packet and packet.get("status") == "supported":
                 value = {
@@ -152,7 +152,7 @@ class ObservationDrivenModel:
                             "acceptance_criteria": ["回源读取并解决冲突或保留争议"],
                         }
                     ],
-                    "reason": "观察到反证或缺口，增加核查目标",
+                    "reason": "观察到反证或缺口\uff0c增加核查目标",
                 }
             elif not payload["candidates"] or (
                 last.get("action") == "search" and not last.get("candidates")
@@ -292,7 +292,7 @@ class EvidenceSubstitute:
             "terminal_status": "SUCCEEDED" if complete else "INSUFFICIENT_EVIDENCE",
             "answer": "测试裁决的条件性结论[来源1]"
             if supported
-            else "仍有待核查事项：测试来源未解决",
+            else "仍有待核查事项\uff1a测试来源未解决",
             "citations": [state["evidence"][-1]["source"]["source_id"]] if supported else [],
         }
 
@@ -419,7 +419,7 @@ async def test_empty_web_search_can_switch_to_kb_without_rebinding_task_scope():
                     "action": "search",
                     "query": request.payload["original_question"],
                     "tool": "kb_search",
-                    "reason": "网页检索为空，改查获准的知识库",
+                    "reason": "网页检索为空\uff0c改查获准的知识库",
                 },
                 input_tokens=120,
                 output_tokens=100,

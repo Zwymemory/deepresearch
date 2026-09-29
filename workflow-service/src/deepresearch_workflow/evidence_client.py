@@ -30,7 +30,7 @@ class HttpEvidenceBackend:
             timeout=30,
         )
         if response.status_code >= 400:
-            # Stable server rejection is an observation; transport ambiguity is handled by the ledger.
+            # Stable rejection is an observation; the ledger handles transport ambiguity.
             try:
                 code = response.json().get("errorCode") or response.json().get("code")
             except Exception:

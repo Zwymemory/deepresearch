@@ -1,5 +1,6 @@
 """Wire/parser compatibility with a committed B protocol; no real model/source claims."""
 
+import asyncio
 import hashlib
 import json
 from pathlib import Path
@@ -15,6 +16,14 @@ from deepresearch_workflow.evidence_client import HttpEvidenceBackend
 from .test_agent_runtime import LedgerSubstitute
 
 
+def _read_version_fixture():
+    path = (
+        Path(__file__).resolve().parents[2]
+        / "testdata/agent-foundation/evidence/version-difference.json"
+    )
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 @pytest.mark.parametrize("protocol", ["evidence-check/1", "evidence-check/2"])
 async def test_peer_verifier_request_and_model_receipt_bind_exact_response_and_current_claim(
     protocol,
@@ -22,12 +31,7 @@ async def test_peer_verifier_request_and_model_receipt_bind_exact_response_and_c
     pytest.importorskip(
         "deepresearch_workflow.evidence_check", reason="committed peer source bundle required"
     )
-    fixture = json.loads(
-        (
-            Path(__file__).resolve().parents[2]
-            / "testdata/agent-foundation/evidence/version-difference.json"
-        ).read_text()
-    )
+    fixture = await asyncio.to_thread(_read_version_fixture)
     record = next(r for r in fixture["records"] if r["record_type"] == "Evidence")
     specs = [
         {
