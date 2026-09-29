@@ -62,6 +62,7 @@ public class AgentPublicationController {
                     || (reportStatus.equals("complete")!=terminalStatus.equals("SUCCEEDED")))
                 throw new EvidenceException("PUBLICATION_INVALID");
             var citations=new ArrayList<String>();
+            var details=new java.util.LinkedHashMap<String,com.fasterxml.jackson.databind.node.ObjectNode>();
             for (JsonNode citation:checked.path("citations")) {
                 JsonNode locator=citation.path("source").path("locator");
                 String identity=switch(citation.path("source").path("kind").asText()) {
@@ -71,11 +72,17 @@ public class AgentPublicationController {
                 };
                 if (identity.isBlank()) throw new EvidenceException("PUBLICATION_INVALID");
                 if (!citations.contains(identity)) citations.add(identity);
+                var detail=details.computeIfAbsent(identity,key->object("sourceId",key,
+                    "kind",citation.path("source").path("kind").asText().equals("web")?"WEB_ORIGINAL":"KNOWLEDGE_CHUNK",
+                    "title",citation.path("source").path("title").asText(),"url",locator.path("uri").asText(),"excerpt",""));
+                String quote=citation.path("quote").path("text").asText();
+                if (!quote.isBlank()) detail.put("excerpt",detail.path("excerpt").asText().isBlank()?quote:detail.path("excerpt").asText()+"\n\n"+quote);
             }
             if (citations.size()>32 || (terminalStatus.equals("SUCCEEDED") && citations.isEmpty()))
                 throw new EvidenceException("PUBLICATION_INVALID");
             var result=((com.fasterxml.jackson.databind.node.ObjectNode)checked).deepCopy();
             result.set("citation_details",checked.path("citations"));
+            result.set("citationDetails",JSON.valueToTree(details.values()));
             result.set("citations",JSON.valueToTree(citations));
             return tx.execute(status->{
                 authority.lock(g); if (!authority.active(g)) throw EvidenceException.denied();

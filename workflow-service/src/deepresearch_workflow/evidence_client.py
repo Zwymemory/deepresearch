@@ -87,8 +87,8 @@ class HttpEvidenceBackend:
         # Explicitly carry prior contrary material. B independently computes this
         # set from its immutable check chain, so a client cannot omit it.
         evidence_ids = list(dict.fromkeys([*current.get("required_evidence_ids", []), *selected]))
-        if len(evidence_ids) > 4:
-            return {"errorCode": "EVIDENCE_CAPACITY_EXCEEDED", "gaps": ["累计核查材料超出单次容量"]}
+        # B persists capacity failures. Rejecting locally would let a later
+        # subset erase newly encountered material from the authoritative report.
         prepared = await self.post(
             "/internal/agent/evidence/checks/prepare",
             {

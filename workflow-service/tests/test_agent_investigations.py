@@ -122,6 +122,7 @@ async def test_independent_tasks_keep_distinct_scopes_parents_and_successful_rec
     "failure",
     [
         {"errorCode": "CHECK_REQUEST_INVALID"},
+        {"records": []},
         WorkflowExecutionError("private source response", error_code="MODEL_SCHEMA_INVALID"),
         TimeoutError("private transport detail"),
     ],

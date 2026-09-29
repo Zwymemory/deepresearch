@@ -182,8 +182,17 @@ async def test_cumulative_counterevidence_overflow_is_explicit_and_never_truncat
 
     def transport(request):
         calls.append(request.url.path)
-        assert request.url.path.endswith("investigations")
-        return httpx.Response(200, json=current)
+        if request.url.path.endswith("investigations"):
+            return httpx.Response(200, json=current)
+        assert request.url.path.endswith("prepare")
+        assert set(json.loads(request.content)["evidence_ids"]) == {
+            "counter",
+            "new-1",
+            "new-2",
+            "new-3",
+            "new-4",
+        }
+        return httpx.Response(409, json={"errorCode": "EVIDENCE_CAPACITY_EXCEEDED"})
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(transport)) as client:
         backend = HttpEvidenceBackend(
@@ -204,7 +213,7 @@ async def test_cumulative_counterevidence_overflow_is_explicit_and_never_truncat
         result = await backend.check(
             state, {"task_id": "task"}, "call", [{"text": "Original"}], None
         )
-    assert result["errorCode"] == "EVIDENCE_CAPACITY_EXCEEDED" and len(calls) == 1
+    assert result["errorCode"] == "EVIDENCE_CAPACITY_EXCEEDED" and len(calls) == 2
 
 
 async def test_independent_investigation_selects_relevant_material_and_carries_required_originals():

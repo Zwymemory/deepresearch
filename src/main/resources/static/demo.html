@@ -1493,7 +1493,7 @@
         // Never match by metadata position, a model label or an inferred URL.
         // Duplicate metadata for an ID is ambiguous and must not create a link.
         var source = indexed && matches.length === 1 ? matches[0] : null;
-        var web = source && source.kind === "WEB_SEARCH_SNAPSHOT";
+        var web = source && (source.kind === "WEB_SEARCH_SNAPSHOT" || source.kind === "WEB_ORIGINAL");
         var knowledge = source && source.kind === "KNOWLEDGE_CHUNK";
         if (!web && !knowledge) source = null;
         var url = web ? safeCitationUrl(source.url) : null;
@@ -1517,7 +1517,7 @@
         heading.append(number, titleNode);
         meta.className = "citation-meta";
         kind.className = "citation-kind";
-        kind.textContent = web ? "网页 · 搜索摘要" : knowledge ? "知识库文档" : "来源详情未记录";
+        kind.textContent = web ? (source.kind === "WEB_ORIGINAL" ? "网页 · 原文" : "网页 · 搜索摘要") : knowledge ? "知识库文档" : "来源详情未记录";
         meta.appendChild(kind);
         if (url) {
           var address = document.createElement("span");
