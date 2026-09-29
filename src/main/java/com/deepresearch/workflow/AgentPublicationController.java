@@ -42,8 +42,13 @@ public class AgentPublicationController {
                 var row=prior.get(0);
                 if (!fingerprint.equals(row.get("request_hash"))) throw new EvidenceException("PUBLICATION_IDEMPOTENCY_CONFLICT");
                 if (!row.get("status").equals("COMPLETED")) throw new EvidenceException("PUBLICATION_RESULT_UNKNOWN");
-                try { return JSON.readTree((String)row.get("result")); }
-                catch (Exception invalid) { throw new EvidenceException("PUBLICATION_INVALID"); }
+                try {
+                    var priorResult=JSON.readTree((String)row.get("result"));
+                    if (!canonical(authority.reportState(g)).equals(canonical(priorResult.path("research_state"))))
+                        throw new EvidenceException("REPORT_STATE_CHANGED");
+                    return priorResult;
+                }
+                catch (com.fasterxml.jackson.core.JsonProcessingException invalid) { throw new EvidenceException("PUBLICATION_INVALID"); }
             }
             db.update("INSERT INTO agent_research_publication(run_id,call_id,request_hash,status) VALUES (?,?,?,'EXECUTING')",g.runId(),g.callId(),fingerprint);
             return null;
@@ -94,6 +99,8 @@ public class AgentPublicationController {
             return tx.execute(status->{
                 authority.lock(g); if (!authority.active(g)) throw EvidenceException.denied();
                 if (!canonical(JSON.valueToTree(authority.reportGoals(g))).equals(canonical(checked.path("goals"))))
+                    throw new EvidenceException("REPORT_STATE_CHANGED");
+                if (!canonical(authority.reportState(g)).equals(canonical(checked.path("research_state"))))
                     throw new EvidenceException("REPORT_STATE_CHANGED");
                 db.update("""
                     UPDATE agent_research_publication SET status='COMPLETED',answer_hash=?,citations=CAST(? AS jsonb),result=CAST(? AS jsonb),proof=CAST(? AS jsonb),completed_at=now()

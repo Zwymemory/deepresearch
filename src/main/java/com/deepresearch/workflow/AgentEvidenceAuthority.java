@@ -104,6 +104,10 @@ public class AgentEvidenceAuthority implements EvidenceAuthority {
         if (!active(g) || !purpose(g).equals("PUBLICATION")) throw EvidenceException.denied();
         return new AgentCompletionService(db).goals(g);
     }
+    @Override public JsonNode reportState(Grant g) {
+        if (!active(g) || !purpose(g).equals("PUBLICATION")) throw EvidenceException.denied();
+        return new AgentResearchStateService(db).proof(g,new AgentCompletionService(db).goals(g));
+    }
     @Override public PublicationReadPermit publicationRead(Grant g,JsonNode evidence) {
         return tx.execute(status->{
             lock(g); if (!active(g)) throw EvidenceException.denied();

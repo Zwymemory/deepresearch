@@ -307,11 +307,18 @@ public final class EvidenceService {
     public JsonNode report(String authorization, EvidenceDtos.ReportRequest command) {
         return report(grant(authorization, "publish_evidence", command.identifiers()));
     }
+    private record ReportInput(List<EvidenceStore.CheckEntry> checks,List<JsonNode> blocked,
+                               List<EvidenceAuthority.ReportGoal> goals,JsonNode state) { }
     private JsonNode report(EvidenceAuthority.Grant g) {
-        var all = tx(g, () -> store.checks(g));
-        var blocked = tx(g, () -> store.blocked(g));
+        var input=tx(g,()->new ReportInput(store.checks(g),store.blocked(g),authority.reportGoals(g),authority.reportState(g)));
+        var all = input.checks();
+        var blocked = input.blocked();
         var pending = blocked.stream().filter(b -> !blockResolved(b, all)).toList();
-        var goals = authority.reportGoals(g);
+        var goals = input.goals();
+        var researchState=input.state();
+        if (researchState==null || researchState.path("version").asInt()!=1
+                || !researchState.path("sha256").asText().matches("[a-f0-9]{64}")
+                || !researchState.path("investigation_attempts").isArray()) throw new EvidenceException("REPORT_STATE_INVALID");
         if (goals == null || goals.size() > 64) throw new EvidenceException("REPORT_CAPACITY_EXCEEDED");
         var goalIds = new HashSet<String>();
         var criterionIds = new HashSet<String>();
@@ -338,6 +345,9 @@ public final class EvidenceService {
                 "reason", "材料或请求超出本轮核查容量，保留缺口（" + gap.path("error_code").asText() + "）"));
         for (var entry : all) if (!entry.check().status().equals("COMPLETED"))
             unfinished.add(object("task_id", entry.taskId(), "investigation_id", entry.investigation(), "check_id", entry.check().checkId(), "reason", "Check has no completed, budget-attested assessment"));
+        for (var attempt:researchState.path("investigation_attempts")) if (!attempt.path("status").asText().equals("completed"))
+            unfinished.add(object("investigation_id",attempt.path("investigation_id"),"call_id",attempt.path("call_id"),
+                "status",attempt.path("status"),"text","调查当前尝试","reason",attempt.path("reason")));
         for (var goal : goals) {
             // A independently verifies original criteria, current checks and prerequisites.
             // Stored done and legacy fixtures are not proof of complete coverage.
@@ -461,14 +471,15 @@ public final class EvidenceService {
         tx(g, () -> {
             if (!canonical(JSON.valueToTree(store.checks(g))).equals(canonical(JSON.valueToTree(all)))
                     || !canonical(JSON.valueToTree(store.blocked(g))).equals(canonical(JSON.valueToTree(blocked)))
-                    || !canonical(JSON.valueToTree(authority.reportGoals(g))).equals(canonical(JSON.valueToTree(goals)))) throw new EvidenceException("REPORT_STATE_CHANGED");
+                    || !canonical(JSON.valueToTree(authority.reportGoals(g))).equals(canonical(JSON.valueToTree(goals)))
+                    || !canonical(authority.reportState(g)).equals(canonical(researchState))) throw new EvidenceException("REPORT_STATE_CHANGED");
             return null;
         });
         var investigations = all.stream().map(EvidenceStore.CheckEntry::investigation).distinct().map(identity -> object("investigation_id", identity,
                 "check_ids", all.stream().filter(e -> e.investigation().equals(identity)).map(e -> e.check().checkId()).toList(),
                 "current_check_id", current.containsKey(identity) ? current.get(identity).check().checkId() : null)).toList();
         var report = object("approved", true, "report_status", reportStatus, "terminal_status", complete ? "SUCCEEDED" : "INSUFFICIENT_EVIDENCE", "investigations", investigations,
-                "run_id", g.runId(), "goals", goals, "claims", published, "unfinished_goals", unfinished, "answer", answer.toString(), "answer_sha256", sha(answer.toString()),
+                "run_id", g.runId(), "goals", goals, "research_state",researchState,"claims", published, "unfinished_goals", unfinished, "answer", answer.toString(), "answer_sha256", sha(answer.toString()),
                 "citations", references.values(), "validation_receipts", validationReceipts, "semantic_truth_guaranteed", false);
         if (canonical(report).getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 120000) throw new EvidenceException("REPORT_CAPACITY_EXCEEDED");
         return report;
