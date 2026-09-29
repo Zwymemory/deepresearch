@@ -29,9 +29,11 @@
 
 ## 2026-09-29 统一源码部署与真实页面验收
 
-合并已审阅的 Dify 最终证据提交 `e9a3b470437907a82d935d82b44b30aaaa2c9040` 与前端改动，源构建提交为 `e263bc1f71f309f41a377eebceb715fc0bf7d179`。Dify 实现实测为 `3c77d31c3bed4662369ab8622cc9133788972975`，发布 **Evidence v15 Query**，源 DSL SHA256 `87a3e241456c34dbf5dcb772fd0667b08e527650f586ee097411676b0fc05033`，发布 API 读回精确匹配 40 节点/37 边。本次没有重派模型或网页搜索，使用该版本已完成的五类保存结果，质量审阅仍见[固定 16 场景报告](WEB_QUALITY_REPAIR_2026-09-28.md)。
+合并已审阅的 Dify 最终证据提交 `e9a3b470437907a82d935d82b44b30aaaa2c9040` 与前端改动，首个源构建提交为 `e263bc1f71f309f41a377eebceb715fc0bf7d179`，最终构建为 `a53c940ef2e8fc263353907f2c8306ab9959d8e2`。Dify 实现实测为 `3c77d31c3bed4662369ab8622cc9133788972975`，发布 **Evidence v15 Query**，源 DSL SHA256 `87a3e241456c34dbf5dcb772fd0667b08e527650f586ee097411676b0fc05033`，发布 API 读回精确匹配 40 节点/37 边。本次没有重派模型或网页搜索，使用该版本已完成的五类保存结果，质量审阅仍见[固定 16 场景报告](WEB_QUALITY_REPAIR_2026-09-28.md)。
 
-独立检出目录先保留旧未跟踪截图，再核对准确 HEAD，从正常 Dockerfile 编译源码。一次切换被旧截图阻止；随之误启动的旧检出构建已主动中止、未部署，失败与私有备份记录保留。成功构建沿用[已记录的 Maven 缓存](build-cache-provenance-2026-09-28.json)，不是无缓存新机安装。新镜像 ID `sha256:59e4b8c5c13fef4dc30fa9b6e30c0ae4bf36c8e993390e8ea2664cdcc4209857`，manifest `092548309d3a1fd4620029ef8e1e3c41693e2f01d8095a511367781faadd1ee5`，config `68a9ff6fcc67634bd4fa4a15c69f5efa95559ae59fb94464aa52d7cd98aea899`。两个时间点确认无活动 workflow 后，只更新 app；已有 `.env`、数据库、八文档和外部服务数据卷保留。
+独立检出目录先保留旧未跟踪截图，再核对准确 HEAD，从正常 Dockerfile 编译源码。一次切换被旧截图阻止；随之误启动的旧检出构建已主动中止、未部署，失败与私有备份记录保留。成功构建沿用[已记录的 Maven 缓存](build-cache-provenance-2026-09-28.json)，不是无缓存新机安装。新镜像 ID `sha256:db2567d3b57aca9e1811f8507b6231f2baa357d4638565304a1f60592bc1bb3e`，manifest `b3b9bcb15a9c7ec9b4df54ec529a3bde232efc49502d74e9011110443553e93d`，config `9d33674c8c89188ad33ad49816a0af9d3a3eda7389d7938a5dedd6825f4c1ecb`。两个时间点确认无活动 workflow 后，只更新 app；已有 `.env`、数据库、八文档和外部服务数据卷保留。
+
+第一次公开档案检查在 `4a3c74c` 被两条虚构凭据 URL 的邮箱形状拦住。测试源改成等价 Unicode 写法，实际 JSON 输入保持相同；6 项 Tavily 单测通过。最终版本再次从源码构建并只更新 app，完整五类只读页面、普通外链及截图核对通过；源码 `src/main` 与首个部署完全相同。首次文档合计误写 9 条来源，实际原始各例为 3+2+1+2+0=8；逐例记录未修改，汇总已更正。失败记录保留，扫描规则未放宽。
 
 真实服务 `/demo.html` 返回 200，SHA256 为 `c5965c8563d59734fe4e5173623f707a432f59b6dc0e98cc0336367e7f8828ac`，与受测前端相同。本次浏览器移除了客户端替换，直接读取部署 jar 的页面，使用原 QA USER 身份只读已有结果。[脱敏机器记录](citation-ui-served-check-2026-09-29.json)在原始精确匹配完成后才哈希 run/source ID。
 
@@ -43,7 +45,7 @@
 | JWT 公开资料边界 | SUCCEEDED | 2 | 2 | 是 |
 | 银行信息缺乏支持 | INSUFFICIENT_EVIDENCE | 0 | 0 | 是 |
 
-全部 9 条来源的编号、唯一 ID、实际标题、完整原摘录与 `finalResponse` 匹配；内部 ID 默认折叠。逐个点击全部 12 个正文标记，记录真实 `scrollIntoView` 目标均为各自卡片；刷新保持同一映射。知识库没有虚构 URL，无证据结果为空答零引用。银行场景有相关知识库检索行，但不支持所问值，不把它称为字面零检索。
+全部 8 条来源的编号、唯一 ID、实际标题、完整原摘录与 `finalResponse` 匹配；内部 ID 默认折叠。逐个点击全部 12 个正文标记，记录真实 `scrollIntoView` 目标均为各自卡片；刷新保持同一映射。知识库没有虚构 URL，无证据结果为空答零引用。银行场景有相关知识库检索行，但不支持所问值，不把它称为字面零检索。
 
 实际点击官方卡片，新标签页加载 `https://docs.python.org/3/library/asyncio.html`，观察标题为 Python 3.14.7 documentation 且 `window.opener === null`。这仅验证普通外链，不承诺定位原句，不补证旧版存档、原摘要或省略内容。闭合 run 的真实持久 SSE 共 48 条：读取前 5 条后按游标恢复 43 条，JSON payload 与完整基线逐条一致，包含 `DIFY_STAGE`；全过程新建 workflow POST 为 0。这是已完成记录的游标回放，**不是运行中断线、进程崩溃、取消或远端 stop 的新故障注入**。
 

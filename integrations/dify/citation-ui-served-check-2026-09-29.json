@@ -135,16 +135,16 @@
     ]
   },
   "schemaVersion": 1,
-  "checkedAt": "2026-09-29T06:07:55.792932+00:00",
+  "checkedAt": "2026-09-29T06:15:56.024578+00:00",
   "htmlSha256": "c5965c8563d59734fe4e5173623f707a432f59b6dc0e98cc0336367e7f8828ac",
-  "sourceBuildSha": "e263bc1f71f309f41a377eebceb715fc0bf7d179",
+  "sourceBuildSha": "a53c940ef2e8fc263353907f2c8306ab9959d8e2",
   "qualityTestedImplementationSha": "3c77d31c3bed4662369ab8622cc9133788972975",
   "peerEvidenceFinalSha": "e9a3b470437907a82d935d82b44b30aaaa2c9040",
   "publication": "Evidence v15 Query",
   "dslSha256": "87a3e241456c34dbf5dcb772fd0667b08e527650f586ee097411676b0fc05033",
-  "runtimeImageId": "sha256:59e4b8c5c13fef4dc30fa9b6e30c0ae4bf36c8e993390e8ea2664cdcc4209857",
-  "runtimeManifestSha256": "092548309d3a1fd4620029ef8e1e3c41693e2f01d8095a511367781faadd1ee5",
-  "runtimeConfigSha256": "68a9ff6fcc67634bd4fa4a15c69f5efa95559ae59fb94464aa52d7cd98aea899",
+  "runtimeImageId": "sha256:db2567d3b57aca9e1811f8507b6231f2baa357d4638565304a1f60592bc1bb3e",
+  "runtimeManifestSha256": "b3b9bcb15a9c7ec9b4df54ec529a3bde232efc49502d74e9011110443553e93d",
+  "runtimeConfigSha256": "9d33674c8c89188ad33ad49816a0af9d3a3eda7389d7938a5dedd6825f4c1ecb",
   "clientHtmlOverriddenOnlyInIsolatedBrowser": false,
   "servedFromDeployedJar": true,
   "ordinaryLinkClick": {
@@ -229,10 +229,11 @@
       "configurationAndOnlineDependencies": "passed",
       "corpusHttpAttempt": "HTTP 401 with configured ADMIN token; expiry not independently checked, no new token, corpus write or workflow/model creation",
       "previousOwnerFileJavaRagflowHashCheck": "v15 handoff all eight matched and DONE"
-    }
+    },
+    "checkedAt": "2026-09-29T06:15:56.198841+00:00"
   },
   "sourceBuildInputs": {
-    "src": "b7bd65237d71b64953fe6a8be74f0b591a551fd1",
+    "src": "3a5f7e7e9644d8a193c56bb7fe8f63167533dab7",
     "Dockerfile": "189714aa069c49a198aa07b19fc4e692e6fe4ed9",
     "pom.xml": "641c8f056d515e3762bcf4e60605a0aca925f700",
     "testdata/eval": "d278e7b14ef12a6cfa55a55fa2707aafefaecbdf"
@@ -268,7 +269,10 @@
     "exactHistoricalScoreRecalculations": 11,
     "canonicalDocumentDryRun": 8,
     "composeQuietConfigurations": 2,
-    "scope": "Affected-path local gates; required CI remains separately attached to final PR HEAD"
+    "scope": "Affected-path local gates; required CI remains separately attached to final PR HEAD",
+    "integratedTestedSha": "e263bc1f71f309f41a377eebceb715fc0bf7d179",
+    "postFixtureTavilyUnitTests": 6,
+    "runtimeInputsUnchangedAfterFixtureRepair": true
   },
   "presentationScope": {
     "savedTerminalRunsOnly": true,
@@ -283,14 +287,43 @@
     {
       "case": "kb-positive",
       "path": "media/citation-ui-served-answer-kb-positive-2026-09-29.png",
-      "sha256": "1f5c4dacebdacbea19be0bf22e0725f27a525e17d7c0e6e4cd958262c071ab85",
-      "visuallyReviewed": true
+      "sha256": "66f17164187188cff51e942676970f758fe66d3653269e6c12935a72258bd702",
+      "visuallyReviewed": true,
+      "capturedOnSourceBuildSha": "a53c940ef2e8fc263353907f2c8306ab9959d8e2"
     },
     {
       "case": "mixed-kb-web",
       "path": "media/citation-ui-served-answer-mixed-kb-web-2026-09-29.png",
       "sha256": "4d09a5879adfbf75135f755c53c16b58d31d0d6ffa3c3642af78e8464c55c9e0",
-      "visuallyReviewed": true
+      "visuallyReviewed": true,
+      "capturedOnSourceBuildSha": "a53c940ef2e8fc263353907f2c8306ab9959d8e2"
     }
-  ]
+  ],
+  "initialUnifiedDeployment": {
+    "sourceBuildSha": "e263bc1f71f309f41a377eebceb715fc0bf7d179",
+    "runtimeImageId": "sha256:59e4b8c5c13fef4dc30fa9b6e30c0ae4bf36c8e993390e8ea2664cdcc4209857",
+    "htmlSha256": "c5965c8563d59734fe4e5173623f707a432f59b6dc0e98cc0336367e7f8828ac",
+    "fiveCasesPassed": true,
+    "sources": 8,
+    "bodyMarkers": 12
+  },
+  "publicGateRepair": {
+    "initialBlockedCommit": "4a3c74cfb20e3e4da3f35ca151efcb16c7ad0488",
+    "reason": "Two fictional URL userinfo literals matched the email heuristic; no real contact or credential",
+    "repair": "Equivalent Java Unicode escapes preserve the exact JSON URLs; no allowlist change",
+    "fixtureRepairCommit": "a53c940ef2e8fc263353907f2c8306ab9959d8e2",
+    "sourceCountCorrection": {
+      "earlierNarrative": 9,
+      "actualSumFromUnchangedCaseRecords": 8,
+      "caseSourceCounts": [
+        3,
+        2,
+        1,
+        2,
+        0
+      ]
+    }
+  },
+  "totalSources": 8,
+  "totalBodyMarkers": 12
 }
