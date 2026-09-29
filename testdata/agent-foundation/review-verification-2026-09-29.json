@@ -1,0 +1,145 @@
+{
+  "schema_version": "0.1.0",
+  "baseline_sha": "60e0290c0670ad3f2f8da303b0b1513e056670c8",
+  "candidate_shas": {
+    "runtime": "2356522d40745ecf0386255203cb78e5d7e29f35",
+    "knowledge": "9235a03ad457137b78b322a8694fa0c921d20dad"
+  },
+  "result": "round_zero_review_passed",
+  "java_unit": [
+    {
+      "name": "com.deepresearch.service.AgentContextServiceTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.deepresearch.workflow.DifyToolServiceTest",
+      "tests": "13",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.deepresearch.workflow.WorkflowServiceTest",
+      "tests": "12",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.deepresearch.tool.TavilySearchClientTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.deepresearch.workflow.DifyCitationValidatorTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.deepresearch.service.ConversationCompressionCoordinatorTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.deepresearch.workflow.DifyWorkflowAdapterTest",
+      "tests": "23",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.deepresearch.service.ReactAgentServiceTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.deepresearch.workflow.DifyContextInputsTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.deepresearch.service.ConversationSummaryServiceTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.deepresearch.service.MemorySelectionServiceTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "postgres_integration": [
+    {
+      "name": "com.deepresearch.service.ConversationCompressionPostgresIT",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.deepresearch.workflow.DifyWebSourcesIT",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "offline_tests": {
+    "runtime": 38,
+    "knowledge": 39
+  },
+  "runtime_fixtures": 1,
+  "knowledge_fixtures": 11,
+  "bridge_negative_rejections": [
+    "MEMORY_VERSION_MISMATCH",
+    "MEMORY_CONTENT_BINDING_INVALID",
+    "REFERENCE_SCOPE_MISMATCH",
+    "MEMORY_RECHECK_REQUIRED",
+    "MEMORY_RECHECK_REQUIRED",
+    "MEMORY_NOT_PUBLISHABLE",
+    "MEMORY_NOT_REUSABLE"
+  ],
+  "review_findings_fixed": [
+    "snapshot retained older messages",
+    "serialized snapshot exceeded 24000 chars",
+    "overdue memory accepted as result_reuse",
+    "contested memory accepted as result_reuse"
+  ],
+  "before_fix": {
+    "new_java_cases": 2,
+    "actual_failed_cases": 2,
+    "escaped_snapshot_chars": 24902,
+    "overdue_context_accepted": true,
+    "contested_context_accepted": true
+  },
+  "model_calls": 0,
+  "live_deployment": false,
+  "semantic_verification": false,
+  "file_sha256": {
+    "contracts/agent/v0/runtime.schema.json": "b66c21be0d565a5b753ee47d932119b9383800e0fb026173fcf087325939c997",
+    "contracts/agent/v0/knowledge.schema.json": "3835da4cad31aed901a8a223ba2c95768b22af222c4e139525c0eeb7c3b83081",
+    "contracts/agent/v0/validate_runtime.py": "f80b015a59d6f5e95070a5d1ecb89c9d15cdbcd653a053ce194653b89fa2bc9f",
+    "contracts/agent/v0/validate_bridge.py": "a03160b45d3d990b8c89a7fe6e718db6458f0dc7b390f7314c46f68d855694e7",
+    "testdata/agent-foundation/evidence/validate_knowledge.py": "5b35ad8730b0182c19bec39715f8de93061ec561ddcace1eb0f4389f1b875cc9",
+    "contracts/agent/v0/validate.py": "eb1e73d4d9baa1f3ba671f5ac4b4d80d8abcc90f9ac25995d370af520d5ff1cb",
+    "src/main/java/com/deepresearch/workflow/WorkflowService.java": "2a9a0adc3685a0cd7434da065a512d16af124caec75565c351d565a8afcf6fa3",
+    "src/test/java/com/deepresearch/workflow/WorkflowServiceTest.java": "c805e99fdda173829b3cd8e76c3f5a360036e8b47b926a7be6046784b5ce5664"
+  }
+}

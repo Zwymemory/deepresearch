@@ -348,13 +348,32 @@ public class WorkflowService {
         if (json.length() <= 24_000) {
             return json;
         }
-        return writeJson(Map.of(
-                "sessionSummary", truncate(context.sessionSummary(), 4000),
-                "recentConversation", context.recentConversation().stream().limit(4)
-                        .map(value -> truncate(value, 1200)).toList(),
-                "memories", context.memories().stream().limit(3)
-                        .map(value -> truncate(value, 1200)).toList(),
-                "truncated", true));
+        List<String> recent = new ArrayList<>(context.recentConversation().stream()
+                .skip(Math.max(0, context.recentConversation().size() - 4))
+                .map(value -> truncate(value, 1200)).toList());
+        List<String> memories = new ArrayList<>(context.memories().stream().limit(3)
+                .map(value -> truncate(value, 1200)).toList());
+        String summary = truncate(context.sessionSummary(), 4000);
+        snapshot.put("recentConversation", recent);
+        snapshot.put("memories", memories);
+        snapshot.put("truncated", true);
+        json = writeJson(snapshot);
+        while (json.length() > 24_000) {
+            // Bound the serialized payload, including escaping, while prioritizing
+            // the newest message and preserving complete JSON and Unicode code points.
+            if (!memories.isEmpty()) memories.remove(memories.size() - 1);
+            else if (recent.size() > 1) recent.remove(0);
+            else if (!summary.isEmpty()) {
+                summary = DifyContextInputs.truncate(summary, summary.codePointCount(0, summary.length()) / 2);
+                snapshot.put("sessionSummary", summary);
+            } else if (!recent.isEmpty()) {
+                String newest = recent.get(0);
+                if (newest.isEmpty()) recent.remove(0);
+                else recent.set(0, DifyContextInputs.truncate(newest, newest.codePointCount(0, newest.length()) / 2));
+            } else throw new IllegalStateException("context metadata exceeds snapshot limit");
+            json = writeJson(snapshot);
+        }
+        return json;
     }
 
     private int progress(String stage) {

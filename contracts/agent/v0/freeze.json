@@ -1,0 +1,16 @@
+{
+  "schema_version": "0.1.0",
+  "status": "frozen_for_round_1",
+  "scope": "schemas_and_offline_rules",
+  "review": "docs/agent/FOUNDATION_REVIEW_2026-09-29.md",
+  "file_sha256": {
+    "contracts/agent/v0/runtime.schema.json": "b66c21be0d565a5b753ee47d932119b9383800e0fb026173fcf087325939c997",
+    "contracts/agent/v0/knowledge.schema.json": "3835da4cad31aed901a8a223ba2c95768b22af222c4e139525c0eeb7c3b83081",
+    "contracts/agent/v0/validate_runtime.py": "f80b015a59d6f5e95070a5d1ecb89c9d15cdbcd653a053ce194653b89fa2bc9f",
+    "contracts/agent/v0/validate_bridge.py": "a03160b45d3d990b8c89a7fe6e718db6458f0dc7b390f7314c46f68d855694e7",
+    "testdata/agent-foundation/evidence/validate_knowledge.py": "5b35ad8730b0182c19bec39715f8de93061ec561ddcace1eb0f4389f1b875cc9"
+  },
+  "semantic_verification": false,
+  "runtime_agent_implemented": false,
+  "live_deployment": false
+}

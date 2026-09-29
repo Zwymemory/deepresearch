@@ -83,6 +83,42 @@ class WorkflowServiceTest {
     }
 
     @Test
+    void oversizedSnapshotKeepsTheNewestConversationMessages() throws Exception {
+        List<String> recent = java.util.stream.IntStream.rangeClosed(1, 8)
+                .mapToObj(index -> "message-" + index + ":" + "x".repeat(2000)).toList();
+        String snapshot = createSnapshot(recent, "s".repeat(4000),
+                java.util.Collections.nCopies(5, "m".repeat(2000)));
+        var stored = new ObjectMapper().readTree(snapshot).path("recentConversation");
+        assertThat(stored.get(stored.size() - 1).asText()).startsWith("message-8:");
+        assertThat(stored.get(stored.size() - 2).asText()).startsWith("message-7:");
+        var prepared = DifyContextInputs.prepare(snapshot, new ObjectMapper());
+        assertThat(prepared.sessionSummaryInput()).contains("message-8:", "message-7:");
+    }
+
+    @Test
+    void snapshotLimitAccountsForEscapedCharactersAndKeepsValidJson() throws Exception {
+        String text = "\"".repeat(4000);
+        String snapshot = createSnapshot(java.util.Collections.nCopies(8, text), text,
+                java.util.Collections.nCopies(5, text));
+        assertThat(snapshot.length()).isLessThanOrEqualTo(24_000);
+        assertThat(new ObjectMapper().readTree(snapshot).isObject()).isTrue();
+        assertThat(new ObjectMapper().readTree(snapshot).path("truncated").asBoolean()).isTrue();
+    }
+
+    private String createSnapshot(List<String> recent, String summary, List<String> memories) {
+        when(repository.findByIdempotency(anyString(), anyString(), anyString())).thenReturn(Optional.empty());
+        when(agentStateService.prepareContext(anyString(), anyString(), anyString())).thenReturn(
+                new AgentStateService.AgentContext("sess-bounded", "tenant-a:user-a", summary,
+                        recent, memories, new AgentResearchResponse.Diagnostics(true, recent.size(),
+                        memories.size(), memories.size(), "fixture")));
+        when(repository.insertRun(any())).thenReturn(1);
+        service.create(new CreateRequest("continue", null, List.of("kb_search")), "bounded-context-key");
+        ArgumentCaptor<WorkflowRepository.NewRun> inserted = ArgumentCaptor.forClass(WorkflowRepository.NewRun.class);
+        verify(repository).insertRun(inserted.capture());
+        return inserted.getValue().contextSnapshotJson();
+    }
+
+    @Test
     void duplicateDifyIdempotencyKeyReplaysWithoutCreatingSecondState() {
         WorkflowService dify = new WorkflowService(repository, agentStateService,
                 userContextService, new ObjectMapper(), true, Duration.ofSeconds(120), "dify");

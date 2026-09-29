@@ -61,6 +61,21 @@ def validate_bridge(peer_root: Path, peer):
     stale = copy.deepcopy(knowledge["records"])
     next(row for row in stale if row["record_type"] == "MemoryItem")["freshness"] = "needs_recheck"
     rejected(runtime, stale, "MEMORY_RECHECK_REQUIRED")
+    overdue = copy.deepcopy(knowledge)
+    overdue["memory_requests"] = []  # AgentContext is the consumer on this route.
+    next(row for row in overdue["records"] if row["record_type"] == "MemoryItem")["review"]["due_at"]["value"] = context["prepared_at"]
+    peer.validate_bundle(overdue, authorized_scope=overdue["authorized_scope"], external_registry=trusted_for_b)
+    rejected(runtime, overdue["records"], "MEMORY_RECHECK_REQUIRED")
+    contested = copy.deepcopy(knowledge)
+    contested["memory_requests"] = []
+    for row in contested["records"]:
+        if row["record_type"] == "Claim" and row["claim_id"] in memory["result"]["claim_ids"]:
+            row["decision_status"] = "contested"
+        if row["record_type"] == "DecisionRecord" and row["decision_id"] in memory["result"]["decision_ids"]:
+            row.update(decision_status="contested", unresolved_evidence_ids=row["adopted_evidence_ids"],
+                       adopted_evidence_ids=[], gaps=["Unresolved fixture conflict"])
+    peer.validate_bundle(contested, authorized_scope=contested["authorized_scope"], external_registry=trusted_for_b)
+    rejected(runtime, contested["records"], "MEMORY_NOT_PUBLISHABLE")
     lead = copy.deepcopy(runtime)
     lead_entry = next(row for row in lead["records"] if row["record_type"] == "AgentContext")["entries"][2]
     stale_memory = next(row for row in stale if row["record_type"] == "MemoryItem")

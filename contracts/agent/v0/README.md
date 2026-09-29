@@ -1,6 +1,6 @@
-# Agent foundation contracts — 0.1.0 candidate
+# Agent foundation contracts — 0.1.0 frozen for round 1
 
-JSON Schema draft 2020-12。共同基线为 `60e0290c0670ad3f2f8da303b0b1513e056670c8`；主对话完成交叉审阅后才冻结。本目录的结构和离线规则已实现，新的 Agent 执行器及服务 API 仍属 proposed。
+JSON Schema draft 2020-12。共同基线为 `60e0290c0670ad3f2f8da303b0b1513e056670c8`；主对话已合并双方交付、修复审查问题并冻结结构与离线规则，摘要见 `freeze.json` 与 [统一审查](../../../docs/agent/FOUNDATION_REVIEW_2026-09-29.md)。新的 Agent 执行器及服务 API 仍属 proposed。
 
 | 文件 / 对象 | 负责人 | 作用 |
 | --- | --- | --- |
@@ -38,6 +38,10 @@ JSON Schema draft 2020-12。共同基线为 `60e0290c0670ad3f2f8da303b0b1513e056
 `FixtureReference` 是双方合成夹具的有类型引用登记：Project、Run、Task、Session、Receipt、Assessment、Context。它不是完整运行记录，也不是生产授权；完整对象仍必须满足相应 Schema。Run 引用不含 tools/agents 时，A 的任务校验不会默认授予任何权限。夹具内的授权声明只是测试输入；生产调用方必须从认证与授权服务提供范围。
 
 ## 验证入口
+
+统一审查补充：`result_reuse` 在上下文注入前还须检查 `prepared_at` 未到复查期限，所引用 Claim/Decision 均为 supported，Claim 仍为 fresh。到期或存在争议的资料只能作为待核查线索，不能按可复用成果接收。该检查仍不判断自然语言真伪，也不代替下一轮的原文查证与适用范围检查。
+
+`freeze.json` 固定两份 Schema 与关键离线规则的摘要。总入口校验摘要并报告冻结状态；后续契约变化需记录原因、兼容性及重新审查结果。下文关于“待集成/待冻结”的描述保留为两线开发时的操作说明，当前以冻结记录和统一审查为准。
 
 需要现有 Python 3.12 和 `requirements.txt` 中的已锁定依赖。本轮使用本机已有环境，没有下载依赖。标准引擎是 `jsonschema==4.26.0`、`referencing==0.37.0`，拒绝网络 Schema 解析。本机缺少可选格式依赖，因此显式注册两个标准库格式检查：date-time 要求真实日历、RFC3339 形状和时区，排除闰秒；uri 要求绝对 URI、ASCII 合法字符、有效百分号转义，以及 HTTP(S) 非空主机。它们是本契约使用的受限格式，不声称覆盖完整 RFC URI/IRI 标准。未登记的 format 必须失败；日期无效、错时区、错网址负例真实运行。来源 URL 与授权政策仍由独立规则检查。
 

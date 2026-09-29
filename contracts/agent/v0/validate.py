@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import subprocess
@@ -34,6 +35,12 @@ def main():
     parser.add_argument("--peer-checkout", type=Path, default=ROOT, help="Read-only B candidate or integrated root")
     parser.add_argument("--java", action="store_true", help="Include scoped local Java tests, no live providers")
     args = parser.parse_args()
+    freeze_path = ROOT / "contracts/agent/v0/freeze.json"
+    freeze = load_json(freeze_path) if freeze_path.is_file() else None
+    if freeze:
+        for path, expected in freeze["file_sha256"].items():
+            if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != expected:
+                raise ValueError("CONTRACT_FREEZE_MISMATCH: " + path)
     validator(load_json(ROOT / "contracts/agent/v0/runtime.schema.json"))
     run_tests(ROOT / "testdata/agent-foundation/runtime")
     manifest = load_json(ROOT / "testdata/agent-foundation/runtime/manifest.json")
@@ -74,7 +81,7 @@ def main():
         "schema_engine": "jsonschema Draft202012Validator with registered local date-time/uri profiles; remote resolution forbidden",
         "peer_checkout": None if args.runtime_only else str(args.peer_checkout.resolve()),
         "runtime_fixtures": results, "knowledge_fixtures": peer_results, "bridge": bridge_result,
-        "contract_freeze": "pending_main_review", "model_use_verified": False,
+        "contract_freeze": freeze["status"] if freeze else "pending_main_review", "model_use_verified": False,
         "live_deployment": False, "semantic_verification": False}, ensure_ascii=False, indent=2))
 
 

@@ -251,6 +251,17 @@ def validate_bundle(bundle, *, authorized_scope, knowledge_records=(), knowledge
                         raise ContractError("MEMORY_RESULT_REQUIRED")
                     if entry["purpose"] == "result_reuse" and memory["freshness"] != "fresh":
                         raise ContractError("MEMORY_RECHECK_REQUIRED")
+                    if entry["purpose"] == "result_reuse":
+                        due = memory["review"]["due_at"]
+                        if due["status"] == "known" and datetime.fromisoformat(row["prepared_at"].upper().replace("Z", "+00:00")) >= datetime.fromisoformat(due["value"].upper().replace("Z", "+00:00")):
+                            raise ContractError("MEMORY_RECHECK_REQUIRED")
+                        for identity in memory["result"]["decision_ids"]:
+                            if find("DecisionRecord", identity, row)["decision_status"] != "supported":
+                                raise ContractError("MEMORY_NOT_PUBLISHABLE")
+                        for identity in memory["result"]["claim_ids"]:
+                            claim = find("Claim", identity, row)
+                            if claim["decision_status"] != "supported" or claim["freshness"] != "fresh":
+                                raise ContractError("MEMORY_NOT_PUBLISHABLE")
                     preview, clipped = memory_preview(memory)
                     if entry["content"] != preview or entry["truncated"] != clipped:
                         raise ContractError("MEMORY_CONTENT_BINDING_INVALID")
