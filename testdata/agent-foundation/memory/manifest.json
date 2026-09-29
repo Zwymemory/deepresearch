@@ -1,0 +1,35 @@
+{
+  "schema_version": "0.1.0",
+  "fixture_origin": "synthetic",
+  "implementation_status": "expected_only",
+  "cases": [
+    {
+      "fixture_id": "session-continuation",
+      "path": "testdata/agent-foundation/memory/session-continuation.json"
+    },
+    {
+      "fixture_id": "reuse-current-version",
+      "path": "testdata/agent-foundation/memory/reuse-current-version.json"
+    },
+    {
+      "fixture_id": "reuse-version-change",
+      "path": "testdata/agent-foundation/memory/reuse-version-change.json"
+    },
+    {
+      "fixture_id": "evidence-invalidated",
+      "path": "testdata/agent-foundation/memory/evidence-invalidated.json"
+    },
+    {
+      "fixture_id": "deletion-tombstone",
+      "path": "testdata/agent-foundation/memory/deletion-tombstone.json"
+    },
+    {
+      "fixture_id": "access-isolation",
+      "path": "testdata/agent-foundation/memory/access-isolation.json"
+    },
+    {
+      "fixture_id": "idempotent-write",
+      "path": "testdata/agent-foundation/memory/idempotent-write.json"
+    }
+  ]
+}

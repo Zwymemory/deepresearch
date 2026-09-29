@@ -99,7 +99,8 @@
             "title": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 10000
+              "maxLength": 10000,
+              "pattern": "\\S"
             },
             "locator": {
               "oneOf": [
@@ -162,7 +163,8 @@
                     "path": {
                       "type": "string",
                       "minLength": 1,
-                      "maxLength": 10000
+                      "maxLength": 10000,
+                      "pattern": "\\S"
                     }
                   },
                   "required": [
@@ -203,7 +205,8 @@
                     "value": {
                       "type": "string",
                       "minLength": 1,
-                      "maxLength": 10000
+                      "maxLength": 10000,
+                      "pattern": "\\S"
                     }
                   },
                   "required": [
@@ -224,7 +227,8 @@
                     "reason": {
                       "type": "string",
                       "minLength": 1,
-                      "maxLength": 10000
+                      "maxLength": 10000,
+                      "pattern": "\\S"
                     }
                   },
                   "required": [
@@ -267,7 +271,8 @@
                     "reason": {
                       "type": "string",
                       "minLength": 1,
-                      "maxLength": 10000
+                      "maxLength": 10000,
+                      "pattern": "\\S"
                     }
                   },
                   "required": [
@@ -316,7 +321,8 @@
                     "reason": {
                       "type": "string",
                       "minLength": 1,
-                      "maxLength": 10000
+                      "maxLength": 10000,
+                      "pattern": "\\S"
                     }
                   },
                   "required": [
@@ -387,7 +393,8 @@
             "text": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 10000
+              "maxLength": 10000,
+              "pattern": "\\S"
             },
             "sha256": {
               "type": "string",
@@ -415,7 +422,8 @@
             "subject": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 10000
+              "maxLength": 10000,
+              "pattern": "\\S"
             },
             "version": {
               "oneOf": [
@@ -428,7 +436,8 @@
                     "value": {
                       "type": "string",
                       "minLength": 1,
-                      "maxLength": 10000
+                      "maxLength": 10000,
+                      "pattern": "\\S"
                     }
                   },
                   "required": [
@@ -449,7 +458,8 @@
                     "reason": {
                       "type": "string",
                       "minLength": 1,
-                      "maxLength": 10000
+                      "maxLength": 10000,
+                      "pattern": "\\S"
                     }
                   },
                   "required": [
@@ -492,7 +502,8 @@
                     "reason": {
                       "type": "string",
                       "minLength": 1,
-                      "maxLength": 10000
+                      "maxLength": 10000,
+                      "pattern": "\\S"
                     }
                   },
                   "required": [
@@ -509,7 +520,8 @@
               "items": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 10000
+                "maxLength": 10000,
+                "pattern": "\\S"
               },
               "minItems": 0,
               "maxItems": 100,
@@ -555,7 +567,8 @@
                 "reason": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 10000
+                  "maxLength": 10000,
+                  "pattern": "\\S"
                 }
               },
               "required": [
@@ -593,7 +606,8 @@
             {
               "type": "string",
               "minLength": 1,
-              "maxLength": 10000
+              "maxLength": 10000,
+              "pattern": "\\S"
             },
             {
               "type": "null"
@@ -665,7 +679,8 @@
         "text": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 10000
+          "maxLength": 10000,
+          "pattern": "\\S"
         },
         "kind": {
           "enum": [
@@ -680,7 +695,8 @@
             "subject": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 10000
+              "maxLength": 10000,
+              "pattern": "\\S"
             },
             "version": {
               "oneOf": [
@@ -693,7 +709,8 @@
                     "value": {
                       "type": "string",
                       "minLength": 1,
-                      "maxLength": 10000
+                      "maxLength": 10000,
+                      "pattern": "\\S"
                     }
                   },
                   "required": [
@@ -714,7 +731,8 @@
                     "reason": {
                       "type": "string",
                       "minLength": 1,
-                      "maxLength": 10000
+                      "maxLength": 10000,
+                      "pattern": "\\S"
                     }
                   },
                   "required": [
@@ -757,7 +775,8 @@
                     "reason": {
                       "type": "string",
                       "minLength": 1,
-                      "maxLength": 10000
+                      "maxLength": 10000,
+                      "pattern": "\\S"
                     }
                   },
                   "required": [
@@ -774,7 +793,8 @@
               "items": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 10000
+                "maxLength": 10000,
+                "pattern": "\\S"
               },
               "minItems": 0,
               "maxItems": 100,
@@ -821,7 +841,8 @@
                   "text": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 10000
+                    "maxLength": 10000,
+                    "pattern": "\\S"
                   },
                   "sha256": {
                     "type": "string",
@@ -977,7 +998,8 @@
               "reason": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 10000
+                "maxLength": 10000,
+                "pattern": "\\S"
               }
             },
             "required": [
@@ -1005,14 +1027,16 @@
         "rationale": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 10000
+          "maxLength": 10000,
+          "pattern": "\\S"
         },
         "gaps": {
           "type": "array",
           "items": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 10000
+            "maxLength": 10000,
+            "pattern": "\\S"
           },
           "minItems": 0,
           "maxItems": 100,
@@ -1167,7 +1191,8 @@
           "items": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 10000
+            "maxLength": 10000,
+            "pattern": "\\S"
           },
           "minItems": 0,
           "maxItems": 100,
@@ -1315,7 +1340,8 @@
           "items": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 10000
+            "maxLength": 10000,
+            "pattern": "\\S"
           },
           "minItems": 0,
           "maxItems": 100,
@@ -1326,7 +1352,8 @@
           "items": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 10000
+            "maxLength": 10000,
+            "pattern": "\\S"
           },
           "minItems": 0,
           "maxItems": 100,
@@ -1432,7 +1459,8 @@
             "subject": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 10000
+              "maxLength": 10000,
+              "pattern": "\\S"
             },
             "version": {
               "oneOf": [
@@ -1445,7 +1473,8 @@
                     "value": {
                       "type": "string",
                       "minLength": 1,
-                      "maxLength": 10000
+                      "maxLength": 10000,
+                      "pattern": "\\S"
                     }
                   },
                   "required": [
@@ -1466,7 +1495,8 @@
                     "reason": {
                       "type": "string",
                       "minLength": 1,
-                      "maxLength": 10000
+                      "maxLength": 10000,
+                      "pattern": "\\S"
                     }
                   },
                   "required": [
@@ -1509,7 +1539,8 @@
                     "reason": {
                       "type": "string",
                       "minLength": 1,
-                      "maxLength": 10000
+                      "maxLength": 10000,
+                      "pattern": "\\S"
                     }
                   },
                   "required": [
@@ -1526,7 +1557,8 @@
               "items": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 10000
+                "maxLength": 10000,
+                "pattern": "\\S"
               },
               "minItems": 0,
               "maxItems": 100,
@@ -1549,7 +1581,8 @@
                 "goal": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 10000
+                  "maxLength": 10000,
+                  "pattern": "\\S"
                 },
                 "completed_task_ids": {
                   "type": "array",
@@ -1580,7 +1613,8 @@
                   "items": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 10000
+                    "maxLength": 10000,
+                    "pattern": "\\S"
                   },
                   "minItems": 0,
                   "maxItems": 100,
@@ -1603,7 +1637,8 @@
                   "items": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 10000
+                    "maxLength": 10000,
+                    "pattern": "\\S"
                   },
                   "minItems": 0,
                   "maxItems": 100,
@@ -1633,7 +1668,8 @@
                 "summary": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 10000
+                  "maxLength": 10000,
+                  "pattern": "\\S"
                 },
                 "claim_ids": {
                   "type": "array",
@@ -1676,7 +1712,8 @@
                   "items": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 10000
+                    "maxLength": 10000,
+                    "pattern": "\\S"
                   },
                   "minItems": 0,
                   "maxItems": 100,
@@ -1833,7 +1870,8 @@
                     "reason": {
                       "type": "string",
                       "minLength": 1,
-                      "maxLength": 10000
+                      "maxLength": 10000,
+                      "pattern": "\\S"
                     }
                   },
                   "required": [
@@ -1876,7 +1914,8 @@
                     "reason": {
                       "type": "string",
                       "minLength": 1,
-                      "maxLength": 10000
+                      "maxLength": 10000,
+                      "pattern": "\\S"
                     }
                   },
                   "required": [
@@ -1921,7 +1960,8 @@
                 "reason": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 10000
+                  "maxLength": 10000,
+                  "pattern": "\\S"
                 },
                 "version": {
                   "type": "integer",
@@ -2025,6 +2065,94 @@
               }
             ]
           }
+        }
+      ]
+    },
+    "Measurement": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "known"
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "status",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "unknown"
+            },
+            "value": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 10000,
+              "pattern": "\\S"
+            }
+          },
+          "required": [
+            "status",
+            "value",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "KnownTime": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "known"
+            },
+            "value": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "status",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "unknown"
+            },
+            "value": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 10000,
+              "pattern": "\\S"
+            }
+          },
+          "required": [
+            "status",
+            "value",
+            "reason"
+          ],
+          "additionalProperties": false
         }
       ]
     }

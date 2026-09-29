@@ -1,0 +1,23 @@
+{
+  "schema_version": "0.1.0",
+  "fixture_origin": "synthetic",
+  "implementation_status": "expected_only",
+  "cases": [
+    {
+      "fixture_id": "empty-retrieval",
+      "path": "testdata/agent-foundation/evidence/empty-retrieval.json"
+    },
+    {
+      "fixture_id": "wrong-material",
+      "path": "testdata/agent-foundation/evidence/wrong-material.json"
+    },
+    {
+      "fixture_id": "version-difference",
+      "path": "testdata/agent-foundation/evidence/version-difference.json"
+    },
+    {
+      "fixture_id": "unresolved-conflict",
+      "path": "testdata/agent-foundation/evidence/unresolved-conflict.json"
+    }
+  ]
+}

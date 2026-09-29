@@ -4,7 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 ID = {"type": "string", "minLength": 1, "maxLength": 128, "pattern": r"^\S+$"}
-TEXT = {"type": "string", "minLength": 1, "maxLength": 10000}
+TEXT = {"type": "string", "minLength": 1, "maxLength": 10000, "pattern": r"\S"}
 TIME = {"type": "string", "format": "date-time"}
 HASH = {"type": "string", "pattern": "^[a-f0-9]{64}$"}
 
@@ -120,11 +120,13 @@ def build():
                              "else": {"properties": {"progress": {"type": "null"}, "result": {"type": "object"}}}}]}}]
     definitions = dict(Evidence=evidence, Claim=claim, DecisionRecord=decision, Challenge=challenge,
                        ResearchPacket=packet, MemoryItem=memory)
+    record_names = tuple(definitions)
+    definitions.update(Measurement=known({"type": "number", "minimum": 0}), KnownTime=known(TIME))
     return {"$schema": "https://json-schema.org/draft/2020-12/schema",
             "$id": "https://deepresearch.local/contracts/agent/v0/knowledge.schema.json",
             "title": "Proposed Agent knowledge records 0.1.0",
             "$comment": "Round0 executable structure/integrity contract; no semantic adjudication or deployed memory API.",
-            "oneOf": [ref(name) for name in definitions], "$defs": definitions}
+            "oneOf": [ref(name) for name in record_names], "$defs": definitions}
 
 
 if __name__ == "__main__":

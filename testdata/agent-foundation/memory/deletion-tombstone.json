@@ -1,0 +1,298 @@
+{
+  "fixture_id": "deletion-tombstone",
+  "fixture_origin": "synthetic",
+  "implementation_status": "expected_only",
+  "question": "What is the controlled limit?",
+  "authorized_scope": {
+    "tenant_id": "fixture-tenant",
+    "owner_id": "fixture-owner",
+    "project_id": "fixture-project"
+  },
+  "records": [
+    {
+      "record_type": "Claim",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "claim_id": "claim-empty",
+      "run_id": "fixture-run",
+      "text": "A limit cannot be established from empty retrieval",
+      "kind": "factual",
+      "applicability": {
+        "subject": "Synthetic ExampleService request limit",
+        "version": {
+          "status": "known",
+          "value": "1.0"
+        },
+        "valid_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No real-world valid time is asserted"
+        },
+        "conditions": [
+          "Controlled fixture only"
+        ]
+      },
+      "evidence_links": [],
+      "decision_status": "insufficient",
+      "freshness": "fresh"
+    },
+    {
+      "record_type": "DecisionRecord",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "decision_id": "decision-claim-empty",
+      "claim_id": "claim-empty",
+      "run_id": "fixture-run",
+      "decision_status": "insufficient",
+      "adopted_evidence_ids": [],
+      "dismissed_evidence": [],
+      "unresolved_evidence_ids": [],
+      "rationale": "Predeclared synthetic fixture label; not runtime semantic adjudication",
+      "gaps": [
+        "Synthetic research still has an unresolved gap"
+      ],
+      "policy_version": "0.1.0",
+      "recorded_at": "2026-09-29T08:00:00Z",
+      "assessment_method": "fixture_label"
+    },
+    {
+      "record_type": "ResearchPacket",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "packet_id": "fixture-packet",
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "context_id": null,
+      "status": "partial",
+      "claim_ids": [
+        "claim-empty"
+      ],
+      "evidence_ids": [],
+      "decision_ids": [
+        "decision-claim-empty"
+      ],
+      "challenge_ids": [],
+      "limitations": [
+        "All source texts and labels are fictional"
+      ],
+      "gaps": [
+        "Further investigation expected, not executed"
+      ],
+      "recorded_at": "2026-09-29T08:00:00Z"
+    },
+    {
+      "record_type": "MemoryItem",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "memory_id": "fixture-memory",
+      "memory_type": "research_progress",
+      "version": 2,
+      "previous_version": 1,
+      "lifecycle": "deleted",
+      "freshness": "superseded",
+      "applicability": {
+        "subject": "Synthetic ExampleService request limit",
+        "version": {
+          "status": "known",
+          "value": "1.0"
+        },
+        "valid_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No real-world valid time is asserted"
+        },
+        "conditions": [
+          "Controlled fixture only"
+        ]
+      },
+      "progress": null,
+      "result": null,
+      "origin": {
+        "run_ids": [
+          "fixture-run"
+        ],
+        "session_ids": [
+          "fixture-old-session"
+        ],
+        "packet_ids": [
+          "fixture-packet"
+        ]
+      },
+      "dependencies": [],
+      "created_at": "2026-09-29T08:00:00Z",
+      "updated_at": "2026-09-29T08:00:00Z",
+      "review": {
+        "reviewed_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No real reviewer executed"
+        },
+        "due_at": {
+          "status": "known",
+          "value": "2026-10-01T08:00:00Z"
+        },
+        "policy": "time_bound"
+      },
+      "idempotency_key": "fixture-memory-create",
+      "tombstone": {
+        "deleted_at": "2026-09-29T08:00:00Z",
+        "reason": "Controlled user deletion",
+        "version": 2
+      }
+    }
+  ],
+  "external_refs": [
+    {
+      "record_type": "ResearchProject",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Run",
+      "run_id": "fixture-run",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Task",
+      "task_id": "fixture-task",
+      "run_id": "fixture-run",
+      "status": "done",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Task",
+      "task_id": "fixture-next-task",
+      "run_id": "fixture-run",
+      "status": "pending",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Session",
+      "session_id": "fixture-old-session",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Session",
+      "session_id": "fixture-new-session",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Assessment",
+      "assessment_id": "fixture-label",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    }
+  ],
+  "usage": {
+    "cost": {
+      "status": "unknown",
+      "value": null,
+      "reason": "No model/provider was called"
+    }
+  },
+  "expected_actions": [
+    "purge result/index/cache",
+    "deny old checkpoint reinjection"
+  ],
+  "expected_decision": "insufficient",
+  "prohibited_inferences": [
+    "Do not describe fixture labels as verified Internet facts",
+    "No autonomous tool action or real memory restart was executed"
+  ],
+  "memory_requests": [],
+  "checkpoint_candidate": {
+    "record_type": "MemoryItem",
+    "schema_version": "0.1.0",
+    "tenant_id": "fixture-tenant",
+    "owner_id": "fixture-owner",
+    "project_id": "fixture-project",
+    "memory_id": "fixture-memory",
+    "memory_type": "research_progress",
+    "version": 1,
+    "previous_version": null,
+    "lifecycle": "active",
+    "freshness": "fresh",
+    "applicability": {
+      "subject": "Synthetic ExampleService request limit",
+      "version": {
+        "status": "known",
+        "value": "1.0"
+      },
+      "valid_at": {
+        "status": "unknown",
+        "value": null,
+        "reason": "No real-world valid time is asserted"
+      },
+      "conditions": [
+        "Controlled fixture only"
+      ]
+    },
+    "progress": {
+      "goal": "Continue synthetic limit research",
+      "completed_task_ids": [
+        "fixture-task"
+      ],
+      "pending_task_ids": [
+        "fixture-next-task"
+      ],
+      "excluded_routes": [
+        "Empty initial search"
+      ],
+      "unresolved_claim_ids": [
+        "claim-empty"
+      ],
+      "gaps": [
+        "Cost measurement remains pending"
+      ]
+    },
+    "result": null,
+    "origin": {
+      "run_ids": [
+        "fixture-run"
+      ],
+      "session_ids": [
+        "fixture-old-session"
+      ],
+      "packet_ids": [
+        "fixture-packet"
+      ]
+    },
+    "dependencies": [],
+    "created_at": "2026-09-29T08:00:00Z",
+    "updated_at": "2026-09-29T08:00:00Z",
+    "review": {
+      "reviewed_at": {
+        "status": "unknown",
+        "value": null,
+        "reason": "No real reviewer executed"
+      },
+      "due_at": {
+        "status": "known",
+        "value": "2026-10-01T08:00:00Z"
+      },
+      "policy": "time_bound"
+    },
+    "idempotency_key": "fixture-memory-create",
+    "tombstone": null
+  }
+}

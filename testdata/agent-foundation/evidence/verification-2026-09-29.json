@@ -1,0 +1,402 @@
+{
+  "schema_version": "0.1.0",
+  "contract_status": "proposed_awaiting_freeze",
+  "validator_status": "implemented_offline_subset_and_integrity_rules",
+  "python_version": "3.14.5",
+  "schema_sha256": "3835da4cad31aed901a8a223ba2c95768b22af222c4e139525c0eeb7c3b83081",
+  "test_methods": 39,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "actually_rejected_cases": [
+    {
+      "test": "test_changed_version_can_be_a_lead_but_not_reused_as_fact",
+      "expected_code": "MEMORY_RECHECK_REQUIRED",
+      "observed_code": "MEMORY_RECHECK_REQUIRED",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_closed_schema_rejects_unexpected_authority_fields",
+      "expected_code": "STRUCTURE",
+      "observed_code": "STRUCTURE_ONEOF",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_cross_owner_record_and_cross_project_reference",
+      "expected_code": "AUTHORIZED_SCOPE_MISMATCH",
+      "observed_code": "AUTHORIZED_SCOPE_MISMATCH",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_cross_owner_record_and_cross_project_reference",
+      "expected_code": "REFERENCE_SCOPE_MISMATCH",
+      "observed_code": "REFERENCE_SCOPE_MISMATCH",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_cross_user_tenant_project_access_denied_before_retrieval",
+      "expected_code": "MEMORY_ACCESS_DENIED",
+      "observed_code": "MEMORY_ACCESS_DENIED",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_cross_user_tenant_project_access_denied_before_retrieval",
+      "expected_code": "MEMORY_ACCESS_DENIED",
+      "observed_code": "MEMORY_ACCESS_DENIED",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_cross_user_tenant_project_access_denied_before_retrieval",
+      "expected_code": "MEMORY_ACCESS_DENIED",
+      "observed_code": "MEMORY_ACCESS_DENIED",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_decision_cannot_adopt_a_refute_as_support",
+      "expected_code": "DECISION_RELATION_MISMATCH",
+      "observed_code": "DECISION_RELATION_MISMATCH",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_deleted_memory_blocks_old_checkpoint_candidate",
+      "expected_code": "MEMORY_DELETED",
+      "observed_code": "MEMORY_DELETED",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_deleted_or_stale_memory_dependency_blocks_fresh_result",
+      "expected_code": "MEMORY_DEPENDENCY_CHANGED",
+      "observed_code": "MEMORY_DEPENDENCY_CHANGED",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_deleted_or_stale_memory_dependency_blocks_fresh_result",
+      "expected_code": "MEMORY_DEPENDENCY_CHANGED",
+      "observed_code": "MEMORY_DEPENDENCY_CHANGED",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_deleted_or_stale_memory_dependency_blocks_fresh_result",
+      "expected_code": "MEMORY_DEPENDENCY_CHANGED",
+      "observed_code": "MEMORY_DEPENDENCY_CHANGED",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_deleted_or_stale_memory_dependency_blocks_fresh_result",
+      "expected_code": "MEMORY_DEPENDENCY_CHANGED",
+      "observed_code": "MEMORY_DEPENDENCY_CHANGED",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_exact_quote_range_and_hash",
+      "expected_code": "QUOTE_RANGE_MISMATCH",
+      "observed_code": "QUOTE_RANGE_MISMATCH",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_exact_quote_range_and_hash",
+      "expected_code": "QUOTE_HASH_MISMATCH",
+      "observed_code": "QUOTE_HASH_MISMATCH",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_fixture_path_cannot_escape",
+      "expected_code": "FIXTURE_PATH_ESCAPE",
+      "observed_code": "FIXTURE_PATH_ESCAPE",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_idempotency_accepts_identical_and_rejects_changed_payload",
+      "expected_code": "MEMORY_IDEMPOTENCY_CONFLICT",
+      "observed_code": "MEMORY_IDEMPOTENCY_CONFLICT",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_invalid_timestamp_or_missing_timezone",
+      "expected_code": "STRUCTURE",
+      "observed_code": "STRUCTURE_ONEOF",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_invalid_timestamp_or_missing_timezone",
+      "expected_code": "STRUCTURE",
+      "observed_code": "STRUCTURE_ONEOF",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_invalid_timestamp_or_missing_timezone",
+      "expected_code": "STRUCTURE",
+      "observed_code": "STRUCTURE_ONEOF",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_invalidated_source_cannot_leave_memory_fresh",
+      "expected_code": "MEMORY_DEPENDENCY_CHANGED",
+      "observed_code": "MEMORY_DEPENDENCY_CHANGED",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_memory_dependency_and_decision_closure",
+      "expected_code": "MEMORY_DEPENDENCY_MISSING",
+      "observed_code": "MEMORY_DEPENDENCY_MISSING",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_memory_dependency_and_decision_closure",
+      "expected_code": "MEMORY_DECISION_CLAIM_MISMATCH",
+      "observed_code": "MEMORY_DECISION_CLAIM_MISMATCH",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_memory_dependency_cycle_is_rejected",
+      "expected_code": "MEMORY_DEPENDENCY_CYCLE",
+      "observed_code": "MEMORY_DEPENDENCY_CYCLE",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_memory_revision_conflict",
+      "expected_code": "MEMORY_VERSION_CONFLICT",
+      "observed_code": "MEMORY_VERSION_CONFLICT",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_missing_evidence_reference",
+      "expected_code": "REFERENCE_MISSING",
+      "observed_code": "REFERENCE_MISSING",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_new_session_continuation_requires_distinct_session",
+      "expected_code": "NEW_SESSION_CONTINUATION_REQUIRED",
+      "observed_code": "NEW_SESSION_CONTINUATION_REQUIRED",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_packet_reference_must_exist",
+      "expected_code": "REFERENCE_MISSING",
+      "observed_code": "REFERENCE_MISSING",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_receipt_must_be_completed_authorized_and_same_run",
+      "expected_code": "RECEIPT_BINDING_INVALID",
+      "observed_code": "RECEIPT_BINDING_INVALID",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_receipt_must_be_completed_authorized_and_same_run",
+      "expected_code": "RECEIPT_BINDING_INVALID",
+      "observed_code": "RECEIPT_BINDING_INVALID",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_receipt_must_be_completed_authorized_and_same_run",
+      "expected_code": "RECEIPT_BINDING_INVALID",
+      "observed_code": "RECEIPT_BINDING_INVALID",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_reusable_result_missing_source",
+      "expected_code": "STRUCTURE",
+      "observed_code": "STRUCTURE_ONEOF",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_review_deadline_blocks_old_result",
+      "expected_code": "MEMORY_RECHECK_REQUIRED",
+      "observed_code": "MEMORY_RECHECK_REQUIRED",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_snapshot_bytes_are_bound",
+      "expected_code": "SNAPSHOT_HASH_MISMATCH",
+      "observed_code": "SNAPSHOT_HASH_MISMATCH",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_snapshot_cannot_hide_a_different_fixture_file",
+      "expected_code": "FIXTURE_SOURCE_MISMATCH",
+      "observed_code": "FIXTURE_SOURCE_MISMATCH",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_source_metadata_cannot_be_replaced_inside_valid_receipt",
+      "expected_code": "RECEIPT_SOURCE_MISMATCH",
+      "observed_code": "RECEIPT_SOURCE_MISMATCH",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_stale_claim_cannot_leave_result_memory_fresh",
+      "expected_code": "MEMORY_DEPENDENCY_CHANGED",
+      "observed_code": "MEMORY_DEPENDENCY_CHANGED",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_supported_cannot_mask_unresolved_conflict",
+      "expected_code": "UNRESOLVED_CONFLICT",
+      "observed_code": "UNRESOLVED_CONFLICT",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_synthetic_source_cannot_be_labelled_real_web",
+      "expected_code": "SOURCE_KIND_MISMATCH",
+      "observed_code": "SOURCE_KIND_MISMATCH",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_unicode_offsets_are_codepoints_not_bytes",
+      "expected_code": "QUOTE_RANGE_MISMATCH",
+      "observed_code": "QUOTE_RANGE_MISMATCH",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_unicode_offsets_are_codepoints_not_bytes",
+      "expected_code": "QUOTE_RANGE_MISMATCH",
+      "observed_code": "QUOTE_RANGE_MISMATCH",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_unknown_cost_cannot_be_zero",
+      "expected_code": "STRUCTURE",
+      "observed_code": "STRUCTURE_ONEOF",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_unknown_publication_time_cannot_be_zero",
+      "expected_code": "STRUCTURE",
+      "observed_code": "STRUCTURE_ONEOF",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_version_specific_source_not_universal",
+      "expected_code": "EVIDENCE_VERSION_SCOPE_MISMATCH",
+      "observed_code": "EVIDENCE_VERSION_SCOPE_MISMATCH",
+      "actually_rejected": true
+    },
+    {
+      "test": "test_write_revision_conflict",
+      "expected_code": "MEMORY_WRITE_VERSION_CONFLICT",
+      "observed_code": "MEMORY_WRITE_VERSION_CONFLICT",
+      "actually_rejected": true
+    }
+  ],
+  "positive_fixtures": [
+    {
+      "fixture_id": "empty-retrieval",
+      "records_checked": 3,
+      "memory_requests": [],
+      "semantic_verification": false,
+      "runtime_execution": false
+    },
+    {
+      "fixture_id": "wrong-material",
+      "records_checked": 6,
+      "memory_requests": [],
+      "semantic_verification": false,
+      "runtime_execution": false
+    },
+    {
+      "fixture_id": "version-difference",
+      "records_checked": 7,
+      "memory_requests": [],
+      "semantic_verification": false,
+      "runtime_execution": false
+    },
+    {
+      "fixture_id": "unresolved-conflict",
+      "records_checked": 6,
+      "memory_requests": [],
+      "semantic_verification": false,
+      "runtime_execution": false
+    },
+    {
+      "fixture_id": "session-continuation",
+      "records_checked": 4,
+      "memory_requests": [
+        {
+          "operation": "resume",
+          "memory_id": "fixture-memory",
+          "eligibility": "allowed_by_fixture_rules",
+          "runtime_execution": false
+        }
+      ],
+      "semantic_verification": false,
+      "runtime_execution": false
+    },
+    {
+      "fixture_id": "reuse-current-version",
+      "records_checked": 8,
+      "memory_requests": [
+        {
+          "operation": "reuse_as_evidence",
+          "memory_id": "fixture-memory",
+          "eligibility": "allowed_by_fixture_rules",
+          "runtime_execution": false
+        }
+      ],
+      "semantic_verification": false,
+      "runtime_execution": false
+    },
+    {
+      "fixture_id": "reuse-version-change",
+      "records_checked": 8,
+      "memory_requests": [
+        {
+          "operation": "select_as_lead",
+          "memory_id": "fixture-memory",
+          "eligibility": "allowed_by_fixture_rules",
+          "runtime_execution": false
+        }
+      ],
+      "semantic_verification": false,
+      "runtime_execution": false
+    },
+    {
+      "fixture_id": "evidence-invalidated",
+      "records_checked": 8,
+      "memory_requests": [
+        {
+          "operation": "select_as_lead",
+          "memory_id": "fixture-memory",
+          "eligibility": "allowed_by_fixture_rules",
+          "runtime_execution": false
+        }
+      ],
+      "semantic_verification": false,
+      "runtime_execution": false
+    },
+    {
+      "fixture_id": "deletion-tombstone",
+      "records_checked": 4,
+      "memory_requests": [],
+      "semantic_verification": false,
+      "runtime_execution": false
+    },
+    {
+      "fixture_id": "access-isolation",
+      "records_checked": 8,
+      "memory_requests": [],
+      "semantic_verification": false,
+      "runtime_execution": false
+    },
+    {
+      "fixture_id": "idempotent-write",
+      "records_checked": 8,
+      "memory_requests": [
+        {
+          "operation": "reuse_as_evidence",
+          "memory_id": "fixture-memory",
+          "eligibility": "allowed_by_fixture_rules",
+          "runtime_execution": false
+        }
+      ],
+      "semantic_verification": false,
+      "runtime_execution": false
+    }
+  ],
+  "semantic_verification": false,
+  "runtime_execution": false,
+  "database_or_cache_deletion_test": false,
+  "full_draft2020_12_conformance": false,
+  "external_registry_scope": "controlled fixture labels, not production authentication"
+}

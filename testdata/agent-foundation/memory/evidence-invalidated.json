@@ -1,0 +1,522 @@
+{
+  "fixture_id": "evidence-invalidated",
+  "fixture_origin": "synthetic",
+  "implementation_status": "expected_only",
+  "question": "Why do version 1.0 and 2.0 list different limits?",
+  "authorized_scope": {
+    "tenant_id": "fixture-tenant",
+    "owner_id": "fixture-owner",
+    "project_id": "fixture-project"
+  },
+  "records": [
+    {
+      "record_type": "Evidence",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "evidence_id": "version-v1",
+      "version": 1,
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "receipt_id": "fixture-receipt-version-v1",
+      "source": {
+        "source_id": "source-version-v1",
+        "kind": "synthetic_fixture",
+        "title": "Synthetic version-v1",
+        "locator": {
+          "kind": "fixture_file",
+          "path": "testdata/agent-foundation/evidence/sources/version-v1.md"
+        },
+        "version": {
+          "status": "known",
+          "value": "1.0"
+        },
+        "published_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "Synthetic source has no publication date"
+        },
+        "observed_at": "2026-09-29T08:00:00Z",
+        "source_group": {
+          "status": "known",
+          "value": "group-version-v1"
+        },
+        "derivation": "original",
+        "parent_source_id": null,
+        "authority": "fixture_label"
+      },
+      "snapshot": {
+        "kind": "full_text",
+        "text": "# 合成来源：version-v1 🧪\n\nVersion 1.0 allows 10 requests.\n",
+        "sha256": "89228a6ee85619136604b5f75e508c568db2b8a846a967126704a683d561b8bc",
+        "encoding": "utf-8",
+        "offset_unit": "unicode_codepoint"
+      },
+      "applicability": {
+        "subject": "Synthetic ExampleService request limit",
+        "version": {
+          "status": "known",
+          "value": "1.0"
+        },
+        "valid_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No real-world valid time is asserted"
+        },
+        "conditions": [
+          "Controlled fixture only"
+        ]
+      },
+      "retrieval_score": {
+        "status": "unknown",
+        "value": null,
+        "reason": "No retrieval engine executed"
+      },
+      "freshness": "fresh",
+      "availability": "available",
+      "validity": "unassessed",
+      "invalidation_reason": null
+    },
+    {
+      "record_type": "Claim",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "claim_id": "claim-v1",
+      "run_id": "fixture-run",
+      "text": "Version 1.0 allows 10 requests.",
+      "kind": "factual",
+      "applicability": {
+        "subject": "Synthetic ExampleService request limit",
+        "version": {
+          "status": "known",
+          "value": "1.0"
+        },
+        "valid_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No real-world valid time is asserted"
+        },
+        "conditions": [
+          "Controlled fixture only"
+        ]
+      },
+      "evidence_links": [
+        {
+          "evidence_id": "version-v1",
+          "relation": "supports",
+          "quote": {
+            "start": 21,
+            "end": 52,
+            "text": "Version 1.0 allows 10 requests.",
+            "sha256": "da10fea30596a7a6098cd763bb609ac6cdf70720861a4ee987657290d7c3ff16"
+          },
+          "assessment_method": "fixture_label",
+          "assessment_ref": "fixture-label"
+        }
+      ],
+      "decision_status": "supported",
+      "freshness": "fresh"
+    },
+    {
+      "record_type": "DecisionRecord",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "decision_id": "decision-claim-v1",
+      "claim_id": "claim-v1",
+      "run_id": "fixture-run",
+      "decision_status": "supported",
+      "adopted_evidence_ids": [
+        "version-v1"
+      ],
+      "dismissed_evidence": [],
+      "unresolved_evidence_ids": [],
+      "rationale": "Predeclared synthetic fixture label; not runtime semantic adjudication",
+      "gaps": [],
+      "policy_version": "0.1.0",
+      "recorded_at": "2026-09-29T08:00:00Z",
+      "assessment_method": "fixture_label"
+    },
+    {
+      "record_type": "Evidence",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "evidence_id": "version-v2",
+      "version": 2,
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "receipt_id": "fixture-receipt-version-v2",
+      "source": {
+        "source_id": "source-version-v2",
+        "kind": "synthetic_fixture",
+        "title": "Synthetic version-v2",
+        "locator": {
+          "kind": "fixture_file",
+          "path": "testdata/agent-foundation/evidence/sources/version-v2.md"
+        },
+        "version": {
+          "status": "known",
+          "value": "2.0"
+        },
+        "published_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "Synthetic source has no publication date"
+        },
+        "observed_at": "2026-09-29T08:00:00Z",
+        "source_group": {
+          "status": "known",
+          "value": "group-version-v2"
+        },
+        "derivation": "original",
+        "parent_source_id": null,
+        "authority": "fixture_label"
+      },
+      "snapshot": {
+        "kind": "full_text",
+        "text": "# 合成来源：version-v2 🧪\n\nVersion 2.0 allows 20 requests.\n",
+        "sha256": "d67ab62e69577b1b285ac97548d93d0c2ecf39f9f66b28693f250069893efc9e",
+        "encoding": "utf-8",
+        "offset_unit": "unicode_codepoint"
+      },
+      "applicability": {
+        "subject": "Synthetic ExampleService request limit",
+        "version": {
+          "status": "known",
+          "value": "2.0"
+        },
+        "valid_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No real-world valid time is asserted"
+        },
+        "conditions": [
+          "Controlled fixture only"
+        ]
+      },
+      "retrieval_score": {
+        "status": "unknown",
+        "value": null,
+        "reason": "No retrieval engine executed"
+      },
+      "freshness": "fresh",
+      "availability": "available",
+      "validity": "invalidated",
+      "invalidation_reason": "Controlled evidence correction notification"
+    },
+    {
+      "record_type": "Claim",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "claim_id": "claim-v2",
+      "run_id": "fixture-run",
+      "text": "Version 2.0 allows 20 requests.",
+      "kind": "factual",
+      "applicability": {
+        "subject": "Synthetic ExampleService request limit",
+        "version": {
+          "status": "known",
+          "value": "2.0"
+        },
+        "valid_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No real-world valid time is asserted"
+        },
+        "conditions": [
+          "Controlled fixture only"
+        ]
+      },
+      "evidence_links": [
+        {
+          "evidence_id": "version-v2",
+          "relation": "supports",
+          "quote": {
+            "start": 21,
+            "end": 52,
+            "text": "Version 2.0 allows 20 requests.",
+            "sha256": "8fd2993c5f10d3017dcafc18cb643b6f0a073eb62e465f5214c1e662557ad4b9"
+          },
+          "assessment_method": "fixture_label",
+          "assessment_ref": "fixture-label"
+        }
+      ],
+      "decision_status": "supported",
+      "freshness": "fresh"
+    },
+    {
+      "record_type": "DecisionRecord",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "decision_id": "decision-claim-v2",
+      "claim_id": "claim-v2",
+      "run_id": "fixture-run",
+      "decision_status": "supported",
+      "adopted_evidence_ids": [
+        "version-v2"
+      ],
+      "dismissed_evidence": [],
+      "unresolved_evidence_ids": [],
+      "rationale": "Predeclared synthetic fixture label; not runtime semantic adjudication",
+      "gaps": [],
+      "policy_version": "0.1.0",
+      "recorded_at": "2026-09-29T08:00:00Z",
+      "assessment_method": "fixture_label"
+    },
+    {
+      "record_type": "ResearchPacket",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "packet_id": "fixture-packet",
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "context_id": null,
+      "status": "complete",
+      "claim_ids": [
+        "claim-v1",
+        "claim-v2"
+      ],
+      "evidence_ids": [
+        "version-v1",
+        "version-v2"
+      ],
+      "decision_ids": [
+        "decision-claim-v1",
+        "decision-claim-v2"
+      ],
+      "challenge_ids": [],
+      "limitations": [
+        "All source texts and labels are fictional"
+      ],
+      "gaps": [],
+      "recorded_at": "2026-09-29T08:00:00Z"
+    },
+    {
+      "record_type": "MemoryItem",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "memory_id": "fixture-memory",
+      "memory_type": "reusable_result",
+      "version": 2,
+      "previous_version": 1,
+      "lifecycle": "active",
+      "freshness": "needs_recheck",
+      "applicability": {
+        "subject": "Synthetic ExampleService request limit",
+        "version": {
+          "status": "known",
+          "value": "2.0"
+        },
+        "valid_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No real-world valid time is asserted"
+        },
+        "conditions": [
+          "Controlled fixture only"
+        ]
+      },
+      "progress": null,
+      "result": {
+        "summary": "The controlled version 2.0 source declares a limit of 20 requests",
+        "claim_ids": [
+          "claim-v2"
+        ],
+        "decision_ids": [
+          "decision-claim-v2"
+        ],
+        "evidence_ids": [
+          "version-v2"
+        ],
+        "limitations": [
+          "Applies only to the controlled 2.0 fixture"
+        ]
+      },
+      "origin": {
+        "run_ids": [
+          "fixture-run"
+        ],
+        "session_ids": [
+          "fixture-old-session"
+        ],
+        "packet_ids": [
+          "fixture-packet"
+        ]
+      },
+      "dependencies": [
+        {
+          "record_type": "Claim",
+          "record_id": "claim-v2",
+          "version": 1,
+          "snapshot_sha256": null
+        },
+        {
+          "record_type": "DecisionRecord",
+          "record_id": "decision-claim-v2",
+          "version": 1,
+          "snapshot_sha256": null
+        },
+        {
+          "record_type": "Evidence",
+          "record_id": "version-v2",
+          "version": 1,
+          "snapshot_sha256": "d67ab62e69577b1b285ac97548d93d0c2ecf39f9f66b28693f250069893efc9e"
+        }
+      ],
+      "created_at": "2026-09-29T08:00:00Z",
+      "updated_at": "2026-09-29T08:00:00Z",
+      "review": {
+        "reviewed_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No real reviewer executed"
+        },
+        "due_at": {
+          "status": "known",
+          "value": "2026-10-01T08:00:00Z"
+        },
+        "policy": "time_bound"
+      },
+      "idempotency_key": "fixture-memory-create",
+      "tombstone": null
+    }
+  ],
+  "external_refs": [
+    {
+      "record_type": "ResearchProject",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Run",
+      "run_id": "fixture-run",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Task",
+      "task_id": "fixture-task",
+      "run_id": "fixture-run",
+      "status": "done",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Task",
+      "task_id": "fixture-next-task",
+      "run_id": "fixture-run",
+      "status": "pending",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Session",
+      "session_id": "fixture-old-session",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Session",
+      "session_id": "fixture-new-session",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Assessment",
+      "assessment_id": "fixture-label",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Receipt",
+      "receipt_id": "fixture-receipt-version-v1",
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "status": "completed",
+      "authorized": true,
+      "source_bindings": [
+        {
+          "source_id": "source-version-v1",
+          "snapshot_sha256": "89228a6ee85619136604b5f75e508c568db2b8a846a967126704a683d561b8bc",
+          "source_metadata_sha256": "b9cb46dfffea43320099b57e35241ff16d2a82d754e2bea3631c0ec8d2367d01"
+        }
+      ],
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Receipt",
+      "receipt_id": "fixture-receipt-version-v2",
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "status": "completed",
+      "authorized": true,
+      "source_bindings": [
+        {
+          "source_id": "source-version-v2",
+          "snapshot_sha256": "d67ab62e69577b1b285ac97548d93d0c2ecf39f9f66b28693f250069893efc9e",
+          "source_metadata_sha256": "8d7272f166ad956d2f4011079ec1a1c6245d964f51dddc306a450637a542da25"
+        }
+      ],
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    }
+  ],
+  "usage": {
+    "cost": {
+      "status": "unknown",
+      "value": null,
+      "reason": "No model/provider was called"
+    }
+  },
+  "expected_actions": [
+    "invalidate dependent result",
+    "reinvestigate before reuse"
+  ],
+  "expected_decision": "supported",
+  "prohibited_inferences": [
+    "Do not describe fixture labels as verified Internet facts",
+    "No autonomous tool action or real memory restart was executed"
+  ],
+  "memory_requests": [
+    {
+      "memory_id": "fixture-memory",
+      "version": 2,
+      "operation": "select_as_lead",
+      "authorized_scope": {
+        "tenant_id": "fixture-tenant",
+        "owner_id": "fixture-owner",
+        "project_id": "fixture-project"
+      },
+      "session_id": "fixture-new-session",
+      "target_version": {
+        "status": "known",
+        "value": "2.0"
+      },
+      "as_of": "2026-09-29T08:00:00Z"
+    }
+  ]
+}

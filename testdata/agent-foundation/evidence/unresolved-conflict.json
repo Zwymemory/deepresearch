@@ -1,0 +1,393 @@
+{
+  "fixture_id": "unresolved-conflict",
+  "fixture_origin": "synthetic",
+  "implementation_status": "expected_only",
+  "question": "What is the same-version controlled limit when peer records disagree?",
+  "authorized_scope": {
+    "tenant_id": "fixture-tenant",
+    "owner_id": "fixture-owner",
+    "project_id": "fixture-project"
+  },
+  "records": [
+    {
+      "record_type": "Evidence",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "evidence_id": "peer-first",
+      "version": 1,
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "receipt_id": "fixture-receipt-peer-first",
+      "source": {
+        "source_id": "source-peer-first",
+        "kind": "synthetic_fixture",
+        "title": "Synthetic peer-first",
+        "locator": {
+          "kind": "fixture_file",
+          "path": "testdata/agent-foundation/evidence/sources/peer-first.md"
+        },
+        "version": {
+          "status": "known",
+          "value": "1.0"
+        },
+        "published_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "Synthetic source has no publication date"
+        },
+        "observed_at": "2026-09-29T08:00:00Z",
+        "source_group": {
+          "status": "known",
+          "value": "group-peer-first"
+        },
+        "derivation": "original",
+        "parent_source_id": null,
+        "authority": "fixture_label"
+      },
+      "snapshot": {
+        "kind": "full_text",
+        "text": "# 合成来源：peer-first 🧪\n\nVersion 1.0 allows 10 requests. No authoritative tie-breaker is supplied.\n",
+        "sha256": "1253000c15bc08215eded4a14dcedcc61f5e1ab33507b7bf8cf27a631ef71f04",
+        "encoding": "utf-8",
+        "offset_unit": "unicode_codepoint"
+      },
+      "applicability": {
+        "subject": "Synthetic ExampleService request limit",
+        "version": {
+          "status": "known",
+          "value": "1.0"
+        },
+        "valid_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No real-world valid time is asserted"
+        },
+        "conditions": [
+          "Controlled fixture only"
+        ]
+      },
+      "retrieval_score": {
+        "status": "unknown",
+        "value": null,
+        "reason": "No retrieval engine executed"
+      },
+      "freshness": "fresh",
+      "availability": "available",
+      "validity": "unassessed",
+      "invalidation_reason": null
+    },
+    {
+      "record_type": "Evidence",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "evidence_id": "peer-second",
+      "version": 1,
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "receipt_id": "fixture-receipt-peer-second",
+      "source": {
+        "source_id": "source-peer-second",
+        "kind": "synthetic_fixture",
+        "title": "Synthetic peer-second",
+        "locator": {
+          "kind": "fixture_file",
+          "path": "testdata/agent-foundation/evidence/sources/peer-second.md"
+        },
+        "version": {
+          "status": "known",
+          "value": "1.0"
+        },
+        "published_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "Synthetic source has no publication date"
+        },
+        "observed_at": "2026-09-29T08:00:00Z",
+        "source_group": {
+          "status": "known",
+          "value": "group-peer-second"
+        },
+        "derivation": "original",
+        "parent_source_id": null,
+        "authority": "fixture_label"
+      },
+      "snapshot": {
+        "kind": "full_text",
+        "text": "# 合成来源：peer-second 🧪\n\nVersion 1.0 allows 20 requests. No authoritative tie-breaker is supplied.\n",
+        "sha256": "6e35f7e38e8ed15ce2ac592c4c5cfac6f4ddb7c92388c3e23d969bab4937002f",
+        "encoding": "utf-8",
+        "offset_unit": "unicode_codepoint"
+      },
+      "applicability": {
+        "subject": "Synthetic ExampleService request limit",
+        "version": {
+          "status": "known",
+          "value": "1.0"
+        },
+        "valid_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No real-world valid time is asserted"
+        },
+        "conditions": [
+          "Controlled fixture only"
+        ]
+      },
+      "retrieval_score": {
+        "status": "unknown",
+        "value": null,
+        "reason": "No retrieval engine executed"
+      },
+      "freshness": "fresh",
+      "availability": "available",
+      "validity": "unassessed",
+      "invalidation_reason": null
+    },
+    {
+      "record_type": "Claim",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "claim_id": "claim-conflict",
+      "run_id": "fixture-run",
+      "text": "Version 1.0 allows 10 requests",
+      "kind": "factual",
+      "applicability": {
+        "subject": "Synthetic ExampleService request limit",
+        "version": {
+          "status": "known",
+          "value": "1.0"
+        },
+        "valid_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No real-world valid time is asserted"
+        },
+        "conditions": [
+          "Controlled fixture only"
+        ]
+      },
+      "evidence_links": [
+        {
+          "evidence_id": "peer-first",
+          "relation": "supports",
+          "quote": {
+            "start": 21,
+            "end": 52,
+            "text": "Version 1.0 allows 10 requests.",
+            "sha256": "da10fea30596a7a6098cd763bb609ac6cdf70720861a4ee987657290d7c3ff16"
+          },
+          "assessment_method": "fixture_label",
+          "assessment_ref": "fixture-label"
+        },
+        {
+          "evidence_id": "peer-second",
+          "relation": "refutes",
+          "quote": {
+            "start": 22,
+            "end": 53,
+            "text": "Version 1.0 allows 20 requests.",
+            "sha256": "04444da5eaf06e83a1b056ff4b1753f92eb583d7fd2e335c10246f96776ea398"
+          },
+          "assessment_method": "fixture_label",
+          "assessment_ref": "fixture-label"
+        }
+      ],
+      "decision_status": "contested",
+      "freshness": "fresh"
+    },
+    {
+      "record_type": "DecisionRecord",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "decision_id": "decision-claim-conflict",
+      "claim_id": "claim-conflict",
+      "run_id": "fixture-run",
+      "decision_status": "contested",
+      "adopted_evidence_ids": [],
+      "dismissed_evidence": [],
+      "unresolved_evidence_ids": [
+        "peer-first",
+        "peer-second"
+      ],
+      "rationale": "Predeclared synthetic fixture label; not runtime semantic adjudication",
+      "gaps": [
+        "Synthetic research still has an unresolved gap"
+      ],
+      "policy_version": "0.1.0",
+      "recorded_at": "2026-09-29T08:00:00Z",
+      "assessment_method": "fixture_label"
+    },
+    {
+      "record_type": "Challenge",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "challenge_id": "challenge-conflict",
+      "claim_id": "claim-conflict",
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "kind": "direct_conflict",
+      "status": "unresolved",
+      "evidence_ids": [
+        "peer-first",
+        "peer-second"
+      ],
+      "requested_actions": [
+        "seek_counterevidence",
+        "stop_with_gaps"
+      ],
+      "response_decision_id": "decision-claim-conflict",
+      "remaining_gaps": [
+        "No independent tie-breaker"
+      ],
+      "recorded_at": "2026-09-29T08:00:00Z"
+    },
+    {
+      "record_type": "ResearchPacket",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "packet_id": "fixture-packet",
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "context_id": null,
+      "status": "partial",
+      "claim_ids": [
+        "claim-conflict"
+      ],
+      "evidence_ids": [
+        "peer-first",
+        "peer-second"
+      ],
+      "decision_ids": [
+        "decision-claim-conflict"
+      ],
+      "challenge_ids": [
+        "challenge-conflict"
+      ],
+      "limitations": [
+        "All source texts and labels are fictional"
+      ],
+      "gaps": [
+        "Further investigation expected, not executed"
+      ],
+      "recorded_at": "2026-09-29T08:00:00Z"
+    }
+  ],
+  "external_refs": [
+    {
+      "record_type": "ResearchProject",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Run",
+      "run_id": "fixture-run",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Task",
+      "task_id": "fixture-task",
+      "run_id": "fixture-run",
+      "status": "done",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Task",
+      "task_id": "fixture-next-task",
+      "run_id": "fixture-run",
+      "status": "pending",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Session",
+      "session_id": "fixture-old-session",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Session",
+      "session_id": "fixture-new-session",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Assessment",
+      "assessment_id": "fixture-label",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Receipt",
+      "receipt_id": "fixture-receipt-peer-first",
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "status": "completed",
+      "authorized": true,
+      "source_bindings": [
+        {
+          "source_id": "source-peer-first",
+          "snapshot_sha256": "1253000c15bc08215eded4a14dcedcc61f5e1ab33507b7bf8cf27a631ef71f04",
+          "source_metadata_sha256": "35c4275c08ad6656549f02170ec69fe782b51b7232923b3c42a15297c756a555"
+        }
+      ],
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Receipt",
+      "receipt_id": "fixture-receipt-peer-second",
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "status": "completed",
+      "authorized": true,
+      "source_bindings": [
+        {
+          "source_id": "source-peer-second",
+          "snapshot_sha256": "6e35f7e38e8ed15ce2ac592c4c5cfac6f4ddb7c92388c3e23d969bab4937002f",
+          "source_metadata_sha256": "5c3b9943e5e1a222a29dae8b79a40c24d780c2359848d30cebc0c091fc1aed32"
+        }
+      ],
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    }
+  ],
+  "usage": {
+    "cost": {
+      "status": "unknown",
+      "value": null,
+      "reason": "No model/provider was called"
+    }
+  },
+  "expected_actions": [
+    "seek independent origin",
+    "retain contested if no adjudicator available"
+  ],
+  "expected_decision": "contested",
+  "prohibited_inferences": [
+    "Do not describe fixture labels as verified Internet facts",
+    "No autonomous tool action or real memory restart was executed"
+  ]
+}

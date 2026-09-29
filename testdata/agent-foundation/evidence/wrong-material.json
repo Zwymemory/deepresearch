@@ -1,0 +1,391 @@
+{
+  "fixture_id": "wrong-material",
+  "fixture_origin": "synthetic",
+  "implementation_status": "expected_only",
+  "question": "Is the controlled 1.0 limit 99?",
+  "authorized_scope": {
+    "tenant_id": "fixture-tenant",
+    "owner_id": "fixture-owner",
+    "project_id": "fixture-project"
+  },
+  "records": [
+    {
+      "record_type": "Evidence",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "evidence_id": "wrong-guide",
+      "version": 1,
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "receipt_id": "fixture-receipt-wrong-guide",
+      "source": {
+        "source_id": "source-wrong-guide",
+        "kind": "synthetic_fixture",
+        "title": "Synthetic wrong-guide",
+        "locator": {
+          "kind": "fixture_file",
+          "path": "testdata/agent-foundation/evidence/sources/wrong-guide.md"
+        },
+        "version": {
+          "status": "known",
+          "value": "1.0"
+        },
+        "published_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "Synthetic source has no publication date"
+        },
+        "observed_at": "2026-09-29T08:00:00Z",
+        "source_group": {
+          "status": "known",
+          "value": "group-wrong-guide"
+        },
+        "derivation": "original",
+        "parent_source_id": null,
+        "authority": "fixture_label"
+      },
+      "snapshot": {
+        "kind": "full_text",
+        "text": "# 合成来源：wrong-guide 🧪\n\nVersion 1.0 allows 99 requests. This controlled guide was deliberately corrupted.\n",
+        "sha256": "55ce2a41b539fb63f5839d06ab5e32331d0878cff4ce3ec3ebc9fabd1c73a68f",
+        "encoding": "utf-8",
+        "offset_unit": "unicode_codepoint"
+      },
+      "applicability": {
+        "subject": "Synthetic ExampleService request limit",
+        "version": {
+          "status": "known",
+          "value": "1.0"
+        },
+        "valid_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No real-world valid time is asserted"
+        },
+        "conditions": [
+          "Controlled fixture only"
+        ]
+      },
+      "retrieval_score": {
+        "status": "unknown",
+        "value": null,
+        "reason": "No retrieval engine executed"
+      },
+      "freshness": "fresh",
+      "availability": "available",
+      "validity": "unassessed",
+      "invalidation_reason": null
+    },
+    {
+      "record_type": "Evidence",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "evidence_id": "controlled-spec",
+      "version": 1,
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "receipt_id": "fixture-receipt-controlled-spec",
+      "source": {
+        "source_id": "source-controlled-spec",
+        "kind": "synthetic_fixture",
+        "title": "Synthetic controlled-spec",
+        "locator": {
+          "kind": "fixture_file",
+          "path": "testdata/agent-foundation/evidence/sources/controlled-spec.md"
+        },
+        "version": {
+          "status": "known",
+          "value": "1.0"
+        },
+        "published_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "Synthetic source has no publication date"
+        },
+        "observed_at": "2026-09-29T08:00:00Z",
+        "source_group": {
+          "status": "known",
+          "value": "group-controlled-spec"
+        },
+        "derivation": "original",
+        "parent_source_id": null,
+        "authority": "fixture_label"
+      },
+      "snapshot": {
+        "kind": "full_text",
+        "text": "# 合成来源：controlled-spec 🧪\n\nVersion 1.0 allows 10 requests. This is the synthetic oracle for this fixture.\n",
+        "sha256": "91b34aaff5647bf2065ea9f69095a435dca4aaf6354198b3d34db356aa619559",
+        "encoding": "utf-8",
+        "offset_unit": "unicode_codepoint"
+      },
+      "applicability": {
+        "subject": "Synthetic ExampleService request limit",
+        "version": {
+          "status": "known",
+          "value": "1.0"
+        },
+        "valid_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No real-world valid time is asserted"
+        },
+        "conditions": [
+          "Controlled fixture only"
+        ]
+      },
+      "retrieval_score": {
+        "status": "unknown",
+        "value": null,
+        "reason": "No retrieval engine executed"
+      },
+      "freshness": "fresh",
+      "availability": "available",
+      "validity": "unassessed",
+      "invalidation_reason": null
+    },
+    {
+      "record_type": "Claim",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "claim_id": "claim-wrong",
+      "run_id": "fixture-run",
+      "text": "The controlled 1.0 limit is 99",
+      "kind": "factual",
+      "applicability": {
+        "subject": "Synthetic ExampleService request limit",
+        "version": {
+          "status": "known",
+          "value": "1.0"
+        },
+        "valid_at": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No real-world valid time is asserted"
+        },
+        "conditions": [
+          "Controlled fixture only"
+        ]
+      },
+      "evidence_links": [
+        {
+          "evidence_id": "wrong-guide",
+          "relation": "supports",
+          "quote": {
+            "start": 22,
+            "end": 53,
+            "text": "Version 1.0 allows 99 requests.",
+            "sha256": "c99b848b24a1fa92e723615d4c8f47b96ab653ae628d0da40e86594a18e9cfd2"
+          },
+          "assessment_method": "fixture_label",
+          "assessment_ref": "fixture-label"
+        },
+        {
+          "evidence_id": "controlled-spec",
+          "relation": "refutes",
+          "quote": {
+            "start": 26,
+            "end": 57,
+            "text": "Version 1.0 allows 10 requests.",
+            "sha256": "da10fea30596a7a6098cd763bb609ac6cdf70720861a4ee987657290d7c3ff16"
+          },
+          "assessment_method": "fixture_label",
+          "assessment_ref": "fixture-label"
+        }
+      ],
+      "decision_status": "refuted",
+      "freshness": "fresh"
+    },
+    {
+      "record_type": "DecisionRecord",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "decision_id": "decision-claim-wrong",
+      "claim_id": "claim-wrong",
+      "run_id": "fixture-run",
+      "decision_status": "refuted",
+      "adopted_evidence_ids": [
+        "controlled-spec"
+      ],
+      "dismissed_evidence": [
+        {
+          "evidence_id": "wrong-guide",
+          "reason": "Predeclared corruption of this synthetic guide"
+        }
+      ],
+      "unresolved_evidence_ids": [],
+      "rationale": "Predeclared synthetic fixture label; not runtime semantic adjudication",
+      "gaps": [],
+      "policy_version": "0.1.0",
+      "recorded_at": "2026-09-29T08:00:00Z",
+      "assessment_method": "fixture_label"
+    },
+    {
+      "record_type": "Challenge",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "challenge_id": "challenge-wrong",
+      "claim_id": "claim-wrong",
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "kind": "incorrect_source",
+      "status": "resolved",
+      "evidence_ids": [
+        "controlled-spec"
+      ],
+      "requested_actions": [
+        "read_source",
+        "seek_counterevidence"
+      ],
+      "response_decision_id": "decision-claim-wrong",
+      "remaining_gaps": [],
+      "recorded_at": "2026-09-29T08:00:00Z"
+    },
+    {
+      "record_type": "ResearchPacket",
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "packet_id": "fixture-packet",
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "context_id": null,
+      "status": "complete",
+      "claim_ids": [
+        "claim-wrong"
+      ],
+      "evidence_ids": [
+        "wrong-guide",
+        "controlled-spec"
+      ],
+      "decision_ids": [
+        "decision-claim-wrong"
+      ],
+      "challenge_ids": [
+        "challenge-wrong"
+      ],
+      "limitations": [
+        "All source texts and labels are fictional"
+      ],
+      "gaps": [],
+      "recorded_at": "2026-09-29T08:00:00Z"
+    }
+  ],
+  "external_refs": [
+    {
+      "record_type": "ResearchProject",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Run",
+      "run_id": "fixture-run",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Task",
+      "task_id": "fixture-task",
+      "run_id": "fixture-run",
+      "status": "done",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Task",
+      "task_id": "fixture-next-task",
+      "run_id": "fixture-run",
+      "status": "pending",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Session",
+      "session_id": "fixture-old-session",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Session",
+      "session_id": "fixture-new-session",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Assessment",
+      "assessment_id": "fixture-label",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Receipt",
+      "receipt_id": "fixture-receipt-wrong-guide",
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "status": "completed",
+      "authorized": true,
+      "source_bindings": [
+        {
+          "source_id": "source-wrong-guide",
+          "snapshot_sha256": "55ce2a41b539fb63f5839d06ab5e32331d0878cff4ce3ec3ebc9fabd1c73a68f",
+          "source_metadata_sha256": "a8ccbb86544960e753c37962a1cc6dd4c329d8e12d8d573d0d30d3c929ee7961"
+        }
+      ],
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    },
+    {
+      "record_type": "Receipt",
+      "receipt_id": "fixture-receipt-controlled-spec",
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "status": "completed",
+      "authorized": true,
+      "source_bindings": [
+        {
+          "source_id": "source-controlled-spec",
+          "snapshot_sha256": "91b34aaff5647bf2065ea9f69095a435dca4aaf6354198b3d34db356aa619559",
+          "source_metadata_sha256": "67ec6f65b9f68c68ece5e3994219c068cdc9ba0e3e22eb4f2fca820148c8dc11"
+        }
+      ],
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project"
+    }
+  ],
+  "usage": {
+    "cost": {
+      "status": "unknown",
+      "value": null,
+      "reason": "No model/provider was called"
+    }
+  },
+  "expected_actions": [
+    "read_source",
+    "seek_counterevidence",
+    "correct draft or retain uncertainty"
+  ],
+  "expected_decision": "refuted",
+  "prohibited_inferences": [
+    "Do not describe fixture labels as verified Internet facts",
+    "No autonomous tool action or real memory restart was executed"
+  ]
+}
