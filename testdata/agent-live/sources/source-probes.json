@@ -1,0 +1,567 @@
+{
+  "schema_version": "1",
+  "scope": "B direct real source preparation; not a native JWT/model research run",
+  "baseline_sha": "b9b20ada48eed889a3ae486dbd429f934bfc7c64",
+  "direct_source_requests": 12,
+  "direct_source_limit": 16,
+  "control_requests": 9,
+  "request_count_including_failures": 21,
+  "requests": [
+    {
+      "sequence": 1,
+      "kind": "source",
+      "label": "tavily-iana",
+      "method": "POST",
+      "started_at": "2026-09-29T16:27:22.421519+00:00",
+      "finished_at": "2026-09-29T16:27:30.199341+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "4b16f13113a6dd24d035cf4709e22d64166cddbb98b418016f19748c35c29ef8",
+      "endpoint_reference": "https://api.tavily.com/search"
+    },
+    {
+      "sequence": 2,
+      "kind": "control",
+      "label": "existing-dataset-metadata",
+      "method": "GET",
+      "started_at": "2026-09-29T16:27:30.200262+00:00",
+      "finished_at": "2026-09-29T16:27:30.251849+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "72b4612a7d5f05e42e485f1fa8e29acf584f0542c6d0d17d53d70d19b580dbff",
+      "endpoint_reference": "configured-local-ragflow"
+    },
+    {
+      "sequence": 3,
+      "kind": "source",
+      "label": "production-safe-web-iana",
+      "method": "GET",
+      "started_at": "2026-09-29T16:28:47.416803+00:00",
+      "finished_at": "2026-09-29T16:28:47.557255+00:00",
+      "status": "error",
+      "error_code": "422 UNPROCESSABLE_ENTITY \"SOURCE_ADDRESS_DENIED\"",
+      "code_sha": "b9b20ada48eed889a3ae486dbd429f934bfc7c64",
+      "endpoint_reference": "https://www.iana.org/help/example-domains"
+    },
+    {
+      "sequence": 4,
+      "kind": "source",
+      "label": "iana-https-original",
+      "method": "GET",
+      "started_at": "2026-09-29T16:30:03.776603+00:00",
+      "finished_at": "2026-09-29T16:30:09.425938+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "9adb74216b75a090d7b8764453146efc9480942bedc0616c5406a009a5a9c43e",
+      "endpoint_reference": "https://www.iana.org/help/example-domains"
+    },
+    {
+      "sequence": 5,
+      "kind": "control",
+      "label": "authenticated-public-dns-iana",
+      "method": "GET",
+      "started_at": "2026-09-29T16:30:09.426483+00:00",
+      "finished_at": "2026-09-29T16:30:15.035555+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "60c9a786d70458e4658b5d2ac3bf20c7994af3246371d83159547d9536b19b72",
+      "endpoint_reference": "https://dns.google/resolve?name=www.iana.org&type=A"
+    },
+    {
+      "sequence": 6,
+      "kind": "source",
+      "label": "production-pinned-web-authenticated-dns",
+      "method": "GET",
+      "started_at": "2026-09-29T16:31:56.746431+00:00",
+      "finished_at": "2026-09-29T16:31:57.575806+00:00",
+      "status": "ok",
+      "snapshot_hash": "9fcf59ddeda8811d0631eae204201f1b93f98b493e07015dfbfb69db7b40bbb2",
+      "raw_response_hash": "9adb74216b75a090d7b8764453146efc9480942bedc0616c5406a009a5a9c43e",
+      "code_sha": "b9b20ada48eed889a3ae486dbd429f934bfc7c64",
+      "endpoint_reference": "https://www.iana.org/help/example-domains"
+    },
+    {
+      "sequence": 7,
+      "kind": "control",
+      "label": "create-owned-acceptance-dataset",
+      "method": "POST",
+      "started_at": "2026-09-29T16:33:08.411911+00:00",
+      "finished_at": "2026-09-29T16:33:08.457227+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "0a00728e7d3edd4db493ca3907fe0f3429c2e44706a34a3811b42baa690eb6c4",
+      "endpoint_reference": "configured-local-ragflow"
+    },
+    {
+      "sequence": 8,
+      "kind": "control",
+      "label": "upload-public-iana-example-domains",
+      "method": "POST",
+      "started_at": "2026-09-29T16:33:46.123973+00:00",
+      "finished_at": "2026-09-29T16:33:46.181799+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "f221cf544147cbc35aca040ac79b40f79dd2d323ee8fb8ffe59946c917378506",
+      "endpoint_reference": "configured-local-ragflow"
+    },
+    {
+      "sequence": 9,
+      "kind": "control",
+      "label": "upload-synthetic-orbit-conflict",
+      "method": "POST",
+      "started_at": "2026-09-29T16:33:46.182203+00:00",
+      "finished_at": "2026-09-29T16:33:46.198519+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "8eba1085ca674c6c644fe737019001504ab914b0529b7f8f4d86810069bf4437",
+      "endpoint_reference": "configured-local-ragflow"
+    },
+    {
+      "sequence": 10,
+      "kind": "control",
+      "label": "upload-synthetic-orbit-v1",
+      "method": "POST",
+      "started_at": "2026-09-29T16:33:46.198868+00:00",
+      "finished_at": "2026-09-29T16:33:46.214025+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "85972cceaf75e63876aa046eb23514c3660aa93f7cebb5b5fb49aba6ac33901c",
+      "endpoint_reference": "configured-local-ragflow"
+    },
+    {
+      "sequence": 11,
+      "kind": "control",
+      "label": "upload-synthetic-orbit-v2",
+      "method": "POST",
+      "started_at": "2026-09-29T16:33:46.214423+00:00",
+      "finished_at": "2026-09-29T16:33:46.229552+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "bf521ce2c09a777ff9f9fbd090f85fdf9a535f4b951db64d97b9c25350cdad69",
+      "endpoint_reference": "configured-local-ragflow"
+    },
+    {
+      "sequence": 12,
+      "kind": "control",
+      "label": "parse-owned-four-documents",
+      "method": "POST",
+      "started_at": "2026-09-29T16:33:46.229830+00:00",
+      "finished_at": "2026-09-29T16:33:46.356473+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "67e43e179791c55ee29b39330d2e497b57b9a2e813a449ad7c9021f87e592969",
+      "endpoint_reference": "configured-local-ragflow"
+    },
+    {
+      "sequence": 13,
+      "kind": "control",
+      "label": "owned-parse-status-01",
+      "method": "GET",
+      "started_at": "2026-09-29T16:35:20.521745+00:00",
+      "finished_at": "2026-09-29T16:35:20.557209+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "7ef6f2ea433b60e04b043b4e975b0ec4ea1d21ad9650f6709b0c0bbc40055bcd",
+      "endpoint_reference": "configured-local-ragflow"
+    },
+    {
+      "sequence": 14,
+      "kind": "source",
+      "label": "retrieval-public",
+      "method": "POST",
+      "started_at": "2026-09-29T16:35:51.790206+00:00",
+      "finished_at": "2026-09-29T16:35:52.125533+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "d3d6db623637238b4cf194431e8ef80a0d97f5a7bcafeb5dee9b8db043c48b6a",
+      "endpoint_reference": "configured-local-ragflow"
+    },
+    {
+      "sequence": 15,
+      "kind": "source",
+      "label": "retrieval-version",
+      "method": "POST",
+      "started_at": "2026-09-29T16:36:28.479813+00:00",
+      "finished_at": "2026-09-29T16:36:28.860258+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "2955646f67e54ae50b3cc313909ca5d27fcde88730fcfcad6109752cb005903d",
+      "endpoint_reference": "configured-local-ragflow"
+    },
+    {
+      "sequence": 16,
+      "kind": "source",
+      "label": "retrieval-conflict",
+      "method": "POST",
+      "started_at": "2026-09-29T16:36:28.860935+00:00",
+      "finished_at": "2026-09-29T16:36:29.180996+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "ec7340c609c111ed7781b9ea9ff51f957572c9a1a4d815f9b05207bcd01ead17",
+      "endpoint_reference": "configured-local-ragflow"
+    },
+    {
+      "sequence": 17,
+      "kind": "source",
+      "label": "retrieval-insufficient",
+      "method": "POST",
+      "started_at": "2026-09-29T16:36:29.182273+00:00",
+      "finished_at": "2026-09-29T16:36:29.487728+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "a522632be04c6589a20366f1860153fce246886325476b21c3a5e312a7dd7ab8",
+      "endpoint_reference": "configured-local-ragflow"
+    },
+    {
+      "sequence": 18,
+      "kind": "source",
+      "label": "original-public-iana-example-domains",
+      "method": "GET",
+      "started_at": "2026-09-29T16:36:46.856986+00:00",
+      "finished_at": "2026-09-29T16:36:46.880020+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "993fb3977a239261cb0377178a306a65472956b54cff6f8fd60939b6e2c571c5",
+      "endpoint_reference": "configured-local-ragflow"
+    },
+    {
+      "sequence": 19,
+      "kind": "source",
+      "label": "original-synthetic-orbit-conflict",
+      "method": "GET",
+      "started_at": "2026-09-29T16:36:46.880280+00:00",
+      "finished_at": "2026-09-29T16:36:46.891319+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "fae91bff52f8f1fb8aae43c63d8abfb3fbe85eaa044ee3c4a91c4b0e0cdece4c",
+      "endpoint_reference": "configured-local-ragflow"
+    },
+    {
+      "sequence": 20,
+      "kind": "source",
+      "label": "original-synthetic-orbit-v1",
+      "method": "GET",
+      "started_at": "2026-09-29T16:36:46.891644+00:00",
+      "finished_at": "2026-09-29T16:36:46.899822+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "44ccaa6ff17741191361ec1a25cbf1c21a84ea8c7455741ba5b887783a6e5862",
+      "endpoint_reference": "configured-local-ragflow"
+    },
+    {
+      "sequence": 21,
+      "kind": "source",
+      "label": "original-synthetic-orbit-v2",
+      "method": "GET",
+      "started_at": "2026-09-29T16:36:46.900171+00:00",
+      "finished_at": "2026-09-29T16:36:46.909995+00:00",
+      "status": "ok",
+      "http_status": 200,
+      "raw_sha256": "d2604d091aab4be15d4411fe2a1ed86b420f4a191ced8c6255523b4d92d62b37",
+      "endpoint_reference": "configured-local-ragflow"
+    }
+  ],
+  "retrieval_receipts": [
+    {
+      "probe": "14-retrieval-public",
+      "total": 4,
+      "ranked_hits": [
+        {
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8aaa41a2bc2311f18a819d2ead8954c1",
+          "id": "e4ec689d63440796",
+          "document_keyword": "public-iana-example-domains.md",
+          "similarity": 0.4458840172531576
+        },
+        {
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab280f6bc2311f18a819d2ead8954c1",
+          "id": "7a957fffe59d59d1",
+          "document_keyword": "synthetic-orbit-v1.md",
+          "similarity": 0.22969783688216316
+        },
+        {
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab4ffc0bc2311f18a819d2ead8954c1",
+          "id": "bd05d474b2727877",
+          "document_keyword": "synthetic-orbit-v2.md",
+          "similarity": 0.22921423688216314
+        },
+        {
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab01c80bc2311f18a819d2ead8954c1",
+          "id": "256bcb0a9fd8149c",
+          "document_keyword": "synthetic-orbit-conflict.md",
+          "similarity": 0.22436725688216316
+        }
+      ]
+    },
+    {
+      "probe": "15-retrieval-version",
+      "total": 3,
+      "ranked_hits": [
+        {
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab280f6bc2311f18a819d2ead8954c1",
+          "id": "7a957fffe59d59d1",
+          "document_keyword": "synthetic-orbit-v1.md",
+          "similarity": 0.44888532904312883
+        },
+        {
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab4ffc0bc2311f18a819d2ead8954c1",
+          "id": "bd05d474b2727877",
+          "document_keyword": "synthetic-orbit-v2.md",
+          "similarity": 0.41747119782865694
+        },
+        {
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab01c80bc2311f18a819d2ead8954c1",
+          "id": "256bcb0a9fd8149c",
+          "document_keyword": "synthetic-orbit-conflict.md",
+          "similarity": 0.3623277375292643
+        }
+      ]
+    },
+    {
+      "probe": "16-retrieval-conflict",
+      "total": 3,
+      "ranked_hits": [
+        {
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab01c80bc2311f18a819d2ead8954c1",
+          "id": "256bcb0a9fd8149c",
+          "document_keyword": "synthetic-orbit-conflict.md",
+          "similarity": 0.4083802536907508
+        },
+        {
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab4ffc0bc2311f18a819d2ead8954c1",
+          "id": "bd05d474b2727877",
+          "document_keyword": "synthetic-orbit-v2.md",
+          "similarity": 0.3798320584412018
+        },
+        {
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab280f6bc2311f18a819d2ead8954c1",
+          "id": "7a957fffe59d59d1",
+          "document_keyword": "synthetic-orbit-v1.md",
+          "similarity": 0.2905817544810739
+        }
+      ]
+    },
+    {
+      "probe": "17-retrieval-insufficient",
+      "total": 3,
+      "ranked_hits": [
+        {
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab4ffc0bc2311f18a819d2ead8954c1",
+          "id": "bd05d474b2727877",
+          "document_keyword": "synthetic-orbit-v2.md",
+          "similarity": 0.3584774419782191
+        },
+        {
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab01c80bc2311f18a819d2ead8954c1",
+          "id": "256bcb0a9fd8149c",
+          "document_keyword": "synthetic-orbit-conflict.md",
+          "similarity": 0.3573909169782191
+        },
+        {
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab280f6bc2311f18a819d2ead8954c1",
+          "id": "7a957fffe59d59d1",
+          "document_keyword": "synthetic-orbit-v1.md",
+          "similarity": 0.3567406579782191
+        }
+      ]
+    }
+  ],
+  "original_snapshots": [
+    {
+      "title": "public-iana-example-domains.md",
+      "source_classification": "real-public-curated",
+      "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+      "document_id": "8aaa41a2bc2311f18a819d2ead8954c1",
+      "chunk_id": "e4ec689d63440796",
+      "snapshot_sha256": "c394abc66a65a19ee716069d42c876a2a2caef521299bd19ef56960ea925f598",
+      "snapshot_codepoints": 670,
+      "snapshot_kind": "document_chunk",
+      "truncated": false,
+      "original_content_field": "content_with_weight",
+      "uploaded_material_sha256": "f86a580eee7bb04a6929d6f2b165825e7ef1f506f4bf54a7119c976f35e122be",
+      "parsed_text_differs_from_uploaded_markdown": true,
+      "reviewed_quote_ranges": [
+        {
+          "start": 249,
+          "end": 351,
+          "sha256": "34693b797d47a80eb5902a3eb20b8290083a734189ecb8840dedd6fa97891d34",
+          "paragraph_complete": true,
+          "text_omitted_from_public_artifact": true
+        },
+        {
+          "start": 352,
+          "end": 563,
+          "sha256": "20336faa3cdc28a4bfc44918999479b3d8fd64b4e4912de0f55869b2e3374086",
+          "paragraph_complete": true,
+          "text_omitted_from_public_artifact": true
+        }
+      ],
+      "identity_matches_search_receipt": true,
+      "manual_support_checked": true,
+      "original_response_body_sha256": "993fb3977a239261cb0377178a306a65472956b54cff6f8fd60939b6e2c571c5"
+    },
+    {
+      "title": "synthetic-orbit-conflict.md",
+      "source_classification": "synthetic",
+      "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+      "document_id": "8ab01c80bc2311f18a819d2ead8954c1",
+      "chunk_id": "256bcb0a9fd8149c",
+      "snapshot_sha256": "e80b46d69598ca19bcbd5ce535e80be8610343e2f5d59c4d798128cbd883593a",
+      "snapshot_codepoints": 645,
+      "snapshot_kind": "document_chunk",
+      "truncated": false,
+      "original_content_field": "content_with_weight",
+      "uploaded_material_sha256": "d054be1341df199b410d2c762f07943b661ecbcd95e88d45bc7f821c8639f9cf",
+      "parsed_text_differs_from_uploaded_markdown": true,
+      "reviewed_quote_ranges": [
+        {
+          "start": 268,
+          "end": 405,
+          "sha256": "c383ef7b2ded04275d7a59bdbdbc690de44726eafe5bbde9abaa864b2f57c3a2",
+          "paragraph_complete": true,
+          "text_omitted_from_public_artifact": true
+        }
+      ],
+      "identity_matches_search_receipt": true,
+      "manual_support_checked": true,
+      "original_response_body_sha256": "fae91bff52f8f1fb8aae43c63d8abfb3fbe85eaa044ee3c4a91c4b0e0cdece4c"
+    },
+    {
+      "title": "synthetic-orbit-v1.md",
+      "source_classification": "synthetic",
+      "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+      "document_id": "8ab280f6bc2311f18a819d2ead8954c1",
+      "chunk_id": "7a957fffe59d59d1",
+      "snapshot_sha256": "2e85ace577f6215e0a0ad978873b94b54b39932182e4479673ee16aa8b9c51dc",
+      "snapshot_codepoints": 433,
+      "snapshot_kind": "document_chunk",
+      "truncated": false,
+      "original_content_field": "content_with_weight",
+      "uploaded_material_sha256": "6dfa541ab027fc353656090aed87c7651343891f4372b9b0bf67e681f1933c22",
+      "parsed_text_differs_from_uploaded_markdown": true,
+      "reviewed_quote_ranges": [
+        {
+          "start": 234,
+          "end": 369,
+          "sha256": "0ea9c5c9540fa47f4658526dde2b33ae551385bca7559ec02dc8f73f47334f24",
+          "paragraph_complete": true,
+          "text_omitted_from_public_artifact": true
+        }
+      ],
+      "identity_matches_search_receipt": true,
+      "manual_support_checked": true,
+      "original_response_body_sha256": "44ccaa6ff17741191361ec1a25cbf1c21a84ea8c7455741ba5b887783a6e5862"
+    },
+    {
+      "title": "synthetic-orbit-v2.md",
+      "source_classification": "synthetic",
+      "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+      "document_id": "8ab4ffc0bc2311f18a819d2ead8954c1",
+      "chunk_id": "bd05d474b2727877",
+      "snapshot_sha256": "b95ad807d7aff8af4aa5eaddc69028e68b826dc882aec50e0e8544cf77b63694",
+      "snapshot_codepoints": 613,
+      "snapshot_kind": "document_chunk",
+      "truncated": false,
+      "original_content_field": "content_with_weight",
+      "uploaded_material_sha256": "e821167580ed76cf32b56b3883cbffe76168574b523a6e2e6e0c845bbf4b3085",
+      "parsed_text_differs_from_uploaded_markdown": true,
+      "reviewed_quote_ranges": [
+        {
+          "start": 236,
+          "end": 373,
+          "sha256": "f709b71bcf94164302df588f88d89fb8b94d40e76f16d93e70812e7c7e44fed3",
+          "paragraph_complete": true,
+          "text_omitted_from_public_artifact": true
+        },
+        {
+          "start": 374,
+          "end": 511,
+          "sha256": "4ccbc5e248ac3a79bdfbb337d0e34a02fcc8d285b2a3385e1695c40d59b88844",
+          "paragraph_complete": true,
+          "text_omitted_from_public_artifact": true
+        }
+      ],
+      "identity_matches_search_receipt": true,
+      "manual_support_checked": true,
+      "original_response_body_sha256": "d2604d091aab4be15d4411fe2a1ed86b420f4a191ced8c6255523b4d92d62b37"
+    }
+  ],
+  "parsing": {
+    "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+    "dataset_created": 1,
+    "documents_uploaded": 4,
+    "parse_submissions": 1,
+    "status_polls": 1,
+    "all_done": true,
+    "chunk_count_total": 4,
+    "ragflow_document_token_count_total": 625,
+    "embedding_model": "embedding-3@RAG_Flow@ZHIPU-AI",
+    "provider_billed_tokens": "unknown",
+    "provider_cost": "unknown"
+  },
+  "web_preflight": {
+    "default_dns_result": "reserved proxy addresses; SOURCE_ADDRESS_DENIED",
+    "diagnosed_environment_issue": true,
+    "public_dns_provider": "https://dns.google/resolve",
+    "isolated_public_host_mapping_required": true,
+    "global_network_modified": false,
+    "production_safe_reader_with_verified_public_dns": "success; unchanged public-address, peer and TLS checks",
+    "web_original": {
+      "kind": "web",
+      "url": "https://www.iana.org/help/example-domains",
+      "snapshot_sha256": "9fcf59ddeda8811d0631eae204201f1b93f98b493e07015dfbfb69db7b40bbb2",
+      "raw_response_sha256": "9adb74216b75a090d7b8764453146efc9480942bedc0616c5406a009a5a9c43e",
+      "observed_at": "2026-09-29T16:31:57.575806+00:00",
+      "source_classification": "real-public"
+    }
+  },
+  "adapter_fix": {
+    "defect": "Original RAGFlow chunks expose content_with_weight; reader expected content only. Retrieval already uses current document_id/dataset_id fields correctly.",
+    "change": "Support fetched weighted original without using previews; reject divergent aliases and changed returned dataset identity; preserve registry/allowlist checks.",
+    "focused_unit_results": [
+      {
+        "suite": "ManagedSourceReaderTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "RagflowClientTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "SafeWebReaderTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "postgres_result": {
+      "suite": "EvidenceServiceIT",
+      "tests": 31,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "transport_and_check_model": "fixtures; actual PostgreSQL/service/report path"
+    }
+  },
+  "real_research_runs_by_B": 0,
+  "native_model_semantic_audit": "pending A exact candidate runs"
+}

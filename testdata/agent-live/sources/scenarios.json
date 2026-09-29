@@ -1,0 +1,341 @@
+{
+  "schema_version": "1",
+  "baseline_sha": "b9b20ada48eed889a3ae486dbd429f934bfc7c64",
+  "owner": "B/source-validation/20260930",
+  "prepared_before_research_runs": true,
+  "source_classifications": {
+    "real-public": "unmodified live IANA original read through real HTTPS",
+    "real-public-curated": "Short attributed card with a 14-word exact original excerpt and reviewed paraphrases; not a full original clone.",
+    "synthetic": "fictional ACCEPT-ORBIT acceptance facts; not evidence of real product truth"
+  },
+  "ragflow_dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+  "resource_ownership": {
+    "name": "DeepResearch-Agent-Live-B-20260930",
+    "created_by": "B source validation",
+    "existing_documents_modified": 0,
+    "documents_uploaded": 4,
+    "parse_submissions": 1,
+    "embedding_model": "embedding-3@RAG_Flow@ZHIPU-AI",
+    "embedding_usage": {
+      "ragflow_document_token_count_total": 625,
+      "provider_billed_tokens": "unknown",
+      "embedding_provider_cost": "unknown",
+      "note": "Document token_count is corpus metadata; it is not a provider billing receipt. No keyword expansion, auto-keywords or auto-questions requested.",
+      "retrieval_requests_potentially_generating_query_embeddings": 4,
+      "actual_query_embedding_provider_calls": "unknown; not exposed by retrieval response"
+    }
+  },
+  "registry_documents": [
+    {
+      "document_id": "8aaa41a2bc2311f18a819d2ead8954c1",
+      "title": "public-iana-example-domains.md",
+      "material_path": "testdata/agent-live/sources/materials/public-iana-example-domains.md",
+      "sha256": "f86a580eee7bb04a6929d6f2b165825e7ef1f506f4bf54a7119c976f35e122be",
+      "source_classification": "real-public-curated",
+      "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+      "chunk_id": "e4ec689d63440796",
+      "snapshot_sha256": "c394abc66a65a19ee716069d42c876a2a2caef521299bd19ef56960ea925f598",
+      "snapshot_codepoints": 670,
+      "run": "DONE",
+      "document_token_count": 167
+    },
+    {
+      "document_id": "8ab01c80bc2311f18a819d2ead8954c1",
+      "title": "synthetic-orbit-conflict.md",
+      "material_path": "testdata/agent-live/sources/materials/synthetic-orbit-conflict.md",
+      "sha256": "d054be1341df199b410d2c762f07943b661ecbcd95e88d45bc7f821c8639f9cf",
+      "source_classification": "synthetic",
+      "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+      "chunk_id": "256bcb0a9fd8149c",
+      "snapshot_sha256": "e80b46d69598ca19bcbd5ce535e80be8610343e2f5d59c4d798128cbd883593a",
+      "snapshot_codepoints": 645,
+      "run": "DONE",
+      "document_token_count": 165
+    },
+    {
+      "document_id": "8ab280f6bc2311f18a819d2ead8954c1",
+      "title": "synthetic-orbit-v1.md",
+      "material_path": "testdata/agent-live/sources/materials/synthetic-orbit-v1.md",
+      "sha256": "6dfa541ab027fc353656090aed87c7651343891f4372b9b0bf67e681f1933c22",
+      "source_classification": "synthetic",
+      "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+      "chunk_id": "7a957fffe59d59d1",
+      "snapshot_sha256": "2e85ace577f6215e0a0ad978873b94b54b39932182e4479673ee16aa8b9c51dc",
+      "snapshot_codepoints": 433,
+      "run": "DONE",
+      "document_token_count": 126
+    },
+    {
+      "document_id": "8ab4ffc0bc2311f18a819d2ead8954c1",
+      "title": "synthetic-orbit-v2.md",
+      "material_path": "testdata/agent-live/sources/materials/synthetic-orbit-v2.md",
+      "sha256": "e821167580ed76cf32b56b3883cbffe76168574b523a6e2e6e0c845bbf4b3085",
+      "source_classification": "synthetic",
+      "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+      "chunk_id": "bd05d474b2727877",
+      "snapshot_sha256": "b95ad807d7aff8af4aa5eaddc69028e68b826dc882aec50e0e8544cf77b63694",
+      "snapshot_codepoints": 613,
+      "run": "DONE",
+      "document_token_count": 167
+    }
+  ],
+  "web_source": {
+    "kind": "web",
+    "url": "https://www.iana.org/help/example-domains",
+    "snapshot_sha256": "9fcf59ddeda8811d0631eae204201f1b93f98b493e07015dfbfb69db7b40bbb2",
+    "raw_response_sha256": "9adb74216b75a090d7b8764453146efc9480942bedc0616c5406a009a5a9c43e",
+    "observed_at": "2026-09-29T16:31:57.575806+00:00",
+    "source_classification": "real-public"
+  },
+  "cases": [
+    {
+      "id": "knowledge-only",
+      "question": "仅依据专用验收知识库中的 IANA example domains 公开资料卡，说明 example.com 和 example.org 的用途，是否需要预先协调使用，以及能否注册或转让。请给出可追溯的知识库引用。",
+      "requested_tools": [
+        "kb_search"
+      ],
+      "source_classification": "real-public-curated",
+      "expected": "Both names serve documentation examples; no advance coordination is needed; registration and transfer are unavailable. Knowledge-only completion requires checked original KB citations for all requested facts.",
+      "source_refs": [
+        {
+          "kind": "knowledge",
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8aaa41a2bc2311f18a819d2ead8954c1",
+          "title": "public-iana-example-domains.md",
+          "material_sha256": "f86a580eee7bb04a6929d6f2b165825e7ef1f506f4bf54a7119c976f35e122be",
+          "chunk_id": "e4ec689d63440796",
+          "snapshot_sha256": "c394abc66a65a19ee716069d42c876a2a2caef521299bd19ef56960ea925f598",
+          "snapshot_codepoints": 670
+        }
+      ],
+      "manual_expectations": {
+        "facts": [
+          "documentation examples",
+          "no prior coordination",
+          "unavailable for registration or transfer"
+        ],
+        "required_source_kinds": [
+          "knowledge"
+        ],
+        "success_may_be_complete": true
+      }
+    },
+    {
+      "id": "web-only",
+      "question": "请仅依据 IANA 官网的 Example Domains 页面核实：example.com 和 example.org 是否可以注册或转让？它们的 HTTP 服务是否提供适合生产应用的保障？请引用网页原文，并说明保障范围。",
+      "requested_tools": [
+        "web_search"
+      ],
+      "source_classification": "real-public",
+      "expected": "Registration/transfer are unavailable. HTTP is best effort and is not intended for production dependencies. The page itself supplies both facts; lack of a KB search is not a failure.",
+      "source_refs": [
+        {
+          "kind": "web",
+          "url": "https://www.iana.org/help/example-domains",
+          "snapshot_sha256": "9fcf59ddeda8811d0631eae204201f1b93f98b493e07015dfbfb69db7b40bbb2",
+          "raw_response_sha256": "9adb74216b75a090d7b8764453146efc9480942bedc0616c5406a009a5a9c43e",
+          "observed_at": "2026-09-29T16:31:57.575806+00:00",
+          "source_classification": "real-public"
+        }
+      ],
+      "manual_expectations": {
+        "facts": [
+          "unavailable for registration or transfer",
+          "best-effort HTTP",
+          "not designed to support production applications"
+        ],
+        "required_source_kinds": [
+          "web"
+        ],
+        "success_may_be_complete": true
+      }
+    },
+    {
+      "id": "mixed",
+      "question": "结合专用验收知识库的 IANA example domains 资料卡和 IANA 官网原文：分别说明 example.com、example.org 的文档用途，以及为什么生产应用不应依赖它们持续提供 HTTP 服务。请给出两类来源的可追溯引用，区分资料卡覆盖的事实和网页补充的限制。",
+      "requested_tools": [
+        "kb_search",
+        "web_search"
+      ],
+      "source_classification": "real-public-and-real-public-curated",
+      "expected": "KB supports the documentation purpose. Live IANA page supports best-effort HTTP and production limitation. Both original source kinds must appear in the investigated/adopted evidence; channel does not determine truth priority.",
+      "source_refs": [
+        {
+          "kind": "knowledge",
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8aaa41a2bc2311f18a819d2ead8954c1",
+          "title": "public-iana-example-domains.md",
+          "material_sha256": "f86a580eee7bb04a6929d6f2b165825e7ef1f506f4bf54a7119c976f35e122be",
+          "chunk_id": "e4ec689d63440796",
+          "snapshot_sha256": "c394abc66a65a19ee716069d42c876a2a2caef521299bd19ef56960ea925f598",
+          "snapshot_codepoints": 670
+        },
+        {
+          "kind": "web",
+          "url": "https://www.iana.org/help/example-domains",
+          "snapshot_sha256": "9fcf59ddeda8811d0631eae204201f1b93f98b493e07015dfbfb69db7b40bbb2",
+          "raw_response_sha256": "9adb74216b75a090d7b8764453146efc9480942bedc0616c5406a009a5a9c43e",
+          "observed_at": "2026-09-29T16:31:57.575806+00:00",
+          "source_classification": "real-public"
+        }
+      ],
+      "manual_expectations": {
+        "facts": [
+          "documentation examples",
+          "best-effort HTTP",
+          "production limitation"
+        ],
+        "required_source_kinds": [
+          "knowledge",
+          "web"
+        ],
+        "success_may_be_complete": true
+      }
+    },
+    {
+      "id": "version-conditions",
+      "question": "仅依据专用验收知识库的合成 ACCEPT-ORBIT 资料，分别核实 1.0 版 legacy 模式与 2.0 版 general 模式每分钟允许的请求数。明确每个数值的版本和条件，并说明为什么不能把任一数值推广到另一条件。",
+      "requested_tools": [
+        "kb_search"
+      ],
+      "source_classification": "synthetic",
+      "expected": "Version 1.0 / mode=legacy has exactly 10 requests per minute; version 2.0 / mode=general has exactly 20. Retain both originals and stated conditions; no fetch-time or version-priority shortcut.",
+      "source_refs": [
+        {
+          "kind": "knowledge",
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab280f6bc2311f18a819d2ead8954c1",
+          "title": "synthetic-orbit-v1.md",
+          "material_sha256": "6dfa541ab027fc353656090aed87c7651343891f4372b9b0bf67e681f1933c22",
+          "chunk_id": "7a957fffe59d59d1",
+          "snapshot_sha256": "2e85ace577f6215e0a0ad978873b94b54b39932182e4479673ee16aa8b9c51dc",
+          "snapshot_codepoints": 433
+        },
+        {
+          "kind": "knowledge",
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab4ffc0bc2311f18a819d2ead8954c1",
+          "title": "synthetic-orbit-v2.md",
+          "material_sha256": "e821167580ed76cf32b56b3883cbffe76168574b523a6e2e6e0c845bbf4b3085",
+          "chunk_id": "bd05d474b2727877",
+          "snapshot_sha256": "b95ad807d7aff8af4aa5eaddc69028e68b826dc882aec50e0e8544cf77b63694",
+          "snapshot_codepoints": 613
+        }
+      ],
+      "manual_expectations": {
+        "facts": [
+          "1.0 / mode=legacy: 10 requests per minute",
+          "2.0 / mode=general: 20 requests per minute"
+        ],
+        "required_document_titles": [
+          "synthetic-orbit-v1.md",
+          "synthetic-orbit-v2.md"
+        ],
+        "success_may_be_complete": true
+      }
+    },
+    {
+      "id": "contradictory-material",
+      "question": "有人断言合成 ACCEPT-ORBIT 2.0 的 general 模式超时唯一确定为 5 秒。仅依据专用验收知识库核实这个断言，并检查同版本、同条件的资料是否一致；如果无法确定唯一值，请保留分歧和未解决的缺口。",
+      "requested_tools": [
+        "kb_search"
+      ],
+      "source_classification": "synthetic",
+      "expected": "Equal-authority version 2.0 / mode=general originals say 5 and 7 seconds. No independent observation resolves them. Preserve a contested/insufficient conclusion with both opposing originals; do not select 5 or 7 as established unique truth, do not claim complete verification of the requested unique timeout.",
+      "source_refs": [
+        {
+          "kind": "knowledge",
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab4ffc0bc2311f18a819d2ead8954c1",
+          "title": "synthetic-orbit-v2.md",
+          "material_sha256": "e821167580ed76cf32b56b3883cbffe76168574b523a6e2e6e0c845bbf4b3085",
+          "chunk_id": "bd05d474b2727877",
+          "snapshot_sha256": "b95ad807d7aff8af4aa5eaddc69028e68b826dc882aec50e0e8544cf77b63694",
+          "snapshot_codepoints": 613
+        },
+        {
+          "kind": "knowledge",
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab01c80bc2311f18a819d2ead8954c1",
+          "title": "synthetic-orbit-conflict.md",
+          "material_sha256": "d054be1341df199b410d2c762f07943b661ecbcd95e88d45bc7f821c8639f9cf",
+          "chunk_id": "256bcb0a9fd8149c",
+          "snapshot_sha256": "e80b46d69598ca19bcbd5ce535e80be8610343e2f5d59c4d798128cbd883593a",
+          "snapshot_codepoints": 645
+        }
+      ],
+      "manual_expectations": {
+        "facts": [
+          "5-second statement",
+          "7-second statement",
+          "same version 2.0 and mode=general",
+          "no independent resolution"
+        ],
+        "required_document_titles": [
+          "synthetic-orbit-v2.md",
+          "synthetic-orbit-conflict.md"
+        ],
+        "success_may_be_complete": false
+      }
+    },
+    {
+      "id": "insufficient-evidence",
+      "question": "合成 ACCEPT-ORBIT 的正式发布日期是哪一天？仅根据专用验收知识库给出可核实的具体日期；如果无法找到，请说明缺少什么证据，不要用资料上传时间或抓取时间替代。",
+      "requested_tools": [
+        "kb_search"
+      ],
+      "source_classification": "synthetic",
+      "expected": "All fictional cards intentionally omit a launch date. Searches can return related but inadequate documents. Keep the requested date criterion uncovered, preserve useful partial results and stop with INSUFFICIENT_EVIDENCE or explicit gaps; never invent a date or derive it from timestamps.",
+      "source_refs": [
+        {
+          "kind": "knowledge",
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab280f6bc2311f18a819d2ead8954c1",
+          "title": "synthetic-orbit-v1.md",
+          "material_sha256": "6dfa541ab027fc353656090aed87c7651343891f4372b9b0bf67e681f1933c22",
+          "chunk_id": "7a957fffe59d59d1",
+          "snapshot_sha256": "2e85ace577f6215e0a0ad978873b94b54b39932182e4479673ee16aa8b9c51dc",
+          "snapshot_codepoints": 433
+        },
+        {
+          "kind": "knowledge",
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab4ffc0bc2311f18a819d2ead8954c1",
+          "title": "synthetic-orbit-v2.md",
+          "material_sha256": "e821167580ed76cf32b56b3883cbffe76168574b523a6e2e6e0c845bbf4b3085",
+          "chunk_id": "bd05d474b2727877",
+          "snapshot_sha256": "b95ad807d7aff8af4aa5eaddc69028e68b826dc882aec50e0e8544cf77b63694",
+          "snapshot_codepoints": 613
+        },
+        {
+          "kind": "knowledge",
+          "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+          "document_id": "8ab01c80bc2311f18a819d2ead8954c1",
+          "title": "synthetic-orbit-conflict.md",
+          "material_sha256": "d054be1341df199b410d2c762f07943b661ecbcd95e88d45bc7f821c8639f9cf",
+          "chunk_id": "256bcb0a9fd8149c",
+          "snapshot_sha256": "e80b46d69598ca19bcbd5ce535e80be8610343e2f5d59c4d798128cbd883593a",
+          "snapshot_codepoints": 645
+        }
+      ],
+      "manual_expectations": {
+        "facts": [
+          "no source establishes any launch date"
+        ],
+        "success_may_be_complete": false
+      }
+    }
+  ],
+  "call_limits": {
+    "direct_source_probes": 16,
+    "new_datasets": 1,
+    "uploaded_parsed_documents": 4,
+    "B_research_runs": 0,
+    "A_initial_research_runs": 6,
+    "A_total_research_runs": 8,
+    "decisions_per_run": 8,
+    "models_per_run": 16,
+    "tools_per_run": 16,
+    "seconds_per_run": 180
+  }
+}

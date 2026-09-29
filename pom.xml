@@ -180,6 +180,35 @@
 
     <profiles>
         <profile>
+            <id>agent-live</id>
+            <properties>
+                <agent.build.revision>unknown</agent.build.revision>
+                <agent.build.source-manifest-sha256>unknown</agent.build.source-manifest-sha256>
+                <agent.build.isolation-id>unknown</agent.build.isolation-id>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>agent-live-build-identity</id>
+                                <goals><goal>build-info</goal></goals>
+                                <configuration>
+                                    <additionalProperties>
+                                        <revision>${agent.build.revision}</revision>
+                                        <source-manifest-sha256>${agent.build.source-manifest-sha256}</source-manifest-sha256>
+                                        <isolation-id>${agent.build.isolation-id}</isolation-id>
+                                    </additionalProperties>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>integration</id>
             <build>
                 <plugins>

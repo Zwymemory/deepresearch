@@ -1,60 +1,207 @@
 #!/usr/bin/env python3
-"""Finite real-model acceptance against an isolated deployment; preparation is default.
-
-Load the four shared research scenarios into the isolated retriever first. Record that
-synthetic documents are used; real model execution does not certify real-world truth.
-No keys, configuration, live volumes, or deployment are changed by this script.
-"""
+"""Bounded autonomous real-model acceptance, with verified local build identity."""
 import argparse
+import fcntl
 import json
 import os
 from pathlib import Path
+import re
 import time
-from urllib.parse import urlsplit
-from urllib.request import Request,urlopen
 from uuid import uuid4
 
-parser=argparse.ArgumentParser()
-parser.add_argument("--execute",action="store_true")
-parser.add_argument("--base-url",default="http://127.0.0.1:18080")
-parser.add_argument("--expected-build-sha",default="pending")
-parser.add_argument("--output",type=Path,default=Path("target/agent-round1-real-acceptance.json"))
-args=parser.parse_args()
-root=Path(__file__).resolve().parents[1]
-cases=[]
-for name in ("empty-retrieval","wrong-material","version-difference","unresolved-conflict"):
-    data=json.loads((root/"testdata/agent-foundation/evidence"/(name+".json")).read_text())
-    cases.append({"scenario":name,"question":data["question"]})
-plan={"expected_build_sha":args.expected_build_sha,"model_execution":"pending","source_profile":"isolated synthetic scenarios",
-      "maximum_runs":4,"maximum_model_calls":64,"maximum_tool_calls":64,
-      "per_run":{"decisions":8,"models_including_checks_and_retries":16,"tools_including_publication_reads":16,"seconds":180,"input_admission":64000,"output_admission":16384},"cases":cases}
-if not args.execute:
-    print(json.dumps(plan,ensure_ascii=False,indent=2));raise SystemExit(0)
-url=urlsplit(args.base_url)
-if url.scheme!="http" or url.hostname not in {"127.0.0.1","localhost"} or url.port!=18080 or url.username or url.password or url.query or url.fragment:
-    raise SystemExit("Acceptance uses the isolated loopback service on port 18080")
-token=os.environ.get("AGENT_ACCEPTANCE_TOKEN","")
-if not token: raise SystemExit("AGENT_ACCEPTANCE_TOKEN is required; never pass a token on the command line")
-def request(path,body=None,key=None):
-    headers={"Authorization":"Bearer "+token,"Content-Type":"application/json"}
-    if key: headers["Idempotency-Key"]=key
-    raw=None if body is None else json.dumps(body,ensure_ascii=False).encode()
-    with urlopen(Request(args.base_url.rstrip("/")+path,data=raw,headers=headers),timeout=10) as response:
-        return json.loads(response.read(150000))
-terminal={"SUCCEEDED","INSUFFICIENT_EVIDENCE","FAILED","CANCELLED","TIMED_OUT","BUDGET_EXCEEDED"}
-results=[]
-for case in cases:
-    accepted=request("/api/research/agents",{"question":case["question"],"requestedTools":["kb_search"]},"accept-"+uuid4().hex)
-    run=accepted["runId"];deadline=time.monotonic()+195
-    while True:
-        view=request("/api/research/workflows/"+run)
-        if view["status"] in terminal: break
-        if time.monotonic()>=deadline:
-            request("/api/research/workflows/"+run+"/cancel",{})
-            raise SystemExit("Isolated run exceeded its acceptance time window; cancellation requested")
-        time.sleep(1)
-    results.append({"scenario":case["scenario"],"runId":run,"status":view["status"],"usage":view.get("usage"),
-                    "trace":view.get("trace"),"finalResponse":view.get("finalResponse"),"requires_manual_source_and_semantic_review":True})
-    args.output.parent.mkdir(parents=True,exist_ok=True)
-    args.output.write_text(json.dumps({**plan,"model_execution":"executed; manual review pending","results":results},ensure_ascii=False,indent=2))
-    print(case["scenario"]+": "+view["status"],flush=True)
+from agent_live_common import LIMITS, TERMINAL, http_json, read_private, verify_runtime, write_private
+
+CASES = {"knowledge-only", "web-only", "mixed", "version-conditions",
+         "contradictory-material", "insufficient-evidence"}
+
+
+def validate_sources(sources):
+    if not sources.get("ready") or not re.fullmatch(r"[a-f0-9]{40}", sources.get("final_sha", "")):
+        raise ValueError("B sources require a ready exact committed version")
+    cases = sources.get("cases", [])
+    if len(cases) != 6 or {case.get("id") for case in cases} != CASES:
+        raise ValueError("All six distinct live validation cases are required")
+    for case in cases:
+        if not isinstance(case.get("question"), str) or not 1 <= len(case["question"]) <= 4000:
+            raise ValueError("Scenario question is missing or oversized")
+        if not case.get("requested_tools") or not set(case["requested_tools"]) <= {"kb_search", "web_search"}:
+            raise ValueError("Scenario needs an explicit allowed search channel")
+        if case.get("source_classification") not in {"real-public", "real-public-curated", "synthetic",
+                "real-public+synthetic", "real-public-and-real-public-curated"}:
+            raise ValueError("Only reviewed public or synthetic scenarios are allowed")
+        if any(k in case for k in ["decisions", "actions", "action_sequence", "model_responses"]):
+            raise ValueError("Scenario may not prescribe the autonomous model action sequence")
+    return {case["id"]: case for case in cases}
+
+
+def admit(journal, scenario, build_sha, retry_of, fix_description):
+    rows = journal.get("runs", [])
+    if len(rows) >= 8:
+        raise ValueError("Global eight-run validation limit reached")
+    if any(row.get("status") not in TERMINAL and not row.get("request_failed") for row in rows):
+        raise ValueError("An earlier run remains active or its request result is unknown; reconcile first")
+    if len(rows) >= 2 and all(row.get("status") == "FAILED" for row in rows[-2:]):
+        left, right = rows[-2:]
+        if left.get("errorCode") and left["errorCode"] == right.get("errorCode"):
+            raise ValueError("Repeated identical failure: stop real calls and diagnose the wiring")
+    if retry_of:
+        original = next((row for row in rows if row.get("runId") == retry_of), None)
+        if not original or original["scenario"] != scenario:
+            raise ValueError("Retry must refer to a recorded run of the same scenario")
+        if len([row for row in rows if row.get("retry_of")]) >= 2:
+            raise ValueError("Only two targeted wiring retries are allowed")
+        if build_sha == original["build_sha"] or not fix_description or len(fix_description) < 10:
+            raise ValueError("A retry needs a committed changed build and a diagnosed wiring fix")
+    elif any(row["scenario"] == scenario and not row.get("retry_of") for row in rows):
+        raise ValueError("Initial scenario was already attempted; preserve it and use an authorized retry")
+    elif len([row for row in rows if not row.get("retry_of")]) >= 6:
+        raise ValueError("All six initial runs are already reserved")
+
+
+def scrub(value, secrets):
+    if isinstance(value, dict):
+        return {k: scrub(v, secrets) for k, v in value.items()
+                if k.lower().replace("_", "") not in {
+                    "token", "accesstoken", "authorization", "apikey", "password", "claimtoken"}}
+    if isinstance(value, list):
+        return [scrub(v, secrets) for v in value]
+    if isinstance(value, str):
+        for secret in secrets:
+            if secret and len(secret) >= 12:
+                value = value.replace(secret, "[redacted]")
+        value = re.sub(r"(?:sk|tvly)-[A-Za-z0-9_-]{20,}", "[redacted]", value)
+        value = re.sub(r"eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}", "[redacted]", value)
+        value = re.sub(r"/(?:Users|home)/[^\s\"'<>]+", "[local-path]", value)
+    return value
+
+
+def capture_database(ready, credentials, run):
+    import psycopg
+    from psycopg.rows import dict_row
+    queries = {
+        "run": "SELECT run_id,status,stage,budget,usage,error_code,error_message,deadline_at,created_at,updated_at FROM agent_workflow_run WHERE run_id=%s",
+        "operations": "SELECT operation_key,attempt,kind,purpose,status,input_reserved,output_reserved,actual_usage,safe_result,created_at,settled_at FROM agent_research_operation WHERE run_id=%s ORDER BY created_at,operation_key,attempt",
+        "tasks": "SELECT task_id,objective,status,acceptance_criteria,dependencies,plan_version,task_json FROM agent_research_task WHERE run_id=%s ORDER BY task_id",
+        "criteria": "SELECT task_id,criterion_id,criterion_text,expected_claim,expected_hash,investigation,last_call_id,dependency_snapshot FROM agent_research_criterion WHERE run_id=%s ORDER BY task_id,criterion_index",
+        "checks": "SELECT check_id,task_id,call_id,investigation,dispute_round,parent_check_id,request_sha256,response_sha256,status,request,result FROM agent_evidence_check WHERE run_id=%s ORDER BY created_at,check_id",
+        "read_receipts": "SELECT receipt_id,source_id,parent_receipt_id,status,error_code,record_json,metadata FROM agent_evidence_read_receipt WHERE run_id=%s ORDER BY created_at,receipt_id",
+        "records": "SELECT record_type,record_id,version,payload_sha256,payload FROM agent_evidence_record WHERE run_id=%s ORDER BY record_type,record_id,version",
+        "publications": "SELECT call_id,status,answer_hash,result,proof FROM agent_research_publication WHERE run_id=%s ORDER BY completed_at,call_id",
+        "tool_receipts": "SELECT call_id,task_id,tool_name,status,safe_result,error_code,mcp_execution_status,mcp_safe_result FROM agent_workflow_tool_receipt WHERE run_id=%s ORDER BY call_id",
+    }
+    output = {}
+    with psycopg.connect(host="127.0.0.1", port=ready["database_port"], dbname="deepresearch",
+                          user="deepresearch", password=credentials["POSTGRES_PASSWORD"], row_factory=dict_row) as conn:
+        conn.execute("SET TRANSACTION READ ONLY")
+        for key, sql in queries.items():
+            output[key] = conn.execute(sql, (run,)).fetchall()
+    if len(output["run"]) != 1:
+        raise ValueError("Isolated database does not contain the actual HTTP run")
+    budget = output["run"][0]["budget"]
+    expected = {"maxDecisionSteps": 8, "maxModelCalls": 16, "maxToolCalls": 16,
+                "maxInputTokens": 64000, "maxOutputTokens": 16384}
+    if any(budget.get(k) != v for k, v in expected.items()):
+        raise ValueError("Actual persisted run budget differs from the authorized limits")
+    return output
+
+
+def usage_summary(database):
+    models = [row for row in database["operations"] if row["kind"] == "MODEL"]
+    tools = [row for row in database["operations"] if row["kind"] == "TOOL"]
+    actual = [row.get("actual_usage") or {} for row in models]
+    return {"model_admissions": len(models), "tool_admissions": len(tools),
+            "decision_admissions": len({row["operation_key"] for row in models if row["purpose"] == "DECISION"}),
+            "model_settled": sum(row["status"] == "SETTLED" for row in models),
+            "model_unknown_or_inflight": sum(row["status"] != "SETTLED" for row in models),
+            "actual_input_tokens": sum(row.get("input_tokens") or 0 for row in actual),
+            "actual_output_tokens": sum(row.get("output_tokens") or 0 for row in actual),
+            "input_usage_missing": sum(row.get("input_tokens") is None for row in actual),
+            "output_usage_missing": sum(row.get("output_tokens") is None for row in actual),
+            "actual_bill_or_cost": None, "cost_note": "unknown; admission estimates are not provider bills"}
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--execute", action="store_true")
+    parser.add_argument("--runtime-ready", type=Path, required=True)
+    parser.add_argument("--sources-ready", type=Path, required=True)
+    parser.add_argument("--scenario", choices=sorted(CASES))
+    parser.add_argument("--state-dir", type=Path, required=True)
+    parser.add_argument("--retry-of")
+    parser.add_argument("--fix-description")
+    args = parser.parse_args()
+    ready = read_private(args.runtime_ready)
+    sources = json.loads(args.sources_ready.read_text())
+    cases = validate_sources(sources)
+    plan = {"cases": list(cases), "maximum_runs": 8, "maximum_initial_runs": 6,
+            "maximum_targeted_fix_retries": 2, "per_run": LIMITS,
+            "model_execution": "not_started", "build_sha": ready["build_sha"],
+            "peer_sha": sources["final_sha"], "autonomous_decisions": True}
+    if not args.execute:
+        print(json.dumps(plan, ensure_ascii=False, indent=2))
+        return
+    if not args.scenario:
+        raise ValueError("Choose one case; research runs are deliberately serial")
+    if ready.get("tested_peer_sha") != sources["final_sha"] or not ready.get("registry_configured"):
+        raise ValueError("B exact source manifest has not been registered in this isolated environment")
+    credentials = read_private(ready["credential_access"]["path"])
+    token = read_private(ready["token_access"]["path"])["token"]
+    secrets = [v for k, v in credentials.items() if any(part in k for part in ["KEY", "SECRET", "PASSWORD"])] + [token]
+    args.state_dir.mkdir(parents=True, exist_ok=True)
+    os.chmod(args.state_dir, 0o700)
+    with (args.state_dir / "run-journal.lock").open("a+") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        journal_path = args.state_dir / "run-journal.json"
+        journal = read_private(journal_path) if journal_path.exists() else {"runs": []}
+        admit(journal, args.scenario, ready["build_sha"], args.retry_of, args.fix_description)
+        identity = verify_runtime(ready, token)
+        case = cases[args.scenario]
+        row = {"scenario": args.scenario, "build_sha": ready["build_sha"], "peer_sha": sources["final_sha"],
+               "retry_of": args.retry_of, "fix_description": args.fix_description,
+               "idempotency_key": "live-" + uuid4().hex, "status": "REQUEST_RESERVED",
+               "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+        journal["runs"].append(row)
+        write_private(journal_path, journal)
+        try:
+            accepted = http_json(ready["app_base_url"], "/api/research/agents", token, body={
+                "question": case["question"], "requestedTools": case["requested_tools"]}, key=row["idempotency_key"])
+            row.update({"runId": accepted["runId"], "status": accepted["status"]})
+            write_private(journal_path, journal)
+            deadline = time.monotonic() + 195
+            while True:
+                view = http_json(ready["app_base_url"], "/api/research/workflows/" + row["runId"], token)
+                if view["status"] in TERMINAL:
+                    break
+                if time.monotonic() >= deadline:
+                    http_json(ready["app_base_url"], "/api/research/workflows/" + row["runId"] + "/cancel", token, body={})
+                    raise ValueError("Run exceeded acceptance time window; cancellation requested, reconcile before continuing")
+                time.sleep(1)
+            row.update({"status": view["status"], "errorCode": view.get("errorCode"),
+                        "ended_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+            write_private(journal_path, journal)
+            database = capture_database(ready, credentials, row["runId"])
+            usage = usage_summary(database)
+            if usage["decision_admissions"] > 8 or usage["model_admissions"] > 16 or usage["tool_admissions"] > 16:
+                raise ValueError("Actual operation ledger exceeded the authorized run limits")
+            audit = scrub({"case": case, "run": row, "build_verification": identity,
+                           "view": view, "database": database, "usage": usage,
+                           "model": ready["model"], "source_classification": case["source_classification"],
+                           "manual_review_status": "pending", "fixtures": False}, secrets)
+            path = args.state_dir / (row["runId"] + ".json")
+            write_private(path, audit)
+            row.update({"audit_path": str(path), "usage": usage})
+            write_private(journal_path, journal)
+            print(json.dumps({"scenario": args.scenario, "runId": row["runId"], "status": row["status"],
+                              "errorCode": row["errorCode"], "usage": usage}, ensure_ascii=False), flush=True)
+        except Exception as error:
+            # A lost POST response can still have started a run: never mark it safe to rerun.
+            row["validation_error_type"] = type(error).__name__
+            write_private(journal_path, journal)
+            raise
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as error:
+        raise SystemExit(type(error).__name__ + ": acceptance stopped; inspect the protected run journal") from None
