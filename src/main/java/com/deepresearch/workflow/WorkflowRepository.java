@@ -42,6 +42,45 @@ public class WorkflowRepository {
                 run.status(), run.stage(), run.deadlineAt(), postgresArray(run.requestedScopes()), run.grantId());
     }
 
+    public record AgentIdentity(String tenantId, String ownerId) {}
+
+    public Optional<AgentIdentity> agentIdentity(String runId) {
+        return jdbcTemplate.query("SELECT tenant_id,owner_id FROM agent_research_run WHERE run_id=?",
+                (rs,n)->new AgentIdentity(rs.getString(1),rs.getString(2)),runId).stream().findFirst();
+    }
+
+    public boolean activeAgentToolReservation(String runId,String callId,UUID claim) {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject("""
+            SELECT EXISTS(SELECT 1 FROM agent_research_operation o JOIN agent_workflow_run r ON r.run_id=o.run_id
+                WHERE o.run_id=? AND o.operation_key=? AND o.kind='TOOL' AND o.purpose='TOOL'
+                AND o.status IN ('RESERVED','SETTLED') AND o.claim_token=? AND r.claim_token=o.claim_token
+                AND NOT r.cancel_requested AND r.lease_until>now() AND r.deadline_at>now() AND r.status='WORKING')
+            """,Boolean.class,runId,callId,claim));
+    }
+    public void lockAgentToolCompletion(String runId,UUID claim) {
+        if (jdbcTemplate.queryForList("SELECT run_id FROM agent_workflow_run WHERE run_id=? AND claim_token=? AND NOT cancel_requested AND lease_until>now() AND deadline_at>now() FOR UPDATE",runId,claim).isEmpty())
+            throw new IllegalStateException("stale Agent tool completion");
+    }
+    public boolean settleAgentTool(String runId,String callId,UUID claim,String envelope) {
+        return jdbcTemplate.update("""
+            UPDATE agent_research_operation SET status='SETTLED',safe_result=CAST(? AS jsonb),actual_usage='{}'::jsonb,settled_at=now()
+            WHERE run_id=? AND operation_key=? AND kind='TOOL' AND purpose='TOOL' AND status='RESERVED' AND claim_token=?
+            """,envelope,runId,callId,claim)==1;
+    }
+
+    public boolean sealedAgentPublication(String runId,String answer,List<String> citations) {
+        try {
+            return Boolean.TRUE.equals(jdbcTemplate.queryForObject("""
+                SELECT EXISTS (SELECT 1 FROM agent_research_publication
+                    WHERE run_id=? AND status='COMPLETED' AND answer_hash=?
+                    AND result->>'answer'=? AND citations=CAST(? AS jsonb))
+                """,Boolean.class,runId,com.deepresearch.agent.ToolArgumentFingerprint.sha256(answer),
+                    answer,objectMapper.writeValueAsString(citations)));
+        } catch (com.fasterxml.jackson.core.JsonProcessingException invalid) {
+            throw new IllegalArgumentException("publication citations invalid",invalid);
+        }
+    }
+
     public void insertGrant(NewGrant grant) {
         jdbcTemplate.update("""
                 INSERT INTO agent_workflow_grant

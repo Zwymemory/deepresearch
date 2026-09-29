@@ -17,6 +17,7 @@ from .domain import (
     EventRecord,
     ModelBudgetReservation,
     RunBudget,
+    AgentRunBudget,
     ToolExecutionResult,
     UsageDelta,
 )
@@ -753,7 +754,8 @@ class PostgresWorkflowRepository:
             }
         ):
             raise BudgetClaimConflictError("budget reservation claim is stale")
-        return RunBudget.model_validate(row.get("budget") or {})
+        data = row.get("budget") or {}
+        return (AgentRunBudget if data.get("runtime") == "agent" else RunBudget).model_validate(data)
 
     async def write_event(self, event: EventRecord, claim_token: str) -> bool:
         async with self.pool.connection() as connection:

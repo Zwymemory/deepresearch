@@ -93,6 +93,19 @@ class RunBudget(StrictModel):
     )
 
 
+class AgentRunBudget(RunBudget):
+    runtime: Literal["agent"]
+    max_tasks: int = Field(default=16, alias="maxTasks", ge=1, le=16)
+    max_concurrency: int = Field(default=1, alias="maxConcurrency", ge=1, le=1)
+    max_revision_rounds: int = Field(default=2, alias="maxRevisionRounds", ge=0, le=2)
+    max_model_calls: int = Field(default=16, alias="maxModelCalls", ge=1, le=16)
+    deadline_seconds: int = Field(default=180, alias="deadlineSeconds", ge=10, le=180)
+    max_decision_steps: int = Field(default=8, alias="maxDecisionSteps", ge=1, le=8)
+    max_input_tokens: int = Field(default=64_000, alias="maxInputTokens", ge=1, le=64_000)
+    max_output_tokens: int = Field(default=16_384, alias="maxOutputTokens", ge=1, le=16_384)
+
+
+
 class PlannedTaskDraft(StrictModel):
     objective: str = Field(min_length=3, max_length=280)
     query: str = Field(min_length=1, max_length=1_000)
@@ -349,7 +362,7 @@ class ClaimedRun(StrictModel):
     graph_thread_id: str
     requested_scopes: list[str] = Field(default_factory=list)
     grant_id: str
-    budget: RunBudget = Field(default_factory=RunBudget)
+    budget: RunBudget | AgentRunBudget = Field(default_factory=RunBudget)
     claim_token: str
     deadline_at: datetime
     status: WorkflowStatus

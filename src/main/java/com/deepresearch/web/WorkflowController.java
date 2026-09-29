@@ -85,7 +85,7 @@ public class WorkflowController {
                              @RequestHeader(value = "Last-Event-ID", required = false) String lastEventId,
                              HttpServletResponse response) {
         String userId = userContextService.currentUser();
-        workflowService.ownedRun(runId, userId);
+        var permit=workflowService.permitStream(runId);
         long cursor = parseCursor(runId, lastEventId);
         response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         response.setHeader("X-Accel-Buffering", "no");
@@ -94,24 +94,24 @@ public class WorkflowController {
         emitter.onCompletion(() -> closed.set(true));
         emitter.onTimeout(() -> closed.set(true));
         emitter.onError(ignored -> closed.set(true));
-        sseExecutor.execute(() -> stream(emitter, runId, userId, cursor, closed));
+        sseExecutor.execute(() -> stream(emitter, runId, permit, cursor, closed));
         return emitter;
     }
 
-    private void stream(SseEmitter emitter, String runId, String userId, long initialCursor,
+    private void stream(SseEmitter emitter, String runId, WorkflowService.StreamPermit permit, long initialCursor,
                         AtomicBoolean closed) {
         long cursor = initialCursor;
         Instant lastWrite = Instant.now();
         try {
             while (!closed.get()) {
-                List<Event> events = workflowService.eventsAfterOwned(runId, userId, cursor);
+                List<Event> events = workflowService.eventsForStream(permit, cursor);
                 for (Event event : events) {
                     emitter.send(SseEmitter.event().id(event.id()).name(event.type())
                             .data(event).reconnectTime(1_000));
                     cursor = event.eventId();
                     lastWrite = Instant.now();
                 }
-                var run = workflowService.ownedRun(runId, userId);
+                var run = workflowService.ownedForStream(permit);
                 WorkflowStatus status = WorkflowStatus.valueOf(run.status());
                 if (status.terminal() && events.isEmpty()) {
                     emitter.complete();

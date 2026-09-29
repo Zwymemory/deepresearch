@@ -549,9 +549,12 @@
 
       <div class="mode-switch" role="tablist" aria-label="运行模式">
         <button id="workflowModeButton" class="mode-button active" type="button" role="tab" aria-selected="true">Durable Workflow</button>
+        <button id="agentModeButton" class="mode-button" type="button" role="tab" aria-selected="false">自主研究（候选）</button>
         <button id="nativeModeButton" class="mode-button" type="button" role="tab" aria-selected="false">Single Agent</button>
       </div>
       <p id="modeNote" class="mode-note">Python/LangGraph 本地编排 · DeepSeek API 推理 · Java/MCP 执行工具</p>
+
+      <details id="agentPlanPanel" hidden><summary>当前研究计划</summary><pre id="agentPlanText" style="white-space:pre-wrap">等待研究任务</pre></details>
 
       <label class="field" for="questionInput">
         <span class="field-label"><span>研究问题</span><span id="questionCount" class="count">0 / 4000</span></span>
@@ -717,6 +720,12 @@
     };
     var EVENT_META = {
       QUEUED: { label: "已进入任务队列", description: "任务已持久化，正在等待工作流领取。" },
+      AGENT_ACTION_SELECTED: { label: "决定下一步", description: "根据最新观察选择动作。" },
+      AGENT_PLAN_REVISED: { label: "修订研究计划", description: "依据新证据调整研究计划。" },
+      AGENT_PLAN_UPDATED: { label: "研究计划更新", description: "记录当前任务与证据。" },
+      AGENT_OBSERVATION: { label: "研究观察", description: "工具已返回观察结果。" },
+      AGENT_STOPPED_WITH_GAPS: { label: "保留待查事项", description: "证据尚未充分。" },
+      AGENT_PUBLICATION_VALIDATED: { label: "发布内容已核查", description: "答案绑定服务端核查记录。" },
       STAGE_CHANGED: { label: "工作流阶段更新", description: "工作流已进入下一个执行阶段。" },
       PLAN_COMPLETED: { label: "研究计划已生成", description: "规划 Agent 已完成任务拆解。" },
       TASK_STARTED: { label: "工具任务开始", description: "执行 Agent 正在调用获准的只读工具。" },
@@ -851,6 +860,17 @@
     function eventSummary(event, meta) {
       var payload = event && event.payload && typeof event.payload === "object" ? event.payload : {};
       var type = meta.code;
+      if (type === "AGENT_ACTION_SELECTED") return payload.action + "：" + (payload.reason || "");
+      if (type === "AGENT_PLAN_REVISED" || type === "AGENT_PLAN_UPDATED") {
+        var tasks = Array.isArray(payload.tasks) ? payload.tasks : [];
+        $("agentPlanText").textContent = "计划版本 " + payload.planVersion + "\n" + tasks.map(function(task) {
+          return task.objective + "（" + task.status + "）\n完成标准：" + (task.acceptance_criteria || []).join("；") + "\n证据：" + task.evidenceCount + " 条";
+        }).join("\n\n");
+        return (payload.reason || "计划状态已更新") + " · 版本 " + payload.planVersion;
+      }
+      if (type === "AGENT_OBSERVATION") return payload.action + " · " + (payload.errorCode || (payload.newEvidence ? "取得新证据" : "没有新增证据"));
+      if (type === "AGENT_STOPPED_WITH_GAPS") return (payload.gaps || []).join("；");
+      if (type === "AGENT_PUBLICATION_VALIDATED") return "服务端已核查发布内容，引用 " + payload.citationCount + " 条";
       if (type === "STAGE_CHANGED") {
         return "工作流进入“" + (STAGE_LABELS[codeKey(payload.stage)] || payload.stage || "下一") + "”阶段。";
       }
@@ -1250,12 +1270,13 @@
 
     function saveRun() {
       // Single Agent 没有 workflow GET/SSE 恢复端点，不能覆盖 durable run 的恢复凭据。
-      if (state.mode !== "workflow") return;
+      if (state.mode === "legacy") return;
       if (!state.runId) {
         sessionStorage.removeItem(STORE_RUN);
         return;
       }
       sessionStorage.setItem(STORE_RUN, JSON.stringify({
+        mode: state.mode,
         runId: state.runId,
         sessionId: state.sessionId,
         status: state.status,
@@ -1277,7 +1298,7 @@
     function rememberRun() {
       if (!state.runId) return;
       var rows = recentRuns().filter(function (row) { return row.runId !== state.runId; });
-      rows.unshift({ runId: state.runId, sessionId: state.sessionId, status: state.status, updatedAt: Date.now() });
+      rows.unshift({ mode: state.mode, runId: state.runId, sessionId: state.sessionId, status: state.status, updatedAt: Date.now() });
       localStorage.setItem(STORE_RECENT, JSON.stringify(rows.slice(0, 5)));
       renderRecent();
     }
@@ -1335,9 +1356,10 @@
     function lockComposer(locked) {
       $("questionInput").disabled = locked;
       $("sessionInput").disabled = locked;
-      $("toolFieldset").disabled = locked || state.mode !== "workflow";
+      $("toolFieldset").disabled = locked || state.mode === "legacy";
       $("workflowModeButton").disabled = locked;
       $("nativeModeButton").disabled = locked;
+      $("agentModeButton").disabled = locked;
       $("startButton").disabled = state.submitting || (locked && !state.pending);
       $("startButton").classList.toggle("loading", state.submitting);
     }
@@ -1361,16 +1383,20 @@
     }
 
     function renderMode() {
-      var workflow = state.mode === "workflow";
-      $("workflowModeButton").classList.toggle("active", workflow);
+      var workflow = state.mode !== "legacy";
+      var autonomous = state.mode === "agent";
+      $("workflowModeButton").classList.toggle("active", workflow && !autonomous);
       $("nativeModeButton").classList.toggle("active", !workflow);
-      $("workflowModeButton").setAttribute("aria-selected", String(workflow));
+      $("workflowModeButton").setAttribute("aria-selected", String(workflow && !autonomous));
       $("nativeModeButton").setAttribute("aria-selected", String(!workflow));
+      $("agentModeButton").classList.toggle("active", autonomous);
+      $("agentModeButton").setAttribute("aria-selected", String(autonomous));
+      $("agentPlanPanel").hidden = !autonomous;
       $("toolFieldset").hidden = !workflow;
-      $("modeNote").textContent = workflow ?
+      $("modeNote").textContent = autonomous ? "根据观察决定下一步 · 读取原文与核查结论 · 缺少证据时保留问题" : workflow ?
         "Java 控制的可恢复工作流 · DeepSeek API 推理 · 受权工具调用 · 状态/SSE 可恢复" :
         "Java/Spring AI 单 Agent 编排 · DeepSeek API 推理 · Java 直接执行工具 · 不具备 Workflow 恢复";
-      $("modeValue").textContent = workflow ? "WORKFLOW" : "SINGLE AGENT";
+      $("modeValue").textContent = autonomous ? "自主研究" : workflow ? "WORKFLOW" : "SINGLE AGENT";
       $("startLabel").textContent = workflow ? "开始研究" : "运行基线";
     }
 
@@ -1397,7 +1423,7 @@
       $("runIdValue").textContent = state.runId || "尚未创建";
       $("sessionIdValue").textContent = state.sessionId || "—";
       $("copyRunButton").hidden = !state.runId;
-      $("cancelButton").hidden = !state.runId || TERMINAL.has(state.status) || state.mode !== "workflow";
+      $("cancelButton").hidden = !state.runId || TERMINAL.has(state.status) || state.mode === "legacy";
       lockComposer(state.submitting || !!state.pending || (!!state.runId && !TERMINAL.has(state.status)));
     }
 
@@ -1533,11 +1559,11 @@
       usage = usage || {};
       $("modelCallsMetric").textContent = usage.modelCalls == null ? "—" : String(usage.modelCalls);
       $("toolCallsMetric").textContent = usage.toolCalls == null ? "—" : String(usage.toolCalls);
-      $("tokensMetric").textContent = usage.totalTokens == null ? "—" : Number(usage.totalTokens).toLocaleString();
-      $("inputTokensMetric").textContent = usage.inputTokens == null ? "—" : Number(usage.inputTokens).toLocaleString();
-      $("outputTokensMetric").textContent = usage.outputTokens == null ? "—" : Number(usage.outputTokens).toLocaleString();
+      $("tokensMetric").textContent = usage.totalTokens == null ? (usage.inputTokensStatus === "unknown" || usage.outputTokensStatus === "unknown" ? "未知" : "—") : Number(usage.totalTokens).toLocaleString();
+      $("inputTokensMetric").textContent = usage.inputTokens == null ? (usage.inputTokensStatus === "unknown" ? "未知" : "—") : Number(usage.inputTokens).toLocaleString();
+      $("outputTokensMetric").textContent = usage.outputTokens == null ? (usage.outputTokensStatus === "unknown" ? "未知" : "—") : Number(usage.outputTokens).toLocaleString();
       $("durationMetric").textContent = usage.durationMs == null ? "—" : (Number(usage.durationMs) / 1000).toFixed(1) + "s";
-      $("costMetric").textContent = usage.estimatedCost == null ? "—" :
+      $("costMetric").textContent = usage.estimatedCost == null ? (usage.costStatus === "unknown" ? "未知" : "—") :
         String(usage.estimatedCost) + " " + (usage.currency || usage.costCurrency || "");
       $("reconnectMetric").textContent = String(state.reconnects);
     }
@@ -1820,7 +1846,7 @@
       var controller = new AbortController();
       var timeout = window.setTimeout(function () { controller.abort(); }, 20000);
       try {
-        var response = await fetch(apiBase() + "/api/research/workflows", {
+        var response = await fetch(apiBase() + (pending.mode === "agent" ? "/api/research/agents" : "/api/research/workflows"), {
           method: "POST",
           headers: authHeaders({
             "Content-Type": "application/json",
@@ -1924,7 +1950,7 @@
 
     async function submitNew() {
       if (state.submitting || state.pending || state.checkingToolConfig) return;
-      var body = state.mode === "workflow" ? workflowBody() : legacyBody();
+      var body = state.mode !== "legacy" ? workflowBody() : legacyBody();
       if (!state.auth.token) {
         toast("请先在“连接与身份”中设置 Bearer Token。", "warning");
         $("authDialog").showModal();
@@ -1935,11 +1961,11 @@
         $("questionInput").focus();
         return;
       }
-      if (state.mode === "workflow" && !body.requestedTools.length) {
+      if (state.mode !== "legacy" && !body.requestedTools.length) {
         toast("请至少允许一个只读工具", "warning");
         return;
       }
-      if (state.mode === "workflow" && body.requestedTools.includes("web_search")) {
+      if (state.mode !== "legacy" && body.requestedTools.includes("web_search")) {
         state.checkingToolConfig = true;
         var requestScope = JSON.stringify(currentRequestScope());
         var configured;
@@ -1957,7 +1983,7 @@
       stopStream();
       resetOutput();
       state.runId = "";
-      if (state.mode === "workflow") sessionStorage.removeItem(STORE_RUN);
+      if (state.mode !== "legacy") sessionStorage.removeItem(STORE_RUN);
       state.sessionId = body.sessionId || "";
       state.status = "READY";
       state.stage = "READY";
@@ -1973,7 +1999,7 @@
       state.pending = pending;
       savePending();
       $("idempotencyPreview").textContent = pending.key;
-      if (state.mode === "workflow") createWorkflow(pending);
+      if (state.mode !== "legacy") createWorkflow(pending);
       else runLegacy(pending);
     }
 
@@ -1986,12 +2012,12 @@
       }
       clearUnknown();
       $("idempotencyPreview").textContent = state.pending.key;
-      if (state.pending.mode === "workflow") await createWorkflow(state.pending);
+      if (state.pending.mode !== "legacy") await createWorkflow(state.pending);
       else await runLegacy(state.pending);
     }
 
     async function refreshStatus(reportError) {
-      if (!state.runId || state.mode !== "workflow") return;
+      if (!state.runId || state.mode === "legacy") return;
       try {
         var response = await fetch(apiBase() + "/api/research/workflows/" + encodeURIComponent(state.runId), {
           headers: authHeaders({ Accept: "application/json" }),
@@ -2068,7 +2094,7 @@
     }
 
     function startEventLoop() {
-      if (!state.runId || TERMINAL.has(state.status) || state.mode !== "workflow") return;
+      if (!state.runId || TERMINAL.has(state.status) || state.mode === "legacy") return;
       stopStream();
       var controller = new AbortController();
       var generation = ++state.streamGeneration;
@@ -2111,7 +2137,7 @@
     }
 
     async function cancelRun() {
-      if (!state.runId || state.mode !== "workflow") return;
+      if (!state.runId || state.mode === "legacy") return;
       $("cancelButton").disabled = true;
       try {
         var response = await fetch(apiBase() + "/api/research/workflows/" + encodeURIComponent(state.runId) + "/cancel", {
@@ -2132,7 +2158,7 @@
       if (!row || !row.runId) return;
       stopStream();
       resetOutput();
-      state.mode = "workflow";
+      state.mode = row.mode === "agent" ? "agent" : "workflow";
       state.runId = row.runId;
       state.sessionId = row.sessionId || "";
       state.status = row.status || "QUEUED";
@@ -2185,7 +2211,7 @@
         state.auth.tenantId + ":" + state.auth.userId : "未认证";
       $("authDialog").close();
       checkHealth();
-      if (state.runId && state.mode === "workflow") refreshStatus(false).then(startEventLoop);
+      if (state.runId && state.mode !== "legacy") refreshStatus(false).then(startEventLoop);
     }
 
     async function checkHealth() {
@@ -2248,6 +2274,7 @@
 
       var savedRun = safeJsonParse(sessionStorage.getItem(STORE_RUN) || "{}", {});
       if (savedRun.runId) {
+        state.mode = savedRun.mode === "agent" ? "agent" : "workflow";
         state.runId = savedRun.runId;
         state.sessionId = savedRun.sessionId || "";
         state.status = savedRun.status || "QUEUED";
@@ -2272,7 +2299,7 @@
       renderRecent();
       checkHealth();
       if (rejectedLegacyBase) toast("已清除旧版跨源 API Base 与会话 Token；请从目标服务页面重新连接。", "warning");
-      if (state.runId && !state.pending && state.mode === "workflow" && state.auth.token) {
+      if (state.runId && !state.pending && state.mode !== "legacy" && state.auth.token) {
         refreshStatus(false).then(startEventLoop);
       } else if (state.runId && !state.pending && !state.auth.token) {
         $("connectionBanner").hidden = false;
@@ -2283,6 +2310,7 @@
     }
 
     $("workflowModeButton").addEventListener("click", function () { state.mode = "workflow"; renderMode(); });
+    $("agentModeButton").addEventListener("click", function () { state.mode = "agent"; renderMode(); });
     $("nativeModeButton").addEventListener("click", function () { state.mode = "legacy"; renderMode(); });
     $("questionInput").addEventListener("input", function () {
       $("questionCount").textContent = $("questionInput").value.length + " / 4000";
@@ -2312,14 +2340,14 @@
       refreshStatus(false).then(startEventLoop);
     });
     $("disconnectButton").addEventListener("click", function () {
-      if (!state.runId || state.mode !== "workflow" || TERMINAL.has(state.status)) return;
+      if (!state.runId || state.mode === "legacy" || TERMINAL.has(state.status)) return;
       stopStream();
       setStreamState("已手动断开", "reconnecting");
       $("connectionBanner").hidden = false;
       $("connectionMessage").textContent = "SSE 已断开；任务继续运行，1 秒后携带 Last-Event-ID 自动恢复";
       toast("断线演练只中止事件连接，不会重新 POST 创建任务。", "success");
       window.setTimeout(function () {
-        if (state.runId && state.mode === "workflow" && !TERMINAL.has(state.status)) startEventLoop();
+        if (state.runId && state.mode !== "legacy" && !TERMINAL.has(state.status)) startEventLoop();
       }, 1000);
     });
     $("clearEventsButton").addEventListener("click", function () {

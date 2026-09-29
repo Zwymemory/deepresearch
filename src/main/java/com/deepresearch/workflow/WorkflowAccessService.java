@@ -62,7 +62,9 @@ public class WorkflowAccessService {
                 taskScopes, grant.expiresAt())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "taskId 已绑定其他工具 scope");
         }
-        String[] subject = grant.subject().split(":", 2);
+        var agentIdentity = repository.agentIdentity(grant.runId());
+        String[] subject = agentIdentity.map(identity -> new String[]{identity.tenantId(), identity.ownerId()})
+                .orElseGet(() -> grant.subject().split(":", 2));
         if (subject.length != 2) {
             throw new IllegalStateException("workflow grant subject 格式无效");
         }
