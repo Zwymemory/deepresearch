@@ -469,6 +469,12 @@ PLANNER_SYSTEM = dedent('''\
     otherwise omit an attribute. For programming-library documentation, prefer
     its English relation terminology such as syntax, suitable workloads and use
     cases; an ambiguous task keyword often finds only scheduling API examples.
+    For a programming-library question asking both concurrency description and
+    suitable workloads, use two separate initial queries within the same existing
+    budget: one for concurrency programming definition/mechanism, one for suitable
+    workloads/use cases. Do not pack both relations into one keyword list; a
+    capability/API list can lose its introductory sentence in search snapshots.
+    Prefer the actual definition/mechanism statement for the concurrency answer.
     When the user requests official/primary sources, every web_search input MUST
     include a site:DOMAIN constraint. Prefer a domain explicitly supplied by the
     user; otherwise choose the relevant entity's official documentation domain.

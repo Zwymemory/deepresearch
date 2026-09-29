@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Retained unsuccessful synthesis prompt drafts and final independent-relation Planner development check; no tools replayed and no final live run counted here.",
+  "finalDslSha256": "87a3e241456c34dbf5dcb772fd0667b08e527650f586ee097411676b0fc05033",
+  "finalSynthesizerRestoredToV14": true,
+  "finalCheckerUnchangedFromV13": true,
+  "attempts": [
+    {
+      "fixtureId": "english-request-relevance",
+      "kind": "synthesis",
+      "nodeId": "synthesizer_direct",
+      "httpStatus": 200,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "modelInvoked": true,
+      "actualSystemPromptSha256": "a891c601920deb451cbc1fe12893b8f4365294adf603f0fb78e13f5ae82edfd2",
+      "expectedDraftRuleActuallyPresent": true,
+      "rawOutputSha256": "5d1f87241ffbda79af5e08bc5bc9f46b0e2cb02e18ce52c77b000f3673c51c65",
+      "response": {
+        "status": "SUCCEEDED",
+        "claims": [
+          {
+            "text": "asyncio 提供一组高层 API，用于并发运行 Python 协程并完全控制其执行。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quoteId": "q1"
+              }
+            ]
+          },
+          {
+            "text": "asyncio 的高层 API 可用于执行网络 IO 和 IPC、控制子进程、通过队列分发任务以及同步并发代码。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quoteId": "q1"
+              }
+            ]
+          },
+          {
+            "text": "asyncio 常非常适合 IO 密集型和高层结构化网络代码。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quoteId": "q4"
+              }
+            ]
+          },
+          {
+            "text": "asyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和 Web 服务器、数据库连接库、分布式任务队列等。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quoteId": "q3"
+              }
+            ]
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": []
+      },
+      "question": "Python 官方文档如何介绍 asyncio 的并发能力？它适合哪类工作负载？",
+      "inputModelContextSha256": "0d8b4927c694380e8560742dbc1d1e0d47fab59652102f0e413cbefdb58336f9",
+      "apiLevelNecessaryBodyConditionPerClaim": [
+        false,
+        false,
+        true,
+        true
+      ],
+      "meetsRequiredDeveloperExpectation": false,
+      "draftRejected": true,
+      "expectedMinimalClassificationWording": true
+    },
+    {
+      "fixtureId": "chinese-minimal-claim",
+      "kind": "synthesis",
+      "nodeId": "synthesizer_direct",
+      "httpStatus": 200,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "modelInvoked": true,
+      "actualSystemPromptSha256": "fbeaf558f68604382c7c8aa3359b7bc42eb6ea399c15311d4b025481b92886c4",
+      "expectedDraftRuleActuallyPresent": true,
+      "rawOutputSha256": "aaf734cb4833cd76e9517d70eea2232f322942d82aa3a949d7c4599e3c1dfe6c",
+      "response": {
+        "status": "SUCCEEDED",
+        "claims": [
+          {
+            "text": "asyncio 提供一组高层 API，用于并发运行 Python 协程并完全控制其执行、执行网络 IO 和 IPC、控制子进程、通过队列分发任务以及同步并发代码。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quoteId": "q1"
+              }
+            ]
+          },
+          {
+            "text": "asyncio 常非常适合 IO 密集型和高层结构化网络代码。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quoteId": "q4"
+              }
+            ]
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": []
+      },
+      "question": "Python 官方文档如何介绍 asyncio 的并发能力？它适合哪类工作负载？",
+      "inputModelContextSha256": "0d8b4927c694380e8560742dbc1d1e0d47fab59652102f0e413cbefdb58336f9",
+      "apiLevelNecessaryBodyConditionPerClaim": [
+        false,
+        true
+      ],
+      "meetsRequiredDeveloperExpectation": false,
+      "draftRejected": true,
+      "expectedMinimalClassificationWording": true
+    },
+    {
+      "fixtureId": "planner-empty-debug-session-input",
+      "kind": "setup-variable-validation",
+      "httpStatus": 200,
+      "nodeStatus": "exception",
+      "modelInvoked": false,
+      "safeErrorCode": "VARIABLE_INPUT_MISSING",
+      "note": "The debugger omits an empty optional session_summary; a nonempty no-prior-session marker resolves debugger input validation. provider_error is a default node output, not an actual provider error."
+    },
+    {
+      "fixtureId": "separate-concurrency-and-workload-relations",
+      "kind": "plan",
+      "nodeId": "planner",
+      "modelInvoked": true,
+      "httpStatus": 200,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "actualSystemPromptSha256": "087dfcdfa4cafbd8b4de831d49e7ee2be6b62e85217d2f06e52be07c23debf6e",
+      "rawOutputSha256": "73f0dc781071f45146fc0d2f914bbe28783e312003bd69fca432f3cb94bacbac",
+      "response": {
+        "tasks": [
+          {
+            "tool": "web_search",
+            "input": "site:docs.python.org asyncio concurrency definition mechanism"
+          },
+          {
+            "tool": "web_search",
+            "input": "site:docs.python.org asyncio suitable workloads use cases"
+          }
+        ],
+        "requirements": [
+          "Python 官方文档如何介绍 asyncio 的并发能力？",
+          "它适合哪类工作负载？"
+        ]
+      },
+      "question": "Python 官方文档如何介绍 asyncio 的并发能力？它适合哪类工作负载？",
+      "sessionSummary": "No prior session.",
+      "expectedInitialQueries": 2,
+      "codeStatus": "READY",
+      "planRequirementsIncludeWholeOriginal": true,
+      "meetsRequiredDeveloperExpectation": true
+    }
+  ],
+  "summary": {
+    "modelCalls": 3,
+    "preModelVariableExceptions": 1,
+    "rejectedSynthesisDraftCount": 2,
+    "finalPlannerCheckPassed": true,
+    "workerTotalLimitUnchanged": 4,
+    "actualInitialQueriesPlanned": 2,
+    "synthesisCheckerAndApiGuardRestoredOrUnchanged": true,
+    "noToolInvocationInDeveloperChecks": true
+  }
+}

@@ -611,6 +611,13 @@ def verify_api_level_guard() -> None:
         result = call("final", candidate=json.dumps(item["candidate"]),
                       question=item["candidate"]["requirements"][-1], verification_text=json.dumps(item["response"]))
         assert item["modelApproved"] and result["status"] == item["expectedCodeStatus"]
+    focused = json.loads((HERE / "claim-support-focused-plan-audit-2026-09-29.json").read_text())
+    assert focused["summary"]["modelCalls"] == 3 and focused["summary"]["rejectedSynthesisDraftCount"] == 2
+    row = next(item for item in focused["attempts"] if item["kind"] == "plan")
+    replay = call("plan", plan_text=json.dumps(row["response"]), question=row["question"],
+                  java_run_id="wf-focused-plan-fixture", allowed_tools="web_search", finish_reason=row["finishReason"])
+    assert replay["status"] == "READY" and len(replay["requests"]) == 2
+    assert row["question"] in json.loads(replay["requirements"])
 
 
 if __name__ == "__main__":
