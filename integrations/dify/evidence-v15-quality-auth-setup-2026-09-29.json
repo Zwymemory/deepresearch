@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Pre-dispatch expired QA USER token setup; no workflow/model/tool invocation, retained outside fixed actual execution cohort.",
+  "implementationSha": "3c77d31c3bed4662369ab8622cc9133788972975",
+  "dslSha256": "87a3e241456c34dbf5dcb772fd0667b08e527650f586ee097411676b0fc05033",
+  "firstCaptureFileSha256": "04ca89fee61e60127a97f894708afcd3fc48347de91995ee205413ea6a876a7a",
+  "originalPreDispatchCapture": {
+    "schemaVersion": 1,
+    "purpose": "Frozen version consecutive original-question cohort and affected targeted regressions; every attempt retained.",
+    "conditions": {
+      "implementationSha": "3c77d31c3bed4662369ab8622cc9133788972975",
+      "runtimeJavaSourceBuildSha": "833b1e7ea5195b8587c95af3992bc0ba91440d8c",
+      "runtimeSourceTreeSha": "01cc82f3e24105e8166761799aa260eeff7b8a84",
+      "runtimeSourceTreesMatch": true,
+      "dslSha256": "87a3e241456c34dbf5dcb772fd0667b08e527650f586ee097411676b0fc05033",
+      "frozenCasesSha256": "51586f65fe525404f2dde852b5f32aa2fdc9ac772008a09fc2f2199fe8c6e57b",
+      "frozenSourceScopeSha256": "19d6b83aa19b9a3cc2b7b1562ae18250dca527f9ae8be8ddb768c0b841856451",
+      "publication": {
+        "id": "de7aaaa4-dbb1-4e27-b341-cd2ffd7973ca",
+        "markedName": "Evidence v15 Query",
+        "createdAt": 1790660281,
+        "implementationSha": "3c77d31c3bed4662369ab8622cc9133788972975",
+        "dslSha256": "87a3e241456c34dbf5dcb772fd0667b08e527650f586ee097411676b0fc05033",
+        "graphExactlyMatches": true
+      },
+      "buildProvenanceFile": "build-cache-provenance-2026-09-28.json",
+      "imageId": "sha256:02a5811d531e9fefe917b1c2289e30f255401be642c25e9f1fed5cb0e0e66efb",
+      "model": "deepseek-v4-flash",
+      "thinking": false,
+      "temperature": 0,
+      "maxModelCalls": 4,
+      "completionBudget": 9216,
+      "maxWorkers": 4,
+      "javaDeadlineSeconds": 120,
+      "retries": false,
+      "apiLevelGuard": {
+        "kind": "necessary lexical body evidence only",
+        "titleExcluded": true,
+        "recomputedFromOwnAuthorizedSource": true,
+        "contextWindowUnchanged": true,
+        "semanticApprovalStillRequired": true,
+        "finiteChineseEnglishHighLowApiPatterns": true
+      },
+      "supportInputContract": {
+        "ownQuotes": true,
+        "sameRunSameSourceTitleMaxChars": 200,
+        "titleOnlyIdentifiesTopic": true,
+        "continuousContextMaxCharsPerQuote": 600,
+        "contextBeforeAfterMaxChars": 150,
+        "noFragmentReordering": true
+      }
+    },
+    "startedAt": "2026-09-29T05:38:48.662089+00:00",
+    "attempts": [
+      {
+        "id": "original-01",
+        "question": "根据 Python 官方公开资料，asyncio 用于哪类并发编程、适合哪类任务？",
+        "requestedTools": [
+          "web_search"
+        ],
+        "expectedStatus": "SUCCEEDED",
+        "captureFailure": "RuntimeError"
+      }
+    ],
+    "summary": {
+      "status": "running"
+    }
+  },
+  "safeFailureCode": "HTTP_401",
+  "endpoint": "/api/research/workflows",
+  "workflowCreated": false,
+  "modelInvoked": false,
+  "tokenRefreshIdentity": {
+    "tenantId": "demo-tenant",
+    "userId": "web-acceptance-20260928",
+    "roles": [
+      "USER"
+    ],
+    "ttlSeconds": 7200
+  },
+  "privateEnvUnchanged": true,
+  "refreshReadback": "HTTP_200_same_authorized_existing_run",
+  "expiresAt": 1790667576
+}

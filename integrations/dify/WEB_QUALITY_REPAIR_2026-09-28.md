@@ -1,5 +1,11 @@
 # 网页论断支持与模型输出修复
 
+## 当前结论（第七冻结版）
+
+必要修复已固定在 3c77d31，完整记录见 evidence-v15-quality-live-2026-09-29.json。本轮原问题连续十次及六个固定变体共 16/16 达到预期；五十六条候选、四十七条发布结论完成自身来源审阅，协调根线程与 release 对话的 Codex 交叉复核未发现新的具体冲突。八份 canonical 知识文档在本地、Java 与 RAGFlow 的哈希一致，状态全 DONE。
+
+这次主要修复是把并发定义/机制与适用工作负载分开检索，并保留自身原文依据不足时的空答保护。配置预算未增加，实际检索输入量增加；搜索摘要与存档版本的限制、旧失败和开发误判均在下文及独立记录保留。本轮是有限样本的记录验收，前端统一部署和 Draft PR 必需 CI 尚由 release 对话继续完成。
+
 ## 已保留的故障
 
 wf-37517854-e59b-4ee4-88d0-f364a9968c1c 的两次网页检索均成功、各有五条摘要证据。Reviewer 的 finish_reason=length、4096 completion tokens；闭合思维块之后没有最终 JSON。Java 安全结束为 FAILED/DIFY_MODEL_OUTPUT_INVALID。脱敏诊断见 model-output-failure-2026-09-28.json，不改变历史终态、不公开模型思维链。
@@ -144,3 +150,19 @@ evidence-v14-quality-live-2026-09-29.json 完整保留原十六次，发布 Evid
 claim-support-focused-plan-audit-2026-09-29.json 保留两个 Synthesizer 草稿的真实误生成：一版增加英文相关性规则，一版补中文最短论断规则，仍输出无正文标签，故两版都撤回，没有因此抽整轮。实际 node 身份、system prompt SHA 和原输入上下文 SHA 已核对，确实调用对应草稿；没有以接口缓存解释掉误判。恢复第六版 Synthesizer，并保持第五版 Checker 和第六版 Code 必要条件不变。
 
 实际 rewrite-1 原规划把并发和工作负载合为一个关键词查询，主要材料是重排后的 API 操作列表。只将 Planner 的现有关系检索规则明确为：编程库问题同时询问并发描述与适用工作负载时，初轮分两条查询，分别找并发定义/机制和适用性。不限具体库、语言或答案，不新增工具或模型，四个总 Worker 上限仍不变；增加的是该场景实际初轮检索条数。一次真实开发 Planner 返回这两条独立查询，原问题要求及 whole-question Code 校验通过。此前空 session_summary 被调试器省略导致模型调用前变量异常单列，补非空“无历史会话”标记后执行；不是 provider 失败，不是模型重抽。新冻结十六次尚待完成。
+
+### 第七冻结版 3c77d31：16 个预期终态及内容记录审阅通过，交叉复核完成
+
+evidence-v15-quality-live-2026-09-29.json 保留完整原十六次。十次原题、两次改写、混合、KB 正例和精确 JWT 公开边界均 SUCCEEDED；银行无证据例为空答零引用不足。自身证据与整问覆盖逐项审阅为 16/16，共五十六条候选、四十七条发布论断；旧 v13 误批准、更正和 v14 正确拦截失败均保留。
+
+本轮高层 API 分类句的区别是**标签与对应操作现在确实在本条自己的原引句里**：`asyncio provides a set of high-level APIs to: [...] run Python coroutines concurrently and have full control over their execution;`。协调根线程独立从 original-02/03/04 原始同次快照重算 q2 并确认 visible subject/API/to:/操作关系，接受为“搜索摘要支持”。原生省略符完整保留，不把它本身一律解释成人工拼接；也不声称知道省略内容。允许忠实引用自身已经带省略号且仍保留明确关系的原快照，不允许 agent 重新排序/拼接或借其他段/claim 补限定。旧 v13 自身给定正文根本没有高层标签，仍失败；判定没有放宽题名权限。
+
+original-01/05/07/10 的单线程基础设施句来自实际 Python 3.6.15 官方存档正文，明确包含 single-threaded，而非从 async/await 常识推导。保留原版本 URL 与标题，记录成立仅针对这条存档摘要；不能据此断言所有当前 Python 版本、平台或运行时都只使用单线程。本轮所有十三个官方网页场景的检索及发布 URL 都在原独立核实的 docs.python.org 范围。
+
+固定身份：实现/测试 3c77d31c3bed4662369ab8622cc9133788972975；DSL 87a3e241456c34dbf5dcb772fd0667b08e527650f586ee097411676b0fc05033；发布 Evidence v15 Query / de7aaaa4-dbb1-4e27-b341-cd2ffd7973ca，API 读回 40 节点/37 边与源码精确一致。Java 仍用 833b1e7 正常源码缓存构建镜像，当前 src/Dockerfile/pom.xml/testdata/eval 与其一致；manifest/config 仍是上文所列 02a581… / eab637…，没有整版重新构建声明。固定问题及官网范围文件 SHA 不变。
+
+六十二个实际模型节点均 stop，每个 Java 运行只对应一个 Dify 原生运行，模型、四总 Worker、一次修订、9216 completion 上限和 120 秒截止保持。拆查询增加了实际初轮检索及输入量：总 token 中位数 14913、范围 2735–16735，单次 completion 合计最多 514；不声称费用或实际 token 未增长。Native 耗时中位数 6.087 秒、P95 13.909 秒；采集延迟另含引用回查/幂等校验。价格字段未配置，不当免费。
+
+五十六份原始引句/上下文及 native 来源身份绑定在脱敏前复核；公开字符偏移与 KB 脱敏 ID 不当原始身份。八份 canonical 文档的本地文件/Java/RAGFlow SHA 相等，全部 DONE。运行前旧 QA USER token 到期的 401 未创建任务/模型，完整前置捕获另存 evidence-v15-quality-auth-setup-2026-09-29.json；按原用户、USER 角色和 7200 秒刷新后旧 run 只读 200，私有 .env 未变。第六版 Java 刚启动时一次只读 health 连接提前关闭，启动后原在线预检通过；没有因此重派任务。
+
+最终 DSL 离线契约、必要词面保护、原错误与全部历史响应重放、两独立查询的实际开发响应 Code 回放均通过；相关 44 项 Java 单元和 4 项 PostgreSQL 测试仍对应不变的 Java 输入，未为纯 DSL/证据改动重复整套评测。发布页面截图为 media/evidence-v15-published-2026-09-29.png，仅记录页面状态，版本身份来自 API 读回。协调根线程审阅全部四十七条发布论断，release 对话逐读五十六条候选/四十七条发布句对应的十二组自身正文上下文；三十一条发布网页论断均为 exact docs.python.org，十三个官网场景符合冻结范围，未发现新的具体冲突。两方接受上述原生省略关系与存档版本边界，未追加队列。交叉复核是 Codex 对话间的记录审阅，**不是独立人类裁决、完整网页事实证明或生产语义正确保证**；统一前端部署与同一 Draft PR 必需 CI 门禁仍由 release 完成。本次提交只保存最终证据及准确说明，不改变已冻结的实现、原始运行或历史失败。
