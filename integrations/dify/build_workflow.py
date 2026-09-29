@@ -459,6 +459,11 @@ PLANNER_SYSTEM = dedent('''\
     original question as a mandatory sixth-or-earlier requirement before synthesis;
     a partial decomposition cannot remove an unanswered subject from final coverage.
     These requirements stay fixed for all later nodes.
+    Search for the requested RELATION/ATTRIBUTE as well as its subject. Preserve
+    named APIs/identifiers, but expand ambiguous words into descriptive search
+    terms. Suitable workloads/use cases need applicability evidence, not only
+    task scheduling or API examples. Actor duties need each named actor's
+    responsibilities, not only the architecture.
     When the user requests official/primary sources, every web_search input MUST
     include a site:DOMAIN constraint. Prefer a domain explicitly supplied by the
     user; otherwise choose the relevant entity's official documentation domain.
@@ -480,6 +485,13 @@ REVIEWER_SYSTEM = dedent('''\
     a Tavily search-summary snapshot, not a fetched full page or proof of truth.
     Only claim facts directly supported by its supplied content; URLs alone are
     not support. Missing/failed search diagnostics are never evidence.
+    Check every fixed requirement's requested relation: definition, mechanism,
+    duties, applicability/workload, location, quantity, or current value. Evidence
+    about one relation cannot answer another merely by sharing its subject.
+    Task/coroutine scheduling and recommended syntax do NOT establish suitable
+    workload types. If that requested relation is missing, choose REVISE with a
+    focused relation-specific query when the existing worker budget permits it;
+    otherwise choose INSUFFICIENT_EVIDENCE. Do not mark partial evidence SUFFICIENT.
     For official/primary-source requests, all web followup inputs must include
     site:DOMAIN using 1-3 plain DNS names, preferably the user's explicit domain.
     A domain restriction does not itself establish that a site is official.
@@ -497,13 +509,20 @@ REVIEWER_SYSTEM = dedent('''\
     DOCUMENTED_BOUNDARY for a refusal. DOCUMENTED_BOUNDARY requires boundary_support
     items with exactly {"subject":"precise requested topic","quote":"exact original
     negative clause, at most 400 characters","sourceId":"来源1"}. The subject must
-    occur in both the question and the negated scope of that original quote. The
+    occur in the negated scope of that original quote and match the question
+    literally or by the explicit category synonyms below. The
     documented contact category 联系方式 is a synonym for private phone/email.
     The subject field must be a SHORT BARE phrase copied verbatim from the quoted
     negative list, such as 联系方式, JWT, JWT 签名密钥, Kubernetes 集群, or SLA.
     Do not restate the whole question, add environment/owner qualifiers, append
     parentheses, or combine absent attributes with the category. K8s and Kubernetes
     refer to the same topic; JWT 签名密钥 is the public category for raw JWT keys.
+    An explicit exclusion of JWT signing keys supports a public-document refusal
+    for named API/internal/MCP JWT signing-key values, provided ALL requested
+    members are signing keys. Choose SUFFICIENT/DOCUMENTED_BOUNDARY and copy that
+    precise negative clause. The answer explains the public corpus boundary;
+    it neither reveals values nor proves those values do not exist. A signing-key
+    exclusion cannot answer an added bank-account/address request.
     Do not use generic project/document/production/sensitive-information terms as
     the subject. A subject mentioned in a separate positive clause is not negated.
     Cite only actual supplied sourceIds. If that scope cannot be confirmed, choose

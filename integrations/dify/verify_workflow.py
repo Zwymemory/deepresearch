@@ -489,6 +489,32 @@ def verify_quote_options_and_source_scope():
     assert by_id["same-snapshot-complete-python-clause"]["finalStatus"] == "SUCCEEDED"
     assert by_id["retained-java-only-missing-python"]["response"]["coverage"][-1]["claim_indices"] == []
 
+    relation_audit = json.loads((HERE / "claim-support-relation-audit-2026-09-29.json").read_text())
+    assert len(relation_audit["attempts"]) == 20 and relation_audit["summary"]["allCanonicalMatched"]
+    canonical = [row for row in relation_audit["attempts"] if row["canonicalInput"]]
+    assert len(canonical) == 18
+    for row in canonical:
+        assert row["matchesExpected"] and row["finishReason"] == "stop"
+        if row["kind"] == "support":
+            replay = call("final", candidate=json.dumps(row["candidate"]), question=row["question"],
+                          verification_text=json.dumps(row["response"]), finish_reason=row["finishReason"])
+            assert replay["status"] == row["finalStatus"]
+        else:
+            fixture = row["reviewInput"]
+            replay = call("review", review_text=json.dumps(row["response"]), finish_reason=row["finishReason"],
+                          context=json.dumps(fixture["context"]), initial_count=fixture["initialCount"],
+                          java_run_id="3d6edbc1-219c-4c72-a814-0b2652b2582c",
+                          allowed_tools=fixture["allowedTools"], question=row["question"])
+            assert replay["status"] == row["codeStatus"] and replay["needs_revision"] == row["needsRevision"]
+    by_id = {row["fixtureId"]: row for row in canonical}
+    mixed = by_id["retained-v11-mixed-kb-web"]
+    assert all(row["supported"] for row in mixed["response"]["decisions"])
+    assert mixed["response"]["coverage"][1]["claim_indices"] == []
+    assert mixed["response"]["coverage"][3]["claim_indices"] == []
+    assert by_id["retained-v11-review-mixed-kb-web"]["needsRevision"] == "YES"
+    assert by_id["retained-v11-review-kb-boundary"]["response"]["answer_kind"] == "DOCUMENTED_BOUNDARY"
+    assert by_id["retained-v11-review-kb-zero-evidence"]["codeStatus"] == "INSUFFICIENT_EVIDENCE"
+
 
 if __name__ == "__main__":
     verify_graph()
