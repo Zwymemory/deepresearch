@@ -464,6 +464,11 @@ PLANNER_SYSTEM = dedent('''\
     terms. Suitable workloads/use cases need applicability evidence, not only
     task scheduling or API examples. Actor duties need each named actor's
     responsibilities, not only the architecture.
+    Every requested relation must be addressed by at least one planned query.
+    Use separate focused queries within the existing budget when one query would
+    otherwise omit an attribute. For programming-library documentation, prefer
+    its English relation terminology such as syntax, suitable workloads and use
+    cases; an ambiguous task keyword often finds only scheduling API examples.
     When the user requests official/primary sources, every web_search input MUST
     include a site:DOMAIN constraint. Prefer a domain explicitly supplied by the
     user; otherwise choose the relevant entity's official documentation domain.
@@ -492,6 +497,9 @@ REVIEWER_SYSTEM = dedent('''\
     workload types. If that requested relation is missing, choose REVISE with a
     focused relation-specific query when the existing worker budget permits it;
     otherwise choose INSUFFICIENT_EVIDENCE. Do not mark partial evidence SUFFICIENT.
+    A followup must target the missing relation. For programming-library docs,
+    use native English workload/use-case/applicability terms for a suitability
+    gap rather than repeating an ambiguous task-scheduling keyword.
     For official/primary-source requests, all web followup inputs must include
     site:DOMAIN using 1-3 plain DNS names, preferably the user's explicit domain.
     A domain restriction does not itself establish that a site is official.

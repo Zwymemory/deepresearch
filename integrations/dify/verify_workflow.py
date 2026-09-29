@@ -515,6 +515,52 @@ def verify_quote_options_and_source_scope():
     assert by_id["retained-v11-review-kb-boundary"]["response"]["answer_kind"] == "DOCUMENTED_BOUNDARY"
     assert by_id["retained-v11-review-kb-zero-evidence"]["codeStatus"] == "INSUFFICIENT_EVIDENCE"
 
+    context_audit = json.loads((HERE / "claim-support-context-audit-2026-09-29.json").read_text())
+    assert len(context_audit["attempts"]) == 31 and context_audit["summary"]["allCanonicalMatched"]
+    canonical = [row for row in context_audit["attempts"] if row["canonicalInput"]]
+    assert len(canonical) == 23
+    for row in canonical:
+        assert row["matchesExpected"] and row["finishReason"] == "stop"
+        if row["kind"] == "support":
+            sources = {source["sourceId"]: source for source in row["candidate"]["evidences"]}
+            for item in row["verificationInput"]["claims"]:
+                for proof, context in zip(item["quotes"], item["quote_contexts"], strict=True):
+                    source = sources[proof["sourceId"]]
+                    assert context == namespace["quote_context"](source, proof["quote"])
+                    assert len(context["content"]) <= 600 and len(context["title"]) <= 200
+                    assert context["content"][context["quoteStart"]:context["quoteEnd"]] == proof["quote"]
+                    assert context["content"] in source["content"]
+            replay = call("final", candidate=json.dumps(row["candidate"]), question=row["question"],
+                          verification_text=json.dumps(row["response"]), finish_reason=row["finishReason"])
+            assert replay["status"] == row["finalStatus"]
+        elif row["kind"] == "review":
+            fixture = row["reviewInput"]
+            replay = call("review", review_text=json.dumps(row["response"]), finish_reason=row["finishReason"],
+                          context=json.dumps(fixture["context"]), initial_count=fixture["initialCount"],
+                          java_run_id="3d6edbc1-219c-4c72-a814-0b2652b2582c",
+                          allowed_tools=fixture["allowedTools"], question=row["question"])
+            assert replay["status"] == row["codeStatus"] and replay["needs_revision"] == row["needsRevision"]
+        else:
+            fixture = row["planInput"]
+            replay = call("plan", plan_text=json.dumps(row["response"]), finish_reason=row["finishReason"],
+                          java_run_id="3d6edbc1-219c-4c72-a814-0b2652b2582c",
+                          question=row["question"], allowed_tools=fixture["allowedTools"])
+            assert replay["status"] == row["codeStatus"]
+    by_id = {row["fixtureId"]: row for row in canonical}
+    assert by_id["missing-single-thread"]["response"]["decisions"][0]["supported"] is False
+    assert by_id["old-fragment-with-real-python-context"]["response"]["decisions"][0]["supported"] is True
+    assert by_id["clipped-tail-without-specific-actor"]["response"]["decisions"][0]["supported"] is False
+    assert by_id["wrong-actor-with-real-python-context"]["response"]["decisions"][0]["supported"] is False
+    fixture = by_id["same-snapshot-complete-python-clause"]
+    supplied = select_options(json.dumps({"evidences": fixture["candidate"]["evidences"]}),
+                              fixture["candidate"]["claims"][0])
+    supplied["quote_contexts"] = [{"title": "model invented", "content": "another source"}]
+    rejected = call("claims", synthesis_text=json.dumps({"status": "SUCCEEDED", "claims": [supplied],
+                    "answer_kind": "ANSWER", "boundary_support": []}),
+                    context=json.dumps({"evidences": fixture["candidate"]["evidences"]}),
+                    question=fixture["question"], requirements=json.dumps(fixture["candidate"]["requirements"]))
+    assert rejected["status"] == "FAILED"
+
 
 if __name__ == "__main__":
     verify_graph()
