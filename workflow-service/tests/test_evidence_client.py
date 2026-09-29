@@ -15,7 +15,10 @@ from deepresearch_workflow.evidence_client import HttpEvidenceBackend
 from .test_agent_runtime import LedgerSubstitute
 
 
-async def test_peer_verifier_request_and_model_receipt_bind_exact_response_and_current_claim():
+@pytest.mark.parametrize("protocol", ["evidence-check/1", "evidence-check/2"])
+async def test_peer_verifier_request_and_model_receipt_bind_exact_response_and_current_claim(
+    protocol,
+):
     pytest.importorskip(
         "deepresearch_workflow.evidence_check", reason="committed peer source bundle required"
     )
@@ -34,13 +37,15 @@ async def test_peer_verifier_request_and_model_receipt_bind_exact_response_and_c
         }
     ]
     prepared = {
-        "protocol_version": "evidence-check/1",
+        "protocol_version": protocol,
         "check_id": "check-peer",
         "claims": [{"claim_id": "claim-peer", **specs[0]}],
         "evidence": [record],
         "dispute_round": 0,
         "parent_check_id": None,
     }
+    if protocol == "evidence-check/2":
+        prepared.update(investigation_id="server-investigation", prior_relations=[])
     text = record["snapshot"]["text"]
     proposal = {
         "claims": [

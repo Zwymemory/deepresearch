@@ -75,8 +75,12 @@ public class AgentPublicationController {
                 var detail=details.computeIfAbsent(identity,key->object("sourceId",key,
                     "kind",citation.path("source").path("kind").asText().equals("web")?"WEB_ORIGINAL":"KNOWLEDGE_CHUNK",
                     "title",citation.path("source").path("title").asText(),"url",locator.path("uri").asText(),"excerpt",""));
-                String quote=citation.path("quote").path("text").asText();
-                if (!quote.isBlank()) detail.put("excerpt",detail.path("excerpt").asText().isBlank()?quote:detail.path("excerpt").asText()+"\n\n"+quote);
+                JsonNode occurrences=citation.path("occurrences");
+                var originals=occurrences.isArray()?occurrences:JSON.valueToTree(java.util.List.of(citation));
+                for (var original:originals) {
+                    String quote=original.path("quote").path("text").asText();
+                    if (!quote.isBlank()) detail.put("excerpt",detail.path("excerpt").asText().isBlank()?quote:detail.path("excerpt").asText()+"\n\n"+quote);
+                }
             }
             if (citations.size()>32 || (terminalStatus.equals("SUCCEEDED") && citations.isEmpty()))
                 throw new EvidenceException("PUBLICATION_INVALID");

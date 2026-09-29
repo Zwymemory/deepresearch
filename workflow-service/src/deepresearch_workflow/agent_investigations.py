@@ -60,9 +60,17 @@ def select_investigation(state, task, claims, requested_id=None):
     key = scope_key(claims)
     bound = bindings.get(task["task_id"])
     if requested_id is not None:
-        if requested_id not in investigations:
+        requested_key = next(
+            (
+                identity
+                for identity, saved in investigations.items()
+                if saved.get("packet", {}).get("investigation_id") == requested_id
+            ),
+            requested_id,
+        )
+        if requested_key not in investigations:
             raise InvestigationError("INVESTIGATION_MISSING")
-        if requested_id != key:
+        if requested_key != key:
             raise InvestigationError("CLAIM_SCOPE_CHANGED")
     if bound is not None and bound != key:
         raise InvestigationError("CLAIM_SCOPE_CHANGED")
@@ -115,7 +123,7 @@ def public_investigations(state):
     investigations, _ = investigation_state(state)
     return [
         {
-            "investigation_id": key,
+            "investigation_id": entry.get("packet", {}).get("investigation_id") or key,
             "task_ids": entry["task_ids"],
             "claim_specs": entry["claim_specs"],
             "check_id": entry.get("packet", {}).get("check_id"),

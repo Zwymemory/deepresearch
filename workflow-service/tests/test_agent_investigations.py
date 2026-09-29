@@ -43,6 +43,7 @@ class CheckBackend:
         prior = state.get("packet", {})
         round_number = prior.get("dispute_round", -1) + 1
         return {
+            "investigation_id": "server-" + scope_key(claims),
             "packet_id": "packet-" + key,
             "check_id": "check-" + key,
             "check_ids": [*prior.get("check_ids", []), "check-" + key],
@@ -160,6 +161,20 @@ async def test_reordered_claims_and_changed_task_reuse_history_not_a_new_root():
     )
     assert explicit["observations"][-1]["errorCode"] == "CLAIM_SCOPE_CHANGED"
     assert len(context.backend.requests) == 2
+
+
+async def test_published_server_investigation_identity_reuses_checkpoint_history():
+    from deepresearch_workflow.agent_investigations import public_investigations
+
+    context = await action_context()
+    claims = [claim("Subject A claim")]
+    await check(context, "task-a", claims)
+    server_id = context.state["packet"]["investigation_id"]
+    assert public_investigations(context.state)[0]["investigation_id"] == server_id
+    await check(context, "task-b", claims, investigation_id=server_id)
+    assert (
+        len(context.state["investigations"]) == 1 and context.state["packet"]["dispute_round"] == 1
+    )
 
 
 async def test_checkpoint_values_retain_both_investigations_after_failure_and_resume():
