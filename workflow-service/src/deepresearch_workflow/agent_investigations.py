@@ -55,7 +55,7 @@ def investigation_state(state):
     return investigations, bindings
 
 
-def select_investigation(state, task, claims, requested_id=None):
+def select_investigation(state, task, claims, requested_id=None, *, criterion_scoped=False):
     investigations, bindings = investigation_state(state)
     key = scope_key(claims)
     bound = bindings.get(task["task_id"])
@@ -72,7 +72,8 @@ def select_investigation(state, task, claims, requested_id=None):
             raise InvestigationError("INVESTIGATION_MISSING")
         if requested_key != key:
             raise InvestigationError("CLAIM_SCOPE_CHANGED")
-    if bound is not None and bound != key:
+    keys = [bound] if isinstance(bound, str) else bound or []
+    if keys and key not in keys and not criterion_scoped:
         raise InvestigationError("CLAIM_SCOPE_CHANGED")
     entry = investigations.setdefault(
         key,
@@ -86,7 +87,7 @@ def select_investigation(state, task, claims, requested_id=None):
     )
     if task["task_id"] not in entry["task_ids"]:
         entry["task_ids"].append(task["task_id"])
-    bindings[task["task_id"]] = key
+    bindings[task["task_id"]] = list(dict.fromkeys([*keys, key]))
     return key, entry, investigations, bindings
 
 

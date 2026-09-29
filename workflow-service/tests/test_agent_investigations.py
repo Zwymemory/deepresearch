@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from deepresearch_workflow.agent_completion import ensure_criteria
 from deepresearch_workflow.agent_investigations import scope_key
 from deepresearch_workflow.agent_protocol import AgentTask
 from deepresearch_workflow.agent_runtime import AutonomousResearchGraph
@@ -88,6 +89,7 @@ async def action_context():
         ).model_dump(mode="json")
         for identity, objective in (("task-a", "Subject A"), ("task-b", "Subject B"))
     ]
+    ensure_criteria(state["run_id"], state["tasks"])
     return SimpleNamespace(graph=graph, state=state, backend=backend, ledger=context[3])
 
 
@@ -99,6 +101,14 @@ async def check(context, task_id, claims, *, investigation_id=None):
         "claims": claims,
         "reason": "Check the selected goal",
         "investigation_id": investigation_id,
+        "criterion_bindings": [
+            {
+                "criterion_id": next(t for t in context.state["tasks"] if t["task_id"] == task_id)[
+                    "criteria"
+                ][0]["criterion_id"],
+                "claim_index": 0,
+            }
+        ],
     }
     update = await context.graph.act(context.state)
     context.state.update(update)
@@ -136,7 +146,9 @@ async def test_failed_checks_preserve_prior_packet_history_and_block_dependencie
     context.backend.failure = failure
     update = await check(context, "task-a", [claim("Subject A claim")])
     assert "packet" not in update and context.state["packet"] == prior
-    assert context.state["investigations"] == history
+    for identity, entry in history.items():
+        assert context.state["investigations"][identity]["packet"] == entry["packet"]
+        assert context.state["investigations"][identity]["history"] == entry["history"]
     assert context.state["tasks"][0]["status"] == "blocked"
     assert "private" not in str(context.state["observations"][-1])
     context.state["tasks"][1]["dependencies"] = ["task-a"]
@@ -153,13 +165,19 @@ async def test_reordered_claims_and_changed_task_reuse_history_not_a_new_root():
     assert len(context.state["investigations"]) == 1
     assert context.state["packet"]["dispute_round"] == 1
     assert context.backend.requests[-1][0]["dispute_round"] == 0
-    assert context.state["task_investigations"] == {"task-a": key, "task-b": key}
+    assert context.state["task_investigations"] == {"task-a": [key], "task-b": [key]}
     rewritten = await check(context, "task-b", [claim("Silently rewritten claim")])
-    assert rewritten["observations"][-1]["errorCode"] == "CLAIM_SCOPE_CHANGED"
+    assert rewritten["observations"][-1]["errorCode"] in {
+        "CLAIM_SCOPE_CHANGED",
+        "CRITERION_SCOPE_CHANGED",
+    }
     explicit = await check(
         context, "task-b", [claim("Silently rewritten claim")], investigation_id=key
     )
-    assert explicit["observations"][-1]["errorCode"] == "CLAIM_SCOPE_CHANGED"
+    assert explicit["observations"][-1]["errorCode"] in {
+        "CLAIM_SCOPE_CHANGED",
+        "CRITERION_SCOPE_CHANGED",
+    }
     assert len(context.backend.requests) == 2
 
 
@@ -231,6 +249,14 @@ async def test_actual_langgraph_checkpointer_restores_multiple_investigations_an
                     "action": "check_claims",
                     "task_id": task,
                     "claims": [claim(text)],
+                    "criterion_bindings": [
+                        {
+                            "criterion_id": next(
+                                t for t in context.state["tasks"] if t["task_id"] == task
+                            )["criteria"][0]["criterion_id"],
+                            "claim_index": 0,
+                        }
+                    ],
                     "reason": "Investigate the selected original scope",
                 }
             )

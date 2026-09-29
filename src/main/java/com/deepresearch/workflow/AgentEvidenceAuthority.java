@@ -102,10 +102,7 @@ public class AgentEvidenceAuthority implements EvidenceAuthority {
     }
     @Override public List<ReportGoal> reportGoals(Grant g) {
         if (!active(g) || !purpose(g).equals("PUBLICATION")) throw EvidenceException.denied();
-        return db.query("""
-            SELECT task_id,objective,status FROM agent_research_task WHERE run_id=?
-            ORDER BY plan_version,task_id
-            """,(rs,n)->new ReportGoal(rs.getString(1),rs.getString(2),rs.getString(3)),g.runId());
+        return new AgentCompletionService(db).goals(g);
     }
     @Override public PublicationReadPermit publicationRead(Grant g,JsonNode evidence) {
         return tx.execute(status->{

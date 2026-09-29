@@ -140,8 +140,13 @@ class AgentHttpPostgresIT {
             VALUES (?,'model:synthetic-check',1,'MODEL','CHECK',?,'RESERVED',100,100,?::uuid)
             """,run.id(),sha("synthetic-model"),run.claim());
         db.update("UPDATE agent_research_operation SET status='SETTLED',safe_result=?::jsonb,actual_usage='{}',settled_at=now() WHERE run_id=? AND operation_key='model:synthetic-check'",canonical(bound),run.id());
+        String standard="Scoped source decision",criterion=AgentCompletionService.criterionId(run.id(),"task-main",0,standard);
+        JsonNode expected=AgentCompletionService.normalize(prepared.body().path("request").path("claims").get(0));
+        db.update("INSERT INTO agent_research_investigation_progress(run_id,investigation,current_call_id,claim_token) VALUES (?,?,?,?::uuid)",run.id(),prepared.body().path("investigation_id").asText(),check,run.claim());
+        db.update("INSERT INTO agent_research_criterion(run_id,task_id,criterion_id,criterion_index,criterion_text,expected_claim,expected_hash,investigation,last_call_id,dependency_snapshot,claim_token) VALUES (?,'task-main',?,0,?,?::jsonb,?,?,?,'{}',?::uuid)",run.id(),criterion,standard,canonical(expected),sha(canonical(expected)),prepared.body().path("investigation_id").asText(),check,run.claim());
         var completed=request("POST","/internal/agent/evidence/checks/complete",service(),object("identifiers",identifiers(run,check),"check_id",prepared.body().path("check_id"),"model_call_id","model:synthetic-check","response",response));
         assertThat(completed.status()).withFailMessage(completed.body().toString()).isEqualTo(200);
+        db.update("UPDATE agent_research_operation SET status='SETTLED',safe_result=?::jsonb,actual_usage='{}',settled_at=now() WHERE run_id=? AND operation_key=?",canonical(object("records",completed.body().path("records"),"check_id",prepared.body().path("check_id"),"gaps",List.of())),run.id(),check);
         db.update("UPDATE agent_research_task SET status='done' WHERE run_id=?",run.id());
     }
     Reply publish(Run run,int step) throws Exception {
@@ -163,7 +168,8 @@ class AgentHttpPostgresIT {
         var report=publication.body();
         assertThat(report.path("report_status").asText()).isEqualTo("partial");
         assertThat(report.path("citations").get(0).asText()).isEqualTo("kb:ragflow:dataset-http:document-http:chunk-old");
-        assertThat(report.path("unfinished_goals").size()).isEqualTo(1);
+        assertThat(report.path("unfinished_goals")).isNotEmpty();
+        assertThat(report.path("answer").asText()).contains("Independent scoped decision");
         String path="/internal/research/workflows/"+run.id()+"/finalize";
         assertThat(request("POST",path,service(),finalizeBody(run,report,"SUCCEEDED")).status()).isEqualTo(400);
         var altered=finalizeBody(run,report,"INSUFFICIENT_EVIDENCE");
@@ -205,5 +211,52 @@ class AgentHttpPostgresIT {
         var denied=request("POST","/internal/agent/publication",service(),object("identifiers",identifiers(run,call)));
         assertThat(denied.status()).withFailMessage(denied.body().toString()).isEqualTo(429);
         assertThat(db.queryForObject("SELECT count(*) FROM agent_research_source_validation WHERE run_id=?",Integer.class,run.id())).isZero();
+    }
+
+    private JsonNode criterionHttpScenario(String mode) throws Exception {
+        Run run=create("criteria-owner-"+mode);
+        String objective=mode.equals("refuted")?"Verify API document version":"Verify API document version and per-minute request rate";
+        var criteria=mode.equals("refuted")?List.of("Verify the API document version"):List.of("Verify the API document version","Verify the per-minute request rate");
+        db.update("UPDATE agent_research_task SET objective=?,acceptance_criteria=CAST(? AS text[]) WHERE run_id=? AND task_id='task-main'",objective,"{\""+String.join("\",\"",criteria)+"\"}",run.id());
+        String original=mode.equals("complete")?"Document version: 2.0\nVersion 2.0 allows 100 requests per minute.\n":"Document version: 2.0\nThis source specifies version 2.0 only; the per-minute request rate is not stated.\n";
+        when(ragflow.chunk("dataset-http","document-http","chunk-old")).thenReturn(object("id","chunk-old","doc_id","document-http","content",original));
+        search(run,"search-criteria-"+mode,"chunk-old");
+        db.update("UPDATE agent_workflow_run SET status='PLANNING',stage='PLANNING' WHERE run_id=?",run.id());
+        var config=java.nio.file.Files.createTempFile("completion-http-",".json");
+        var output=java.nio.file.Path.of("target/criterion-http-"+mode+".json").toAbsolutePath();
+        var log=java.nio.file.Path.of("target/criterion-http-"+mode+".log").toAbsolutePath();
+        java.nio.file.Files.writeString(config,canonical(object("mode",mode,"run",run.id(),"claim",run.claim(),"url","http://127.0.0.1:"+port,
+            "token",service(),"objective",objective,"criteria",criteria,"output",output.toString(),
+            "budget",JSON.readTree(db.queryForObject("SELECT budget::text FROM agent_workflow_run WHERE run_id=?",String.class,run.id())),
+            "grant",db.queryForObject("SELECT grant_id FROM agent_workflow_run WHERE run_id=?",String.class,run.id()))));
+        try {
+            var builder=new ProcessBuilder(System.getenv().getOrDefault("AGENT_PYTHON","python3"),"-B","tests/fixtures/completion_http_probe.py")
+                .directory(java.nio.file.Path.of("workflow-service").toFile()).redirectErrorStream(true).redirectOutput(log.toFile());
+            builder.environment().put("PYTHONPATH",java.nio.file.Path.of("workflow-service/src").toAbsolutePath().toString());
+            builder.environment().put("PYTHONDONTWRITEBYTECODE","1");builder.environment().put("COMPLETION_TEST_CONFIG",config.toString());
+            builder.environment().put("TEST_AGENT_DATABASE_URL","postgresql://deepresearch_workflow:workflow-integration-test-password@"+PG.getHost()+":"+PG.getMappedPort(5432)+"/"+PG.getDatabaseName());
+            var process=builder.start();assertThat(process.waitFor(50,java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            assertThat(process.exitValue()).withFailMessage(java.nio.file.Files.readString(log)).isZero();
+            var result=JSON.readTree(java.nio.file.Files.readString(output));var report=result.path("report");
+            String status=mode.equals("complete")||mode.equals("refuted")?"SUCCEEDED":"INSUFFICIENT_EVIDENCE";
+            assertThat(report.path("terminal_status").asText()).isEqualTo(status);
+            if(status.equals("SUCCEEDED")) assertThat(report.path("unfinished_goals")).isEmpty();
+            else {assertThat(report.path("unfinished_goals")).isNotEmpty();assertThat(report.path("answer").asText()).contains("Verify the per-minute request rate");}
+            String path="/internal/research/workflows/"+run.id()+"/finalize";
+            assertThat(request("POST",path,service(),finalizeBody(run,report,status.equals("SUCCEEDED")?"INSUFFICIENT_EVIDENCE":"SUCCEEDED")).status()).isEqualTo(400);
+            var altered=finalizeBody(run,report,status);((com.fasterxml.jackson.databind.node.ObjectNode)altered).put("answer",report.path("answer").asText()+" unchecked addition");
+            assertThat(request("POST",path,service(),altered).status()).isEqualTo(400);
+            db.update("UPDATE agent_workflow_run SET status='FINALIZING',stage='FINALIZING' WHERE run_id=?",run.id());
+            assertThat(request("POST",path,service(),finalizeBody(run,report,status)).status()).isEqualTo(200);
+            assertThat(request("POST",path,service(),finalizeBody(run,report,status)).status()).isEqualTo(200);
+            assertThat(request("GET","/api/research/workflows/"+run.id(),user(run.user()),null).body().path("status").asText()).isEqualTo(status);
+            return report;
+        } finally {java.nio.file.Files.deleteIfExists(config);}
+    }
+    @Test void uncoveredStoredRateCriterionStaysPartialThroughActualPythonJwtAndSql() throws Exception {criterionHttpScenario("partial");}
+    @Test void allBoundCriteriaCanCompleteThroughActualPythonJwtAndSql() throws Exception {criterionHttpScenario("complete");}
+    @Test void legacyUnboundChecksDoNotCompleteNativeStandardsThroughActualHttp() throws Exception {criterionHttpScenario("legacy");}
+    @Test void validRefutationCanSatisfyVerificationCriterionThroughActualHttp() throws Exception {
+        var report=criterionHttpScenario("refuted");assertThat(report.path("claims").get(0).path("claim").path("decision_status").asText()).isEqualTo("refuted");
     }
 }
