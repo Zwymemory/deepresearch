@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Development regressions from retained real search receipt snapshots; expected support manually specified, not a new benchmark score.",
+  "cases": [
+    {
+      "id": "missing-single-thread",
+      "question": "根据 Python 官方公开资料，asyncio 用于哪类并发编程、适合哪类任务？",
+      "evidence": {
+        "sourceId": "来源1",
+        "citationId": "web:tavily:d8a4102f47d3b9be000f270ab0e79f6770a01d299c9b771c936d87c344fcddd6",
+        "title": "asyncio --- 异步I/O — Python 3.14.7 文档",
+        "content": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n有关 asyncio 的基础介绍。\n\nasyncio 提供一组 高层级 API 用于：\n\n并发地 运行 Python 协程 并对其执行过程实现完全控制;\n\n执行 网络 IO 和 IPC;\n\n控制 子进程;\n\n通过 队列 分发任务;\n\n同步 并发代码;\n\nFor introspection, asyncio provides APIs and tools for: [...] inspecting the async call graph of tasks and futures;\n\ninspecting tasks in another running Python process with\ncommand-line tools;\n\n此外，还有一些 低层级 API 以支持 库和框架的开发者 实现：\n\n创建和管理 事件循环，它提供用于 连接网络, 运行 子进程, 处理 OS 信号 等功能的异步 API；\n\n使用 transports 实现高效率协议;\n\n通过 async/await 语法 桥接 基于回调的库和代码。\n\n适用范围: not WASI.\n\n此模块在 WebAssembly 平台上无效或不可用。请参阅 WebAssembly 平台 了解详情。\n\nasyncio REPL\n\n你可以在 REPL 中尝试使用 `asyncio` 并发上下文：\n\n`asyncio`\n\n这个 REPL 提供了与 `PYTHON_BASIC_REPL` 的有限兼容性。推荐使用默认的 REPL 以获得完整功能和最新特性。\n\n`PYTHON_BASIC_REPL`",
+        "url": "https://docs.python.org/zh-cn/3/library/asyncio.html"
+      },
+      "claim": {
+        "text": "asyncio 用于编写单线程并发代码，使用 async/await 语法。",
+        "quotes": [
+          {
+            "sourceId": "来源1",
+            "quote": "asyncio 是用来编写 并发 代码的库，使用 async/await 语法。"
+          }
+        ]
+      },
+      "expectedSupported": false,
+      "provenance": "wf-8c25561f-4cb7-453e-ad46-0ee811ba6b36",
+      "expectedCoverage": false,
+      "requirements": [
+        "用于哪类并发编程",
+        "适合哪类任务"
+      ]
+    },
+    {
+      "id": "minimal-supported-concurrency",
+      "question": "根据 Python 官方公开资料，asyncio 用于哪类并发编程、适合哪类任务？",
+      "evidence": {
+        "sourceId": "来源1",
+        "citationId": "web:tavily:d8a4102f47d3b9be000f270ab0e79f6770a01d299c9b771c936d87c344fcddd6",
+        "title": "asyncio --- 异步I/O — Python 3.14.7 文档",
+        "content": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n有关 asyncio 的基础介绍。\n\nasyncio 提供一组 高层级 API 用于：\n\n并发地 运行 Python 协程 并对其执行过程实现完全控制;\n\n执行 网络 IO 和 IPC;\n\n控制 子进程;\n\n通过 队列 分发任务;\n\n同步 并发代码;\n\nFor introspection, asyncio provides APIs and tools for: [...] inspecting the async call graph of tasks and futures;\n\ninspecting tasks in another running Python process with\ncommand-line tools;\n\n此外，还有一些 低层级 API 以支持 库和框架的开发者 实现：\n\n创建和管理 事件循环，它提供用于 连接网络, 运行 子进程, 处理 OS 信号 等功能的异步 API；\n\n使用 transports 实现高效率协议;\n\n通过 async/await 语法 桥接 基于回调的库和代码。\n\n适用范围: not WASI.\n\n此模块在 WebAssembly 平台上无效或不可用。请参阅 WebAssembly 平台 了解详情。\n\nasyncio REPL\n\n你可以在 REPL 中尝试使用 `asyncio` 并发上下文：\n\n`asyncio`\n\n这个 REPL 提供了与 `PYTHON_BASIC_REPL` 的有限兼容性。推荐使用默认的 REPL 以获得完整功能和最新特性。\n\n`PYTHON_BASIC_REPL`",
+        "url": "https://docs.python.org/zh-cn/3/library/asyncio.html"
+      },
+      "claim": {
+        "text": "asyncio 用于编写并发代码，使用 async/await 语法。",
+        "quotes": [
+          {
+            "sourceId": "来源1",
+            "quote": "asyncio 是用来编写 并发 代码的库，使用 async/await 语法。"
+          }
+        ]
+      },
+      "expectedSupported": true,
+      "provenance": "wf-8c25561f-4cb7-453e-ad46-0ee811ba6b36",
+      "expectedCoverage": false,
+      "requirements": [
+        "用于哪类并发编程",
+        "适合哪类任务"
+      ]
+    },
+    {
+      "id": "unsupported-universal",
+      "question": "根据 Python 官方公开资料，asyncio 用于哪类并发编程、适合哪类任务？",
+      "evidence": {
+        "sourceId": "来源1",
+        "citationId": "web:tavily:d8a4102f47d3b9be000f270ab0e79f6770a01d299c9b771c936d87c344fcddd6",
+        "title": "asyncio --- 异步I/O — Python 3.14.7 文档",
+        "content": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n有关 asyncio 的基础介绍。\n\nasyncio 提供一组 高层级 API 用于：\n\n并发地 运行 Python 协程 并对其执行过程实现完全控制;\n\n执行 网络 IO 和 IPC;\n\n控制 子进程;\n\n通过 队列 分发任务;\n\n同步 并发代码;\n\nFor introspection, asyncio provides APIs and tools for: [...] inspecting the async call graph of tasks and futures;\n\ninspecting tasks in another running Python process with\ncommand-line tools;\n\n此外，还有一些 低层级 API 以支持 库和框架的开发者 实现：\n\n创建和管理 事件循环，它提供用于 连接网络, 运行 子进程, 处理 OS 信号 等功能的异步 API；\n\n使用 transports 实现高效率协议;\n\n通过 async/await 语法 桥接 基于回调的库和代码。\n\n适用范围: not WASI.\n\n此模块在 WebAssembly 平台上无效或不可用。请参阅 WebAssembly 平台 了解详情。\n\nasyncio REPL\n\n你可以在 REPL 中尝试使用 `asyncio` 并发上下文：\n\n`asyncio`\n\n这个 REPL 提供了与 `PYTHON_BASIC_REPL` 的有限兼容性。推荐使用默认的 REPL 以获得完整功能和最新特性。\n\n`PYTHON_BASIC_REPL`",
+        "url": "https://docs.python.org/zh-cn/3/library/asyncio.html"
+      },
+      "claim": {
+        "text": "asyncio 是所有网络任务的唯一最佳选择。",
+        "quotes": [
+          {
+            "sourceId": "来源1",
+            "quote": "asyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。"
+          }
+        ]
+      },
+      "expectedSupported": false,
+      "provenance": "wf-8c25561f-4cb7-453e-ad46-0ee811ba6b36",
+      "expectedCoverage": false,
+      "requirements": [
+        "用于哪类并发编程",
+        "适合哪类任务"
+      ]
+    },
+    {
+      "id": "explicit-single-thread",
+      "question": "Python 3.6 的这段资料如何描述 asyncio 的并发代码？",
+      "evidence": {
+        "sourceId": "来源1",
+        "citationId": "web:tavily:02b8a5ba4053ca3d320f66e262a6fea27910800f2784704be2423ee5a527a429",
+        "title": "18.5. asyncio --- Asynchronous I/O, event loop, coroutines and tasks — Dokumentasi Python 3.6.15",
+        "content": "### Navigasi\n\n# 18.5. `asyncio` --- Asynchronous I/O, event loop, coroutines and tasks¶\n\n`asyncio`\n\nBaru pada versi 3.4.\n\nSource code: Lib/asyncio/\n\nThis module provides infrastructure for writing single-threaded concurrent\ncode using coroutines, multiplexing I/O access over sockets and other\nresources, running network clients and servers, and other related primitives.\nHere is a more detailed list of the package contents:\n\na pluggable event loop with various system-specific\nimplementations; [...] `yield from`\n\ncancellation support for `Future`s and coroutines;\n\n`Future`\n\nsynchronization primitives for use between coroutines in\na single thread, mimicking those in the `threading` module;\n\n`threading`\n\nan interface for passing work off to a threadpool, for times when\nyou absolutely, positively have to use a library that makes blocking\nI/O calls. [...] transport and protocol abstractions\n(similar to those in Twisted);\n\nconcrete support for TCP, UDP, SSL, subprocess pipes, delayed calls, and\nothers (some may be system-dependent);\n\na `Future` class that mimics the one in the `concurrent.futures`\nmodule, but adapted for use with the event loop;\n\n`Future`\n`concurrent.futures`\n\ncoroutines and tasks based on `yield from` (PEP 380), to help write\nconcurrent code in a sequential fashion;\n\n`yield from`",
+        "url": "https://docs.python.org/id/3.6/library/asyncio.html"
+      },
+      "claim": {
+        "text": "这段 Python 3.6 资料描述 asyncio 为使用协程编写单线程并发代码提供基础设施。",
+        "quotes": [
+          {
+            "sourceId": "来源1",
+            "quote": "This module provides infrastructure for writing single-threaded concurrent\ncode using coroutines, multiplexing I/O access over sockets and other\nresources, running network clients and servers, and other related primitives."
+          }
+        ]
+      },
+      "expectedSupported": true,
+      "provenance": "wf-428c7d45-a172-4234-b321-046d53066a38",
+      "expectedCoverage": true,
+      "requirements": [
+        "Python 3.6 的这段资料如何描述 asyncio 的并发代码？"
+      ]
+    },
+    {
+      "id": "wrong-count",
+      "question": "这段资料描述每个线程运行多少个事件循环？",
+      "evidence": {
+        "sourceId": "来源1",
+        "citationId": "web:tavily:643dd68acb0762cf7a21e1dd18a220d0425bec7da8e85ebcd340ad10d74dbcfd",
+        "title": "asyncio and free-threaded Python — Python 3.14.7 documentation",
+        "content": "asyncio uses an event loop as a scheduler to enable highly efficient\nconcurrency by switching between tasks to allow non-blocking I/O\noperations. This results in better performance for I/O-bound use\ncases. It also allows off-loading CPU-bound work to a thread or\nprocess pool, but that is still limited by the global\ninterpreter lock in CPython. [...] A single event loop on one core can handle many connections\nconcurrently, but the Python code that runs to handle each one still\nexecutes serially. Once requests involve a non-trivial amount of\nper-request computation, that handling becomes the bottleneck, and a\nsingle core can no longer keep up. Combining asyncio with threads is\nmost useful here: by running an event loop per thread, the handling of\ndifferent requests can run in parallel across multiple CPU cores. It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n\nHere’s an example of how to use asyncio with threads:",
+        "url": "https://docs.python.org/3/library/asyncio-threading.html"
+      },
+      "claim": {
+        "text": "这段资料描述每个线程运行两个事件循环。",
+        "quotes": [
+          {
+            "sourceId": "来源1",
+            "quote": "asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment."
+          }
+        ]
+      },
+      "expectedSupported": false,
+      "provenance": "wf-428c7d45-a172-4234-b321-046d53066a38",
+      "expectedCoverage": false,
+      "requirements": [
+        "这段资料描述每个线程运行多少个事件循环？"
+      ]
+    },
+    {
+      "id": "right-count",
+      "question": "这段资料描述每个线程运行多少个事件循环？",
+      "evidence": {
+        "sourceId": "来源1",
+        "citationId": "web:tavily:643dd68acb0762cf7a21e1dd18a220d0425bec7da8e85ebcd340ad10d74dbcfd",
+        "title": "asyncio and free-threaded Python — Python 3.14.7 documentation",
+        "content": "asyncio uses an event loop as a scheduler to enable highly efficient\nconcurrency by switching between tasks to allow non-blocking I/O\noperations. This results in better performance for I/O-bound use\ncases. It also allows off-loading CPU-bound work to a thread or\nprocess pool, but that is still limited by the global\ninterpreter lock in CPython. [...] A single event loop on one core can handle many connections\nconcurrently, but the Python code that runs to handle each one still\nexecutes serially. Once requests involve a non-trivial amount of\nper-request computation, that handling becomes the bottleneck, and a\nsingle core can no longer keep up. Combining asyncio with threads is\nmost useful here: by running an event loop per thread, the handling of\ndifferent requests can run in parallel across multiple CPU cores. It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n\nHere’s an example of how to use asyncio with threads:",
+        "url": "https://docs.python.org/3/library/asyncio-threading.html"
+      },
+      "claim": {
+        "text": "这段资料描述每个线程运行一个事件循环。",
+        "quotes": [
+          {
+            "sourceId": "来源1",
+            "quote": "asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment."
+          }
+        ]
+      },
+      "expectedSupported": true,
+      "provenance": "wf-428c7d45-a172-4234-b321-046d53066a38",
+      "expectedCoverage": true,
+      "requirements": [
+        "这段资料描述每个线程运行多少个事件循环？"
+      ]
+    },
+    {
+      "id": "wrong-environment",
+      "question": "这段资料描述什么环境下可利用多个 CPU 核心？",
+      "evidence": {
+        "sourceId": "来源1",
+        "citationId": "web:tavily:643dd68acb0762cf7a21e1dd18a220d0425bec7da8e85ebcd340ad10d74dbcfd",
+        "title": "asyncio and free-threaded Python — Python 3.14.7 documentation",
+        "content": "asyncio uses an event loop as a scheduler to enable highly efficient\nconcurrency by switching between tasks to allow non-blocking I/O\noperations. This results in better performance for I/O-bound use\ncases. It also allows off-loading CPU-bound work to a thread or\nprocess pool, but that is still limited by the global\ninterpreter lock in CPython. [...] A single event loop on one core can handle many connections\nconcurrently, but the Python code that runs to handle each one still\nexecutes serially. Once requests involve a non-trivial amount of\nper-request computation, that handling becomes the bottleneck, and a\nsingle core can no longer keep up. Combining asyncio with threads is\nmost useful here: by running an event loop per thread, the handling of\ndifferent requests can run in parallel across multiple CPU cores. It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n\nHere’s an example of how to use asyncio with threads:",
+        "url": "https://docs.python.org/3/library/asyncio-threading.html"
+      },
+      "claim": {
+        "text": "这段资料描述任意 Python 环境都可以利用多个 CPU 核心。",
+        "quotes": [
+          {
+            "sourceId": "来源1",
+            "quote": "asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment."
+          }
+        ]
+      },
+      "expectedSupported": false,
+      "provenance": "wf-428c7d45-a172-4234-b321-046d53066a38",
+      "expectedCoverage": false,
+      "requirements": [
+        "这段资料描述什么环境下可利用多个 CPU 核心？"
+      ]
+    },
+    {
+      "id": "right-environment",
+      "question": "这段资料描述什么环境下可利用多个 CPU 核心？",
+      "evidence": {
+        "sourceId": "来源1",
+        "citationId": "web:tavily:643dd68acb0762cf7a21e1dd18a220d0425bec7da8e85ebcd340ad10d74dbcfd",
+        "title": "asyncio and free-threaded Python — Python 3.14.7 documentation",
+        "content": "asyncio uses an event loop as a scheduler to enable highly efficient\nconcurrency by switching between tasks to allow non-blocking I/O\noperations. This results in better performance for I/O-bound use\ncases. It also allows off-loading CPU-bound work to a thread or\nprocess pool, but that is still limited by the global\ninterpreter lock in CPython. [...] A single event loop on one core can handle many connections\nconcurrently, but the Python code that runs to handle each one still\nexecutes serially. Once requests involve a non-trivial amount of\nper-request computation, that handling becomes the bottleneck, and a\nsingle core can no longer keep up. Combining asyncio with threads is\nmost useful here: by running an event loop per thread, the handling of\ndifferent requests can run in parallel across multiple CPU cores. It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n\nHere’s an example of how to use asyncio with threads:",
+        "url": "https://docs.python.org/3/library/asyncio-threading.html"
+      },
+      "claim": {
+        "text": "这段资料描述在 free-threaded Python 环境下可以利用多个 CPU 核心。",
+        "quotes": [
+          {
+            "sourceId": "来源1",
+            "quote": "asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment."
+          }
+        ]
+      },
+      "expectedSupported": true,
+      "provenance": "wf-428c7d45-a172-4234-b321-046d53066a38",
+      "expectedCoverage": true,
+      "requirements": [
+        "这段资料描述什么环境下可利用多个 CPU 核心？"
+      ]
+    }
+  ]
+}

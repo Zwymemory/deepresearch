@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Pre-cohort read-only validation of same user token; no new model or tool work.",
+  "setupProbeAttempts": [
+    {
+      "httpStatus": 500,
+      "safeReason": "Incorrect initial read-only probe route; no workflow created."
+    },
+    {
+      "httpStatus": 200,
+      "correctControllerRoute": true
+    }
+  ],
+  "tokenExpired": false,
+  "privateEnvModified": false,
+  "newWorkflowCreated": false,
+  "permissionsExpanded": false
+}

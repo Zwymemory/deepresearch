@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Independent post-handoff review correction; preserves frozen native output and original terminal states.",
+  "correctedAt": "2026-09-29T05:08:30.662738+00:00",
+  "implementationSha": "32e7b30fa4643a3497d0d40e2ec4fa2651bed0ce",
+  "dslSha256": "5187ea5ccd4ba10e4b2f1416d13690041fbb74ed18661561cb7cdeb27ebe2e96",
+  "originalCaptureFileSha256": "4b56e898d3a2cb4a79533a370633e9935acdf69d8a98c5d5a806b7ca798e6b8a",
+  "originalSummary": {
+    "status": "recordReviewPassed",
+    "attemptCount": 16,
+    "consecutiveOriginalCount": 10,
+    "originalStatuses": {
+      "SUCCEEDED": 10,
+      "INSUFFICIENT_EVIDENCE": 0,
+      "FAILED": 0,
+      "TIMED_OUT": 0
+    },
+    "expectedTerminalCount": 16,
+    "singleRemoteRunAll": true,
+    "manualSupport": "recordReviewed",
+    "acceptancePassedCount": 16,
+    "authorityCompliantCaseCount": 13,
+    "allModelFinishReasonsStop": true,
+    "modelCalls": 62,
+    "completionTokensMax": 574,
+    "totalTokensMin": 2667,
+    "totalTokensMax": 15706,
+    "totalTokensMedian": 9699.0,
+    "nativeElapsedSecondsMedian": 6.0237145,
+    "nativeElapsedSecondsP95": 14.065961,
+    "latencyDefinition": "Native Dify server execution elapsed seconds; capture latency also includes post-terminal receipt/citation checks and idempotency replay.",
+    "manualClaimsReviewed": 59,
+    "originalRecordReviewPassedCount": 10,
+    "manualPublishedClaimsReviewed": 53,
+    "exactQuoteContextBindingsChecked": 59,
+    "allContextBindingsValidBeforeRedaction": true,
+    "corpusCheck": {
+      "canonicalDocumentCount": 8,
+      "allFileJavaRagflowHashesMatch": true,
+      "allDone": true
+    },
+    "semanticGuarantee": false
+  },
+  "findings": [
+    {
+      "case": "original-01",
+      "runId": "wf-0e719ff9-0951-4f29-a0b4-0f361c920d3a",
+      "claimIndex": 4,
+      "published": false,
+      "originalClaimReview": {
+        "index": 4,
+        "text": "asyncio 提供高层 API 来并发运行 Python 协程并完全控制其执行、执行网络 IO 和 IPC、控制子进程、通过队列分发任务以及同步并发代码。",
+        "ownQuotes": [
+          {
+            "sourceId": "来源3",
+            "citationId": "web:tavily:a7712fca492d3c6f8b901b794f1c0cc6fc58269cc4e508de4b4b1cbaca2a1c1d",
+            "quote": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n",
+            "rawQuoteSha256": "546332ac7ab584a444627fd92961d8d9a7e9779290bef35cc955389c70e441e2",
+            "quoteInSameRunSnapshot": true,
+            "title": "asyncio — Asynchronous I/O — Python 3.14.7 documentation",
+            "url": "https://docs.python.org/3/library/asyncio.html"
+          }
+        ],
+        "approvedByModel": true,
+        "recordSupported": true,
+        "published": false,
+        "recordReview": "Own quotes plus the explicitly supplied same-source title/continuous original context directly support the full claim; title identifies topic only. No other claim/source/run is used; no full-page truth guarantee.",
+        "ownQuoteContexts": [
+          {
+            "sourceId": "来源3",
+            "title": "asyncio — Asynchronous I/O — Python 3.14.7 documentation",
+            "content": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n inspecting the async call graph of tasks and futures;\n inspecting tasks in another running Python process with command-line tools;\n\nAdditionally, the",
+            "quoteStart": 0,
+            "quoteEnd": 249,
+            "prefixClipped": false,
+            "suffixClipped": true
+          }
+        ],
+        "rawOwnQuoteContextsSha256": "8c6d2f40d309393e006203e99212853a0bb80e202296026eb2546da97fda4779",
+        "contextBindingsCheckedBeforePublicRedaction": true,
+        "publicRedactionMayChangeCharacterOffsets": true
+      },
+      "correctedSupported": false,
+      "reason": "The own 249-character quote and 399-character continuous context identify the actual asyncio capability list but do not establish high-level API classification. The generic source title identifies topic only; a separately reordered high-level passage in the full same-run snapshot cannot classify this list."
+    },
+    {
+      "case": "rewrite-1",
+      "runId": "wf-7a479423-86c5-4da5-ace8-f51d2f665f0a",
+      "claimIndex": 1,
+      "published": true,
+      "originalClaimReview": {
+        "index": 1,
+        "text": "asyncio 提供高层 API，用于并发运行 Python 协程并完全控制其执行、执行网络 IO 和 IPC、控制子进程、通过队列分发任务以及同步并发代码。",
+        "ownQuotes": [
+          {
+            "sourceId": "来源1",
+            "citationId": "web:tavily:a7712fca492d3c6f8b901b794f1c0cc6fc58269cc4e508de4b4b1cbaca2a1c1d",
+            "quote": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n",
+            "rawQuoteSha256": "546332ac7ab584a444627fd92961d8d9a7e9779290bef35cc955389c70e441e2",
+            "quoteInSameRunSnapshot": true,
+            "title": "asyncio — Asynchronous I/O — Python 3.14.7 documentation",
+            "url": "https://docs.python.org/3/library/asyncio.html"
+          }
+        ],
+        "approvedByModel": true,
+        "recordSupported": true,
+        "published": true,
+        "recordReview": "Own quotes plus the explicitly supplied same-source title/continuous original context directly support the full claim; title identifies topic only. No other claim/source/run is used; no full-page truth guarantee.",
+        "ownQuoteContexts": [
+          {
+            "sourceId": "来源1",
+            "title": "asyncio — Asynchronous I/O — Python 3.14.7 documentation",
+            "content": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n inspecting the async call graph of tasks and futures;\n inspecting tasks in another running Python process with command-line tools;\n\nAdditionally, the",
+            "quoteStart": 0,
+            "quoteEnd": 249,
+            "prefixClipped": false,
+            "suffixClipped": true
+          }
+        ],
+        "rawOwnQuoteContextsSha256": "25cc48fbe93b67c581a2c85d24bb0bc8fc9a5aada10da0868a0ccfb5e58d513c",
+        "contextBindingsCheckedBeforePublicRedaction": true,
+        "publicRedactionMayChangeCharacterOffsets": true
+      },
+      "correctedSupported": false,
+      "reason": "The own 249-character quote and 399-character continuous context identify the actual asyncio capability list but do not establish high-level API classification. The generic source title identifies topic only; a separately reordered high-level passage in the full same-run snapshot cannot classify this list."
+    }
+  ],
+  "runtimeOutputsChanged": false,
+  "strictPublishedCaseCount": 15,
+  "expectedTerminalCount": 16,
+  "readyWithdrawn": true
+}

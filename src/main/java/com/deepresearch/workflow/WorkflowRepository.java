@@ -367,6 +367,27 @@ public class WorkflowRepository {
     public record DifyWebSource(String citationId, String url, String title, String content,
                                 OffsetDateTime completedAt) {}
 
+    public record DifyKbSource(String citationId, String title, String content) {}
+
+    /** Presentation metadata from this run's authorized completed KB receipt, after live validation. */
+    public Optional<DifyKbSource> difyKbSource(String runId, String citationId) {
+        return jdbcTemplate.query("""
+                SELECT e->>'citationId', e->>'title', e->>'content'
+                FROM dify_workflow_tool_call c
+                JOIN agent_workflow_run r ON r.run_id=c.run_id
+                JOIN dify_workflow_source s ON s.run_id=c.run_id AND s.citation_id=?
+                CROSS JOIN LATERAL jsonb_array_elements(c.safe_result->'evidences') e
+                WHERE c.run_id=? AND c.tool_name='kb_search' AND c.status='COMPLETED'
+                  AND c.completed_at IS NOT NULL AND 'kb_search'=ANY(r.requested_scopes)
+                  AND c.safe_result->>'success'='true' AND c.safe_result->>'code'='OK'
+                  AND c.safe_result->>'tool'='kb_search'
+                  AND e->>'citationId'=? AND e->>'untrusted'='true'
+                  AND c.call_id ~ ('^' || c.run_id || ':(initial|revision):[1-4]$')
+                ORDER BY c.completed_at, c.call_id LIMIT 1
+                """, (rs, n) -> new DifyKbSource(rs.getString(1), rs.getString(2), rs.getString(3)),
+                citationId, runId, citationId).stream().findFirst();
+    }
+
     /** Reads only successful, completed, authorized receipts for this exact run. No remote fetch. */
     public Optional<DifyWebSource> difyWebSource(String runId, String citationId) {
         return jdbcTemplate.query("""

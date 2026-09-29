@@ -160,6 +160,44 @@ class DifyWorkflowAdapterTest {
     }
 
     @Test
+    void knowledgeMetadataUsesAuthorizedReceiptAndNeverAddsAPublicUrl() throws Exception {
+        String kb = "kb:ragflow:dataset:doc:one";
+        setup("succeeded", "SUCCEEDED", "Knowledge [来源1]", kb);
+        when(repository.difySources("wf-1")).thenReturn(Set.of(kb));
+        when(citationValidator.available("wf-1", List.of(kb))).thenReturn(true);
+        when(repository.difyKbSource("wf-1", kb)).thenReturn(Optional.of(
+                new WorkflowRepository.DifyKbSource(kb, "Actual document.md", "Actual retrieved chunk")));
+        adapter.reconcile("wf-1");
+        ArgumentCaptor<String> response = ArgumentCaptor.forClass(String.class);
+        verify(repository).finishDify(eq("wf-1"), eq(WorkflowStatus.SUCCEEDED), response.capture(), any(),
+                eq(null), eq("Knowledge [来源1]"));
+        var metadata = json.readTree(response.getValue()).path("citationDetails").get(0);
+        assertThat(metadata.path("sourceId").asText()).isEqualTo(kb);
+        assertThat(metadata.path("kind").asText()).isEqualTo("KNOWLEDGE_CHUNK");
+        assertThat(metadata.path("title").asText()).isEqualTo("Actual document.md");
+        assertThat(metadata.path("excerpt").asText()).isEqualTo("Actual retrieved chunk");
+        assertThat(metadata.has("url")).isFalse();
+    }
+
+    @Test
+    void modelFailurePublishesOnlyAllowlistedNodeAndSafeCode() throws Exception {
+        when(repository.difyMapping("wf-1")).thenReturn(Optional.of(
+                new WorkflowRepository.DifyMapping("remote", "task", "BOUND")));
+        when(client.detail("remote")).thenReturn(json.readTree("""
+                {"status":"succeeded","outputs":{"status":"FAILED","answer":"","citations":[],
+                "error_code":"DIFY_MODEL_OUTPUT_TRUNCATED","diagnostic_node":"reviewer",
+                "reasoning_content":"private reasoning must never be published"}}
+                """));
+        adapter.reconcile("wf-1");
+        ArgumentCaptor<String> response = ArgumentCaptor.forClass(String.class);
+        verify(repository).finishDify(eq("wf-1"), eq(WorkflowStatus.FAILED), response.capture(), any(),
+                eq("DIFY_MODEL_OUTPUT_TRUNCATED"), eq(""));
+        assertThat(json.readTree(response.getValue()).path("diagnostics").path("node").asText())
+                .isEqualTo("reviewer");
+        assertThat(response.getValue()).doesNotContain("private reasoning");
+    }
+
+    @Test
     void oversizedCitationMarkerFailsValidationInsteadOfStallingRun() throws Exception {
         setup("succeeded", "SUCCEEDED", "answer [来源999999999999999999999]", "kb:ragflow:dataset:doc:one");
         when(repository.difySources("wf-1")).thenReturn(Set.of("kb:ragflow:dataset:doc:one"));

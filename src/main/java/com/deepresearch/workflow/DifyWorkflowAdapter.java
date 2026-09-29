@@ -180,7 +180,8 @@ public class DifyWorkflowAdapter {
                     (DifyFailureCodes.known(reason) ? reason : "DIFY_OUTPUT_INVALID") : "DIFY_WORKFLOW_FAILED";
         } else if (status == WorkflowStatus.INSUFFICIENT_EVIDENCE) {
             String reason = outputs.path("error_code").asText("");
-            error = Set.of("WEB_SEARCH_NO_RESULTS", "NO_RELEVANT_EVIDENCE").contains(reason) ? reason : null;
+            error = Set.of("WEB_SEARCH_NO_RESULTS", "NO_RELEVANT_EVIDENCE",
+                    "CLAIM_SUPPORT_INSUFFICIENT").contains(reason) ? reason : null;
         }
         if (status == WorkflowStatus.SUCCEEDED && !validCitations(runId, answer, citations)) {
             status = WorkflowStatus.FAILED;
@@ -211,11 +212,25 @@ public class DifyWorkflowAdapter {
                     citationDetails.add(Map.of("sourceId", id, "kind", "WEB_SEARCH_SNAPSHOT",
                             "url", snapshot.url(), "title", snapshot.title(), "excerpt", snapshot.content(),
                             "retrievedAt", snapshot.completedAt().toString()));
+                } else {
+                    repository.difyKbSource(runId, id)
+                            .filter(source -> id.equals(source.citationId()) && source.title() != null
+                                    && source.content() != null && !source.content().isBlank()
+                                    && source.title().length() <= 300 && source.content().length() <= 2000)
+                            .ifPresent(source -> citationDetails.add(Map.of("sourceId", id,
+                                    "kind", "KNOWLEDGE_CHUNK", "title", source.title(), "excerpt", source.content())));
                 }
             }
         }
+        String diagnosticNode = outputs.path("diagnostic_node").asText("");
+        Map<String, String> diagnostics = status == WorkflowStatus.FAILED && error != null
+                && error.startsWith("DIFY_MODEL_")
+                && Set.of("planner", "reviewer", "synthesizer", "synthesizer_direct",
+                        "support_checker", "support_checker_direct").contains(diagnosticNode)
+                ? Map.of("node", diagnosticNode, "code", error) : Map.of();
         String response = json.writeValueAsString(Map.of("answer", answer, "citations", citations,
                 "citationDetails", citationDetails,
+                "diagnostics", diagnostics,
                 "citationContract", status == WorkflowStatus.SUCCEEDED ? "INDEXED_V1" : "NONE",
                 "insufficientEvidence", status == WorkflowStatus.INSUFFICIENT_EVIDENCE));
         JsonNode usage = detail.path("data").path("total_tokens");

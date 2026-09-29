@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Bounded local Maven cache recovery for the frozen source build; no source packaging replacement and no claim of cache-free reproducibility.",
+  "implementationSha": "833b1e7ea5195b8587c95af3992bc0ba91440d8c",
+  "officialMavenBaseDigest": "sha256:3a4ab3276a087bf276f79cae96b1af04f53731bec53fb2e651aca79e4b10211e",
+  "dockerfileSha256": "f269abaa98340768b1bd6e85f2be9007c227eca31e92d08d968ec77424ff781f",
+  "failures": [
+    {
+      "phase": "registryMetadata",
+      "safeReason": "Docker Hub Maven manifest request EOF before compiling"
+    },
+    {
+      "phase": "mavenPackage",
+      "safeReason": "Central TLS handshake termination fetching two jars; source unchanged; prior app remained running"
+    }
+  ],
+  "copiedArtifacts": [
+    {
+      "mavenRepositoryPath": "org/springframework/retry/spring-retry/2.0.12/spring-retry-2.0.12.jar",
+      "sha256": "15e5b238080e05b97d7603472887d658fc018340539b3f0777bc92445bf91dad",
+      "bytes": 156125,
+      "resolvedInVerifiedClasspath": true
+    },
+    {
+      "mavenRepositoryPath": "org/springframework/retry/spring-retry/2.0.12/spring-retry-2.0.12.pom",
+      "sha256": "12a09eb47554b3ad2c3eb01c1f7e07afa25b01b1072448ee9d1fcc2b6284def9",
+      "bytes": 2524,
+      "resolvedInVerifiedClasspath": true
+    },
+    {
+      "mavenRepositoryPath": "org/springframework/retry/spring-retry/2.0.12/spring-retry-2.0.12.jar.sha1",
+      "sha256": "7ef93776c1a35a5c6aeb4c207064d2bbbfba4884cb9eebcd8894ebf964dce129",
+      "bytes": 40,
+      "resolvedInVerifiedClasspath": true
+    },
+    {
+      "mavenRepositoryPath": "org/springframework/retry/spring-retry/2.0.12/spring-retry-2.0.12.pom.sha1",
+      "sha256": "a36ae749861c5a598f80bef0f57f27fc8ef8d4cd64b76831ceac3ce8c882dd86",
+      "bytes": 40,
+      "resolvedInVerifiedClasspath": true
+    },
+    {
+      "mavenRepositoryPath": "com/fasterxml/jackson/module/jackson-module-jsonSchema/2.19.1/jackson-module-jsonSchema-2.19.1.jar",
+      "sha256": "46515dc197b4c2c4bfa1cc58954eb0dd6adb9cd6cf5222e589c291da66a6f22e",
+      "bytes": 79467,
+      "resolvedInVerifiedClasspath": true
+    },
+    {
+      "mavenRepositoryPath": "com/fasterxml/jackson/module/jackson-module-jsonSchema/2.19.1/jackson-module-jsonSchema-2.19.1.pom",
+      "sha256": "acfaedcc0ddabf4e4d5604835dd3f68696592302ca8ff0cb98b5e32fc98fca29",
+      "bytes": 2296,
+      "resolvedInVerifiedClasspath": true
+    },
+    {
+      "mavenRepositoryPath": "com/fasterxml/jackson/module/jackson-module-jsonSchema/2.19.1/jackson-module-jsonSchema-2.19.1.jar.sha1",
+      "sha256": "42422c867ab54b4fe84f38e64066157ada22d58d86c72ab296591410037a84cb",
+      "bytes": 40,
+      "resolvedInVerifiedClasspath": true
+    },
+    {
+      "mavenRepositoryPath": "com/fasterxml/jackson/module/jackson-module-jsonSchema/2.19.1/jackson-module-jsonSchema-2.19.1.pom.sha1",
+      "sha256": "aff607a5302dfaaec889b4d9c68d898064311b73ed08dc3663442be816836382",
+      "bytes": 40,
+      "resolvedInVerifiedClasspath": true
+    }
+  ],
+  "limits": [
+    "Only required public jar/pom/checksum files are copied from the current verified Maven classpath.",
+    "Private settings.xml, repository configuration and credentials are not cache inputs.",
+    "The application still executes the original repository Dockerfile and Maven source build.",
+    "Normal clean CI remains a required release gate."
+  ],
+  "cachedGoOfflineBaseImage": "sha256:12d1e7fa4efa431c3601ff8bf41bda60b0a57285fee1b4b56db101a46b135c2d",
+  "primedCacheImage": "sha256:4983abae4bec2a04ebe3b5ce2dfaca1afa95d66448a6031dff7691550912d467",
+  "buildCommand": "docker build --build-context maven:3.9.9-eclipse-temurin-21=docker-image://deepresearch-maven-cache-20260928:833b1e7-primed -t deepresearch-release-20260928-app .",
+  "normalDockerfileSourceBuildSucceeded": true,
+  "runtimeImageId": "sha256:02a5811d531e9fefe917b1c2289e30f255401be642c25e9f1fed5cb0e0e66efb",
+  "runtimeImageConfigSha256": "eab637dfec1dfd38e5beb1e2dd21f997e17b511315abc7dfaa9b06c461a54fec",
+  "originalRunningImageRetained": "sha256:352b4139b1537332f7e49d6de4338855b7b9e1df31ece6d082216b97c995ceb6",
+  "cachedGoOfflineStageReused": true
+}

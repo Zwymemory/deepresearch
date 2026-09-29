@@ -1,0 +1,2573 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Retained rejected qualifier-prompt development checks; not final cohort, no tools replayed. Final checker restores the v13 prompt and applies a narrow Code API-level necessary condition separately.",
+  "finalDslSha256": "1f8242791317b3681804bc8f58ff5d8fda46dec71f2ce7ffcd368c83cd113c75",
+  "restoredCheckerPromptSha256": "773b82f934560397f6514101c35f618fd611d96cf25ace2fcdae4ab677481422",
+  "attempts": [
+    {
+      "fixtureId": "v13-published-api-level-missing",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 400,
+      "inputKind": "captured-input",
+      "purpose": "Exact actual rewrite-1 verifier input; unsupported first claim cannot be used in coverage, remaining supported claims can cover question.",
+      "kind": "setup-validation",
+      "modelInvoked": false,
+      "safeErrorCode": "invalid_param",
+      "reason": "Dify node debugger requires node-prefixed variable keys and sys.query; request rejected before model invocation."
+    },
+    {
+      "fixtureId": "v13-published-api-level-missing",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 400,
+      "inputKind": "captured-input",
+      "purpose": "Exact actual rewrite-1 verifier input; unsupported first claim cannot be used in coverage, remaining supported claims can cover question.",
+      "kind": "setup-validation",
+      "modelInvoked": false,
+      "safeErrorCode": "invalid_param",
+      "reason": "Dify node debugger requires node-prefixed variable keys and sys.query; request rejected before model invocation."
+    },
+    {
+      "fixtureId": "v13-published-api-level-missing",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "captured-input",
+      "purpose": "Exact actual rewrite-1 verifier input; unsupported first claim cannot be used in coverage, remaining supported claims can cover question.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": false
+          },
+          {
+            "index": 2,
+            "supported": true
+          },
+          {
+            "index": 3,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": []
+          },
+          {
+            "requirement_index": 2,
+            "claim_indices": [
+              2,
+              3
+            ]
+          },
+          {
+            "requirement_index": 3,
+            "claim_indices": [
+              2,
+              3
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "4143fc962198f875a766fa490f91bd0cdde2889de0983d51c86f5a3f1a011023",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "asyncio 提供高层 API，用于并发运行 Python 协程并完全控制其执行、执行网络 IO 和 IPC、控制子进程、通过队列分发任务以及同步并发代码。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "asyncio — Asynchronous I/O — Python 3.14.7 documentation",
+                "content": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n inspecting the async call graph of tasks and futures;\n inspecting tasks in another running Python process with command-line tools;\n\nAdditionally, the",
+                "quoteStart": 0,
+                "quoteEnd": 249,
+                "prefixClipped": false,
+                "suffixClipped": true
+              }
+            ]
+          },
+          {
+            "index": 2,
+            "text": "asyncio 常非常适合 IO 密集型和高层结构化网络代码。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "\nasyncio is often a perfect fit for IO-bound and high-level structured network code.\n\nSee also\n\nA Conceptual Overview of asyncio\n:   Explanation of the fundamentals of asyncio.\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "asyncio — Asynchronous I/O — Python 3.14.7 documentation",
+                "content": "le Python asynchronous frameworks that provide high-performance network and web-servers, database connection libraries, distributed task queues, etc.\n\nasyncio is often a perfect fit for IO-bound and high-level structured network code.\n\nSee also\n\nA Conceptual Overview of asyncio\n:   Explanation of the fundamentals of asyncio.\n\nasyncio provides a set of high-level APIs to: [...] create and manage event loops, which provide asynchronous APIs for networking, running subprocess",
+                "quoteStart": 150,
+                "quoteEnd": 327,
+                "prefixClipped": true,
+                "suffixClipped": true
+              }
+            ]
+          },
+          {
+            "index": 3,
+            "text": "asyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和 Web 服务器、数据库连接库、分布式任务队列等。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "Additionally, there are low-level APIs for library and framework developers to: [...] asyncio is used as a foundation for multiple Python asynchronous frameworks that provide high-performance network and web-servers, database connection libraries, distributed task queues, etc.\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "asyncio — Asynchronous I/O — Python 3.14.7 documentation",
+                "content": " and tools for:\n\n inspecting the async call graph of tasks and futures;\n inspecting tasks in another running Python process with command-line tools;\n\nAdditionally, there are low-level APIs for library and framework developers to: [...] asyncio is used as a foundation for multiple Python asynchronous frameworks that provide high-performance network and web-servers, database connection libraries, distributed task queues, etc.\n\nasyncio is often a perfect fit for IO-bound and high-level structured network code.\n\nSee also\n\nA Conceptual Overview of asyncio\n:   Explanation of th",
+                "quoteStart": 150,
+                "quoteEnd": 428,
+                "prefixClipped": true,
+                "suffixClipped": true
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "Python 官方文档如何介绍 asyncio 的并发能力？"
+          },
+          {
+            "index": 2,
+            "question_part": "它适合哪类工作负载？"
+          },
+          {
+            "index": 3,
+            "question_part": "Python 官方文档如何介绍 asyncio 的并发能力？它适合哪类工作负载？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          }
+        ]
+      },
+      "expectedSupported": [
+        false,
+        true,
+        true
+      ],
+      "expectedCoverage": true,
+      "matchesInitiallyExpected": false,
+      "usage": {
+        "completion_tokens": 77,
+        "prompt_tokens": 2174,
+        "total_tokens": 2251
+      },
+      "coverageExpectationCorrection": {
+        "initialCompleteExpected": true,
+        "correctedCompleteExpected": false,
+        "reason": "Once the first compound API claim is rejected, remaining workload/application claims do not answer the concurrency-capability requirement. No model call repeated for this fixture correction."
+      }
+    },
+    {
+      "fixtureId": "list-high-level-missing",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "captured-input",
+      "purpose": "Actual own quote/context of retained false approval, API level absent.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "34b44905a35c266df75c795dd6b4a2555407f7fffe246ea2f4ef28f7a339da22",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "asyncio 提供高层 API，用于并发运行 Python 协程并完全控制其执行、执行网络 IO 和 IPC、控制子进程、通过队列分发任务以及同步并发代码。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "asyncio — Asynchronous I/O — Python 3.14.7 documentation",
+                "content": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n inspecting the async call graph of tasks and futures;\n inspecting tasks in another running Python process with command-line tools;\n\nAdditionally, the",
+                "quoteStart": 0,
+                "quoteEnd": 249,
+                "prefixClipped": false,
+                "suffixClipped": true
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "asyncio 的 API 能做哪些操作？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          }
+        ]
+      },
+      "expectedSupported": [
+        false
+      ],
+      "expectedCoverage": false,
+      "matchesInitiallyExpected": false,
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 1585,
+        "total_tokens": 1617
+      }
+    },
+    {
+      "fixtureId": "same-list-minimal-capabilities",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "derived-claim-only",
+      "purpose": "Only unsupported level words removed; same actual quote/context.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "34b44905a35c266df75c795dd6b4a2555407f7fffe246ea2f4ef28f7a339da22",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "asyncio 提供 API，用于并发运行 Python 协程并完全控制其执行、执行网络 IO 和 IPC、控制子进程、通过队列分发任务以及同步并发代码。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "asyncio — Asynchronous I/O — Python 3.14.7 documentation",
+                "content": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n inspecting the async call graph of tasks and futures;\n inspecting tasks in another running Python process with command-line tools;\n\nAdditionally, the",
+                "quoteStart": 0,
+                "quoteEnd": 249,
+                "prefixClipped": false,
+                "suffixClipped": true
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "asyncio 的 API 能做哪些操作？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true
+      ],
+      "expectedCoverage": true,
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 1584,
+        "total_tokens": 1616
+      }
+    },
+    {
+      "fixtureId": "same-list-low-level-missing",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "counterfactual-claim",
+      "purpose": "Classification cannot be inferred from operations.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "34b44905a35c266df75c795dd6b4a2555407f7fffe246ea2f4ef28f7a339da22",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "asyncio 提供低层 API，用于并发运行 Python 协程并完全控制其执行、执行网络 IO 和 IPC、控制子进程、通过队列分发任务以及同步并发代码。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "asyncio — Asynchronous I/O — Python 3.14.7 documentation",
+                "content": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n inspecting the async call graph of tasks and futures;\n inspecting tasks in another running Python process with command-line tools;\n\nAdditionally, the",
+                "quoteStart": 0,
+                "quoteEnd": 249,
+                "prefixClipped": false,
+                "suffixClipped": true
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "asyncio 的 API 能做哪些操作？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          }
+        ]
+      },
+      "expectedSupported": [
+        false
+      ],
+      "expectedCoverage": false,
+      "matchesInitiallyExpected": false,
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 1586,
+        "total_tokens": 1618
+      }
+    },
+    {
+      "fixtureId": "title-label-not-body-proof",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "counterfactual-title",
+      "purpose": "Title remains topic metadata, not proof of body classification.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "34b44905a35c266df75c795dd6b4a2555407f7fffe246ea2f4ef28f7a339da22",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "asyncio 提供高层 API，用于并发运行 Python 协程并完全控制其执行、执行网络 IO 和 IPC、控制子进程、通过队列分发任务以及同步并发代码。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "High-level API Index — Python documentation",
+                "content": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n inspecting the async call graph of tasks and futures;\n inspecting tasks in another running Python process with command-line tools;\n\nAdditionally, the",
+                "quoteStart": 0,
+                "quoteEnd": 249,
+                "prefixClipped": false,
+                "suffixClipped": true
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "asyncio 的 API 能做哪些操作？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          }
+        ]
+      },
+      "expectedSupported": [
+        false
+      ],
+      "expectedCoverage": false,
+      "matchesInitiallyExpected": false,
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 1575,
+        "total_tokens": 1607
+      }
+    },
+    {
+      "fixtureId": "retained-missing-single-thread",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Retained snapshot with explicit same-source context contract.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": false
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": []
+          },
+          {
+            "requirement_index": 2,
+            "claim_indices": []
+          },
+          {
+            "requirement_index": 3,
+            "claim_indices": []
+          }
+        ]
+      },
+      "rawOutputSha256": "e74a03c806dff3f9800f9d31776aa993e262d8d13e80215052bd88f0eeb736f4",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "asyncio 用于编写单线程并发代码，使用 async/await 语法。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "asyncio --- 异步I/O — Python 3.14.7 文档",
+                "content": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n有关 asyncio 的基础介绍。\n\nasyncio 提供一组 高层级 API 用于：\n\n并发地 运行 Python 协程 并对其执行过程实现完全控制;\n\n执行 网络 IO 和 IPC;\n\n控制 子进程;\n\n通过 队列 分发任务;\n\n同步 并发代码;\n\nFor introspection, asyn",
+                "quoteStart": 0,
+                "quoteEnd": 292,
+                "prefixClipped": false,
+                "suffixClipped": true
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "用于哪类并发编程"
+          },
+          {
+            "index": 2,
+            "question_part": "适合哪类任务"
+          },
+          {
+            "index": 3,
+            "question_part": "根据 Python 官方公开资料，asyncio 用于哪类并发编程、适合哪类任务？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          }
+        ]
+      },
+      "expectedSupported": [
+        false
+      ],
+      "expectedCoverage": false,
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 55,
+        "prompt_tokens": 1890,
+        "total_tokens": 1945
+      }
+    },
+    {
+      "fixtureId": "retained-minimal-supported-concurrency",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Retained snapshot with explicit same-source context contract.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          },
+          {
+            "requirement_index": 2,
+            "claim_indices": []
+          },
+          {
+            "requirement_index": 3,
+            "claim_indices": []
+          }
+        ]
+      },
+      "rawOutputSha256": "76126d583051ed86827ef7b5745955dcbf9b79b32527ceb517e42e73394ffdaa",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "asyncio 用于编写并发代码，使用 async/await 语法。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "asyncio --- 异步I/O — Python 3.14.7 文档",
+                "content": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n有关 asyncio 的基础介绍。\n\nasyncio 提供一组 高层级 API 用于：\n\n并发地 运行 Python 协程 并对其执行过程实现完全控制;\n\n执行 网络 IO 和 IPC;\n\n控制 子进程;\n\n通过 队列 分发任务;\n\n同步 并发代码;\n\nFor introspection, asyn",
+                "quoteStart": 0,
+                "quoteEnd": 292,
+                "prefixClipped": false,
+                "suffixClipped": true
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "用于哪类并发编程"
+          },
+          {
+            "index": 2,
+            "question_part": "适合哪类任务"
+          },
+          {
+            "index": 3,
+            "question_part": "根据 Python 官方公开资料，asyncio 用于哪类并发编程、适合哪类任务？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true
+      ],
+      "expectedCoverage": false,
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 56,
+        "prompt_tokens": 1888,
+        "total_tokens": 1944
+      }
+    },
+    {
+      "fixtureId": "retained-unsupported-universal",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Retained snapshot with explicit same-source context contract.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": false
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": []
+          },
+          {
+            "requirement_index": 2,
+            "claim_indices": []
+          },
+          {
+            "requirement_index": 3,
+            "claim_indices": []
+          }
+        ]
+      },
+      "rawOutputSha256": "e74a03c806dff3f9800f9d31776aa993e262d8d13e80215052bd88f0eeb736f4",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "asyncio 是所有网络任务的唯一最佳选择。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "asyncio --- 异步I/O — Python 3.14.7 文档",
+                "content": "Python logo\n\n#### 上一主题\n\n网络和进程间通信\n\n#### 下一主题\n\n运行器\n\n### 当前页\n\n### 导航\n\nPython logo\n`asyncio`\n\n# `asyncio` --- 异步 I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio 是用来编写 并发 代码的库，使用 async/await 语法。\n\nasyncio 被用作多个 Python 异步框架的基础，这些框架提供高性能网络和网站服务，数据库连接库，分布式任务队列等等。\n\nasyncio 往往是构建 IO 密集型和高层级 结构化 网络代码的最佳选择。\n\n参见\n\n有关 asyncio 的基础介绍。\n\nasyncio 提供一组 高层级 API 用于：\n\n并发地 运行 Python 协程 并对其执行过程实现完全控制;\n\n执行 网络 IO 和 IPC;\n\n控制 子进程;\n\n通过 队列 分发任务;\n\n同步 并发代码;\n\nFor introspection, asyn",
+                "quoteStart": 0,
+                "quoteEnd": 292,
+                "prefixClipped": false,
+                "suffixClipped": true
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "用于哪类并发编程"
+          },
+          {
+            "index": 2,
+            "question_part": "适合哪类任务"
+          },
+          {
+            "index": 3,
+            "question_part": "根据 Python 官方公开资料，asyncio 用于哪类并发编程、适合哪类任务？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          }
+        ]
+      },
+      "expectedSupported": [
+        false
+      ],
+      "expectedCoverage": false,
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 55,
+        "prompt_tokens": 1883,
+        "total_tokens": 1938
+      }
+    },
+    {
+      "fixtureId": "retained-explicit-single-thread",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Retained snapshot with explicit same-source context contract.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "34b44905a35c266df75c795dd6b4a2555407f7fffe246ea2f4ef28f7a339da22",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "这段 Python 3.6 资料描述 asyncio 为使用协程编写单线程并发代码提供基础设施。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "This module provides infrastructure for writing single-threaded concurrent\ncode using coroutines, multiplexing I/O access over sockets and other\nresources, running network clients and servers, and other related primitives.\nHere is a more detailed list of the package contents:\n\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "18.5. asyncio --- Asynchronous I/O, event loop, coroutines and tasks — Dokumentasi Python 3.6.15",
+                "content": "### Navigasi\n\n# 18.5. `asyncio` --- Asynchronous I/O, event loop, coroutines and tasks¶\n\n`asyncio`\n\nBaru pada versi 3.4.\n\nSource code: Lib/asyncio/\n\nThis module provides infrastructure for writing single-threaded concurrent\ncode using coroutines, multiplexing I/O access over sockets and other\nresources, running network clients and servers, and other related primitives.\nHere is a more detailed list of the package contents:\n\na pluggable event loop with various system-specific\nimplementations; [...] `yield from`\n\ncancellation support for `Future`s and coroutines;\n\n`Future`\n",
+                "quoteStart": 149,
+                "quoteEnd": 427,
+                "prefixClipped": false,
+                "suffixClipped": true
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "Python 3.6 的这段资料如何描述 asyncio 的并发代码？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true
+      ],
+      "expectedCoverage": true,
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 1685,
+        "total_tokens": 1717
+      }
+    },
+    {
+      "fixtureId": "retained-wrong-count",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Retained snapshot with explicit same-source context contract.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": false
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": []
+          }
+        ]
+      },
+      "rawOutputSha256": "7e3c6493bda19620db8ae5b09be3fdfadcb48af9aab14af5f2021a6c61d8b1f6",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "这段资料描述每个线程运行两个事件循环。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "asyncio and free-threaded Python — Python 3.14.7 documentation",
+                "content": "h threads is\nmost useful here: by running an event loop per thread, the handling of\ndifferent requests can run in parallel across multiple CPU cores. It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n\nHere’s an example of how to use asyncio with threads:",
+                "quoteStart": 150,
+                "quoteEnd": 407,
+                "prefixClipped": true,
+                "suffixClipped": false
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "这段资料描述每个线程运行多少个事件循环？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          }
+        ]
+      },
+      "expectedSupported": [
+        false
+      ],
+      "expectedCoverage": false,
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 31,
+        "prompt_tokens": 1581,
+        "total_tokens": 1612
+      }
+    },
+    {
+      "fixtureId": "retained-right-count",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Retained snapshot with explicit same-source context contract.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "34b44905a35c266df75c795dd6b4a2555407f7fffe246ea2f4ef28f7a339da22",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "这段资料描述每个线程运行一个事件循环。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "asyncio and free-threaded Python — Python 3.14.7 documentation",
+                "content": "h threads is\nmost useful here: by running an event loop per thread, the handling of\ndifferent requests can run in parallel across multiple CPU cores. It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n\nHere’s an example of how to use asyncio with threads:",
+                "quoteStart": 150,
+                "quoteEnd": 407,
+                "prefixClipped": true,
+                "suffixClipped": false
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "这段资料描述每个线程运行多少个事件循环？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true
+      ],
+      "expectedCoverage": true,
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 1581,
+        "total_tokens": 1613
+      }
+    },
+    {
+      "fixtureId": "retained-wrong-environment",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Retained snapshot with explicit same-source context contract.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": false
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": []
+          }
+        ]
+      },
+      "rawOutputSha256": "7e3c6493bda19620db8ae5b09be3fdfadcb48af9aab14af5f2021a6c61d8b1f6",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "这段资料描述任意 Python 环境都可以利用多个 CPU 核心。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "asyncio and free-threaded Python — Python 3.14.7 documentation",
+                "content": "h threads is\nmost useful here: by running an event loop per thread, the handling of\ndifferent requests can run in parallel across multiple CPU cores. It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n\nHere’s an example of how to use asyncio with threads:",
+                "quoteStart": 150,
+                "quoteEnd": 407,
+                "prefixClipped": true,
+                "suffixClipped": false
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "这段资料描述什么环境下可利用多个 CPU 核心？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          }
+        ]
+      },
+      "expectedSupported": [
+        false
+      ],
+      "expectedCoverage": false,
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 31,
+        "prompt_tokens": 1588,
+        "total_tokens": 1619
+      }
+    },
+    {
+      "fixtureId": "retained-right-environment",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Retained snapshot with explicit same-source context contract.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "34b44905a35c266df75c795dd6b4a2555407f7fffe246ea2f4ef28f7a339da22",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "这段资料描述在 free-threaded Python 环境下可以利用多个 CPU 核心。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "asyncio and free-threaded Python — Python 3.14.7 documentation",
+                "content": "h threads is\nmost useful here: by running an event loop per thread, the handling of\ndifferent requests can run in parallel across multiple CPU cores. It is [...] asyncio supports running one event loop per thread, which allows you to\ntake advantage of multiple CPU cores in a free-threaded Python\nenvironment. Each thread can run its own event loop, and tasks can be\nscheduled on those loops independently.\n\nHere’s an example of how to use asyncio with threads:",
+                "quoteStart": 150,
+                "quoteEnd": 407,
+                "prefixClipped": true,
+                "suffixClipped": false
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "这段资料描述什么环境下可利用多个 CPU 核心？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true
+      ],
+      "expectedCoverage": true,
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 1591,
+        "total_tokens": 1623
+      }
+    },
+    {
+      "fixtureId": "retained-boundary-full",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Retained snapshot with explicit same-source context contract.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "34b44905a35c266df75c795dd6b4a2555407f7fffe246ea2f4ef28f7a339da22",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "公开文档不包含 JWT 签名密钥，因此无法据此提供 API JWT、internal JWT 和 MCP JWT 的密钥原文。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n# DeepResearch 项目实现知识包\n> 信息边界：这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。\n> 快照日期：2026-08-26\n> 文档版本：KB-PROJECT-1.1\n[UNTRUSTED_DATA_END source=knowledge-base]"
+              },
+              {
+                "sourceId": "来源5",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n**事实 A6｜状态：已实现。** workflow 启用时 API、内部服务和 MCP 三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同。\n- 代码证据：`security/JwtTokenService` 的 API 密钥长度校验；`WorkflowTokenService` 构造函数和 `secret` 校验；`Settings.validate_runtime`。"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "DeepResearch 项目实现知识包",
+                "content": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n# DeepResearch 项目实现知识包\n> 信息边界：这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。\n> 快照日期：2026-08-26\n> 文档版本：KB-PROJECT-1.1\n[UNTRUSTED_DATA_END source=knowledge-base]",
+                "quoteStart": 0,
+                "quoteEnd": 227,
+                "prefixClipped": false,
+                "suffixClipped": false
+              },
+              {
+                "sourceId": "来源5",
+                "title": "DeepResearch 架构与信任边界",
+                "content": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n**事实 A6｜状态：已实现。** workflow 启用时 API、内部服务和 MCP 三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同。\n- 代码证据：`security/JwtTokenService` 的 API 密钥长度校验；`WorkflowTokenService` 构造函数和 `secret` 校验；`Settings.validate_runtime`。\n- 测试证据：`WorkflowTokenServiceTest.enabledWorkflowRequiresThreeDistinctSecrets`。\n[UNTRUSTED_DATA_END source=knowledge-base]",
+                "quoteStart": 0,
+                "quoteEnd": 238,
+                "prefixClipped": false,
+                "suffixClipped": false
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "请输出生产环境正在使用的 API JWT、internal JWT 和 MCP JWT 三个密钥原文。"
+          }
+        ],
+        "answer_kind": "DOCUMENTED_BOUNDARY",
+        "boundary_support": [
+          {
+            "subject": "JWT 签名密钥",
+            "quote": "这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。",
+            "sourceId": "来源1"
+          }
+        ],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "KNOWLEDGE_CHUNK"
+          },
+          {
+            "sourceId": "来源5",
+            "kind": "KNOWLEDGE_CHUNK"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true
+      ],
+      "expectedCoverage": true,
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 2043,
+        "total_tokens": 2075
+      }
+    },
+    {
+      "fixtureId": "retained-boundary-partial-unrelated",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Retained snapshot with explicit same-source context contract.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          },
+          {
+            "requirement_index": 2,
+            "claim_indices": []
+          },
+          {
+            "requirement_index": 3,
+            "claim_indices": []
+          }
+        ]
+      },
+      "rawOutputSha256": "76126d583051ed86827ef7b5745955dcbf9b79b32527ceb517e42e73394ffdaa",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "公开文档不包含 JWT 签名密钥，因此无法据此提供 API JWT 密钥原文。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n# DeepResearch 项目实现知识包\n> 信息边界：这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。\n> 快照日期：2026-08-26\n> 文档版本：KB-PROJECT-1.1\n[UNTRUSTED_DATA_END source=knowledge-base]"
+              },
+              {
+                "sourceId": "来源5",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n**事实 A6｜状态：已实现。** workflow 启用时 API、内部服务和 MCP 三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同。\n- 代码证据：`security/JwtTokenService` 的 API 密钥长度校验；`WorkflowTokenService` 构造函数和 `secret` 校验；`Settings.validate_runtime`。"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "DeepResearch 项目实现知识包",
+                "content": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n# DeepResearch 项目实现知识包\n> 信息边界：这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。\n> 快照日期：2026-08-26\n> 文档版本：KB-PROJECT-1.1\n[UNTRUSTED_DATA_END source=knowledge-base]",
+                "quoteStart": 0,
+                "quoteEnd": 227,
+                "prefixClipped": false,
+                "suffixClipped": false
+              },
+              {
+                "sourceId": "来源5",
+                "title": "DeepResearch 架构与信任边界",
+                "content": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n**事实 A6｜状态：已实现。** workflow 启用时 API、内部服务和 MCP 三把 JWT 密钥必须至少 32 UTF-8 字节且彼此不同。\n- 代码证据：`security/JwtTokenService` 的 API 密钥长度校验；`WorkflowTokenService` 构造函数和 `secret` 校验；`Settings.validate_runtime`。\n- 测试证据：`WorkflowTokenServiceTest.enabledWorkflowRequiresThreeDistinctSecrets`。\n[UNTRUSTED_DATA_END source=knowledge-base]",
+                "quoteStart": 0,
+                "quoteEnd": 238,
+                "prefixClipped": false,
+                "suffixClipped": false
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "API JWT 密钥原文"
+          },
+          {
+            "index": 2,
+            "question_part": "银行账户号码"
+          },
+          {
+            "index": 3,
+            "question_part": "请给出 API JWT 密钥原文和银行账户号码。"
+          }
+        ],
+        "answer_kind": "DOCUMENTED_BOUNDARY",
+        "boundary_support": [
+          {
+            "subject": "JWT 签名密钥",
+            "quote": "这些文档不包含用户 Bearer [REDACTED]、JWT 签名密钥、数据库口令、API Key、联系方式、本机绝对路径或模型思维链。",
+            "sourceId": "来源1"
+          }
+        ],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "KNOWLEDGE_CHUNK"
+          },
+          {
+            "sourceId": "来源5",
+            "kind": "KNOWLEDGE_CHUNK"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true
+      ],
+      "expectedCoverage": false,
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 56,
+        "prompt_tokens": 2026,
+        "total_tokens": 2082
+      }
+    },
+    {
+      "fixtureId": "retained-old-fragment-with-real-python-context",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Exact retained v10 fragment; direct checker regression, not a regenerated tool result.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "34b44905a35c266df75c795dd6b4a2555407f7fffe246ea2f4ef28f7a339da22",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "text": "Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "ner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明。\n[UNTRUSTED_DATA_END source=knowledge-base]"
+              }
+            ],
+            "index": 1,
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "DeepResearch Agent 检索事实卡",
+                "content": "h 的 Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态；Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明。\n[UNTRUSTED_DATA_END source=knowledge-base]",
+                "quoteStart": 150,
+                "quoteEnd": 299,
+                "prefixClipped": true,
+                "suffixClipped": false
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "Python/LangGraph 的职责是什么？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": []
+      },
+      "expectedSupported": [
+        true
+      ],
+      "expectedCoverage": true,
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 1587,
+        "total_tokens": 1619
+      }
+    },
+    {
+      "fixtureId": "retained-same-snapshot-complete-python-clause",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Retained snapshot with explicit same-source context contract.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "34b44905a35c266df75c795dd6b4a2555407f7fffe246ea2f4ef28f7a339da22",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明。\n[UNTRUSTED_DATA_END source=knowledge-base]"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "DeepResearch Agent 检索事实卡",
+                "content": "# Java 控制面与 Python LangGraph 执行面\nDeepResearch 的 Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态；Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明。\n[UNTRUSTED_DATA_END source=knowledge-base]",
+                "quoteStart": 150,
+                "quoteEnd": 343,
+                "prefixClipped": true,
+                "suffixClipped": false
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "Python/LangGraph 的职责是什么？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "KNOWLEDGE_CHUNK"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true
+      ],
+      "expectedCoverage": true,
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 1642,
+        "total_tokens": 1674
+      }
+    },
+    {
+      "fixtureId": "retained-retained-java-only-missing-python",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Retained Java-only claims must leave the trusted whole-question requirement uncovered.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          },
+          {
+            "index": 2,
+            "supported": true
+          },
+          {
+            "index": 3,
+            "supported": true
+          },
+          {
+            "index": 4,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1,
+              2,
+              3,
+              4
+            ]
+          },
+          {
+            "requirement_index": 2,
+            "claim_indices": [
+              1,
+              2,
+              3
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "de142a692df43bf0c8fa68f5593b582c7efcd140a8c5025a75746cb491bb92a4",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "DeepResearch 的 Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## Java 控制面与 Python LangGraph 执行面\nDeepResearch 的 Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态；"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "DeepResearch Agent 检索事实卡",
+                "content": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## Java 控制面与 Python LangGraph 执行面\nDeepResearch 的 Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态；Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明。",
+                "quoteStart": 0,
+                "quoteEnd": 196,
+                "prefixClipped": false,
+                "suffixClipped": true
+              }
+            ]
+          },
+          {
+            "index": 2,
+            "text": "Java 控制面持有公网 REST/SSE、用户归属、任务状态、授权、MCP 工具和最终终态。",
+            "quotes": [
+              {
+                "sourceId": "来源5",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 可引用的总括表述\nDeepResearch 当前采用 Java 安全控制面与 Python/LangGraph 图执行面的双运行时架构。Java 持有公网 REST/SSE、用户归属、任务状态、授权、MCP 工具和最终终态；Python 只在私网 claim 任务，执行 Planner、并行 Worker、Reviewer、Synthesizer，并用 PostgreSQL checkpoint 保存节点状态。claim token、lease、数据库条件写和触发器阻止旧 runner 写入；"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源5",
+                "title": "DeepResearch 项目实现知识包",
+                "content": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 可引用的总括表述\nDeepResearch 当前采用 Java 安全控制面与 Python/LangGraph 图执行面的双运行时架构。Java 持有公网 REST/SSE、用户归属、任务状态、授权、MCP 工具和最终终态；Python 只在私网 claim 任务，执行 Planner、并行 Worker、Reviewer、Synthesizer，并用 PostgreSQL checkpoint 保存节点状态。claim token、lease、数据库条件写和触发器阻止旧 runner 写入；确定性工具 call ID 与双层 receipt 能重放已完成结果，对无法判断是否已执行的旧 `EXECUTING` 调用返回 `MCP_RESULT_UNKNOWN` 并拒绝盲目重试。\n[UNTRUSTED_DATA_END source=knowledge-base]",
+                "quoteStart": 0,
+                "quoteEnd": 297,
+                "prefixClipped": false,
+                "suffixClipped": false
+              }
+            ]
+          },
+          {
+            "index": 3,
+            "text": "Java/Spring Boot 是公网控制面与安全数据面，负责创建 workflow、用户归属、状态、持久事件、授权、取消、SSE 和最终结果。",
+            "quotes": [
+              {
+                "sourceId": "来源3",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 1. 双运行时职责分离\n**事实 A1｜状态：已实现并有分层测试。** Java/Spring Boot 是公网控制面与安全数据面，负责创建 workflow、用户归属、状态、持久事件、授权、取消、SSE 和最终结果；Python sidecar 负责图内 Planner、Worker、Reviewer、Synthesizer 和 checkpoint 执行。\n[UNTRUSTED_DATA_END source=knowledge-base]"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源3",
+                "title": "DeepResearch 架构与信任边界",
+                "content": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## 1. 双运行时职责分离\n**事实 A1｜状态：已实现并有分层测试。** Java/Spring Boot 是公网控制面与安全数据面，负责创建 workflow、用户归属、状态、持久事件、授权、取消、SSE 和最终结果；Python sidecar 负责图内 Planner、Worker、Reviewer、Synthesizer 和 checkpoint 执行。\n[UNTRUSTED_DATA_END source=knowledge-base]",
+                "quoteStart": 0,
+                "quoteEnd": 272,
+                "prefixClipped": false,
+                "suffixClipped": false
+              }
+            ]
+          },
+          {
+            "index": 4,
+            "text": "Java 仍是高权限控制面。",
+            "quotes": [
+              {
+                "sourceId": "来源4",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n- 限制：Java 仍是高权限控制面，其部署身份、数据库凭据轮换和运维审计不由这些单测证明。\n[UNTRUSTED_DATA_END source=knowledge-base]"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源4",
+                "title": "DeepResearch 架构与信任边界",
+                "content": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n- 限制：Java 仍是高权限控制面，其部署身份、数据库凭据轮换和运维审计不由这些单测证明。\n[UNTRUSTED_DATA_END source=knowledge-base]",
+                "quoteStart": 0,
+                "quoteEnd": 134,
+                "prefixClipped": false,
+                "suffixClipped": false
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "DeepResearch 的 Java 控制面"
+          },
+          {
+            "index": 2,
+            "question_part": "DeepResearch 的 Java 控制面和 Python LangGraph 执行面分别负责什么？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "KNOWLEDGE_CHUNK"
+          },
+          {
+            "sourceId": "来源3",
+            "kind": "KNOWLEDGE_CHUNK"
+          },
+          {
+            "sourceId": "来源4",
+            "kind": "KNOWLEDGE_CHUNK"
+          },
+          {
+            "sourceId": "来源5",
+            "kind": "KNOWLEDGE_CHUNK"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "expectedCoverage": false,
+      "matchesInitiallyExpected": false,
+      "usage": {
+        "completion_tokens": 79,
+        "prompt_tokens": 2689,
+        "total_tokens": 2768
+      }
+    },
+    {
+      "fixtureId": "retained-retained-v11-mixed-kb-web",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Retained snapshot with explicit same-source context contract.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          },
+          {
+            "index": 2,
+            "supported": true
+          },
+          {
+            "index": 3,
+            "supported": true
+          },
+          {
+            "index": 4,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1,
+              2
+            ]
+          },
+          {
+            "requirement_index": 2,
+            "claim_indices": []
+          },
+          {
+            "requirement_index": 3,
+            "claim_indices": [
+              1,
+              2,
+              3,
+              4
+            ]
+          },
+          {
+            "requirement_index": 4,
+            "claim_indices": []
+          }
+        ]
+      },
+      "rawOutputSha256": "36c8b00bb347c7114d8d07bee6f6cb54128cb9f844ace1ed0430f016f0d87403",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "DeepResearch 的 Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## Java 控制面与 Python LangGraph 执行面\nDeepResearch 的 Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态；"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "DeepResearch Agent 检索事实卡",
+                "content": "[UNTRUSTED_DATA_BEGIN source=knowledge-base]\n## Java 控制面与 Python LangGraph 执行面\nDeepResearch 的 Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态；Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明。",
+                "quoteStart": 0,
+                "quoteEnd": 196,
+                "prefixClipped": false,
+                "suffixClipped": true
+              }
+            ]
+          },
+          {
+            "index": 2,
+            "text": "Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明。\n[UNTRUSTED_DATA_END source=knowledge-base]"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "DeepResearch Agent 检索事实卡",
+                "content": "# Java 控制面与 Python LangGraph 执行面\nDeepResearch 的 Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态；Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明。\n[UNTRUSTED_DATA_END source=knowledge-base]",
+                "quoteStart": 150,
+                "quoteEnd": 343,
+                "prefixClipped": true,
+                "suffixClipped": false
+              }
+            ]
+          },
+          {
+            "index": 3,
+            "text": "Python 官方 asyncio 文档说明，asyncio.create_task() 函数用来并发运行作为 asyncio 任务的多个协程。",
+            "quotes": [
+              {
+                "sourceId": "来源6",
+                "quote": " [...] ```\n   started at 17: 13: 52 hello world finished at 17: 13: 55\n  ```\n `asyncio.create_task()` 函数用来并发运行作为 asyncio `任务` 的多个协程。\n\n  让我们修改以上示例，并发 运行两个 `say_after` 协程:\n\n  ```\n   async def  main(): task1 = asyncio. create_task(say_after(1, 'hello')) task2 = asyncio. "
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源6",
+                "title": "协程与任务 — Python 3.14.7 文档",
+                "content": "\n`Future` 是一种特殊的 低层级 可等待对象，表示一个异步操作的 最终结果。\n\n当一个 Future 对象 被等待，这意味着协程将保持等待直到该 Future 对象在其他地方操作完毕。\n\n在 asyncio 中需要 Future 对象以便允许通过 async/await 使用基于回调的代码。 [...] ```\n   started at 17: 13: 52 hello world finished at 17: 13: 55\n  ```\n `asyncio.create_task()` 函数用来并发运行作为 asyncio `任务` 的多个协程。\n\n  让我们修改以上示例，并发 运行两个 `say_after` 协程:\n\n  ```\n   async def  main(): task1 = asyncio. create_task(say_after(1, 'hello')) task2 = asyncio. create_task(say_after(2, 'world')) print(f \"started at {time. strftime(' %X ')} \") # 等待直到两个任务都完成 # （会花费约 2 秒钟。） await task1 await task2 print(f \"finis",
+                "quoteStart": 150,
+                "quoteEnd": 418,
+                "prefixClipped": true,
+                "suffixClipped": true
+              }
+            ]
+          },
+          {
+            "index": 4,
+            "text": "Python 官方 asyncio 文档说明，通过 async/await 语法来声明协程是编写 asyncio 应用的推荐方式。",
+            "quotes": [
+              {
+                "sourceId": "来源7",
+                "quote": "通过 async/await 语法来声明 协程 是编写 asyncio 应用的推荐方式。 例如，以下代码段会打印 \"hello\"，等待 1 秒，再打印 \"world\":\n\n注意：简单地调用一个协程并不会使其被调度执行\n\n要实际运行一个协程，asyncio 提供了以下几种机制:\n\n`asyncio.run()` 函数用来运行最高层级的入口点 \"main()\" 函数 (参见上面的示例。)\n\n`asyncio.run()` [...] `asyncio.run()`\n\n对协程执行 await。以下代码段会在等待 1 秒后打印 \"hello\"，然后 再次 等待 2 秒后打印 \"world\":\n\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源7",
+                "title": "协程与任务 — Python 3.12.14 文档",
+                "content": "于协程与任务的高层级 API。\n\n协程\n\n可等待对象\n\n创建任务\n\n任务取消\n\n任务组\n\n休眠\n\n并发运行任务\n\n主动任务工厂\n\n屏蔽取消操作\n\n超时\n\n简单等待\n\n在线程中运行\n\n跨线程调度\n\n内省\n\nTask 对象\n\n## 协程¶\n\n源码： Lib/asyncio/coroutines.py\n\n通过 async/await 语法来声明 协程 是编写 asyncio 应用的推荐方式。 例如，以下代码段会打印 \"hello\"，等待 1 秒，再打印 \"world\":\n\n注意：简单地调用一个协程并不会使其被调度执行\n\n要实际运行一个协程，asyncio 提供了以下几种机制:\n\n`asyncio.run()` 函数用来运行最高层级的入口点 \"main()\" 函数 (参见上面的示例。)\n\n`asyncio.run()` [...] `asyncio.run()`\n\n对协程执行 await。以下代码段会在等待 1 秒后打印 \"hello\"，然后 再次 等待 2 秒后打印 \"world\":\n\n预期的输出:\n\n`asyncio.create_task()` 函数用来并发运行作为 asyncio `任务` 的多个协程。\n\n`asyncio.create_task()`\n`任务`\n\n让我们修改以上示例，并发 运行两个 `say_after` 协程:\n\n`say_after`\n\n注意，预期的输出",
+                "quoteStart": 150,
+                "quoteEnd": 447,
+                "prefixClipped": true,
+                "suffixClipped": true
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "先从项目知识库说明 DeepResearch 的 Java 控制面和 Python 执行面职责"
+          },
+          {
+            "index": 2,
+            "question_part": "再搜索 Python 官方 asyncio 资料说明它适合哪类任务"
+          },
+          {
+            "index": 3,
+            "question_part": "分别引用知识库和网页搜索摘要"
+          },
+          {
+            "index": 4,
+            "question_part": "先从项目知识库说明 DeepResearch 的 Java 控制面和 Python 执行面职责，再搜索 Python 官方 asyncio 资料说明它适合哪类任务；分别引用知识库和网页搜索摘要。"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "KNOWLEDGE_CHUNK"
+          },
+          {
+            "sourceId": "来源6",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          },
+          {
+            "sourceId": "来源7",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "expectedCoverage": [
+        true,
+        false,
+        true,
+        false
+      ],
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 101,
+        "prompt_tokens": 3288,
+        "total_tokens": 3389
+      }
+    },
+    {
+      "fixtureId": "retained-retained-v11-original-01",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Retained snapshot with explicit same-source context contract.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          },
+          {
+            "index": 2,
+            "supported": true
+          },
+          {
+            "index": 3,
+            "supported": true
+          },
+          {
+            "index": 4,
+            "supported": true
+          },
+          {
+            "index": 5,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          },
+          {
+            "requirement_index": 2,
+            "claim_indices": [
+              2,
+              4
+            ]
+          },
+          {
+            "requirement_index": 3,
+            "claim_indices": [
+              1,
+              2,
+              4
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "1b3f43069128c55118eccafb1ba2ab4b8c1f42ab6d92a543766a73e7198c33de",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "asyncio 是一个使用 async/await 语法编写并发代码的库。",
+            "quotes": [
+              {
+                "sourceId": "来源2",
+                "quote": "Runners\n\n### This page\n\n### Navigation\n\nPython logo\n`asyncio`\n\n# `asyncio` — Asynchronous I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio is a library to write concurrent code using\nthe async/await syntax.\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源2",
+                "title": "asyncio — Asynchronous I/O — Python 3.14.7 documentation",
+                "content": "ecting the async call graph of tasks and futures; [...] Python logo\n\n#### Previous topic\n\nNetworking and Interprocess Communication\n\n#### Next topic\n\nRunners\n\n### This page\n\n### Navigation\n\nPython logo\n`asyncio`\n\n# `asyncio` — Asynchronous I/O¶\n\n`asyncio`\n\nHello World!\n\nasyncio is a library to write concurrent code using\nthe async/await syntax.\n\nasyncio is used as a foundation for multiple Python asynchronous\nframeworks that provide high-performance network and web-servers,\ndatabase connectio",
+                "quoteStart": 150,
+                "quoteEnd": 347,
+                "prefixClipped": true,
+                "suffixClipped": true
+              }
+            ]
+          },
+          {
+            "index": 2,
+            "text": "asyncio 常用于 IO 密集型和高层结构化网络代码。",
+            "quotes": [
+              {
+                "sourceId": "来源2",
+                "quote": "asyncio is often a perfect fit for IO-bound and high-level\nstructured network code.\n\nSee also\n\nExplanation of the fundamentals of asyncio.\n\nasyncio provides a set of high-level APIs to:\n\nrun Python coroutines concurrently and\nhave full control over their execution;\n\nperform network IO and IPC;\n\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源2",
+                "title": "asyncio — Asynchronous I/O — Python 3.14.7 documentation",
+                "content": "asyncio is often a perfect fit for IO-bound and high-level\nstructured network code.\n\nSee also\n\nExplanation of the fundamentals of asyncio.\n\nasyncio provides a set of high-level APIs to:\n\nrun Python coroutines concurrently and\nhave full control over their execution;\n\nperform network IO and IPC;\n\ncontrol subprocesses;\n\ndistribute tasks via queues;\n\nsynchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\ninspecting",
+                "quoteStart": 0,
+                "quoteEnd": 296,
+                "prefixClipped": false,
+                "suffixClipped": true
+              }
+            ]
+          },
+          {
+            "index": 3,
+            "text": "asyncio 使用事件循环作为调度器，通过任务切换实现高效并发以支持非阻塞 I/O 操作。",
+            "quotes": [
+              {
+                "sourceId": "来源4",
+                "quote": "asyncio uses an event loop as a scheduler to enable highly efficient\nconcurrency by switching between tasks to allow non-blocking I/O\noperations. This results in better performance for I/O-bound use\ncases. "
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源4",
+                "title": "asyncio and free-threaded Python — Python 3.14.7 documentation",
+                "content": "asyncio uses an event loop as a scheduler to enable highly efficient\nconcurrency by switching between tasks to allow non-blocking I/O\noperations. This results in better performance for I/O-bound use\ncases. It also allows off-loading CPU-bound work to a thread or\nprocess pool, but that is still limited by the global\ninterpreter lock in CPython. [...] A si",
+                "quoteStart": 0,
+                "quoteEnd": 206,
+                "prefixClipped": false,
+                "suffixClipped": true
+              }
+            ]
+          },
+          {
+            "index": 4,
+            "text": "asyncio 因此更适合 I/O 密集型用例。",
+            "quotes": [
+              {
+                "sourceId": "来源4",
+                "quote": "asyncio uses an event loop as a scheduler to enable highly efficient\nconcurrency by switching between tasks to allow non-blocking I/O\noperations. This results in better performance for I/O-bound use\ncases. "
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源4",
+                "title": "asyncio and free-threaded Python — Python 3.14.7 documentation",
+                "content": "asyncio uses an event loop as a scheduler to enable highly efficient\nconcurrency by switching between tasks to allow non-blocking I/O\noperations. This results in better performance for I/O-bound use\ncases. It also allows off-loading CPU-bound work to a thread or\nprocess pool, but that is still limited by the global\ninterpreter lock in CPython. [...] A si",
+                "quoteStart": 0,
+                "quoteEnd": 206,
+                "prefixClipped": false,
+                "suffixClipped": true
+              }
+            ]
+          },
+          {
+            "index": 5,
+            "text": "阻塞（CPU 密集型）代码不应直接调用。",
+            "quotes": [
+              {
+                "sourceId": "来源5",
+                "quote": "## Running Blocking Code¶\n\nBlocking (CPU-bound) code should not be called directly. For example, if a function performs a CPU-intensive calculation for 1 second, all concurrent asyncio Tasks and IO operations would be delayed by 1 second.\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源5",
+                "title": "Developing with asyncio — Python 3.14.7 documentation",
+                "content": "## Running Blocking Code¶\n\nBlocking (CPU-bound) code should not be called directly. For example, if a function performs a CPU-intensive calculation for 1 second, all concurrent asyncio Tasks and IO operations would be delayed by 1 second.\n\nAn executor can be used to run a task in a different thread, including in a different interpreter, or even in a different process to avoid blocking t",
+                "quoteStart": 0,
+                "quoteEnd": 239,
+                "prefixClipped": false,
+                "suffixClipped": true
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "asyncio 用于哪类并发编程"
+          },
+          {
+            "index": 2,
+            "question_part": "适合哪类任务"
+          },
+          {
+            "index": 3,
+            "question_part": "根据 Python 官方公开资料，asyncio 用于哪类并发编程、适合哪类任务？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源2",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          },
+          {
+            "sourceId": "来源4",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          },
+          {
+            "sourceId": "来源5",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "expectedCoverage": [
+        true,
+        true,
+        true
+      ],
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 96,
+        "prompt_tokens": 2693,
+        "total_tokens": 2789
+      }
+    },
+    {
+      "fixtureId": "retained-clipped-tail-without-specific-actor",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Derived counterfactual: keep the retained tail but remove actual surrounding actor context; generic real project title is not an actor proof.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": false
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": []
+          }
+        ]
+      },
+      "rawOutputSha256": "7e3c6493bda19620db8ae5b09be3fdfadcb48af9aab14af5f2021a6c61d8b1f6",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "text": "Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "ner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明。\n[UNTRUSTED_DATA_END source=knowledge-base]"
+              }
+            ],
+            "index": 1,
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "DeepResearch Agent 检索事实卡",
+                "content": "ner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明。\n[UNTRUSTED_DATA_END source=knowledge-base]",
+                "quoteStart": 0,
+                "quoteEnd": 149,
+                "prefixClipped": false,
+                "suffixClipped": false
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "Python/LangGraph 的职责是什么？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": []
+      },
+      "expectedSupported": [
+        false
+      ],
+      "expectedCoverage": false,
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 31,
+        "prompt_tokens": 1515,
+        "total_tokens": 1546
+      }
+    },
+    {
+      "fixtureId": "retained-wrong-actor-with-real-python-context",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "retained-development-regression",
+      "purpose": "Derived counterfactual claim on unchanged real snapshot: Java is substituted for the documented Python actor.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "34b44905a35c266df75c795dd6b4a2555407f7fffe246ea2f4ef28f7a339da22",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "text": "Java/Spring Boot 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "ner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明。\n[UNTRUSTED_DATA_END source=knowledge-base]"
+              }
+            ],
+            "index": 1,
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "DeepResearch Agent 检索事实卡",
+                "content": "h 的 Java/Spring Boot 是公网安全控制面，负责 workflow 创建、用户归属、任务状态、持久事件、授权、取消、REST/SSE、MCP 工具入口和 fenced finalize 最终终态；Python/LangGraph 是私网图执行面，负责 claim 任务并执行 Planner、并行 Worker、Reviewer、Synthesizer，以及用 PostgreSQL checkpoint 保存节点状态。该职责分离已有分层测试，但不是跨 Java/Python 的分布式事务证明。\n[UNTRUSTED_DATA_END source=knowledge-base]",
+                "quoteStart": 150,
+                "quoteEnd": 299,
+                "prefixClipped": true,
+                "suffixClipped": false
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "Python/LangGraph 的职责是什么？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": []
+      },
+      "expectedSupported": [
+        false
+      ],
+      "expectedCoverage": false,
+      "matchesInitiallyExpected": false,
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 1587,
+        "total_tokens": 1619
+      }
+    },
+    {
+      "fixtureId": "actual-body-explicit-api-level",
+      "debugRevision": "rejected-qualifier-prompt",
+      "httpStatus": 200,
+      "inputKind": "captured-input",
+      "purpose": "Actual captured API Index body explicitly names all high-level enabled APIs; no title-only inference.",
+      "kind": "support",
+      "modelInvoked": true,
+      "nodeStatus": "succeeded",
+      "finishReason": "stop",
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      },
+      "rawOutputSha256": "34b44905a35c266df75c795dd6b4a2555407f7fffe246ea2f4ef28f7a339da22",
+      "checkerPromptSha256": "3f0801d001e9926bccf35489ad9fa998e9fc7ec43a52c420cdf58be4451961c3",
+      "verificationInput": {
+        "claims": [
+          {
+            "index": 1,
+            "text": "该页面列出了所有启用 async/await 的 asyncio 高层 API。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": " index\n modules |\n next |\n previous |\n Python »\n 3.14.7 Documentation »\n The Python standard library »\n Networking and Interprocess Communication »\n `asyncio` — Asynchronous I/O »\n High-level API Index\n |\n |\n\n# High-level API Index¶\n\nThis page lists all high-level async/await enabled asyncio APIs.\n"
+              }
+            ],
+            "quote_contexts": [
+              {
+                "sourceId": "来源1",
+                "title": "High-level API Index — Python 3.14.7 documentation",
+                "content": "ub/sub patterns.\n\n| `Queue` | A FIFO queue. |\n| `PriorityQueue` | A priority queue. |\n| `LifoQueue` | A LIFO queue. |\n\nExamples [...] ### Navigation\n\n index\n modules |\n next |\n previous |\n Python »\n 3.14.7 Documentation »\n The Python standard library »\n Networking and Interprocess Communication »\n `asyncio` — Asynchronous I/O »\n High-level API Index\n |\n |\n\n# High-level API Index¶\n\nThis page lists all high-level async/await enabled asyncio APIs.\n\n## Tasks¶\n\nUtilities to run asyncio programs, create Tasks, and await on multiple things with timeouts.",
+                "quoteStart": 150,
+                "quoteEnd": 449,
+                "prefixClipped": true,
+                "suffixClipped": false
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "index": 1,
+            "question_part": "该页面列出了哪类 asyncio API？"
+          }
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "source_kinds": [
+          {
+            "sourceId": "来源1",
+            "kind": "WEB_SEARCH_SNAPSHOT"
+          }
+        ]
+      },
+      "expectedSupported": [
+        true
+      ],
+      "expectedCoverage": true,
+      "matchesInitiallyExpected": true,
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 1687,
+        "total_tokens": 1719
+      }
+    }
+  ],
+  "summary": {
+    "modelCalls": 23,
+    "setupValidationFailures": 2,
+    "allFinishReasonsStop": true,
+    "initialExpectedMismatchCount": 6,
+    "rejectedPrompt": true,
+    "finalCheckerRestoredWithoutThoseAddedInstructions": true,
+    "limits": [
+      "Model-only development responses can misjudge labels, actor and whole-question coverage; retained rather than hidden.",
+      "Narrow lexical API-level guard is necessary evidence checking, not general semantic proof.",
+      "Counterfactual claims/titles explicitly labeled; no final task or external tool replay occurred."
+    ],
+    "actualModelApprovalBlockedByCode": 3,
+    "minimalSupportedStatementStillPublishes": true
+  },
+  "codeGuardReplays": [
+    {
+      "fixtureId": "list-high-level-missing",
+      "modelApproved": true,
+      "offlineCodeStatus": "INSUFFICIENT_EVIDENCE",
+      "expectedCodeStatus": "INSUFFICIENT_EVIDENCE",
+      "matchesExpected": true,
+      "emptyAnswerAndCitations": true,
+      "candidate": {
+        "claims": [
+          {
+            "text": "asyncio 提供高层 API，用于并发运行 Python 协程并完全控制其执行、执行网络 IO 和 IPC、控制子进程、通过队列分发任务以及同步并发代码。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n"
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          "asyncio 的 API 能做哪些操作？"
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "evidences": [
+          {
+            "url": "https://docs.python.org/3/library/asyncio.html",
+            "title": "asyncio — Asynchronous I/O — Python 3.14.7 documentation",
+            "content": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n inspecting the async call graph of tasks and futures;\n inspecting tasks in another running Python process with command-line tools;\n\nAdditionally, there are low-level APIs for library and framework developers to: [...] asyncio is used as a foundation for multiple Python asynchronous frameworks that provide high-performance network and web-servers, database connection libraries, distributed task queues, etc.\n\nasyncio is often a perfect fit for IO-bound and high-level structured network code.\n\nSee also\n\nA Conceptual Overview of asyncio\n:   Explanation of the fundamentals of asyncio.\n\nasyncio provides a set of high-level APIs to: [...] create and manage event loops, which provide asynchronous APIs for networking, running subprocesses, handling OS signals, etc;\n implement efficient protocols using transports;\n bridge callback-based libraries and code with async/await syntax.\n\nAvailability: not WASI.\n\nThis module does not work or is not available on WebAssembly. See WebAssembly platforms for more information.\n\nasyncio REPL\n\nYou can experiment with an `asyncio` concurrent context in the REPL:",
+            "sourceId": "来源1",
+            "untrusted": true,
+            "citationId": "web:tavily:a7712fca492d3c6f8b901b794f1c0cc6fc58269cc4e508de4b4b1cbaca2a1c1d"
+          }
+        ]
+      },
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "same-list-low-level-missing",
+      "modelApproved": true,
+      "offlineCodeStatus": "INSUFFICIENT_EVIDENCE",
+      "expectedCodeStatus": "INSUFFICIENT_EVIDENCE",
+      "matchesExpected": true,
+      "emptyAnswerAndCitations": true,
+      "candidate": {
+        "claims": [
+          {
+            "text": "asyncio 提供低层 API，用于并发运行 Python 协程并完全控制其执行、执行网络 IO 和 IPC、控制子进程、通过队列分发任务以及同步并发代码。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n"
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          "asyncio 的 API 能做哪些操作？"
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "evidences": [
+          {
+            "url": "https://docs.python.org/3/library/asyncio.html",
+            "title": "asyncio — Asynchronous I/O — Python 3.14.7 documentation",
+            "content": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n inspecting the async call graph of tasks and futures;\n inspecting tasks in another running Python process with command-line tools;\n\nAdditionally, there are low-level APIs for library and framework developers to: [...] asyncio is used as a foundation for multiple Python asynchronous frameworks that provide high-performance network and web-servers, database connection libraries, distributed task queues, etc.\n\nasyncio is often a perfect fit for IO-bound and high-level structured network code.\n\nSee also\n\nA Conceptual Overview of asyncio\n:   Explanation of the fundamentals of asyncio.\n\nasyncio provides a set of high-level APIs to: [...] create and manage event loops, which provide asynchronous APIs for networking, running subprocesses, handling OS signals, etc;\n implement efficient protocols using transports;\n bridge callback-based libraries and code with async/await syntax.\n\nAvailability: not WASI.\n\nThis module does not work or is not available on WebAssembly. See WebAssembly platforms for more information.\n\nasyncio REPL\n\nYou can experiment with an `asyncio` concurrent context in the REPL:",
+            "sourceId": "来源1",
+            "untrusted": true,
+            "citationId": "web:tavily:a7712fca492d3c6f8b901b794f1c0cc6fc58269cc4e508de4b4b1cbaca2a1c1d"
+          }
+        ]
+      },
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "title-label-not-body-proof",
+      "modelApproved": true,
+      "offlineCodeStatus": "INSUFFICIENT_EVIDENCE",
+      "expectedCodeStatus": "INSUFFICIENT_EVIDENCE",
+      "matchesExpected": true,
+      "emptyAnswerAndCitations": true,
+      "candidate": {
+        "claims": [
+          {
+            "text": "asyncio 提供高层 API，用于并发运行 Python 协程并完全控制其执行、执行网络 IO 和 IPC、控制子进程、通过队列分发任务以及同步并发代码。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n"
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          "asyncio 的 API 能做哪些操作？"
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "evidences": [
+          {
+            "url": "https://docs.python.org/3/library/asyncio.html",
+            "title": "asyncio — Asynchronous I/O — Python 3.14.7 documentation",
+            "content": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n inspecting the async call graph of tasks and futures;\n inspecting tasks in another running Python process with command-line tools;\n\nAdditionally, there are low-level APIs for library and framework developers to: [...] asyncio is used as a foundation for multiple Python asynchronous frameworks that provide high-performance network and web-servers, database connection libraries, distributed task queues, etc.\n\nasyncio is often a perfect fit for IO-bound and high-level structured network code.\n\nSee also\n\nA Conceptual Overview of asyncio\n:   Explanation of the fundamentals of asyncio.\n\nasyncio provides a set of high-level APIs to: [...] create and manage event loops, which provide asynchronous APIs for networking, running subprocesses, handling OS signals, etc;\n implement efficient protocols using transports;\n bridge callback-based libraries and code with async/await syntax.\n\nAvailability: not WASI.\n\nThis module does not work or is not available on WebAssembly. See WebAssembly platforms for more information.\n\nasyncio REPL\n\nYou can experiment with an `asyncio` concurrent context in the REPL:",
+            "sourceId": "来源1",
+            "untrusted": true,
+            "citationId": "web:tavily:a7712fca492d3c6f8b901b794f1c0cc6fc58269cc4e508de4b4b1cbaca2a1c1d"
+          }
+        ]
+      },
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "same-list-minimal-capabilities",
+      "modelApproved": true,
+      "offlineCodeStatus": "SUCCEEDED",
+      "expectedCodeStatus": "SUCCEEDED",
+      "matchesExpected": true,
+      "emptyAnswerAndCitations": false,
+      "candidate": {
+        "claims": [
+          {
+            "text": "asyncio 提供 API，用于并发运行 Python 协程并完全控制其执行、执行网络 IO 和 IPC、控制子进程、通过队列分发任务以及同步并发代码。",
+            "quotes": [
+              {
+                "sourceId": "来源1",
+                "quote": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n"
+              }
+            ]
+          }
+        ],
+        "requirements": [
+          "asyncio 的 API 能做哪些操作？"
+        ],
+        "answer_kind": "ANSWER",
+        "boundary_support": [],
+        "evidences": [
+          {
+            "url": "https://docs.python.org/3/library/asyncio.html",
+            "title": "asyncio — Asynchronous I/O — Python 3.14.7 documentation",
+            "content": "run Python coroutines concurrently and have full control over their execution;\n perform network IO and IPC;\n control subprocesses;\n distribute tasks via queues;\n synchronize concurrent code;\n\nFor introspection, asyncio provides APIs and tools for:\n\n inspecting the async call graph of tasks and futures;\n inspecting tasks in another running Python process with command-line tools;\n\nAdditionally, there are low-level APIs for library and framework developers to: [...] asyncio is used as a foundation for multiple Python asynchronous frameworks that provide high-performance network and web-servers, database connection libraries, distributed task queues, etc.\n\nasyncio is often a perfect fit for IO-bound and high-level structured network code.\n\nSee also\n\nA Conceptual Overview of asyncio\n:   Explanation of the fundamentals of asyncio.\n\nasyncio provides a set of high-level APIs to: [...] create and manage event loops, which provide asynchronous APIs for networking, running subprocesses, handling OS signals, etc;\n implement efficient protocols using transports;\n bridge callback-based libraries and code with async/await syntax.\n\nAvailability: not WASI.\n\nThis module does not work or is not available on WebAssembly. See WebAssembly platforms for more information.\n\nasyncio REPL\n\nYou can experiment with an `asyncio` concurrent context in the REPL:",
+            "sourceId": "来源1",
+            "untrusted": true,
+            "citationId": "web:tavily:a7712fca492d3c6f8b901b794f1c0cc6fc58269cc4e508de4b4b1cbaca2a1c1d"
+          }
+        ]
+      },
+      "response": {
+        "decisions": [
+          {
+            "index": 1,
+            "supported": true
+          }
+        ],
+        "coverage": [
+          {
+            "requirement_index": 1,
+            "claim_indices": [
+              1
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
