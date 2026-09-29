@@ -3,12 +3,17 @@ package com.deepresearch.evidence;
 import com.deepresearch.security.AuthPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Instant;
+import java.util.List;
 
 /** Implemented by the control plane; hashes/model text are never capabilities. */
 public interface EvidenceAuthority {
     Grant authorize(String authorization, String operation, EvidenceDtos.Identifiers identifiers);
     boolean active(Grant grant);
     Candidate candidate(Grant grant, String sourceId);
+    /** Resolve the exact completed search receipt stored by read_source, never the newest hit. */
+    default Candidate originalCandidate(Grant grant, String sourceId, String parentReceiptId) { throw EvidenceException.denied(); }
+    /** Native control-plane goals; request/model bodies cannot declare their own completion. */
+    default List<ReportGoal> reportGoals(Grant grant) { throw EvidenceException.denied(); }
     /** Joins B's database transaction: fence + complete the budgeted read_source receipt. */
     void commitRead(Grant grant, String sourceId, JsonNode evidence, String receiptId);
     /** Verify A's completed budgeted check call binds these exact request/response bytes. */
@@ -25,6 +30,7 @@ public interface EvidenceAuthority {
     /** Trusted tool observation obtained by the port, never accepted from an HTTP/model body. */
     record Observation(String artifactId, String text, Instant observedAt) { }
     record PublicationReadPermit(String operationId, String completedSnapshotHash) { }
+    record ReportGoal(String taskId, String text, String status) { }
 
     static EvidenceAuthority denyAll() {
         return new EvidenceAuthority() {
