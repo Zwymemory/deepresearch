@@ -706,6 +706,12 @@ public class WorkflowRepository {
                 ON CONFLICT (message_id) DO NOTHING
                 """, runId + "-assistant", sessionId, runId, answer);
         jdbcTemplate.update("UPDATE agent_session SET updated_at = now() WHERE session_id = ?", sessionId);
+        // Durable completion hook shared by Dify and LangGraph. Generation is deferred
+        // until a maintenance worker can reserve a budget; never add an untracked model call.
+        insertEvent(runId, "workflow:session-summary:required", "SYSTEM", null,
+                "SESSION_SUMMARY_MAINTENANCE_REQUIRED",
+                "{\"schema_version\":\"0.1.0\",\"status\":\"pending\","
+                        + "\"reason\":\"new_final_messages\",\"generation\":\"deferred\"}");
     }
 
     private RunRow mapRun(ResultSet rs, int rowNum) throws SQLException {

@@ -1,0 +1,79 @@
+{
+  "status": "local_library_compatibility_verified",
+  "python": "3.12.14",
+  "packages": {
+    "fastapi": {
+      "locked": "0.141.1",
+      "installed": "0.141.1",
+      "matches": true
+    },
+    "httpx": {
+      "locked": "0.28.1",
+      "installed": "0.28.1",
+      "matches": true
+    },
+    "langchain-openai": {
+      "locked": "1.4.1",
+      "installed": "1.4.1",
+      "matches": true
+    },
+    "langgraph": {
+      "locked": "1.2.10",
+      "installed": "1.2.10",
+      "matches": true
+    },
+    "langgraph-checkpoint-postgres": {
+      "locked": "3.1.1",
+      "installed": "3.1.1",
+      "matches": true
+    },
+    "mcp": {
+      "locked": "1.29.0",
+      "installed": "1.29.0",
+      "matches": true
+    },
+    "psycopg": {
+      "locked": "3.3.2",
+      "installed": "3.3.2",
+      "matches": true
+    },
+    "pydantic": {
+      "locked": "2.12.5",
+      "installed": "2.12.5",
+      "matches": true
+    },
+    "pydantic-settings": {
+      "locked": "2.12.0",
+      "installed": "2.12.0",
+      "matches": true
+    },
+    "uvicorn": {
+      "locked": "0.41.0",
+      "installed": "0.41.0",
+      "matches": true
+    }
+  },
+  "source_sha256": {
+    "workflow-service/pyproject.toml": "8d4933c7a0301b30e1f5d073c68ed7dfdc58c763b36716c8772b707eca2f4467",
+    "workflow-service/uv.lock": "cf6a6e78fad702a5515ddc40f8f726607b65441ee99a6f0c2facda531343c1e5",
+    "workflow-service/src/deepresearch_workflow/graph.py": "2ebf48bdcdf9c7efec0cae91b0f800e26eef4a1f0add691dcdbbf10b6ad48a8f",
+    "workflow-service/src/deepresearch_workflow/runner.py": "bfb9e0e6a1cdb50fbf1656b341321c83adeafd9932d649d1639ec6593c7d482f"
+  },
+  "checks": {
+    "stategraph_compile": true,
+    "in_memory_checkpoint_interrupt_resume": true,
+    "send_api_present": true,
+    "command_api_present": true,
+    "postgres_saver_setup_api": true,
+    "async_postgres_saver_setup_api": true
+  },
+  "postgres_from_connection_signature": "(conn_string: 'str', *, pipeline: 'bool' = False) -> 'Iterator[PostgresSaver]'",
+  "limits": [
+    "No PostgreSQL connection or new persistence/restart test",
+    "No model/tool calls",
+    "Library API compatibility does not implement a dynamic Agent; repository graph remains fixed."
+  ],
+  "model_calls": 0,
+  "tool_calls": 0,
+  "live_deployment": false
+}

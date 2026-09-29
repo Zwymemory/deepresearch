@@ -1,0 +1,379 @@
+{
+  "schema_version": "0.1.0",
+  "origin": "existing_saved_native_runs_not_new_sampling",
+  "baseline_source_commit": "60e0290c0670ad3f2f8da303b0b1513e056670c8",
+  "sources": [
+    {
+      "path": "integrations/dify/evidence-v15-quality-live-2026-09-29.json",
+      "sha256": "41d13347895ac4a375af7e2dca5442f113d0095427511d5d982e63b66bbebddc"
+    },
+    {
+      "path": "integrations/dify/WEB_QUALITY_REPAIR_2026-09-28.md",
+      "sha256": "d39cd67685665f98d94ea44c34398f44decb5abcf3d078530e95d10dfa074dd3"
+    }
+  ],
+  "tested_implementation_sha": "3c77d31c3bed4662369ab8622cc9133788972975",
+  "archived_dsl_sha256": "87a3e241456c34dbf5dcb772fd0667b08e527650f586ee097411676b0fc05033",
+  "archived_publication": {
+    "id": "de7aaaa4-dbb1-4e27-b341-cd2ffd7973ca",
+    "markedName": "Evidence v15 Query",
+    "createdAt": 1790660281,
+    "implementationSha": "3c77d31c3bed4662369ab8622cc9133788972975",
+    "dslSha256": "87a3e241456c34dbf5dcb772fd0667b08e527650f586ee097411676b0fc05033",
+    "graphExactlyMatches": true
+  },
+  "model": "deepseek-v4-flash",
+  "sample": {
+    "total": 16,
+    "original_consecutive": 10,
+    "variants": 6,
+    "frozen_cases_sha256": "51586f65fe525404f2dde852b5f32aa2fdc9ac772008a09fc2f2199fe8c6e57b",
+    "source_scope_sha256": "19d6b83aa19b9a3cc2b7b1562ae18250dca527f9ae8be8ddb768c0b841856451"
+  },
+  "quality": {
+    "status_counts": {
+      "SUCCEEDED": 15,
+      "INSUFFICIENT_EVIDENCE": 1
+    },
+    "expected_terminal_count": 16,
+    "published_record_acceptance_count": 16,
+    "reviewed_candidate_claims": 56,
+    "reviewed_published_claims": 47,
+    "method": "finite saved own-source/context Codex record and cross-chat review; not independent human adjudication"
+  },
+  "usage": {
+    "model_calls": 62,
+    "tool_calls": 31,
+    "prompt_tokens": {
+      "count": 16,
+      "sum": 206862,
+      "min": 2656,
+      "max": 16221,
+      "median": 14537.0,
+      "p95_nearest_rank": 16221
+    },
+    "completion_tokens": {
+      "count": 16,
+      "sum": 5771,
+      "min": 79,
+      "max": 514,
+      "median": 375.5,
+      "p95_nearest_rank": 514
+    },
+    "total_tokens": {
+      "count": 16,
+      "sum": 212633,
+      "min": 2735,
+      "max": 16735,
+      "median": 14913.0,
+      "p95_nearest_rank": 16735
+    },
+    "cost": {
+      "status": "unknown",
+      "value": null,
+      "reason": "Native plugin price fields unconfigured; no verified currency/rate/charged amount."
+    }
+  },
+  "latency": {
+    "native_elapsed_seconds": {
+      "count": 16,
+      "sum": 105.533837,
+      "min": 2.727842,
+      "max": 13.909347,
+      "median": 6.086612000000001,
+      "p95_nearest_rank": 13.909347
+    },
+    "capture_latency_ms": {
+      "count": 16,
+      "sum": 148000.67,
+      "min": 4849.574,
+      "max": 16258.636,
+      "median": 8976.387999999999,
+      "p95_nearest_rank": 16258.636
+    },
+    "definition": "Native elapsed is workflow execution; capture also includes saved-result/source/idempotency readbacks."
+  },
+  "configured_limits": {
+    "maxModelCalls": 4,
+    "completionBudget": 9216,
+    "maxWorkers": 4,
+    "javaDeadlineSeconds": 120,
+    "retries": false
+  },
+  "rows": [
+    {
+      "case_id": "original-01",
+      "run_id": "wf-8244702e-0c4b-4bc6-9df7-2dac13ead26c",
+      "expected_status": "SUCCEEDED",
+      "actual_status": "SUCCEEDED",
+      "acceptance_passed": true,
+      "error_code": null,
+      "model_calls": 4,
+      "tool_calls": 2,
+      "prompt_tokens": 14567,
+      "completion_tokens": 375,
+      "total_tokens": 14942,
+      "native_elapsed_seconds": 13.909347,
+      "capture_latency_ms": 16258.636,
+      "all_finish_stop": true
+    },
+    {
+      "case_id": "original-02",
+      "run_id": "wf-627db168-94b7-41ad-8ec2-95fb4e83d670",
+      "expected_status": "SUCCEEDED",
+      "actual_status": "SUCCEEDED",
+      "acceptance_passed": true,
+      "error_code": null,
+      "model_calls": 4,
+      "tool_calls": 2,
+      "prompt_tokens": 14537,
+      "completion_tokens": 376,
+      "total_tokens": 14913,
+      "native_elapsed_seconds": 5.918757,
+      "capture_latency_ms": 6943.519,
+      "all_finish_stop": true
+    },
+    {
+      "case_id": "original-03",
+      "run_id": "wf-8e90d4bc-6b08-4d90-a107-a5ec59f643a2",
+      "expected_status": "SUCCEEDED",
+      "actual_status": "SUCCEEDED",
+      "acceptance_passed": true,
+      "error_code": null,
+      "model_calls": 4,
+      "tool_calls": 2,
+      "prompt_tokens": 14537,
+      "completion_tokens": 376,
+      "total_tokens": 14913,
+      "native_elapsed_seconds": 6.2281,
+      "capture_latency_ms": 9541.646,
+      "all_finish_stop": true
+    },
+    {
+      "case_id": "original-04",
+      "run_id": "wf-41c9c933-b0d1-4438-8855-0e49559cf317",
+      "expected_status": "SUCCEEDED",
+      "actual_status": "SUCCEEDED",
+      "acceptance_passed": true,
+      "error_code": null,
+      "model_calls": 4,
+      "tool_calls": 2,
+      "prompt_tokens": 14537,
+      "completion_tokens": 376,
+      "total_tokens": 14913,
+      "native_elapsed_seconds": 5.798291,
+      "capture_latency_ms": 8541.775,
+      "all_finish_stop": true
+    },
+    {
+      "case_id": "original-05",
+      "run_id": "wf-372b12aa-7d3c-479e-97de-e60c26dbe503",
+      "expected_status": "SUCCEEDED",
+      "actual_status": "SUCCEEDED",
+      "acceptance_passed": true,
+      "error_code": null,
+      "model_calls": 4,
+      "tool_calls": 2,
+      "prompt_tokens": 14566,
+      "completion_tokens": 372,
+      "total_tokens": 14938,
+      "native_elapsed_seconds": 6.27917,
+      "capture_latency_ms": 8976.41,
+      "all_finish_stop": true
+    },
+    {
+      "case_id": "original-06",
+      "run_id": "wf-d8bd19de-2a3e-4353-8b81-68720753c6cd",
+      "expected_status": "SUCCEEDED",
+      "actual_status": "SUCCEEDED",
+      "acceptance_passed": true,
+      "error_code": null,
+      "model_calls": 4,
+      "tool_calls": 2,
+      "prompt_tokens": 14537,
+      "completion_tokens": 376,
+      "total_tokens": 14913,
+      "native_elapsed_seconds": 5.468352,
+      "capture_latency_ms": 8981.393,
+      "all_finish_stop": true
+    },
+    {
+      "case_id": "original-07",
+      "run_id": "wf-15a12365-dacd-465d-84d3-dfff3cb6f541",
+      "expected_status": "SUCCEEDED",
+      "actual_status": "SUCCEEDED",
+      "acceptance_passed": true,
+      "error_code": null,
+      "model_calls": 4,
+      "tool_calls": 2,
+      "prompt_tokens": 14566,
+      "completion_tokens": 372,
+      "total_tokens": 14938,
+      "native_elapsed_seconds": 6.0894,
+      "capture_latency_ms": 8976.366,
+      "all_finish_stop": true
+    },
+    {
+      "case_id": "original-08",
+      "run_id": "wf-6d5b9086-d7a2-4a36-a1f7-437ab6f7e759",
+      "expected_status": "SUCCEEDED",
+      "actual_status": "SUCCEEDED",
+      "acceptance_passed": true,
+      "error_code": null,
+      "model_calls": 4,
+      "tool_calls": 2,
+      "prompt_tokens": 14537,
+      "completion_tokens": 376,
+      "total_tokens": 14913,
+      "native_elapsed_seconds": 5.511215,
+      "capture_latency_ms": 8470.158,
+      "all_finish_stop": true
+    },
+    {
+      "case_id": "original-09",
+      "run_id": "wf-099a5e68-720f-4a28-891f-18e3094b1af0",
+      "expected_status": "SUCCEEDED",
+      "actual_status": "SUCCEEDED",
+      "acceptance_passed": true,
+      "error_code": null,
+      "model_calls": 4,
+      "tool_calls": 2,
+      "prompt_tokens": 14537,
+      "completion_tokens": 376,
+      "total_tokens": 14913,
+      "native_elapsed_seconds": 6.083824,
+      "capture_latency_ms": 9484.556,
+      "all_finish_stop": true
+    },
+    {
+      "case_id": "original-10",
+      "run_id": "wf-1392afce-5593-4c18-b55e-1613fa44a14d",
+      "expected_status": "SUCCEEDED",
+      "actual_status": "SUCCEEDED",
+      "acceptance_passed": true,
+      "error_code": null,
+      "model_calls": 4,
+      "tool_calls": 2,
+      "prompt_tokens": 14566,
+      "completion_tokens": 372,
+      "total_tokens": 14938,
+      "native_elapsed_seconds": 5.675785,
+      "capture_latency_ms": 8445.685,
+      "all_finish_stop": true
+    },
+    {
+      "case_id": "rewrite-1",
+      "run_id": "wf-4f225e44-eec3-4718-a49a-aea3aea372d0",
+      "expected_status": "SUCCEEDED",
+      "actual_status": "SUCCEEDED",
+      "acceptance_passed": true,
+      "error_code": null,
+      "model_calls": 4,
+      "tool_calls": 2,
+      "prompt_tokens": 13913,
+      "completion_tokens": 456,
+      "total_tokens": 14369,
+      "native_elapsed_seconds": 8.47052,
+      "capture_latency_ms": 11485.698,
+      "all_finish_stop": true
+    },
+    {
+      "case_id": "rewrite-2",
+      "run_id": "wf-2b8b61b5-567a-49ae-8551-6e86b2e5e56c",
+      "expected_status": "SUCCEEDED",
+      "actual_status": "SUCCEEDED",
+      "acceptance_passed": true,
+      "error_code": null,
+      "model_calls": 4,
+      "tool_calls": 2,
+      "prompt_tokens": 14580,
+      "completion_tokens": 317,
+      "total_tokens": 14897,
+      "native_elapsed_seconds": 7.92069,
+      "capture_latency_ms": 11611.969,
+      "all_finish_stop": true
+    },
+    {
+      "case_id": "mixed-kb-web",
+      "run_id": "wf-8f552743-d787-4f89-9574-8dbfb6eae44a",
+      "expected_status": "SUCCEEDED",
+      "actual_status": "SUCCEEDED",
+      "acceptance_passed": true,
+      "error_code": null,
+      "model_calls": 4,
+      "tool_calls": 4,
+      "prompt_tokens": 16221,
+      "completion_tokens": 514,
+      "total_tokens": 16735,
+      "native_elapsed_seconds": 7.893356,
+      "capture_latency_ms": 8961.147,
+      "all_finish_stop": true
+    },
+    {
+      "case_id": "kb-positive",
+      "run_id": "wf-abe80447-39ce-4e99-8b51-fe2ac78d184f",
+      "expected_status": "SUCCEEDED",
+      "actual_status": "SUCCEEDED",
+      "acceptance_passed": true,
+      "error_code": null,
+      "model_calls": 4,
+      "tool_calls": 1,
+      "prompt_tokens": 7013,
+      "completion_tokens": 303,
+      "total_tokens": 7316,
+      "native_elapsed_seconds": 5.298922,
+      "capture_latency_ms": 6439.053,
+      "all_finish_stop": true
+    },
+    {
+      "case_id": "kb-boundary",
+      "run_id": "wf-3704111c-f60f-4438-b173-400abe9ef649",
+      "expected_status": "SUCCEEDED",
+      "actual_status": "SUCCEEDED",
+      "acceptance_passed": true,
+      "error_code": null,
+      "model_calls": 4,
+      "tool_calls": 1,
+      "prompt_tokens": 6992,
+      "completion_tokens": 355,
+      "total_tokens": 7347,
+      "native_elapsed_seconds": 6.260266,
+      "capture_latency_ms": 10033.085,
+      "all_finish_stop": true
+    },
+    {
+      "case_id": "kb-zero-evidence",
+      "run_id": "wf-fcb9dc4c-a933-4ad9-a891-039dd4a47867",
+      "expected_status": "INSUFFICIENT_EVIDENCE",
+      "actual_status": "INSUFFICIENT_EVIDENCE",
+      "acceptance_passed": true,
+      "error_code": "NO_RELEVANT_EVIDENCE",
+      "model_calls": 2,
+      "tool_calls": 1,
+      "prompt_tokens": 2656,
+      "completion_tokens": 79,
+      "total_tokens": 2735,
+      "native_elapsed_seconds": 2.727842,
+      "capture_latency_ms": 4849.574,
+      "all_finish_stop": true
+    }
+  ],
+  "missing_or_unverified": [
+    "Real currency/charged cost",
+    "Model consumption of selected memory",
+    "Not an independent held-out set: the same frozen cases were used across versioned repair cohorts",
+    "Agent autonomy, multi-agent collaboration and project memory not implemented by this cohort",
+    "Full-page source truth, current-version universality and independent human quality labels",
+    "New fault injection, cold-cache reproducibility and restart memory behavior"
+  ],
+  "historical_failures": {
+    "preserved_paths": [
+      "integrations/dify/model-output-failure-2026-09-28.json",
+      "integrations/dify/evidence-v13-review-correction-2026-09-29.json",
+      "integrations/dify/evidence-v14-quality-live-2026-09-29.json"
+    ],
+    "v13_content_count_after_correction": 15,
+    "v14_expected_terminal_count": 15,
+    "note": "Earlier failures and all versioned cohorts remain; this extractor does not relabel, replace or rerun them."
+  }
+}

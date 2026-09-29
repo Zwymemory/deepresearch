@@ -1,0 +1,469 @@
+{
+  "record_type": "OfflineVerificationRecord",
+  "round": 0,
+  "status": "local_candidate_verified",
+  "generated_at": "2026-09-29T08:49:10.188080+00:00",
+  "baseline_sha": "60e0290c0670ad3f2f8da303b0b1513e056670c8",
+  "branch": "feat/agent-foundation-runtime",
+  "commit_identity_location": "A external handoff records final_sha/tested_sha after commit; file digests bind this record to tested inputs",
+  "peer": {
+    "branch": "feat/agent-foundation-evidence",
+    "final_sha": "9235a03ad457137b78b322a8694fa0c921d20dad",
+    "source_files": [
+      {
+        "path": "contracts/agent/v0/knowledge.schema.json",
+        "sha256": "3835da4cad31aed901a8a223ba2c95768b22af222c4e139525c0eeb7c3b83081"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/build_contract.py",
+        "sha256": "84b44c7e8b9770aa851b618ccf0c7999ab7522849e692014cf2a2f4e5180fdbe"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/build_fixtures.py",
+        "sha256": "12ec558ec8386250615b3b790f5e491e2a380709a06a85ada50e26fa8dbde794"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/empty-retrieval.json",
+        "sha256": "918801e647e17182a4c32a0c88231ed1cecba987adf3bf8a862d2ca940a17c90"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/manifest.json",
+        "sha256": "2161ff66ba4dac46d931ffd4f2525cf54457b6bc4abffe062ae084f5609f2dd5"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/run_checks.py",
+        "sha256": "4b7e193c99cefa452d5f7dc877fe92f90ddd431196b707a8134072129fce31b1"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/sources/controlled-spec.md",
+        "sha256": "91b34aaff5647bf2065ea9f69095a435dca4aaf6354198b3d34db356aa619559"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/sources/peer-first.md",
+        "sha256": "1253000c15bc08215eded4a14dcedcc61f5e1ab33507b7bf8cf27a631ef71f04"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/sources/peer-second.md",
+        "sha256": "6e35f7e38e8ed15ce2ac592c4c5cfac6f4ddb7c92388c3e23d969bab4937002f"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/sources/version-v1.md",
+        "sha256": "89228a6ee85619136604b5f75e508c568db2b8a846a967126704a683d561b8bc"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/sources/version-v2.md",
+        "sha256": "d67ab62e69577b1b285ac97548d93d0c2ecf39f9f66b28693f250069893efc9e"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/sources/wrong-guide.md",
+        "sha256": "55ce2a41b539fb63f5839d06ab5e32331d0878cff4ce3ec3ebc9fabd1c73a68f"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/test_knowledge_contract.py",
+        "sha256": "44ee2192181bbd6f840ad3a85e52be6a9d8cd648d827cc2cbfc769c7b8abcb1d"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/unresolved-conflict.json",
+        "sha256": "e35c4a128119a9065c35bbd080ff16e63b3a59d3377b613f5daeeb290df75021"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/validate_knowledge.py",
+        "sha256": "5b35ad8730b0182c19bec39715f8de93061ec561ddcace1eb0f4389f1b875cc9"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/verification-2026-09-29.json",
+        "sha256": "f0206200348199ede9301cd6adda2a9aa582fafb10950125e2c44c026873df04"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/version-difference.json",
+        "sha256": "dfc290f5c6b9740bf6bb71dd6c1954ea17a03c9146b40f9569cddbb136d32914"
+      },
+      {
+        "path": "testdata/agent-foundation/evidence/wrong-material.json",
+        "sha256": "9c42d79df8daf7ef2b696ae14e1751d6b9ce38cedaa091c068b3d5836b97a272"
+      },
+      {
+        "path": "testdata/agent-foundation/memory/access-isolation.json",
+        "sha256": "ae1bcd0575c026ee7248936ef5cd75b16cc705dbfff637cbcdc714b0169539a3"
+      },
+      {
+        "path": "testdata/agent-foundation/memory/deletion-tombstone.json",
+        "sha256": "111b2694446f3351f624e71cb38c534c312f898cc681e4ca32051f55da5b0af8"
+      },
+      {
+        "path": "testdata/agent-foundation/memory/evidence-invalidated.json",
+        "sha256": "08427f2a536bc85e8fc4f974693ce760c035ea8fe2bc19fe50198ff70d000b20"
+      },
+      {
+        "path": "testdata/agent-foundation/memory/idempotent-write.json",
+        "sha256": "a3fe18fa5e04cdcc8d4d9c315f549d4087bf7873cd42a5e90b081f34b136085a"
+      },
+      {
+        "path": "testdata/agent-foundation/memory/manifest.json",
+        "sha256": "24c2a98cf3b880b6cf90786d967a0dd1b77c5b2d3d16328b579a1ef988a227d9"
+      },
+      {
+        "path": "testdata/agent-foundation/memory/reuse-current-version.json",
+        "sha256": "126b7e0cc5466a21fc9fb25e502c3cc77f6a67ab239a8446579c5b0d3a637dfb"
+      },
+      {
+        "path": "testdata/agent-foundation/memory/reuse-version-change.json",
+        "sha256": "a0271cdf76c8836d163b4a0151adad96c7f0b9a48b7c380db1483844655adbc6"
+      },
+      {
+        "path": "testdata/agent-foundation/memory/session-continuation.json",
+        "sha256": "161cfc2589c4432fc862542e20ca0e213cb794ceaba3be00a9ba2c1f672b8f1f"
+      }
+    ]
+  },
+  "python": {
+    "version": "3.12.14",
+    "packages": {
+      "jsonschema": "4.26.0",
+      "referencing": "0.37.0"
+    },
+    "runtime_unittests": 38,
+    "peer_unittests": 39,
+    "gate_command": "python -B contracts/agent/v0/validate.py --peer-checkout /path/to/B-checkout",
+    "gate_output_sha256": "2b1a49ba7f3ecdf680608cd9e8726d937ed98efddbc74f2a97e201b23d6c9cea",
+    "gate_result": {
+      "status": "offline_contracts_passed",
+      "schema_engine": "jsonschema Draft202012Validator with registered local date-time/uri profiles; remote resolution forbidden",
+      "peer_checkout": "/Users/zwy/Claude/Projects/deepresearch-ragflow",
+      "runtime_fixtures": [
+        {
+          "fixture_id": "runtime-foundation",
+          "runtime_records_checked": 7,
+          "semantic_verification": false,
+          "live_authorization_verified": false,
+          "runtime_execution": false
+        }
+      ],
+      "knowledge_fixtures": [
+        {
+          "fixture_id": "empty-retrieval",
+          "records_checked": 3,
+          "memory_requests": [],
+          "semantic_verification": false,
+          "runtime_execution": false
+        },
+        {
+          "fixture_id": "wrong-material",
+          "records_checked": 6,
+          "memory_requests": [],
+          "semantic_verification": false,
+          "runtime_execution": false
+        },
+        {
+          "fixture_id": "version-difference",
+          "records_checked": 7,
+          "memory_requests": [],
+          "semantic_verification": false,
+          "runtime_execution": false
+        },
+        {
+          "fixture_id": "unresolved-conflict",
+          "records_checked": 6,
+          "memory_requests": [],
+          "semantic_verification": false,
+          "runtime_execution": false
+        },
+        {
+          "fixture_id": "session-continuation",
+          "records_checked": 4,
+          "memory_requests": [
+            {
+              "operation": "resume",
+              "memory_id": "fixture-memory",
+              "eligibility": "allowed_by_fixture_rules",
+              "runtime_execution": false
+            }
+          ],
+          "semantic_verification": false,
+          "runtime_execution": false
+        },
+        {
+          "fixture_id": "reuse-current-version",
+          "records_checked": 8,
+          "memory_requests": [
+            {
+              "operation": "reuse_as_evidence",
+              "memory_id": "fixture-memory",
+              "eligibility": "allowed_by_fixture_rules",
+              "runtime_execution": false
+            }
+          ],
+          "semantic_verification": false,
+          "runtime_execution": false
+        },
+        {
+          "fixture_id": "reuse-version-change",
+          "records_checked": 8,
+          "memory_requests": [
+            {
+              "operation": "select_as_lead",
+              "memory_id": "fixture-memory",
+              "eligibility": "allowed_by_fixture_rules",
+              "runtime_execution": false
+            }
+          ],
+          "semantic_verification": false,
+          "runtime_execution": false
+        },
+        {
+          "fixture_id": "evidence-invalidated",
+          "records_checked": 8,
+          "memory_requests": [
+            {
+              "operation": "select_as_lead",
+              "memory_id": "fixture-memory",
+              "eligibility": "allowed_by_fixture_rules",
+              "runtime_execution": false
+            }
+          ],
+          "semantic_verification": false,
+          "runtime_execution": false
+        },
+        {
+          "fixture_id": "deletion-tombstone",
+          "records_checked": 4,
+          "memory_requests": [],
+          "semantic_verification": false,
+          "runtime_execution": false
+        },
+        {
+          "fixture_id": "access-isolation",
+          "records_checked": 8,
+          "memory_requests": [],
+          "semantic_verification": false,
+          "runtime_execution": false
+        },
+        {
+          "fixture_id": "idempotent-write",
+          "records_checked": 8,
+          "memory_requests": [
+            {
+              "operation": "reuse_as_evidence",
+              "memory_id": "fixture-memory",
+              "eligibility": "allowed_by_fixture_rules",
+              "runtime_execution": false
+            }
+          ],
+          "semantic_verification": false,
+          "runtime_execution": false
+        }
+      ],
+      "bridge": {
+        "status": "cross_contract_fixture_refs_passed",
+        "runtime": {
+          "runtime_records_checked": 7,
+          "semantic_verification": false,
+          "live_authorization_verified": false,
+          "runtime_execution": false
+        },
+        "knowledge": {
+          "records_checked": 8,
+          "memory_requests": [
+            {
+              "operation": "reuse_as_evidence",
+              "memory_id": "fixture-memory",
+              "eligibility": "allowed_by_fixture_rules",
+              "runtime_execution": false
+            }
+          ],
+          "semantic_verification": false,
+          "runtime_execution": false
+        },
+        "negative_rejections": [
+          "MEMORY_VERSION_MISMATCH",
+          "MEMORY_CONTENT_BINDING_INVALID",
+          "REFERENCE_SCOPE_MISMATCH",
+          "MEMORY_RECHECK_REQUIRED",
+          "MEMORY_NOT_REUSABLE"
+        ],
+        "stale_lead_allowed_as_untrusted_context": true,
+        "peer_fixture_sha256": "126b7e0cc5466a21fc9fb25e502c3cc77f6a67ab239a8446579c5b0d3a637dfb",
+        "peer_deleted_fixture_sha256": "111b2694446f3351f624e71cb38c534c312f898cc681e4ca32051f55da5b0af8",
+        "model_use_verified": false,
+        "live_memory_access": false,
+        "runtime_execution": false
+      },
+      "contract_freeze": "pending_main_review",
+      "model_use_verified": false,
+      "live_deployment": false,
+      "semantic_verification": false
+    }
+  },
+  "java": {
+    "unit_tests": {
+      "tests": 79,
+      "suites": [
+        {
+          "suite": "com.deepresearch.workflow.DifyContextInputsTest",
+          "tests": 6,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "report_sha256": "3819aae14a87c83113f35fa4038a5b850ce5b991b272460a96c9d13d0aa82208"
+        },
+        {
+          "suite": "com.deepresearch.workflow.DifyWorkflowAdapterTest",
+          "tests": 23,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "report_sha256": "2b360c65207de59d1c049132e9e67b868bc939a9b3f6613d3068f949bfcdf4b1"
+        },
+        {
+          "suite": "com.deepresearch.service.MemorySelectionServiceTest",
+          "tests": 2,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "report_sha256": "2faed05f6d44dcb7f482fdf0d14be680c6dd57ede2f515e21b3234ce26cb5b5f"
+        },
+        {
+          "suite": "com.deepresearch.service.AgentContextServiceTest",
+          "tests": 1,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "report_sha256": "40a6e46167c3fae2de460311bc9b1492bacb039001aba3f1869223ee43c75fcc"
+        },
+        {
+          "suite": "com.deepresearch.service.ConversationCompressionCoordinatorTest",
+          "tests": 3,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "report_sha256": "ce19467bc87bc280315228c2f28c70c3a1b06aa3636d8e90077ee0fce2266ccd"
+        },
+        {
+          "suite": "com.deepresearch.service.ConversationSummaryServiceTest",
+          "tests": 2,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "report_sha256": "c5b39ae338d20fecf569a1b6ca81b8a797df8f221be315fe00474f9899999b9b"
+        },
+        {
+          "suite": "com.deepresearch.workflow.WorkflowServiceTest",
+          "tests": 10,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "report_sha256": "9316bfb39dce87b8a809b7049b543099659a0890e79915f0cf523141c388d38c"
+        },
+        {
+          "suite": "com.deepresearch.service.ReactAgentServiceTest",
+          "tests": 9,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "report_sha256": "1b3d3c2c8618c79e4f24428968c3609955f137629e1ddcd6ebc868841e2852b2"
+        },
+        {
+          "suite": "com.deepresearch.workflow.DifyCitationValidatorTest",
+          "tests": 4,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "report_sha256": "470d16bfa10a378539e61c9afe709121d5cbe1a51f5c0de68a8f4a1cf11628d6"
+        },
+        {
+          "suite": "com.deepresearch.workflow.DifyToolServiceTest",
+          "tests": 13,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "report_sha256": "610e5d07f9ce3d1584d5ae5a625b0c22ad5981e80a77d1a9adb8322739b338e3"
+        },
+        {
+          "suite": "com.deepresearch.tool.TavilySearchClientTest",
+          "tests": 6,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "report_sha256": "bb7276fd7abad039e26e1ed4471e96262f8be6ac2ee5b8295820b27c70265ed9"
+        }
+      ]
+    },
+    "disposable_postgres_checks": {
+      "tests": 5,
+      "suites": [
+        {
+          "suite": "com.deepresearch.workflow.DifyWebSourcesIT",
+          "tests": 4,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "report_sha256": "d84aefdc5e7a57e6dba4b19ea47f1aa88c71742ddce637320690ae385bfa2246"
+        },
+        {
+          "suite": "com.deepresearch.service.ConversationCompressionPostgresIT",
+          "tests": 1,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "report_sha256": "df5353e78f19770e4551f054a9a7efde86fd951be7898b295bf32208a9d642b6"
+        }
+      ]
+    },
+    "unit_command": "mvn -q -Dtest=DifyContextInputsTest,DifyWorkflowAdapterTest,MemorySelectionServiceTest,AgentContextServiceTest,ConversationCompressionCoordinatorTest,ConversationSummaryServiceTest,WorkflowServiceTest,ReactAgentServiceTest,DifyCitationValidatorTest,DifyToolServiceTest,TavilySearchClientTest test",
+    "latest_context_followup_command": "mvn -q -Dtest=DifyContextInputsTest,DifyWorkflowAdapterTest test",
+    "integration_commands": [
+      "mvn -q -Pintegration -Dit.test=DifyWebSourcesIT -DskipTests=false -Dtest=DifyContextInputsTest,MemorySelectionServiceTest,AgentContextServiceTest verify",
+      "mvn -q -Pintegration -Dit.test=ConversationCompressionPostgresIT -DskipTests=false -Dtest=ConversationCompressionCoordinatorTest,ConversationSummaryServiceTest verify"
+    ],
+    "integration_scope": "existing reports from separate disposable PostgreSQL runs; no production volume or provider accessed"
+  },
+  "source_sha256": {
+    "contracts/agent/v0/README.md": "3be2d0388b7aaa9add408490c741993d46762a6094c645a65cd9cd466456533e",
+    "contracts/agent/v0/baseline.py": "1803035b14ebd9abfb82c0700991e1337cc1bce3ac0d3bd325da30bb085bdf72",
+    "contracts/agent/v0/probe_dify_local.py": "f0f825e96603f01a7b4e943c3c741d2516b738c2d413caaf2d49061831b3d284",
+    "contracts/agent/v0/probe_langgraph.py": "cabe2ae71c76296bd8929f0f2059595bacaf359a21071a00ef1d69a17c206c87",
+    "contracts/agent/v0/requirements.txt": "9cba6d4508d006391ab899893990d5ac5d03b4811a0f71f152c5883897ee8120",
+    "contracts/agent/v0/runtime.schema.json": "b66c21be0d565a5b753ee47d932119b9383800e0fb026173fcf087325939c997",
+    "contracts/agent/v0/validate.py": "d0352638b345a4e93f7c4d2f1686b91414db44ea15f870130406dea94b7fc934",
+    "contracts/agent/v0/validate_bridge.py": "485732ec80764d395d52658155e5733dc73690d9a0d860430fb1a6efb153d8fb",
+    "contracts/agent/v0/validate_runtime.py": "1bdbe30835b961732636f77511ce8b21f7d8f7d38d463e68a6aa0b68fe21856b",
+    "docs/agent/FOUNDATION_RUNTIME.md": "fd62f9fd7cfb31d8ef1223783159858e10a5240667bf00b15cb947cd01397863",
+    "integrations/dify/build_workflow.py": "4b1a46fb14ee2551a41cddc35a89432258d50eb1e2d302f25a7d96125cadcd81",
+    "integrations/dify/deepresearch-evidence-v1.yml": "2b7aa3fb726d7c6b07fe69c9ba004dab02f27a0c885f8a2154538fa6daa63edf",
+    "src/main/java/com/deepresearch/service/AgentSessionRepository.java": "62802da5c92d8674f91300de056e20a12ca96ce6de05fccb6ba3359d8ef73daf",
+    "src/main/java/com/deepresearch/service/ConversationCompressionCoordinator.java": "928a278af86f001235bafdc4ed2078392e296b886150b81034dd3481acf993de",
+    "src/main/java/com/deepresearch/service/ConversationSummaryService.java": "216640cd0f616023229e3df8c2a287f642c175f04180896a4cdad640867de7bb",
+    "src/main/java/com/deepresearch/service/MemorySelectionService.java": "70dd0cd395964d634f287384807dc14daaf64f2fe8c8cf173cba2ef03b0a43d7",
+    "src/main/java/com/deepresearch/web/dto/AgentResearchResponse.java": "2689af9fc5ee8c41618599dcc1b7a98b898a96ad349edd1363990725dc4ea829",
+    "src/main/java/com/deepresearch/workflow/DifyContextInputs.java": "04719c1b9e676467d940038113c14e2127eed78fdfcd8ecef54efff43201aeca",
+    "src/main/java/com/deepresearch/workflow/DifyWorkflowAdapter.java": "91a32fb8c48f53cbc5e5e08b34aa1725b59360273a554306054e838d84e0d05d",
+    "src/main/java/com/deepresearch/workflow/WorkflowRepository.java": "6d4d7e1dd10c40a6843601a1a97a188dc9dff48d6fa7c47a93129d41473adb0f",
+    "src/main/java/com/deepresearch/workflow/WorkflowService.java": "d6a1edf5acf01567412a6c97bf9b10adbfaea425c81015ba25e72a3a64a17cc4",
+    "src/test/java/com/deepresearch/service/AgentContextServiceTest.java": "c67e222b23f92b5f0985542669d93524d1472e6bd2bfbdef075c3a7776392941",
+    "src/test/java/com/deepresearch/service/ConversationCompressionCoordinatorTest.java": "25d025d059921057d9787f1a62bb9837f5045254565602c65897252d1c25af46",
+    "src/test/java/com/deepresearch/service/ConversationCompressionPostgresIT.java": "dfff53cfae7dac171ea31cf2df189fddffa0e08203f03972b6280a29e4c50a0a",
+    "src/test/java/com/deepresearch/service/ConversationSummaryServiceTest.java": "2e3bb521f9dbea4e4cf2d51af07a3c5b5b8597e64abf61bdc565b4afbed59c28",
+    "src/test/java/com/deepresearch/service/MemorySelectionServiceTest.java": "781be1f5b5f8bdb9259997a7fbdecba91e49025bc16393651c04af3819446450",
+    "src/test/java/com/deepresearch/workflow/DifyContextInputsTest.java": "1692b4518572d6f78567db6e6fe5beed39ba48fd6ac445769b88b1440165cd84",
+    "src/test/java/com/deepresearch/workflow/DifyWebSourcesIT.java": "a6269fe414c8af900dab3b22c47e57c823c9d86bdb62acf607e45826d0f16d01",
+    "src/test/java/com/deepresearch/workflow/DifyWorkflowAdapterTest.java": "1c1c55d1adb714dfcc36a33cee18d1186db016d9bd7e79e679197e97ffce0057",
+    "testdata/agent-foundation/runtime/archived-dify-baseline.json": "eb8329567b479b2b1bc295a0b5683c837039f538ddb0126a9aa2f8c922868a21",
+    "testdata/agent-foundation/runtime/local-dify-compatibility.json": "73ddf2706ff94d26b309f2cb6a5e793cb6a1f60506287ee5b897a4b9a98146d2",
+    "testdata/agent-foundation/runtime/local-langgraph-compatibility.json": "da813b9404a3838219b4e635f488a2c6304a26505764d26a21941decaaf3e601",
+    "testdata/agent-foundation/runtime/manifest.json": "c0e0e61800650b8bec690979d1aafd944372b0f0314fb1e75b6f4dbae34aec23",
+    "testdata/agent-foundation/runtime/runtime-foundation.json": "814a616b83e28ad2cc6c8253a18b41d25f829ee9f8cab97af809afa5f28e49b8",
+    "testdata/agent-foundation/runtime/test_context_wiring.py": "82ade5f77f7b0b4f5fc37df91bfcbe6701c676aefca8949ef500ff7a095012df",
+    "testdata/agent-foundation/runtime/test_runtime_contract.py": "68eee5905e6018f62d7a4b527047458763a093795e30e86935e31ef8aabe8398"
+  },
+  "limits": {
+    "schema_freeze": "pending_main_review",
+    "new_agent_runtime_implemented": false,
+    "workflow_summary_generation_implemented": false,
+    "model_use_verified": false,
+    "new_model_calls": 0,
+    "new_online_samples": 0,
+    "live_deployment": false,
+    "cost": "unknown: archived cohort has no configured provider price evidence",
+    "fact_semantics": "synthetic expected labels and archived fixed cohort; no new independent evaluation"
+  }
+}

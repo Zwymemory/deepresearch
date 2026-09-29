@@ -33,9 +33,10 @@ public class ConversationSummaryService {
         this.maxSummaryChars = maxSummaryChars;
     }
 
+    /** Null means no successful new summary; caller must preserve both text and watermark. */
     public String summarize(String existingSummary, List<String> messages) {
         if (!enabled || messages == null || messages.isEmpty()) {
-            return existingSummary == null ? "" : existingSummary;
+            return null;
         }
 
         String prompt = """
@@ -62,10 +63,10 @@ public class ConversationSummaryService {
                     .options(OpenAiChatOptions.builder().temperature(0.1).build())
                     .call()
                     .content();
-            return truncate(summary == null ? "" : summary.trim());
+            return summary == null || summary.isBlank() ? null : truncate(summary.trim());
         } catch (RuntimeException e) {
-            log.warn("会话摘要生成失败，保留旧摘要：{} - {}", e.getClass().getSimpleName(), e.getMessage());
-            return existingSummary == null ? "" : existingSummary;
+            log.warn("会话摘要生成失败，保留旧摘要与进度：{}", e.getClass().getSimpleName());
+            return null;
         }
     }
 
@@ -73,6 +74,8 @@ public class ConversationSummaryService {
         if (text.length() <= maxSummaryChars) {
             return text;
         }
-        return text.substring(0, maxSummaryChars);
+        int end = maxSummaryChars;
+        if (end > 0 && Character.isHighSurrogate(text.charAt(end - 1))) end--;
+        return text.substring(0, end);
     }
 }

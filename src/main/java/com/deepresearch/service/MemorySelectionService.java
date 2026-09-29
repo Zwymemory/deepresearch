@@ -28,7 +28,8 @@ class MemorySelectionService {
     }
 
     Selection select(String userId, String question) {
-        List<AgentMemoryResponse> all = memoryRepository.list(userId, 100);
+        List<AgentMemoryResponse> all = memoryRepository.list(userId, 100).stream()
+                .filter(memory -> userId.equals(memory.userId())).toList();
         if (all.isEmpty()) {
             return new Selection(List.of(), 0, "no_memory");
         }
@@ -51,7 +52,7 @@ class MemorySelectionService {
                     + " (confidence=" + memory.confidence()
                     + ", source=" + memory.source()
                     + ", relevance=" + String.format(Locale.ROOT, "%.2f", item.score()) + ")");
-            memoryRepository.markUsed(memory.memoryId());
+            // Selection is not proof that a model used this memory. Do not set last_used_at here.
         }
         return new Selection(rows, all.size(), reason);
     }

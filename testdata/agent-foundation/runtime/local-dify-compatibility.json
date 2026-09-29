@@ -1,0 +1,30 @@
+{
+  "status": "installed_start_schema_and_template_verified",
+  "graphon_version": "0.7.0",
+  "start_variables": [
+    "question",
+    "java_run_id",
+    "allowed_tools",
+    "session_summary"
+  ],
+  "envelope_reaches_rendered_prompt": true,
+  "empty_existing_input_compatible": true,
+  "omitted_new_field_rendering": "start.new_optional_field",
+  "classic_agent_source_present": true,
+  "installed_source_sha256": {
+    "start_node.py": "5831889a9f1f233b7e4f4965af8791007af78a0a7519d0a81c9513c40246e110",
+    "agent_node.py": "79b50680bea05f0f88f212c7c1761d4d50c2453d1cde0f7a0e0c0eb9aa782e6c"
+  },
+  "model_calls": 0,
+  "workflow_calls": 0,
+  "limits": [
+    "No full workflow compile/import/publish or real model consumption",
+    "Agent source presence does not verify strategy plugin or tool execution"
+  ],
+  "container": "dify-local-api-1",
+  "image_id": "sha256:52be6088dd842e01bc58cdb23a701266a55aa3814b24057c18adfb4d351f8079",
+  "image_tag": "langgenius/dify-api:1.17.0",
+  "local_candidate_dsl_sha256": "2b7aa3fb726d7c6b07fe69c9ba004dab02f27a0c885f8a2154538fa6daa63edf",
+  "reference_published_dsl_sha256": "87a3e241456c34dbf5dcb772fd0667b08e527650f586ee097411676b0fc05033",
+  "live_deployment": false
+}

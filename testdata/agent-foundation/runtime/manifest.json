@@ -1,0 +1,11 @@
+{
+  "fixture_origin": "synthetic",
+  "cases": [
+    {
+      "fixture_id": "runtime-foundation",
+      "path": "testdata/agent-foundation/runtime/runtime-foundation.json"
+    }
+  ],
+  "semantic_verification": false,
+  "runtime_execution": false
+}
