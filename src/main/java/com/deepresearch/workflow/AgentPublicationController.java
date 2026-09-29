@@ -88,6 +88,9 @@ public class AgentPublicationController {
             result.set("citation_details",checked.path("citations"));
             result.set("citationDetails",JSON.valueToTree(details.values()));
             result.set("citations",JSON.valueToTree(citations));
+            // Projected quotation details also belong to the shared ledger envelope.
+            if (canonical(result).getBytes(java.nio.charset.StandardCharsets.UTF_8).length>120000)
+                throw new EvidenceException("REPORT_CAPACITY_EXCEEDED");
             return tx.execute(status->{
                 authority.lock(g); if (!authority.active(g)) throw EvidenceException.denied();
                 db.update("""
