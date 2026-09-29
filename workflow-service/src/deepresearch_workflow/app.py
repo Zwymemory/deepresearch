@@ -16,7 +16,11 @@ from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 
 from .auth import ServiceJwtProvider
 from .control_plane import HttpControlPlaneClient
-from .domain import RunBudget
+from .domain import RunBudget, AgentRunBudget
+from .agent_budget import SqlAgentLedger
+from .agent_model import OpenAIAgentModel
+from .agent_runtime import AutonomousResearchGraph
+from .evidence_client import HttpEvidenceBackend
 from .graph import DurableResearchGraph, GraphRuntime
 from .mcp import HttpGrantTokenProvider, HttpMcpToolClient, ReceiptCachingToolClient
 from .model import OpenAIWorkflowModel
@@ -85,6 +89,9 @@ class ServiceRuntime:
         )
         tools = ReceiptCachingToolClient(mcp, repository)
         model = OpenAIWorkflowModel(self.settings)
+        agent_model = OpenAIAgentModel(self.settings,http_client)
+        ledger = SqlAgentLedger(repository)
+        evidence = HttpEvidenceBackend(client=http_client,java_base_url=self.settings.java_base_url,service_tokens=service_tokens)
         events = RepositoryEventSink(repository)
         control_plane = HttpControlPlaneClient(
             client=http_client,
@@ -94,6 +101,9 @@ class ServiceRuntime:
         )
 
         def graph_factory(claim_token: str, budget: RunBudget) -> Any:
+            if isinstance(budget,AgentRunBudget):
+                return AutonomousResearchGraph(model=agent_model,tools=tools,repository=repository,
+                    ledger=ledger,evidence=evidence,events=events,budget=budget,claim_token=claim_token).compile(checkpointer=saver)
             return DurableResearchGraph(
                 model=model,
                 tools=tools,

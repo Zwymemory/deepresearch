@@ -76,13 +76,31 @@ public class WorkflowService {
 
     @Transactional
     public Accepted create(CreateRequest request, String idempotencyKey) {
+        return createWithEngine(request, idempotencyKey, engine, ENDPOINT);
+    }
+
+    @Transactional
+    public Accepted createAutonomous(CreateRequest request, String idempotencyKey) {
+        return createWithEngine(request, idempotencyKey, "agent", "/api/research/agents");
+    }
+
+    private Accepted createWithEngine(CreateRequest request, String idempotencyKey,
+                                     String selectedEngine, String endpoint) {
         requireEnabled();
         String userId = userContextService.currentUser();
         String key = validateKey(idempotencyKey);
         List<String> scopes = normalizeScopes(request.requestedTools());
+        if ("agent".equals(selectedEngine)) {
+            List<String> expanded = new ArrayList<>(scopes);
+            if (scopes.contains("kb_search") || scopes.contains("web_search")) {
+                expanded.add("read_source");
+                expanded.add("check_claims");
+            }
+            scopes = expanded.stream().sorted().toList();
+        }
         String fingerprint = fingerprint(request, scopes);
 
-        WorkflowRepository.RunRow existing = repository.findByIdempotency(userId, ENDPOINT, key).orElse(null);
+        WorkflowRepository.RunRow existing = repository.findByIdempotency(userId, endpoint, key).orElse(null);
         if (existing != null) {
             return replay(existing, fingerprint);
         }
@@ -95,23 +113,24 @@ public class WorkflowService {
                 requestedSession, userId, request.question().trim());
         String runId = "wf-" + UUID.randomUUID();
         String grantId = "grant-" + UUID.randomUUID();
-        OffsetDateTime deadlineAt = OffsetDateTime.now(ZoneOffset.UTC).plus(deadline);
+        OffsetDateTime deadlineAt = OffsetDateTime.now(ZoneOffset.UTC)
+                .plus("agent".equals(selectedEngine) ? Duration.ofSeconds(180) : deadline);
         String contextJson = boundedContext(context);
         WorkflowRepository.NewRun newRun = new WorkflowRepository.NewRun(
                 runId, context.sessionId(), userId, request.question().trim(), contextJson,
-                ENDPOINT, key, fingerprint, runId,
-                "dify".equals(engine) ? WorkflowStatus.DIFY_DISPATCHING.name() : WorkflowStatus.QUEUED.name(),
-                "dify".equals(engine) ? WorkflowStatus.DIFY_DISPATCHING.name() : WorkflowStatus.QUEUED.name(),
+                endpoint, key, fingerprint, runId,
+                "dify".equals(selectedEngine) ? WorkflowStatus.DIFY_DISPATCHING.name() : WorkflowStatus.QUEUED.name(),
+                "dify".equals(selectedEngine) ? WorkflowStatus.DIFY_DISPATCHING.name() : WorkflowStatus.QUEUED.name(),
                 deadlineAt, scopes, grantId);
         if (repository.insertRun(newRun) == 0) {
-            WorkflowRepository.RunRow winner = repository.findByIdempotency(userId, ENDPOINT, key)
+            WorkflowRepository.RunRow winner = repository.findByIdempotency(userId, endpoint, key)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
                             "workflow 幂等请求正在建立"));
             return replay(winner, fingerprint);
         }
         repository.insertGrant(new WorkflowRepository.NewGrant(
                 grantId, runId, userId, scopes, 1, deadlineAt));
-        if ("dify".equals(engine)) {
+        if ("dify".equals(selectedEngine)) {
             repository.insertDifyMapping(runId);
         }
         repository.insertEvent(runId, "workflow:queued", "SYSTEM", null, "QUEUED",
@@ -139,6 +158,32 @@ public class WorkflowService {
 
     public WorkflowRepository.RunRow ownedRun(String runId, String userId) {
         return owned(runId, userId);
+    }
+
+    public record StreamPermit(String runId,String userId,String tenantId,String ownerId) {}
+
+    public StreamPermit permitStream(String runId) {
+        String user= userContextService.currentUser();
+        owned(runId,user);
+        var identity=repository.agentIdentity(runId);
+        return new StreamPermit(runId,user,identity.map(WorkflowRepository.AgentIdentity::tenantId).orElse(null),
+                identity.map(WorkflowRepository.AgentIdentity::ownerId).orElse(null));
+    }
+
+    public WorkflowRepository.RunRow ownedForStream(StreamPermit permit) {
+        var row=repository.findOwned(permit.runId(),permit.userId()).orElseThrow(()->
+                new ResponseStatusException(HttpStatus.NOT_FOUND,"workflow 不存在"));
+        var identity=repository.agentIdentity(permit.runId());
+        if (identity.isPresent() && (!identity.get().tenantId().equals(permit.tenantId())
+                || !identity.get().ownerId().equals(permit.ownerId()))) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,"workflow 不存在");
+        }
+        return row;
+    }
+
+    public List<WorkflowDtos.Event> eventsForStream(StreamPermit permit,long cursor) {
+        ownedForStream(permit);
+        return repository.eventsAfter(permit.runId(),cursor,200);
     }
 
     @Transactional
@@ -203,6 +248,10 @@ public class WorkflowService {
         WorkflowRepository.RunRow row = repository.find(runId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "workflow 不存在"));
         WorkflowStatus current = status(row.status());
+        if (requested==WorkflowStatus.SUCCEEDED && "/api/research/agents".equals(row.endpoint())
+                && !repository.sealedAgentPublication(runId,answer,citations)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Agent 答案必须与服务端已核查的发布内容一致");
+        }
         if (current.terminal()) {
             if (sameFinalization(row, requested, claimToken, finalizeFingerprint)) {
                 return new FinalizeResponse(runId, current.name(), true);
@@ -307,8 +356,16 @@ public class WorkflowService {
     }
 
     private WorkflowRepository.RunRow owned(String runId, String userId) {
-        return repository.findOwned(runId, userId)
+        var row=repository.findOwned(runId, userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "workflow 不存在"));
+        var identity=repository.agentIdentity(runId);
+        if (identity.isPresent()) {
+            var principal=userContextService.currentPrincipalRequired();
+            if (!identity.get().tenantId().equals(principal.tenantId()) || !identity.get().ownerId().equals(principal.userId())) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,"workflow 不存在");
+            }
+        }
+        return row;
     }
 
     private List<String> normalizeScopes(List<String> requested) {

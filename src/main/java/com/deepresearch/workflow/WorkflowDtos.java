@@ -106,11 +106,11 @@ public final class WorkflowDtos {
 
     public record Usage(
             @PositiveOrZero
-            long inputTokens,
+            Long inputTokens,
             @PositiveOrZero
-            long outputTokens,
+            Long outputTokens,
             @PositiveOrZero
-            long totalTokens,
+            Long totalTokens,
             @PositiveOrZero
             int modelCalls,
             @PositiveOrZero
@@ -119,8 +119,18 @@ public final class WorkflowDtos {
             BigDecimal estimatedCost,
             String currency,
             @PositiveOrZero
-            long durationMs
+            long durationMs,
+            String inputTokensStatus,
+            String outputTokensStatus,
+            String costStatus,
+            Long inputAdmissionTokens,
+            Long outputAdmissionTokens
     ) {
+        public Usage(long inputTokens,long outputTokens,long totalTokens,int modelCalls,int toolCalls,
+                     BigDecimal estimatedCost,String currency,long durationMs) {
+            this(inputTokens,outputTokens,totalTokens,modelCalls,toolCalls,estimatedCost,currency,durationMs,
+                    null,null,null,null,null);
+        }
     }
 
     public record FinalizeResponse(String runId, String status, boolean replayed) {

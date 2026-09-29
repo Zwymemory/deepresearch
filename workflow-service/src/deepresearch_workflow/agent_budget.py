@@ -1,0 +1,368 @@
+"""SQL admission and replay shared by decisions, checks and external tool operations."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+from collections.abc import Awaitable, Callable
+from typing import Any
+
+from jsonschema import Draft202012Validator
+from psycopg.types.json import Jsonb
+from referencing import Registry
+
+from .agent_model import MODEL_RULES, AgentModel
+from .agent_protocol import AgentRunBudget, ModelRequest, ModelResult
+from .graph import (
+    RunBudgetExceededError,
+    RunCancelledError,
+    RunTimedOutError,
+    StaleClaimError,
+    WorkflowExecutionError,
+)
+from .ports import BudgetClaimConflictError
+
+
+def canonical(value):
+    return json.dumps(
+        value, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False
+    )
+
+
+class SqlAgentLedger:
+    def __init__(self, repository):
+        self.repository = repository
+
+    async def reserve(
+        self,
+        run_id,
+        claim_token,
+        key,
+        kind,
+        purpose,
+        request_hash,
+        input_reserved,
+        output_reserved,
+        budget,
+    ):
+        ambiguous = False
+        async with self.repository.pool.connection() as conn:
+            async with conn.transaction():
+                stored = await self.repository._lock_active_budget_run(conn, run_id, claim_token)
+                if not isinstance(stored, AgentRunBudget):
+                    raise WorkflowExecutionError(
+                        "该运行未启用 Agent 预算", error_code="AGENT_BUDGET_INVALID"
+                    )
+                cursor = await conn.execute(
+                    "SELECT deadline_at > now() AS active FROM agent_workflow_run WHERE run_id=%s",
+                    (run_id,),
+                )
+                if not (await cursor.fetchone())["active"]:
+                    raise RunTimedOutError("Agent 运行期限已到")
+                cursor = await conn.execute(
+                    """SELECT * FROM agent_research_operation
+                    WHERE run_id=%s AND operation_key=%s ORDER BY attempt DESC LIMIT 1""",
+                    (run_id, key),
+                )
+                latest = await cursor.fetchone()
+                if latest and (
+                    latest["request_hash"] != request_hash
+                    or latest["kind"] != kind
+                    or latest["purpose"] != purpose
+                ):
+                    raise WorkflowExecutionError(
+                        "操作键与原请求不一致", error_code="AGENT_REPLAY_MISMATCH"
+                    )
+                if latest and latest["status"] == "SETTLED":
+                    return {"replay": latest["safe_result"], "attempt": latest["attempt"]}
+                if latest and latest["status"] == "RESERVED":
+                    if str(latest["claim_token"]) == claim_token:
+                        raise WorkflowExecutionError(
+                            "该操作仍在执行", error_code="AGENT_OPERATION_IN_PROGRESS"
+                        )
+                    await conn.execute(
+                        """UPDATE agent_research_operation SET status='UNKNOWN',
+                        claim_token=%s::uuid, settled_at=now() WHERE run_id=%s AND operation_key=%s AND attempt=%s""",
+                        (claim_token, run_id, key, latest["attempt"]),
+                    )
+                if latest and (kind == "TOOL" or latest["attempt"] >= 2):
+                    ambiguous = True
+                else:
+                    totals = await self._totals(conn, run_id)
+                    model_cap = min(stored.max_model_calls, budget.max_model_calls)
+                    tool_cap = min(stored.max_tool_calls, budget.max_tool_calls)
+                    decision_cap = min(stored.max_decision_steps, budget.max_decision_steps)
+                    if (
+                        (kind == "MODEL" and totals["model_calls"] >= model_cap)
+                        or (kind == "TOOL" and totals["tool_calls"] >= tool_cap)
+                        or (
+                            purpose == "DECISION"
+                            and not latest
+                            and totals["decision_steps"] >= decision_cap
+                        )
+                        or totals["input_charged"] + input_reserved
+                        > min(stored.max_input_tokens, budget.max_input_tokens)
+                        or totals["output_charged"] + output_reserved
+                        > min(stored.max_output_tokens, budget.max_output_tokens)
+                    ):
+                        raise RunBudgetExceededError("Agent 统一调用或 token 准入额度耗尽")
+                    attempt = latest["attempt"] + 1 if latest else 1
+                    await conn.execute(
+                        """INSERT INTO agent_research_operation
+                        (run_id,operation_key,attempt,kind,purpose,request_hash,status,input_reserved,output_reserved,claim_token)
+                        VALUES (%s,%s,%s,%s,%s,%s,'RESERVED',%s,%s,%s::uuid)""",
+                        (
+                            run_id,
+                            key,
+                            attempt,
+                            kind,
+                            purpose,
+                            request_hash,
+                            input_reserved,
+                            output_reserved,
+                            claim_token,
+                        ),
+                    )
+                    return {"replay": None, "attempt": attempt}
+        if ambiguous:
+            raise WorkflowExecutionError(
+                "上次操作结果未知，需对账，禁止重复外部调用", error_code="AGENT_OPERATION_UNKNOWN"
+            )
+
+    async def settle(self, run_id, claim_token, key, attempt, value, usage, *, unknown=False):
+        if len(canonical(value).encode()) > 120000:
+            raise WorkflowExecutionError("操作结果过大", error_code="AGENT_RESULT_TOO_LARGE")
+        async with self.repository.pool.connection() as conn:
+            async with conn.transaction():
+                await self.repository._lock_active_budget_run(conn, run_id, claim_token)
+                cursor = await conn.execute(
+                    "SELECT * FROM agent_research_operation WHERE run_id=%s AND operation_key=%s AND attempt=%s",
+                    (run_id, key, attempt),
+                )
+                row = await cursor.fetchone()
+                if (
+                    row
+                    and row["status"] == "SETTLED"
+                    and not unknown
+                    and str(row["claim_token"]) == claim_token
+                ):
+                    if canonical(row["safe_result"]) == canonical(value) and canonical(
+                        row["actual_usage"]
+                    ) == canonical(usage):
+                        return  # Java can settle read/publication atomically with its authoritative record.
+                if not row or row["status"] != "RESERVED" or str(row["claim_token"]) != claim_token:
+                    raise StaleClaimError("Agent 预留已失效")
+                await conn.execute(
+                    """UPDATE agent_research_operation SET status=%s, safe_result=%s,
+                    actual_usage=%s, settled_at=now() WHERE run_id=%s AND operation_key=%s AND attempt=%s""",
+                    (
+                        "UNKNOWN" if unknown else "SETTLED",
+                        None if unknown else Jsonb(value),
+                        None if unknown else Jsonb(usage),
+                        run_id,
+                        key,
+                        attempt,
+                    ),
+                )
+
+    @staticmethod
+    async def _totals(conn, run_id):
+        cursor = await conn.execute(
+            """SELECT count(*) FILTER (WHERE kind='MODEL') AS model_calls,
+            count(*) FILTER (WHERE kind='TOOL') AS tool_calls,
+            count(DISTINCT operation_key) FILTER (WHERE purpose='DECISION') AS decision_steps,
+            COALESCE(sum(COALESCE((actual_usage->>'input_tokens')::bigint,input_reserved)),0) AS input_charged,
+            COALESCE(sum(COALESCE((actual_usage->>'output_tokens')::bigint,output_reserved)),0) AS output_charged,
+            count(*) FILTER (WHERE kind='MODEL' AND actual_usage->>'input_tokens' IS NULL) AS input_unknown,
+            count(*) FILTER (WHERE kind='MODEL' AND actual_usage->>'output_tokens' IS NULL) AS output_unknown,
+            COALESCE(sum((actual_usage->>'input_tokens')::bigint),0) AS input_measured,
+            COALESCE(sum((actual_usage->>'output_tokens')::bigint),0) AS output_measured
+            FROM agent_research_operation WHERE run_id=%s""",
+            (run_id,),
+        )
+        return dict(await cursor.fetchone())
+
+    async def summary(self, run_id, claim_token):
+        async with self.repository.pool.connection() as conn:
+            await self.repository._lock_active_budget_run(conn, run_id, claim_token)
+            data = await self._totals(conn, run_id)
+        return {
+            "modelCalls": data["model_calls"],
+            "toolCalls": data["tool_calls"],
+            "inputTokens": None if data["input_unknown"] else data["input_measured"],
+            "outputTokens": None if data["output_unknown"] else data["output_measured"],
+            "inputTokensStatus": "unknown" if data["input_unknown"] else "known",
+            "outputTokensStatus": "unknown" if data["output_unknown"] else "known",
+            "inputAdmissionTokens": data["input_charged"],
+            "outputAdmissionTokens": data["output_charged"],
+            "estimatedCost": None,
+            "costStatus": "unknown",
+            "currency": "CNY",
+        }
+
+    async def save_tasks(self, run_id, claim_token, tasks):
+        async with self.repository.pool.connection() as conn:
+            async with conn.transaction():
+                await self.repository._lock_active_budget_run(conn, run_id, claim_token)
+                for task in tasks:
+                    cursor = await conn.execute(
+                        """INSERT INTO agent_research_task
+                        (run_id,task_id,objective,dependencies,status,acceptance_criteria,evidence_ids,plan_version,task_json,claim_token)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::uuid)
+                        ON CONFLICT (run_id,task_id) DO UPDATE SET status=EXCLUDED.status,
+                        evidence_ids=EXCLUDED.evidence_ids,task_json=EXCLUDED.task_json,claim_token=EXCLUDED.claim_token,
+                        updated_at=now() WHERE agent_research_task.plan_version=EXCLUDED.plan_version
+                        AND agent_research_task.objective=EXCLUDED.objective
+                        AND agent_research_task.dependencies=EXCLUDED.dependencies
+                        AND agent_research_task.acceptance_criteria=EXCLUDED.acceptance_criteria""",
+                        (
+                            run_id,
+                            task["task_id"],
+                            task["objective"],
+                            task["dependencies"],
+                            task["status"],
+                            task["acceptance_criteria"],
+                            task["evidence_ids"],
+                            task["plan_version"],
+                            Jsonb(task),
+                            claim_token,
+                        ),
+                    )
+                    if cursor.rowcount != 1:
+                        raise WorkflowExecutionError(
+                            "任务目标或版本不能静默改写", error_code="AGENT_TASK_MISMATCH"
+                        )
+
+    async def scope(self, run_id, claim_token):
+        async with self.repository.pool.connection() as conn:
+            await self.repository._lock_active_budget_run(conn, run_id, claim_token)
+            cursor = await conn.execute(
+                "SELECT project_id,tenant_id,owner_id FROM agent_research_run WHERE run_id=%s",
+                (run_id,),
+            )
+            row = await cursor.fetchone()
+            if row is None:
+                raise WorkflowExecutionError(
+                    "Agent 缺少服务端项目身份", error_code="AGENT_SCOPE_MISSING"
+                )
+            return dict(row)
+
+
+class AgentBudgetGateway:
+    def __init__(self, *, run_id, claim_token, budget, ledger, model: AgentModel, guard):
+        self.run_id, self.claim_token, self.budget = run_id, claim_token, budget
+        self.ledger, self.model, self.guard = ledger, model, guard
+
+    async def model_call(
+        self, key, purpose, request: ModelRequest, validate: Callable | None = None
+    ):
+        # A byte ceiling includes visible messages, schema and framing allowance. It is
+        # conservative admission accounting, not a claim about provider-measured tokens.
+        request_data = {**request.model_dump(mode="json", by_alias=True), "rules": MODEL_RULES}
+        input_reserved = len(canonical(request_data).encode()) + 1024
+        request_hash = hashlib.sha256(canonical(request_data).encode()).hexdigest()
+        for _ in range(2):
+            await self.guard()
+            try:
+                reservation = await self.ledger.reserve(
+                    self.run_id,
+                    self.claim_token,
+                    key,
+                    "MODEL",
+                    purpose,
+                    request_hash,
+                    input_reserved,
+                    request.max_output_tokens,
+                    self.budget,
+                )
+            except BudgetClaimConflictError:
+                raise StaleClaimError("Agent claim 已变化") from None
+            if reservation["replay"] is not None:
+                result = ModelResult.model_validate(reservation["replay"])
+                self.check_bounds(result, input_reserved, request.max_output_tokens)
+                return result
+            try:
+                result = await self.model.invoke(request)
+                # Remote refs cannot cause a network fetch or grant model-supplied authority.
+                schema_check = Draft202012Validator(
+                    request.result_schema,
+                    registry=Registry(
+                        retrieve=lambda uri: (_ for _ in ()).throw(
+                            ValueError("remote schema forbidden")
+                        )
+                    ),
+                )
+                schema_check.validate(result.value)
+                if validate is not None:
+                    validate(result.value)
+                result = result.model_copy(
+                    update={
+                        "request_binding": {
+                            **request.request_binding,
+                            "response_sha256": hashlib.sha256(
+                                canonical(result.value).encode()
+                            ).hexdigest(),
+                        }
+                    }
+                )
+                await self.guard()
+                await self.ledger.settle(
+                    self.run_id,
+                    self.claim_token,
+                    key,
+                    reservation["attempt"],
+                    result.model_dump(mode="json"),
+                    result.model_dump(mode="json", exclude={"value"}),
+                )
+                self.check_bounds(result, input_reserved, request.max_output_tokens)
+                return result
+            except (RunBudgetExceededError, RunCancelledError, RunTimedOutError, StaleClaimError):
+                raise
+            except Exception:
+                await self.ledger.settle(
+                    self.run_id, self.claim_token, key, reservation["attempt"], {}, {}, unknown=True
+                )
+        raise WorkflowExecutionError(
+            "Agent 模型结果无法解析，已计入重试预算", error_code="AGENT_MODEL_INVALID"
+        )
+
+    async def tool_call(
+        self, key, purpose, payload, invoke: Callable[[], Awaitable[dict[str, Any]]]
+    ):
+        await self.guard()
+        reservation = await self.ledger.reserve(
+            self.run_id,
+            self.claim_token,
+            key,
+            "TOOL",
+            purpose,
+            hashlib.sha256(canonical(payload).encode()).hexdigest(),
+            0,
+            0,
+            self.budget,
+        )
+        if reservation["replay"] is not None:
+            return reservation["replay"]
+        try:
+            result = await invoke()
+            await self.guard()
+            await self.ledger.settle(
+                self.run_id, self.claim_token, key, reservation["attempt"], result, {}
+            )
+            return result
+        except (StaleClaimError, RunBudgetExceededError, RunCancelledError, RunTimedOutError):
+            raise
+        except Exception:
+            await self.ledger.settle(
+                self.run_id, self.claim_token, key, reservation["attempt"], {}, {}, unknown=True
+            )
+            raise WorkflowExecutionError(
+                "外部操作结果未知，需对账后继续", error_code="AGENT_OPERATION_UNKNOWN"
+            ) from None
+
+    @staticmethod
+    def check_bounds(result, input_reserved, output_reserved):
+        if (result.input_tokens is not None and result.input_tokens > input_reserved) or (
+            result.output_tokens is not None and result.output_tokens > output_reserved
+        ):
+            raise RunBudgetExceededError("Provider 用量超出预留边界，停止后续调用")

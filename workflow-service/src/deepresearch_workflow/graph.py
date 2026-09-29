@@ -58,6 +58,11 @@ _MODEL_FAILURE_CODES = {
 class WorkflowExecutionError(RuntimeError):
     error_code = "WORKFLOW_FAILED"
 
+    def __init__(self, message: str, *, error_code: str | None = None):
+        super().__init__(message)
+        if error_code is not None:
+            self.error_code = error_code
+
 
 class ModelCallError(WorkflowExecutionError):
     error_code = "MODEL_CALL_FAILED"

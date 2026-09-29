@@ -84,4 +84,14 @@ class DifyContextInputsTest {
         assertThat(value).contains("\"summarySelected\":true", "\"modelUseVerification\":\"unknown\"");
         assertThat(value).doesNotContain("summaryUsed");
     }
+
+    @Test
+    void historicalDiagnosticsReadOldSelectionNameAndEmitUnknownModelUse() throws Exception {
+        var old=json.readValue("{\"summaryUsed\":true,\"recentMessageCount\":2,\"selectedMemoryCount\":1,\"totalMemoryCount\":4,\"reason\":\"keyword_relevance\"}",
+                AgentResearchResponse.Diagnostics.class);
+        assertThat(old.summarySelected()).isTrue();
+        assertThat(json.writeValueAsString(old)).contains("\"summarySelected\":true", "\"modelUseVerification\":\"unknown\"");
+        var current=json.readValue(json.writeValueAsString(old),AgentResearchResponse.Diagnostics.class);
+        assertThat(current.summarySelected()).isTrue();
+    }
 }

@@ -102,7 +102,7 @@ public record AgentResearchResponse(
     }
 
     public record Diagnostics(
-            boolean summarySelected,
+            @com.fasterxml.jackson.annotation.JsonAlias("summaryUsed") boolean summarySelected,
             int recentMessageCount,
             int selectedMemoryCount,
             int totalMemoryCount,
@@ -115,7 +115,7 @@ public record AgentResearchResponse(
             return summarySelected;
         }
 
-        @com.fasterxml.jackson.annotation.JsonProperty("modelUseVerification")
+        @com.fasterxml.jackson.annotation.JsonProperty(value="modelUseVerification",access=com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
         public String modelUseVerification() {
             return "unknown";
         }
