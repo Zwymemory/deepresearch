@@ -262,7 +262,8 @@ class SqlAgentLedger:
                     """INSERT INTO agent_research_investigation_progress
                     (run_id,investigation,current_call_id,claim_token) VALUES (%s,%s,%s,%s::uuid)
                     ON CONFLICT (run_id,investigation) DO UPDATE
-                    SET current_call_id=EXCLUDED.current_call_id,claim_token=EXCLUDED.claim_token""",
+                    SET current_call_id=EXCLUDED.current_call_id,
+                        claim_token=EXCLUDED.claim_token""",
                     (run_id, identity, key, claim_token),
                 )
             # Keep the pending attempt durable even if a coverage write is rejected.
