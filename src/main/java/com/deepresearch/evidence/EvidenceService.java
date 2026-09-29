@@ -49,9 +49,10 @@ public final class EvidenceService {
             var evidence = scoped("Evidence", g, "evidence_id", "evidence-" + UUID.randomUUID(), "version", 1,
                     "run_id", g.runId(), "task_id", g.taskId(), "receipt_id", begin.receiptId(), "source", source,
                     "snapshot", object("kind", document.snapshotKind(), "text", original, "sha256", hash, "encoding", "utf-8", "offset_unit", "unicode_codepoint"),
-                    "applicability", object("subject", source.path("title").asText(), "version", version, "valid_at", unknown("Document validity period is unknown"), "conditions", List.of("Limited to this original document or recorded observation")),
+                    "applicability", object("subject", source.path("title").asText(), "version", version, "valid_at", declaredTime(original), "conditions", List.of("Limited to this original document or recorded observation")),
                     "retrieval_score", unknown("Read operation does not measure retrieval relevance"), "freshness", "fresh", "availability", "available", "validity", "unassessed", "invalidation_reason", null);
             var metadata = object("source_id", sourceId, "snapshot_sha256", hash, "source_metadata_sha256", sha(canonical(source)),
+                    "evidence_sha256", sha(canonical(evidence)), "requested_candidate", candidate,
                     "raw_response_sha256", document.rawResponseHash(), "truncated", document.truncated(), "verified_observation", document.verifiedObservation(),
                     "parent_receipt_id", candidate.parentReceiptId());
             return tx(g, () -> {
@@ -69,6 +70,15 @@ public final class EvidenceService {
         Set<String> values = new HashSet<>(); while (matches.find()) values.add(matches.group(1));
         return values.size() == 1 ? known(values.iterator().next()) : unknown(values.isEmpty() ? "No explicit document version declaration" : "Conflicting version declarations in original text");
     }
+    static JsonNode declaredTime(String original) {
+        var matches = Pattern.compile("(?im)^\\s*(?:Valid at|有效时间)\\s*:\\s*(\\S+)\\s*$").matcher(original);
+        Set<String> values = new HashSet<>();
+        while (matches.find()) {
+            try { values.add(OffsetDateTime.parse(matches.group(1)).toInstant().toString()); }
+            catch (RuntimeException invalid) { return unknown("Invalid effective time declaration"); }
+        }
+        return values.size() == 1 ? known(values.iterator().next()) : unknown("No unambiguous effective time declaration in original text");
+    }
     private JsonNode verifiedEvidence(EvidenceAuthority.Grant g, JsonNode evidence) {
         if (!g.runId().equals(evidence.path("run_id").asText()) || !g.projectId().equals(evidence.path("project_id").asText())
                 || !g.principal().tenantId().equals(evidence.path("tenant_id").asText()) || !g.principal().userId().equals(evidence.path("owner_id").asText())) throw EvidenceException.denied();
@@ -77,6 +87,7 @@ public final class EvidenceService {
                 || !metadata.path("snapshot_sha256").asText().equals(evidence.path("snapshot").path("sha256").asText())
                 || !metadata.path("source_id").asText().equals(evidence.path("source").path("source_id").asText())
                 || !sha(canonical(evidence.path("source"))).equals(metadata.path("source_metadata_sha256").asText())
+                || !sha(canonical(evidence)).equals(metadata.path("evidence_sha256").asText())
                 || !evidence.path("availability").asText().equals("available") || !evidence.path("validity").asText().equals("unassessed"))
             throw new EvidenceException("EVIDENCE_RECEIPT_BINDING_INVALID");
         return metadata;
@@ -88,6 +99,7 @@ public final class EvidenceService {
                 || command.dispute_round() < 0 || command.dispute_round() > 2 || (command.dispute_round() == 0) != (command.parent_check_id() == null))
             throw new EvidenceException("CHECK_REQUEST_INVALID");
         for (var spec : command.claims()) {
+            if (spec == null || spec.kind() == null) throw new EvidenceException("CHECK_REQUEST_INVALID");
             text(spec.text(), 4000); if (!Set.of("factual", "inference", "recommendation").contains(spec.kind())) throw new EvidenceException("CHECK_REQUEST_INVALID");
             applicability(spec.applicability());
         }
@@ -161,6 +173,7 @@ public final class EvidenceService {
                 || new HashSet<>(command.claim_ids()).size() != command.claim_ids().size()) throw new EvidenceException("PUBLICATION_INVALID");
         Set<String> available = new HashSet<>(); packet.path("claim_ids").forEach(c -> available.add(c.asText()));
         var published = new ArrayList<JsonNode>();
+        var validatedLive = new HashSet<String>(); var validationReceipts = new ArrayList<String>();
         for (String claimId : command.claim_ids()) {
             if (!available.contains(claimId)) throw new EvidenceException("PUBLICATION_INVALID");
             var claim = store.get(g, "Claim", claimId);
@@ -169,12 +182,27 @@ public final class EvidenceService {
             if (!decision.path("decision_status").asText().equals("supported") || !decision.path("unresolved_evidence_ids").isEmpty()) throw new EvidenceException("PUBLICATION_NOT_SUPPORTED");
             var quotes = new ArrayList<JsonNode>();
             for (var adopted : decision.path("adopted_evidence_ids")) {
-                var source = store.get(g, "Evidence", adopted.asText()); verifiedEvidence(g, source);
+                var source = store.get(g, "Evidence", adopted.asText()); var sourceMetadata = verifiedEvidence(g, source);
                 var candidate = authority.candidate(g, source.path("source").path("source_id").asText());
                 if (candidate == null) throw EvidenceException.denied();
-                if (source.path("source").path("kind").asText().equals("knowledge")) {
-                    var current = reader.read(g, candidate);
-                    if (!sha(current.text()).equals(source.path("snapshot").path("sha256").asText())) throw new EvidenceException("PUBLICATION_SOURCE_CHANGED");
+                if (!canonical(JSON.valueToTree(candidate)).equals(canonical(sourceMetadata.path("requested_candidate"))))
+                    throw new EvidenceException("PUBLICATION_SOURCE_IDENTITY_CHANGED");
+                if (source.path("source").path("kind").asText().equals("knowledge") && validatedLive.add(adopted.asText())) {
+                    if (validatedLive.size() > 4) throw new EvidenceException("PUBLICATION_TOO_LARGE");
+                    var permit = authority.publicationRead(g, source);
+                    if (permit == null) throw EvidenceException.denied(); id(permit.operationId());
+                    String currentHash = permit.completedSnapshotHash();
+                    if (currentHash == null) {
+                        try {
+                            var current = reader.read(g, candidate); currentHash = sha(current.text()); active(g);
+                        } catch (RuntimeException failure) {
+                            authority.completePublicationRead(g, permit, null, failure instanceof EvidenceException e ? e.code() : "SOURCE_READ_FAILED");
+                            throw failure;
+                        }
+                        authority.completePublicationRead(g, permit, currentHash, null);
+                    }
+                    validationReceipts.add(permit.operationId());
+                    if (!currentHash.equals(source.path("snapshot").path("sha256").asText())) throw new EvidenceException("PUBLICATION_SOURCE_CHANGED");
                 }
                 for (var link : claim.path("evidence_links")) if (link.path("evidence_id").asText().equals(adopted.asText())) {
                     EvidenceAdjudicator.quote(source, link.path("quote"));
@@ -188,6 +216,13 @@ public final class EvidenceService {
         for (JsonNode item : published) {
             String claimText = com.deepresearch.agent.ToolOutputSanitizer.neutralizeCitationMarkers(item.path("claim").path("text").asText());
             answer.append(claimText);
+            var scope = item.path("claim").path("applicability");
+            String version = scope.path("version").path("status").asText().equals("known") ? scope.path("version").path("value").asText() : "未确定，仅描述引用快照";
+            answer.append("（适用版本：").append(com.deepresearch.agent.ToolOutputSanitizer.neutralizeCitationMarkers(version));
+            if (scope.path("valid_at").path("status").asText().equals("known")) answer.append("；有效时间：").append(scope.path("valid_at").path("value").asText());
+            else answer.append("；有效时间未确定");
+            if (!scope.path("conditions").isEmpty()) answer.append("；条件：").append(com.deepresearch.agent.ToolOutputSanitizer.neutralizeCitationMarkers(canonical(scope.path("conditions"))));
+            answer.append('）');
             for (JsonNode citation : item.path("citations")) {
                 String identity = citation.path("evidence_id").asText(); references.putIfAbsent(identity, citation);
                 int number = new ArrayList<>(references.keySet()).indexOf(identity) + 1;
@@ -195,9 +230,10 @@ public final class EvidenceService {
             }
             answer.append('\n');
         }
+        if (answer.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 32768) throw new EvidenceException("PUBLICATION_TOO_LARGE");
         active(g); return object("packet_id", command.packet_id(), "run_id", g.runId(), "claims", published,
                 "answer", answer.toString().strip(), "answer_sha256", sha(answer.toString().strip()),
-                "citations", references.values(), "semantic_truth_guaranteed", false);
+                "citations", references.values(), "validation_receipts", validationReceipts, "semantic_truth_guaranteed", false);
     }
     private static EvidenceDtos.RecordResult result(JsonNode value) { return JSON.convertValue(value, EvidenceDtos.RecordResult.class); }
     private static void applicability(JsonNode value) {
@@ -208,7 +244,10 @@ public final class EvidenceService {
         String state = value.path("status").asText();
         if (state.equals("unknown")) { keys(value, "status", "value", "reason"); if (!value.path("value").isNull()) throw new EvidenceException("CHECK_REQUEST_INVALID"); text(field(value, "reason"), 1000); }
         else if (state.equals("known")) { keys(value, "status", "value"); String known = field(value, "value"); if (time) {
-            try { OffsetDateTime.parse(known); } catch (Exception invalid) { throw new EvidenceException("CHECK_REQUEST_INVALID"); }
+            try {
+                if (!known.matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})")) throw new IllegalArgumentException();
+                OffsetDateTime.parse(known);
+            } catch (Exception invalid) { throw new EvidenceException("CHECK_REQUEST_INVALID"); }
         }} else throw new EvidenceException("CHECK_REQUEST_INVALID");
     }
 }

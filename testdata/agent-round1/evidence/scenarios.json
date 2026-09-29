@@ -1,0 +1,97 @@
+{
+  "fixture_origin": "synthetic",
+  "transport": "injected with production URL/IP policy retained",
+  "model": "deterministic relation proposal, not real semantic capability",
+  "cases": [
+    {
+      "id": "empty-retrieval",
+      "claims": [
+        {
+          "text": "The request limit is 99.",
+          "version": "1.0"
+        }
+      ],
+      "sources": [],
+      "expected_statuses": [
+        "insufficient"
+      ]
+    },
+    {
+      "id": "wrong-material",
+      "claims": [
+        {
+          "text": "The request limit is 99.",
+          "version": "1.0"
+        }
+      ],
+      "sources": [
+        {
+          "id": "wrong-guide",
+          "kind": "web",
+          "path": "testdata/agent-round1/evidence/sources/wrong-guide.md"
+        },
+        {
+          "id": "controlled-observation",
+          "kind": "controlled_test",
+          "path": "testdata/agent-round1/evidence/sources/controlled-observation.md"
+        }
+      ],
+      "expected_statuses": [
+        "refuted"
+      ]
+    },
+    {
+      "id": "version-difference",
+      "claims": [
+        {
+          "text": "The request limit is 10.",
+          "version": "1.0"
+        },
+        {
+          "text": "The request limit is 20.",
+          "version": "2.0"
+        }
+      ],
+      "sources": [
+        {
+          "id": "version-one",
+          "kind": "web",
+          "path": "testdata/agent-round1/evidence/sources/version-one.md"
+        },
+        {
+          "id": "version-two",
+          "kind": "web",
+          "path": "testdata/agent-round1/evidence/sources/version-two.md"
+        }
+      ],
+      "expected_statuses": [
+        "supported",
+        "supported"
+      ]
+    },
+    {
+      "id": "unresolved-conflict",
+      "claims": [
+        {
+          "text": "The request limit is 10.",
+          "version": "1.0"
+        }
+      ],
+      "sources": [
+        {
+          "id": "peer-first",
+          "kind": "web",
+          "path": "testdata/agent-round1/evidence/sources/peer-first.md"
+        },
+        {
+          "id": "peer-second",
+          "kind": "web",
+          "path": "testdata/agent-round1/evidence/sources/peer-second.md"
+        }
+      ],
+      "expected_statuses": [
+        "contested"
+      ]
+    }
+  ]
+}

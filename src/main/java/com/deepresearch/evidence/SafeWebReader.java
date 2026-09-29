@@ -25,17 +25,23 @@ public final class SafeWebReader implements SourceReader {
     public record Response(int status, Map<String, String> headers, byte[] body, InetAddress peer) { }
     private final Resolver resolver;
     private final Transport transport;
+    private final Duration deadlineLimit;
     private static final java.util.concurrent.ThreadPoolExecutor DNS = new java.util.concurrent.ThreadPoolExecutor(
             2, 2, 0, java.util.concurrent.TimeUnit.SECONDS, new java.util.concurrent.ArrayBlockingQueue<>(8),
             task -> { Thread thread = new Thread(task, "evidence-bounded-dns"); thread.setDaemon(true); return thread; },
             new java.util.concurrent.ThreadPoolExecutor.AbortPolicy());
     public SafeWebReader() { this(host -> List.of(InetAddress.getAllByName(host)), new PinnedHttpTransport()); }
-    public SafeWebReader(Resolver resolver, Transport transport) { this.resolver = resolver; this.transport = transport; }
+    public SafeWebReader(Resolver resolver, Transport transport) { this(resolver, transport, DEADLINE); }
+    public SafeWebReader(Resolver resolver, Transport transport, Duration deadlineLimit) {
+        if (deadlineLimit.isNegative() || deadlineLimit.isZero() || deadlineLimit.compareTo(DEADLINE) > 0)
+            throw new IllegalArgumentException("Invalid bounded source deadline");
+        this.resolver = resolver; this.transport = transport; this.deadlineLimit = deadlineLimit;
+    }
 
     @Override public Document read(EvidenceAuthority.Grant grant, EvidenceAuthority.Candidate candidate) {
         try {
             URI current = URI.create(candidate.url());
-            long deadline = System.nanoTime() + DEADLINE.toNanos();
+            long deadline = System.nanoTime() + deadlineLimit.toNanos();
             for (int hop = 0; hop <= MAX_REDIRECTS; hop++) {
                 validateUri(current);
                 String hostname = host(current);
@@ -75,12 +81,21 @@ public final class SafeWebReader implements SourceReader {
                 extracted = extracted.replace("\r\n", "\n").replace('\r', '\n').trim();
                 if (extracted.isBlank()) throw new EvidenceException("SOURCE_TEXT_MISSING");
                 boolean truncated = extracted.codePointCount(0, extracted.length()) > MAX_CODEPOINTS;
-                String text = truncated ? extracted.substring(0, extracted.offsetByCodePoints(0, MAX_CODEPOINTS)) : extracted;
+                String text = extracted;
+                if (truncated) {
+                    int windowEnd = extracted.offsetByCodePoints(0, MAX_CODEPOINTS);
+                    int paragraphEnd = extracted.lastIndexOf('\n', windowEnd);
+                    if (paragraphEnd <= 0) throw new EvidenceException("SOURCE_CONTEXT_TOO_LARGE");
+                    text = extracted.substring(0, paragraphEnd).trim();
+                    if (text.isBlank()) throw new EvidenceException("SOURCE_TEXT_MISSING");
+                }
                 return new Document(text, candidate.title(), EvidenceJson.object("kind", "web_uri", "uri", current.toASCIIString()),
                         truncated ? "document_chunk" : "full_text", Instant.now(), EvidenceJson.sha(response.body()), truncated, false);
             }
             throw new EvidenceException("SOURCE_REDIRECT_DENIED");
         } catch (EvidenceException failure) { throw failure; }
+        catch (java.util.concurrent.TimeoutException failure) { throw new EvidenceException("SOURCE_TIMEOUT"); }
+        catch (InterruptedException failure) { Thread.currentThread().interrupt(); throw new EvidenceException("SOURCE_INTERRUPTED"); }
         catch (Exception failure) { throw new EvidenceException("SOURCE_READ_FAILED"); }
     }
 
@@ -103,6 +118,7 @@ public final class SafeWebReader implements SourceReader {
         if (b.length == 4) {
             int a = b[0] & 255, c = b[1] & 255, d = b[2] & 255;
             return a != 0 && a != 10 && a != 127 && a < 224 && !(a == 100 && c >= 64 && c <= 127)
+                    && !(a == 168 && c == 63 && d == 129 && (b[3] & 255) == 16) // Azure platform WireServer
                     && !(a == 169 && c == 254) && !(a == 172 && c >= 16 && c <= 31)
                     && !(a == 192 && (c == 168 || c == 0 && (d == 0 || d == 2) || c == 88 && d == 99))
                     && !(a == 198 && (c == 18 || c == 19 || c == 51 && d == 100)) && !(a == 203 && c == 0 && d == 113);

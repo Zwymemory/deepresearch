@@ -37,6 +37,7 @@ public final class EvidenceAdjudicator {
             var links = new ArrayList<JsonNode>(); var dismissed = new ArrayList<JsonNode>();
             var applicable = new LinkedHashMap<String, String>(); var verified = new LinkedHashMap<String, String>();
             var grouped = new HashMap<String, String>(); var seen = new HashSet<String>();
+            var basis = new ArrayList<JsonNode>();
             var gaps = new ArrayList<String>();
             for (JsonNode relation : proposal.path("relations")) {
                 keys(relation, "evidence_id", "relation", "quote", "reason");
@@ -45,14 +46,23 @@ public final class EvidenceAdjudicator {
                 if (source == null || !seen.add(evidenceId) || !Set.of("supports", "refutes", "insufficient").contains(label))
                     throw new EvidenceException("CHECK_EVIDENCE_BINDING_INVALID");
                 text(field(relation, "reason"), 1000);
-                quote(source, relation.path("quote"));
-                links.add(object("evidence_id", evidenceId, "relation", label, "quote", relation.path("quote"),
+                basis.add(object("evidence_id", evidenceId, "reason", field(relation, "reason")));
+                JsonNode boundQuote = bindQuote(source, relation.path("quote"));
+                links.add(object("evidence_id", evidenceId, "relation", label, "quote", boundQuote,
                         "assessment_method", "model_proposal", "assessment_ref", assessment));
                 JsonNode targetVersion = original.path("applicability").path("version"), sourceVersion = source.path("applicability").path("version");
-                if (!canonical(targetVersion).equals(canonical(sourceVersion))) {
+                boolean versionMatches = targetVersion.path("status").asText().equals(sourceVersion.path("status").asText())
+                        && (!targetVersion.path("status").asText().equals("known") || targetVersion.path("value").asText().equals(sourceVersion.path("value").asText()));
+                if (!versionMatches) {
                     String reason = "known".equals(sourceVersion.path("status").asText()) ? "Source declares a different applicable version" : "Source version is unknown; requested version is not established";
                     dismissed.add(object("evidence_id", evidenceId, "reason", reason));
                     gaps.add(reason); continue;
+                }
+                JsonNode targetTime = original.path("applicability").path("valid_at"), sourceTime = source.path("applicability").path("valid_at");
+                if (targetTime.path("status").asText().equals("known") && (!sourceTime.path("status").asText().equals("known")
+                        || !java.time.OffsetDateTime.parse(targetTime.path("value").asText()).toInstant().equals(java.time.OffsetDateTime.parse(sourceTime.path("value").asText()).toInstant()))) {
+                    String reason = "Requested effective time is not established by this original evidence";
+                    dismissed.add(object("evidence_id", evidenceId, "reason", reason)); gaps.add(reason); continue;
                 }
                 String previous = grouped.putIfAbsent(source.path("snapshot").path("sha256").asText(), label);
                 if (previous != null && !previous.equals(label) && !previous.equals("insufficient") && !label.equals("insufficient"))
@@ -87,9 +97,12 @@ public final class EvidenceAdjudicator {
                     "kind", original.path("kind").asText(), "applicability", original.path("applicability"), "evidence_links", links,
                     "decision_status", status, "freshness", "fresh");
             String decisionId = "decision-" + claimId;
+            String rationale = "Budgeted verifier proposal; original context/scope checked; observations limited to their recorded test. "
+                    + canonical(object("public_basis", basis, "limitations", proposal.path("limitations")));
+            if (rationale.codePointCount(0, rationale.length()) > 10000) throw new EvidenceException("CHECK_RATIONALE_TOO_LARGE");
             var decision = scoped("DecisionRecord", grant, "decision_id", decisionId, "claim_id", claimId, "run_id", grant.runId(),
                     "decision_status", status, "adopted_evidence_ids", adopted, "dismissed_evidence", dismissed,
-                    "unresolved_evidence_ids", unresolved, "rationale", "Budgeted verifier proposal; exact original context and declared scope independently checked. Controlled observations are limited to their recorded test.",
+                    "unresolved_evidence_ids", unresolved, "rationale", rationale,
                     "gaps", decisionGaps, "policy_version", "0.1.0", "recorded_at", Instant.now().toString(), "assessment_method", "model_proposal");
             records.add(claim); records.add(decision);
             if (!decisionGaps.isEmpty()) {
@@ -111,6 +124,16 @@ public final class EvidenceAdjudicator {
         return new EvidenceDtos.RecordResult(records, actions.stream().distinct().limit(4).toList(), false);
     }
 
+    /** The model quotes text; trusted code computes the exact range and hash. */
+    public static JsonNode bindQuote(JsonNode evidence, JsonNode proposal) {
+        if (!proposal.isTextual()) { quote(evidence, proposal); return proposal; }
+        String original = evidence.path("snapshot").path("text").asText();
+        String quoted = text(proposal.asText(), 10000); int left = original.indexOf(quoted);
+        if (left < 0 || original.indexOf(quoted, left + 1) >= 0) throw new EvidenceException("CHECK_QUOTE_BINDING_INVALID");
+        JsonNode bound = object("start", original.codePointCount(0, left),
+                "end", original.codePointCount(0, left + quoted.length()), "text", quoted, "sha256", sha(quoted));
+        quote(evidence, bound); return bound;
+    }
     public static void quote(JsonNode evidence, JsonNode quote) {
         keys(quote, "start", "end", "text", "sha256");
         if (!quote.path("start").isIntegralNumber() || !quote.path("end").isIntegralNumber()

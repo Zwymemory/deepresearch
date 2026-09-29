@@ -61,7 +61,8 @@ public final class PinnedHttpTransport implements SafeWebReader.Transport {
             int colon = line.indexOf(':');
             if (colon <= 0 || !line.substring(0, colon).matches("[A-Za-z0-9-]+")) throw new EvidenceException("SOURCE_HTTP_MALFORMED");
             String key = line.substring(0, colon).toLowerCase(java.util.Locale.ROOT), value = line.substring(colon + 1).trim();
-            if (headers.putIfAbsent(key, value) != null) throw new EvidenceException("SOURCE_HTTP_MALFORMED");
+            if (headers.putIfAbsent(key, value) != null && List.of("content-length", "transfer-encoding", "content-type", "content-encoding", "location").contains(key))
+                throw new EvidenceException("SOURCE_HTTP_MALFORMED");
         }
         if (headers.containsKey("transfer-encoding") && headers.containsKey("content-length")) throw new EvidenceException("SOURCE_HTTP_MALFORMED");
         if (List.of(301, 302, 303, 307, 308).contains(code)) return new SafeWebReader.Response(code, headers, new byte[0], peer);

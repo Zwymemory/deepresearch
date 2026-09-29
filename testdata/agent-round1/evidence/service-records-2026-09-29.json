@@ -1,0 +1,1064 @@
+{
+  "fixture_origin" : "synthetic_transport_and_model_receipt",
+  "actual_service_and_postgres" : true,
+  "real_network" : false,
+  "real_model" : false,
+  "bundles" : [ {
+    "fixture_id" : "empty-retrieval",
+    "fixture_origin" : "synthetic_transport_and_model_receipt",
+    "authorized_scope" : {
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-4aa598ac-b540-4f98-87e3-bba1b0befda4"
+    },
+    "records" : [ {
+      "record_type" : "Claim",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-4aa598ac-b540-4f98-87e3-bba1b0befda4",
+      "claim_id" : "claim-check-99c8efc555091df1f49dac01eb776abc4c40255928c1ccb9-0",
+      "run_id" : "wf-11daac5d-b3ed-4488-9404-c97d57ced109",
+      "text" : "The request limit is 99.",
+      "kind" : "factual",
+      "applicability" : {
+        "subject" : "Synthetic ExampleService limit",
+        "version" : {
+          "value" : "1.0",
+          "status" : "known"
+        },
+        "valid_at" : {
+          "value" : null,
+          "reason" : "Synthetic scope, no real-world valid time",
+          "status" : "unknown"
+        },
+        "conditions" : [ "Controlled fixture only" ]
+      },
+      "evidence_links" : [ ],
+      "decision_status" : "insufficient",
+      "freshness" : "fresh"
+    }, {
+      "record_type" : "DecisionRecord",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-4aa598ac-b540-4f98-87e3-bba1b0befda4",
+      "decision_id" : "decision-claim-check-99c8efc555091df1f49dac01eb776abc4c40255928c1ccb9-0",
+      "claim_id" : "claim-check-99c8efc555091df1f49dac01eb776abc4c40255928c1ccb9-0",
+      "run_id" : "wf-11daac5d-b3ed-4488-9404-c97d57ced109",
+      "decision_status" : "insufficient",
+      "adopted_evidence_ids" : [ ],
+      "dismissed_evidence" : [ ],
+      "unresolved_evidence_ids" : [ ],
+      "rationale" : "Budgeted verifier proposal; original context/scope checked; observations limited to their recorded test. {\"limitations\":[\"Synthetic model receipt only\"],\"public_basis\":[]}",
+      "gaps" : [ "No adequate original evidence establishes this claim in the requested scope" ],
+      "policy_version" : "0.1.0",
+      "recorded_at" : "2026-09-29T10:43:41.356909Z",
+      "assessment_method" : "model_proposal"
+    }, {
+      "record_type" : "Challenge",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-4aa598ac-b540-4f98-87e3-bba1b0befda4",
+      "challenge_id" : "challenge-claim-check-99c8efc555091df1f49dac01eb776abc4c40255928c1ccb9-0",
+      "claim_id" : "claim-check-99c8efc555091df1f49dac01eb776abc4c40255928c1ccb9-0",
+      "run_id" : "wf-11daac5d-b3ed-4488-9404-c97d57ced109",
+      "task_id" : "task-main",
+      "kind" : "missing_support",
+      "status" : "open",
+      "evidence_ids" : [ ],
+      "requested_actions" : [ "seek_counterevidence" ],
+      "response_decision_id" : null,
+      "remaining_gaps" : [ "No adequate original evidence establishes this claim in the requested scope" ],
+      "recorded_at" : "2026-09-29T10:43:41.357135Z"
+    }, {
+      "record_type" : "ResearchPacket",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-4aa598ac-b540-4f98-87e3-bba1b0befda4",
+      "packet_id" : "packet-2dd451e23335566706857d4fae4efe15f8a3c7b2bdafc224",
+      "run_id" : "wf-11daac5d-b3ed-4488-9404-c97d57ced109",
+      "task_id" : "task-main",
+      "context_id" : null,
+      "status" : "partial",
+      "claim_ids" : [ "claim-check-99c8efc555091df1f49dac01eb776abc4c40255928c1ccb9-0" ],
+      "evidence_ids" : [ ],
+      "decision_ids" : [ "decision-claim-check-99c8efc555091df1f49dac01eb776abc4c40255928c1ccb9-0" ],
+      "challenge_ids" : [ "challenge-claim-check-99c8efc555091df1f49dac01eb776abc4c40255928c1ccb9-0" ],
+      "limitations" : [ "Verifier relations are proposals, not a universal factual truth guarantee", "Source version declarations and test observations have their recorded scope only" ],
+      "gaps" : [ "No adequate original evidence establishes this claim in the requested scope" ],
+      "recorded_at" : "2026-09-29T10:43:41.385444Z"
+    } ],
+    "external_refs" : [ {
+      "record_type" : "ResearchProject",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-4aa598ac-b540-4f98-87e3-bba1b0befda4"
+    }, {
+      "record_type" : "Run",
+      "run_id" : "wf-11daac5d-b3ed-4488-9404-c97d57ced109",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-4aa598ac-b540-4f98-87e3-bba1b0befda4"
+    }, {
+      "record_type" : "Task",
+      "task_id" : "task-main",
+      "run_id" : "wf-11daac5d-b3ed-4488-9404-c97d57ced109",
+      "status" : "done",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-4aa598ac-b540-4f98-87e3-bba1b0befda4"
+    }, {
+      "record_type" : "Assessment",
+      "assessment_id" : "assessment-model-3c08f612-17e8-45c5-9a47-e7da77252438",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-4aa598ac-b540-4f98-87e3-bba1b0befda4"
+    } ],
+    "semantic_truth_guaranteed" : false,
+    "actual_persistence" : true
+  }, {
+    "fixture_id" : "wrong-material",
+    "fixture_origin" : "synthetic_transport_and_model_receipt",
+    "authorized_scope" : {
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-9750e35b-c2c2-4020-a000-3dd22946c422"
+    },
+    "records" : [ {
+      "record_type" : "Evidence",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-9750e35b-c2c2-4020-a000-3dd22946c422",
+      "evidence_id" : "evidence-efe1d71c-5369-4355-9122-0840366fed38",
+      "version" : 1,
+      "run_id" : "wf-f485a1d0-b5cc-4fff-8156-33bf6d8dcc13",
+      "task_id" : "task-main",
+      "receipt_id" : "read-534e137a-393d-4958-80de-f50154087811",
+      "source" : {
+        "source_id" : "wrong-guide",
+        "kind" : "web",
+        "title" : "Synthetic wrong-guide",
+        "locator" : {
+          "kind" : "web_uri",
+          "uri" : "https://sources.example.org/wrong-guide"
+        },
+        "version" : {
+          "status" : "known",
+          "value" : "1.0"
+        },
+        "published_at" : {
+          "status" : "unknown",
+          "value" : null,
+          "reason" : "Publication date was not independently established"
+        },
+        "observed_at" : "2026-09-29T10:43:41.434425Z",
+        "source_group" : {
+          "status" : "known",
+          "value" : "content-649e1ea1968200759bf3d95a12103ff166022ea1fb338cd04691496c55763f7e"
+        },
+        "derivation" : "unknown",
+        "parent_source_id" : null,
+        "authority" : "unassessed"
+      },
+      "snapshot" : {
+        "kind" : "full_text",
+        "text" : "# 合成资料 🧪\n\nVersion: 1.0\n\nLimit: 99",
+        "sha256" : "649e1ea1968200759bf3d95a12103ff166022ea1fb338cd04691496c55763f7e",
+        "encoding" : "utf-8",
+        "offset_unit" : "unicode_codepoint"
+      },
+      "applicability" : {
+        "subject" : "Synthetic wrong-guide",
+        "version" : {
+          "status" : "known",
+          "value" : "1.0"
+        },
+        "valid_at" : {
+          "status" : "unknown",
+          "value" : null,
+          "reason" : "No unambiguous effective time declaration in original text"
+        },
+        "conditions" : [ "Limited to this original document or recorded observation" ]
+      },
+      "retrieval_score" : {
+        "status" : "unknown",
+        "value" : null,
+        "reason" : "Read operation does not measure retrieval relevance"
+      },
+      "freshness" : "fresh",
+      "availability" : "available",
+      "validity" : "unassessed",
+      "invalidation_reason" : null
+    }, {
+      "record_type" : "Evidence",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-9750e35b-c2c2-4020-a000-3dd22946c422",
+      "evidence_id" : "evidence-7dd944e0-e58c-4c08-af7c-755c55860d43",
+      "version" : 1,
+      "run_id" : "wf-f485a1d0-b5cc-4fff-8156-33bf6d8dcc13",
+      "task_id" : "task-main",
+      "receipt_id" : "read-414bbcfc-b150-42ce-b042-933e52d36cae",
+      "source" : {
+        "source_id" : "controlled-observation",
+        "kind" : "controlled_test",
+        "title" : "Synthetic controlled-observation",
+        "locator" : {
+          "kind" : "test_result",
+          "artifact_id" : "artifact-controlled-observation"
+        },
+        "version" : {
+          "status" : "known",
+          "value" : "1.0"
+        },
+        "published_at" : {
+          "status" : "unknown",
+          "value" : null,
+          "reason" : "Publication date was not independently established"
+        },
+        "observed_at" : "2026-09-29T10:43:41.463685Z",
+        "source_group" : {
+          "status" : "known",
+          "value" : "content-cf2b409effd13d9544061fe6a51812dd8590d9cb96d6e34211a40b8571ebe522"
+        },
+        "derivation" : "unknown",
+        "parent_source_id" : null,
+        "authority" : "unassessed"
+      },
+      "snapshot" : {
+        "kind" : "test_observation",
+        "text" : "# 合成受控测试 🧪\n\nVersion: 1.0\n\nLimit: 10\n",
+        "sha256" : "cf2b409effd13d9544061fe6a51812dd8590d9cb96d6e34211a40b8571ebe522",
+        "encoding" : "utf-8",
+        "offset_unit" : "unicode_codepoint"
+      },
+      "applicability" : {
+        "subject" : "Synthetic controlled-observation",
+        "version" : {
+          "status" : "known",
+          "value" : "1.0"
+        },
+        "valid_at" : {
+          "status" : "unknown",
+          "value" : null,
+          "reason" : "No unambiguous effective time declaration in original text"
+        },
+        "conditions" : [ "Limited to this original document or recorded observation" ]
+      },
+      "retrieval_score" : {
+        "status" : "unknown",
+        "value" : null,
+        "reason" : "Read operation does not measure retrieval relevance"
+      },
+      "freshness" : "fresh",
+      "availability" : "available",
+      "validity" : "unassessed",
+      "invalidation_reason" : null
+    }, {
+      "record_type" : "Claim",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-9750e35b-c2c2-4020-a000-3dd22946c422",
+      "claim_id" : "claim-check-e856d4054bc5abfe30e6ed0b1e9d9c3adc92cadfa72c4933-0",
+      "run_id" : "wf-f485a1d0-b5cc-4fff-8156-33bf6d8dcc13",
+      "text" : "The request limit is 99.",
+      "kind" : "factual",
+      "applicability" : {
+        "subject" : "Synthetic ExampleService limit",
+        "version" : {
+          "value" : "1.0",
+          "status" : "known"
+        },
+        "valid_at" : {
+          "value" : null,
+          "reason" : "Synthetic scope, no real-world valid time",
+          "status" : "unknown"
+        },
+        "conditions" : [ "Controlled fixture only" ]
+      },
+      "evidence_links" : [ {
+        "evidence_id" : "evidence-efe1d71c-5369-4355-9122-0840366fed38",
+        "relation" : "supports",
+        "quote" : {
+          "start" : 24,
+          "end" : 33,
+          "text" : "Limit: 99",
+          "sha256" : "b3b336e7e8b4750312cee2500ca26045ae15305c514ebc9d68c714f5d0a48d51"
+        },
+        "assessment_method" : "model_proposal",
+        "assessment_ref" : "assessment-model-635586d3-3c90-438f-a9a9-12e6f777ee2f"
+      }, {
+        "evidence_id" : "evidence-7dd944e0-e58c-4c08-af7c-755c55860d43",
+        "relation" : "refutes",
+        "quote" : {
+          "start" : 26,
+          "end" : 35,
+          "text" : "Limit: 10",
+          "sha256" : "7415e1ffea05db42215778e6c742f9b9195f7d6c8056284c075e18239e151e46"
+        },
+        "assessment_method" : "model_proposal",
+        "assessment_ref" : "assessment-model-635586d3-3c90-438f-a9a9-12e6f777ee2f"
+      } ],
+      "decision_status" : "refuted",
+      "freshness" : "fresh"
+    }, {
+      "record_type" : "DecisionRecord",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-9750e35b-c2c2-4020-a000-3dd22946c422",
+      "decision_id" : "decision-claim-check-e856d4054bc5abfe30e6ed0b1e9d9c3adc92cadfa72c4933-0",
+      "claim_id" : "claim-check-e856d4054bc5abfe30e6ed0b1e9d9c3adc92cadfa72c4933-0",
+      "run_id" : "wf-f485a1d0-b5cc-4fff-8156-33bf6d8dcc13",
+      "decision_status" : "refuted",
+      "adopted_evidence_ids" : [ "evidence-7dd944e0-e58c-4c08-af7c-755c55860d43" ],
+      "dismissed_evidence" : [ {
+        "evidence_id" : "evidence-efe1d71c-5369-4355-9122-0840366fed38",
+        "reason" : "A completed controlled observation contradicts this proposal; retain source and reproduction limits"
+      } ],
+      "unresolved_evidence_ids" : [ ],
+      "rationale" : "Budgeted verifier proposal; original context/scope checked; observations limited to their recorded test. {\"limitations\":[\"Synthetic model receipt only\"],\"public_basis\":[{\"evidence_id\":\"evidence-efe1d71c-5369-4355-9122-0840366fed38\",\"reason\":\"Deterministic numeric relation stand-in; not a language model\"},{\"evidence_id\":\"evidence-7dd944e0-e58c-4c08-af7c-755c55860d43\",\"reason\":\"Deterministic numeric relation stand-in; not a language model\"}]}",
+      "gaps" : [ ],
+      "policy_version" : "0.1.0",
+      "recorded_at" : "2026-09-29T10:43:41.517579Z",
+      "assessment_method" : "model_proposal"
+    }, {
+      "record_type" : "ResearchPacket",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-9750e35b-c2c2-4020-a000-3dd22946c422",
+      "packet_id" : "packet-bd3ce5e94cd75e5346493c635b7c17310cd0dde2db5f3b7d",
+      "run_id" : "wf-f485a1d0-b5cc-4fff-8156-33bf6d8dcc13",
+      "task_id" : "task-main",
+      "context_id" : null,
+      "status" : "complete",
+      "claim_ids" : [ "claim-check-e856d4054bc5abfe30e6ed0b1e9d9c3adc92cadfa72c4933-0" ],
+      "evidence_ids" : [ "evidence-efe1d71c-5369-4355-9122-0840366fed38", "evidence-7dd944e0-e58c-4c08-af7c-755c55860d43" ],
+      "decision_ids" : [ "decision-claim-check-e856d4054bc5abfe30e6ed0b1e9d9c3adc92cadfa72c4933-0" ],
+      "challenge_ids" : [ ],
+      "limitations" : [ "Verifier relations are proposals, not a universal factual truth guarantee", "Source version declarations and test observations have their recorded scope only" ],
+      "gaps" : [ ],
+      "recorded_at" : "2026-09-29T10:43:41.536225Z"
+    } ],
+    "external_refs" : [ {
+      "record_type" : "ResearchProject",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-9750e35b-c2c2-4020-a000-3dd22946c422"
+    }, {
+      "record_type" : "Run",
+      "run_id" : "wf-f485a1d0-b5cc-4fff-8156-33bf6d8dcc13",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-9750e35b-c2c2-4020-a000-3dd22946c422"
+    }, {
+      "record_type" : "Task",
+      "task_id" : "task-main",
+      "run_id" : "wf-f485a1d0-b5cc-4fff-8156-33bf6d8dcc13",
+      "status" : "done",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-9750e35b-c2c2-4020-a000-3dd22946c422"
+    }, {
+      "record_type" : "Assessment",
+      "assessment_id" : "assessment-model-635586d3-3c90-438f-a9a9-12e6f777ee2f",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-9750e35b-c2c2-4020-a000-3dd22946c422"
+    }, {
+      "record_type" : "Receipt",
+      "receipt_id" : "read-534e137a-393d-4958-80de-f50154087811",
+      "run_id" : "wf-f485a1d0-b5cc-4fff-8156-33bf6d8dcc13",
+      "task_id" : "task-main",
+      "status" : "completed",
+      "authorized" : true,
+      "source_bindings" : [ {
+        "source_id" : "wrong-guide",
+        "snapshot_sha256" : "649e1ea1968200759bf3d95a12103ff166022ea1fb338cd04691496c55763f7e",
+        "source_metadata_sha256" : "8a98e7881918bbf420f027d1203e8ea20ab3a982a25961f0dafe8acf3987e135"
+      } ],
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-9750e35b-c2c2-4020-a000-3dd22946c422"
+    }, {
+      "record_type" : "Receipt",
+      "receipt_id" : "read-414bbcfc-b150-42ce-b042-933e52d36cae",
+      "run_id" : "wf-f485a1d0-b5cc-4fff-8156-33bf6d8dcc13",
+      "task_id" : "task-main",
+      "status" : "completed",
+      "authorized" : true,
+      "source_bindings" : [ {
+        "source_id" : "controlled-observation",
+        "snapshot_sha256" : "cf2b409effd13d9544061fe6a51812dd8590d9cb96d6e34211a40b8571ebe522",
+        "source_metadata_sha256" : "0fe9eaf532fca2848664a55654731322ee3e79903618f2b5ac3e45cc2e0fe66b"
+      } ],
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-9750e35b-c2c2-4020-a000-3dd22946c422"
+    } ],
+    "semantic_truth_guaranteed" : false,
+    "actual_persistence" : true
+  }, {
+    "fixture_id" : "version-difference",
+    "fixture_origin" : "synthetic_transport_and_model_receipt",
+    "authorized_scope" : {
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-1f8a590e-d1cc-4fac-a4e0-205b598ac225"
+    },
+    "records" : [ {
+      "record_type" : "Evidence",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-1f8a590e-d1cc-4fac-a4e0-205b598ac225",
+      "evidence_id" : "evidence-c8b37e49-5269-4498-af5c-8186f6af4515",
+      "version" : 1,
+      "run_id" : "wf-59cee56f-7235-4ce0-8e4d-1fb02994b4cf",
+      "task_id" : "task-main",
+      "receipt_id" : "read-fb0a8a2f-1a0a-4e9c-bc8b-cf0ab76001fa",
+      "source" : {
+        "source_id" : "version-one",
+        "kind" : "web",
+        "title" : "Synthetic version-one",
+        "locator" : {
+          "kind" : "web_uri",
+          "uri" : "https://sources.example.org/version-one"
+        },
+        "version" : {
+          "status" : "known",
+          "value" : "1.0"
+        },
+        "published_at" : {
+          "status" : "unknown",
+          "value" : null,
+          "reason" : "Publication date was not independently established"
+        },
+        "observed_at" : "2026-09-29T10:43:41.582428Z",
+        "source_group" : {
+          "status" : "known",
+          "value" : "content-004f699af8ee87d8426154b40ee4be53cec8ed034f9a1bc8cc2a41a8830f444f"
+        },
+        "derivation" : "unknown",
+        "parent_source_id" : null,
+        "authority" : "unassessed"
+      },
+      "snapshot" : {
+        "kind" : "full_text",
+        "text" : "# 合成版本一 🧪\n\nVersion: 1.0\n\nLimit: 10",
+        "sha256" : "004f699af8ee87d8426154b40ee4be53cec8ed034f9a1bc8cc2a41a8830f444f",
+        "encoding" : "utf-8",
+        "offset_unit" : "unicode_codepoint"
+      },
+      "applicability" : {
+        "subject" : "Synthetic version-one",
+        "version" : {
+          "status" : "known",
+          "value" : "1.0"
+        },
+        "valid_at" : {
+          "status" : "unknown",
+          "value" : null,
+          "reason" : "No unambiguous effective time declaration in original text"
+        },
+        "conditions" : [ "Limited to this original document or recorded observation" ]
+      },
+      "retrieval_score" : {
+        "status" : "unknown",
+        "value" : null,
+        "reason" : "Read operation does not measure retrieval relevance"
+      },
+      "freshness" : "fresh",
+      "availability" : "available",
+      "validity" : "unassessed",
+      "invalidation_reason" : null
+    }, {
+      "record_type" : "Evidence",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-1f8a590e-d1cc-4fac-a4e0-205b598ac225",
+      "evidence_id" : "evidence-e1011e93-aec2-4a13-94d7-469b26fb7ea3",
+      "version" : 1,
+      "run_id" : "wf-59cee56f-7235-4ce0-8e4d-1fb02994b4cf",
+      "task_id" : "task-main",
+      "receipt_id" : "read-b42c4325-6716-4bd4-84e0-08519c8c81f4",
+      "source" : {
+        "source_id" : "version-two",
+        "kind" : "web",
+        "title" : "Synthetic version-two",
+        "locator" : {
+          "kind" : "web_uri",
+          "uri" : "https://sources.example.org/version-two"
+        },
+        "version" : {
+          "status" : "known",
+          "value" : "2.0"
+        },
+        "published_at" : {
+          "status" : "unknown",
+          "value" : null,
+          "reason" : "Publication date was not independently established"
+        },
+        "observed_at" : "2026-09-29T10:43:41.609203Z",
+        "source_group" : {
+          "status" : "known",
+          "value" : "content-3a489542db4e0d9291d182904c1c1790c236edf06ff9379c27c6ec9b04187616"
+        },
+        "derivation" : "unknown",
+        "parent_source_id" : null,
+        "authority" : "unassessed"
+      },
+      "snapshot" : {
+        "kind" : "full_text",
+        "text" : "# 合成版本二 🧪\n\nVersion: 2.0\n\nLimit: 20",
+        "sha256" : "3a489542db4e0d9291d182904c1c1790c236edf06ff9379c27c6ec9b04187616",
+        "encoding" : "utf-8",
+        "offset_unit" : "unicode_codepoint"
+      },
+      "applicability" : {
+        "subject" : "Synthetic version-two",
+        "version" : {
+          "status" : "known",
+          "value" : "2.0"
+        },
+        "valid_at" : {
+          "status" : "unknown",
+          "value" : null,
+          "reason" : "No unambiguous effective time declaration in original text"
+        },
+        "conditions" : [ "Limited to this original document or recorded observation" ]
+      },
+      "retrieval_score" : {
+        "status" : "unknown",
+        "value" : null,
+        "reason" : "Read operation does not measure retrieval relevance"
+      },
+      "freshness" : "fresh",
+      "availability" : "available",
+      "validity" : "unassessed",
+      "invalidation_reason" : null
+    }, {
+      "record_type" : "Claim",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-1f8a590e-d1cc-4fac-a4e0-205b598ac225",
+      "claim_id" : "claim-check-b241126433cdb48de105c50a39b5a4d214219e8c51fb6d40-0",
+      "run_id" : "wf-59cee56f-7235-4ce0-8e4d-1fb02994b4cf",
+      "text" : "The request limit is 10.",
+      "kind" : "factual",
+      "applicability" : {
+        "subject" : "Synthetic ExampleService limit",
+        "version" : {
+          "value" : "1.0",
+          "status" : "known"
+        },
+        "valid_at" : {
+          "value" : null,
+          "reason" : "Synthetic scope, no real-world valid time",
+          "status" : "unknown"
+        },
+        "conditions" : [ "Controlled fixture only" ]
+      },
+      "evidence_links" : [ {
+        "evidence_id" : "evidence-c8b37e49-5269-4498-af5c-8186f6af4515",
+        "relation" : "supports",
+        "quote" : {
+          "start" : 25,
+          "end" : 34,
+          "text" : "Limit: 10",
+          "sha256" : "7415e1ffea05db42215778e6c742f9b9195f7d6c8056284c075e18239e151e46"
+        },
+        "assessment_method" : "model_proposal",
+        "assessment_ref" : "assessment-model-f410ca91-c9fb-458d-83d2-df84deded28c"
+      }, {
+        "evidence_id" : "evidence-e1011e93-aec2-4a13-94d7-469b26fb7ea3",
+        "relation" : "refutes",
+        "quote" : {
+          "start" : 25,
+          "end" : 34,
+          "text" : "Limit: 20",
+          "sha256" : "b68cbaac28f32e5c09afff1e6944f14352f352a30d77947399ff75d4cb150178"
+        },
+        "assessment_method" : "model_proposal",
+        "assessment_ref" : "assessment-model-f410ca91-c9fb-458d-83d2-df84deded28c"
+      } ],
+      "decision_status" : "supported",
+      "freshness" : "fresh"
+    }, {
+      "record_type" : "DecisionRecord",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-1f8a590e-d1cc-4fac-a4e0-205b598ac225",
+      "decision_id" : "decision-claim-check-b241126433cdb48de105c50a39b5a4d214219e8c51fb6d40-0",
+      "claim_id" : "claim-check-b241126433cdb48de105c50a39b5a4d214219e8c51fb6d40-0",
+      "run_id" : "wf-59cee56f-7235-4ce0-8e4d-1fb02994b4cf",
+      "decision_status" : "supported",
+      "adopted_evidence_ids" : [ "evidence-c8b37e49-5269-4498-af5c-8186f6af4515" ],
+      "dismissed_evidence" : [ {
+        "evidence_id" : "evidence-e1011e93-aec2-4a13-94d7-469b26fb7ea3",
+        "reason" : "Source declares a different applicable version"
+      } ],
+      "unresolved_evidence_ids" : [ ],
+      "rationale" : "Budgeted verifier proposal; original context/scope checked; observations limited to their recorded test. {\"limitations\":[\"Synthetic model receipt only\"],\"public_basis\":[{\"evidence_id\":\"evidence-c8b37e49-5269-4498-af5c-8186f6af4515\",\"reason\":\"Deterministic numeric relation stand-in; not a language model\"},{\"evidence_id\":\"evidence-e1011e93-aec2-4a13-94d7-469b26fb7ea3\",\"reason\":\"Deterministic numeric relation stand-in; not a language model\"}]}",
+      "gaps" : [ ],
+      "policy_version" : "0.1.0",
+      "recorded_at" : "2026-09-29T10:43:41.663434Z",
+      "assessment_method" : "model_proposal"
+    }, {
+      "record_type" : "Claim",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-1f8a590e-d1cc-4fac-a4e0-205b598ac225",
+      "claim_id" : "claim-check-b241126433cdb48de105c50a39b5a4d214219e8c51fb6d40-1",
+      "run_id" : "wf-59cee56f-7235-4ce0-8e4d-1fb02994b4cf",
+      "text" : "The request limit is 20.",
+      "kind" : "factual",
+      "applicability" : {
+        "subject" : "Synthetic ExampleService limit",
+        "version" : {
+          "value" : "2.0",
+          "status" : "known"
+        },
+        "valid_at" : {
+          "value" : null,
+          "reason" : "Synthetic scope, no real-world valid time",
+          "status" : "unknown"
+        },
+        "conditions" : [ "Controlled fixture only" ]
+      },
+      "evidence_links" : [ {
+        "evidence_id" : "evidence-c8b37e49-5269-4498-af5c-8186f6af4515",
+        "relation" : "refutes",
+        "quote" : {
+          "start" : 25,
+          "end" : 34,
+          "text" : "Limit: 10",
+          "sha256" : "7415e1ffea05db42215778e6c742f9b9195f7d6c8056284c075e18239e151e46"
+        },
+        "assessment_method" : "model_proposal",
+        "assessment_ref" : "assessment-model-f410ca91-c9fb-458d-83d2-df84deded28c"
+      }, {
+        "evidence_id" : "evidence-e1011e93-aec2-4a13-94d7-469b26fb7ea3",
+        "relation" : "supports",
+        "quote" : {
+          "start" : 25,
+          "end" : 34,
+          "text" : "Limit: 20",
+          "sha256" : "b68cbaac28f32e5c09afff1e6944f14352f352a30d77947399ff75d4cb150178"
+        },
+        "assessment_method" : "model_proposal",
+        "assessment_ref" : "assessment-model-f410ca91-c9fb-458d-83d2-df84deded28c"
+      } ],
+      "decision_status" : "supported",
+      "freshness" : "fresh"
+    }, {
+      "record_type" : "DecisionRecord",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-1f8a590e-d1cc-4fac-a4e0-205b598ac225",
+      "decision_id" : "decision-claim-check-b241126433cdb48de105c50a39b5a4d214219e8c51fb6d40-1",
+      "claim_id" : "claim-check-b241126433cdb48de105c50a39b5a4d214219e8c51fb6d40-1",
+      "run_id" : "wf-59cee56f-7235-4ce0-8e4d-1fb02994b4cf",
+      "decision_status" : "supported",
+      "adopted_evidence_ids" : [ "evidence-e1011e93-aec2-4a13-94d7-469b26fb7ea3" ],
+      "dismissed_evidence" : [ {
+        "evidence_id" : "evidence-c8b37e49-5269-4498-af5c-8186f6af4515",
+        "reason" : "Source declares a different applicable version"
+      } ],
+      "unresolved_evidence_ids" : [ ],
+      "rationale" : "Budgeted verifier proposal; original context/scope checked; observations limited to their recorded test. {\"limitations\":[\"Synthetic model receipt only\"],\"public_basis\":[{\"evidence_id\":\"evidence-c8b37e49-5269-4498-af5c-8186f6af4515\",\"reason\":\"Deterministic numeric relation stand-in; not a language model\"},{\"evidence_id\":\"evidence-e1011e93-aec2-4a13-94d7-469b26fb7ea3\",\"reason\":\"Deterministic numeric relation stand-in; not a language model\"}]}",
+      "gaps" : [ ],
+      "policy_version" : "0.1.0",
+      "recorded_at" : "2026-09-29T10:43:41.663542Z",
+      "assessment_method" : "model_proposal"
+    }, {
+      "record_type" : "ResearchPacket",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-1f8a590e-d1cc-4fac-a4e0-205b598ac225",
+      "packet_id" : "packet-949579e819827828fba915cf76a1686eb87b559a2f00f062",
+      "run_id" : "wf-59cee56f-7235-4ce0-8e4d-1fb02994b4cf",
+      "task_id" : "task-main",
+      "context_id" : null,
+      "status" : "complete",
+      "claim_ids" : [ "claim-check-b241126433cdb48de105c50a39b5a4d214219e8c51fb6d40-0", "claim-check-b241126433cdb48de105c50a39b5a4d214219e8c51fb6d40-1" ],
+      "evidence_ids" : [ "evidence-c8b37e49-5269-4498-af5c-8186f6af4515", "evidence-e1011e93-aec2-4a13-94d7-469b26fb7ea3" ],
+      "decision_ids" : [ "decision-claim-check-b241126433cdb48de105c50a39b5a4d214219e8c51fb6d40-0", "decision-claim-check-b241126433cdb48de105c50a39b5a4d214219e8c51fb6d40-1" ],
+      "challenge_ids" : [ ],
+      "limitations" : [ "Verifier relations are proposals, not a universal factual truth guarantee", "Source version declarations and test observations have their recorded scope only" ],
+      "gaps" : [ ],
+      "recorded_at" : "2026-09-29T10:43:41.681014Z"
+    } ],
+    "external_refs" : [ {
+      "record_type" : "ResearchProject",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-1f8a590e-d1cc-4fac-a4e0-205b598ac225"
+    }, {
+      "record_type" : "Run",
+      "run_id" : "wf-59cee56f-7235-4ce0-8e4d-1fb02994b4cf",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-1f8a590e-d1cc-4fac-a4e0-205b598ac225"
+    }, {
+      "record_type" : "Task",
+      "task_id" : "task-main",
+      "run_id" : "wf-59cee56f-7235-4ce0-8e4d-1fb02994b4cf",
+      "status" : "done",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-1f8a590e-d1cc-4fac-a4e0-205b598ac225"
+    }, {
+      "record_type" : "Assessment",
+      "assessment_id" : "assessment-model-f410ca91-c9fb-458d-83d2-df84deded28c",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-1f8a590e-d1cc-4fac-a4e0-205b598ac225"
+    }, {
+      "record_type" : "Receipt",
+      "receipt_id" : "read-fb0a8a2f-1a0a-4e9c-bc8b-cf0ab76001fa",
+      "run_id" : "wf-59cee56f-7235-4ce0-8e4d-1fb02994b4cf",
+      "task_id" : "task-main",
+      "status" : "completed",
+      "authorized" : true,
+      "source_bindings" : [ {
+        "source_id" : "version-one",
+        "snapshot_sha256" : "004f699af8ee87d8426154b40ee4be53cec8ed034f9a1bc8cc2a41a8830f444f",
+        "source_metadata_sha256" : "c2e1b9503617683a46c2ab0134d5409a719c9296c008d8f0c9692182d2c1c12d"
+      } ],
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-1f8a590e-d1cc-4fac-a4e0-205b598ac225"
+    }, {
+      "record_type" : "Receipt",
+      "receipt_id" : "read-b42c4325-6716-4bd4-84e0-08519c8c81f4",
+      "run_id" : "wf-59cee56f-7235-4ce0-8e4d-1fb02994b4cf",
+      "task_id" : "task-main",
+      "status" : "completed",
+      "authorized" : true,
+      "source_bindings" : [ {
+        "source_id" : "version-two",
+        "snapshot_sha256" : "3a489542db4e0d9291d182904c1c1790c236edf06ff9379c27c6ec9b04187616",
+        "source_metadata_sha256" : "1fd774e2a65f7ac6576c87c07285952d67a3828c04fe21b6771de5070447a653"
+      } ],
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-1f8a590e-d1cc-4fac-a4e0-205b598ac225"
+    } ],
+    "semantic_truth_guaranteed" : false,
+    "actual_persistence" : true
+  }, {
+    "fixture_id" : "unresolved-conflict",
+    "fixture_origin" : "synthetic_transport_and_model_receipt",
+    "authorized_scope" : {
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-870b6de3-7c2f-4773-a351-d5364d26a550"
+    },
+    "records" : [ {
+      "record_type" : "Evidence",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-870b6de3-7c2f-4773-a351-d5364d26a550",
+      "evidence_id" : "evidence-41f739bc-8d3a-4803-b11e-04ce2b25c137",
+      "version" : 1,
+      "run_id" : "wf-2f940756-0692-422f-8467-52e1cffc8946",
+      "task_id" : "task-main",
+      "receipt_id" : "read-6ee1db90-36c5-45ba-b1ed-e40d1e3bcb6d",
+      "source" : {
+        "source_id" : "peer-first",
+        "kind" : "web",
+        "title" : "Synthetic peer-first",
+        "locator" : {
+          "kind" : "web_uri",
+          "uri" : "https://sources.example.org/peer-first"
+        },
+        "version" : {
+          "status" : "known",
+          "value" : "1.0"
+        },
+        "published_at" : {
+          "status" : "unknown",
+          "value" : null,
+          "reason" : "Publication date was not independently established"
+        },
+        "observed_at" : "2026-09-29T10:43:41.768378Z",
+        "source_group" : {
+          "status" : "known",
+          "value" : "content-bdac437ab7dc2f6b1033067e6797c704ae0a49a5e16e12fa28f3e4614da4d6b3"
+        },
+        "derivation" : "unknown",
+        "parent_source_id" : null,
+        "authority" : "unassessed"
+      },
+      "snapshot" : {
+        "kind" : "full_text",
+        "text" : "# 合成来源一 🧪\n\nVersion: 1.0\n\nLimit: 10",
+        "sha256" : "bdac437ab7dc2f6b1033067e6797c704ae0a49a5e16e12fa28f3e4614da4d6b3",
+        "encoding" : "utf-8",
+        "offset_unit" : "unicode_codepoint"
+      },
+      "applicability" : {
+        "subject" : "Synthetic peer-first",
+        "version" : {
+          "status" : "known",
+          "value" : "1.0"
+        },
+        "valid_at" : {
+          "status" : "unknown",
+          "value" : null,
+          "reason" : "No unambiguous effective time declaration in original text"
+        },
+        "conditions" : [ "Limited to this original document or recorded observation" ]
+      },
+      "retrieval_score" : {
+        "status" : "unknown",
+        "value" : null,
+        "reason" : "Read operation does not measure retrieval relevance"
+      },
+      "freshness" : "fresh",
+      "availability" : "available",
+      "validity" : "unassessed",
+      "invalidation_reason" : null
+    }, {
+      "record_type" : "Evidence",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-870b6de3-7c2f-4773-a351-d5364d26a550",
+      "evidence_id" : "evidence-0631dba0-4347-4a97-8c9a-affed63e9283",
+      "version" : 1,
+      "run_id" : "wf-2f940756-0692-422f-8467-52e1cffc8946",
+      "task_id" : "task-main",
+      "receipt_id" : "read-83e4fb0d-1fd1-4898-b3a3-9563833d34de",
+      "source" : {
+        "source_id" : "peer-second",
+        "kind" : "web",
+        "title" : "Synthetic peer-second",
+        "locator" : {
+          "kind" : "web_uri",
+          "uri" : "https://sources.example.org/peer-second"
+        },
+        "version" : {
+          "status" : "known",
+          "value" : "1.0"
+        },
+        "published_at" : {
+          "status" : "unknown",
+          "value" : null,
+          "reason" : "Publication date was not independently established"
+        },
+        "observed_at" : "2026-09-29T10:43:41.796205Z",
+        "source_group" : {
+          "status" : "known",
+          "value" : "content-6ef9b2e355c9edca94ac6e87f7d000d55e1a321b98694548619fe3525137ae33"
+        },
+        "derivation" : "unknown",
+        "parent_source_id" : null,
+        "authority" : "unassessed"
+      },
+      "snapshot" : {
+        "kind" : "full_text",
+        "text" : "# 合成来源二 🧪\n\nVersion: 1.0\n\nLimit: 20",
+        "sha256" : "6ef9b2e355c9edca94ac6e87f7d000d55e1a321b98694548619fe3525137ae33",
+        "encoding" : "utf-8",
+        "offset_unit" : "unicode_codepoint"
+      },
+      "applicability" : {
+        "subject" : "Synthetic peer-second",
+        "version" : {
+          "status" : "known",
+          "value" : "1.0"
+        },
+        "valid_at" : {
+          "status" : "unknown",
+          "value" : null,
+          "reason" : "No unambiguous effective time declaration in original text"
+        },
+        "conditions" : [ "Limited to this original document or recorded observation" ]
+      },
+      "retrieval_score" : {
+        "status" : "unknown",
+        "value" : null,
+        "reason" : "Read operation does not measure retrieval relevance"
+      },
+      "freshness" : "fresh",
+      "availability" : "available",
+      "validity" : "unassessed",
+      "invalidation_reason" : null
+    }, {
+      "record_type" : "Claim",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-870b6de3-7c2f-4773-a351-d5364d26a550",
+      "claim_id" : "claim-check-e6579ed12b4092efeab9e6f5ea66244991589b836852b64c-0",
+      "run_id" : "wf-2f940756-0692-422f-8467-52e1cffc8946",
+      "text" : "The request limit is 10.",
+      "kind" : "factual",
+      "applicability" : {
+        "subject" : "Synthetic ExampleService limit",
+        "version" : {
+          "value" : "1.0",
+          "status" : "known"
+        },
+        "valid_at" : {
+          "value" : null,
+          "reason" : "Synthetic scope, no real-world valid time",
+          "status" : "unknown"
+        },
+        "conditions" : [ "Controlled fixture only" ]
+      },
+      "evidence_links" : [ {
+        "evidence_id" : "evidence-41f739bc-8d3a-4803-b11e-04ce2b25c137",
+        "relation" : "supports",
+        "quote" : {
+          "start" : 25,
+          "end" : 34,
+          "text" : "Limit: 10",
+          "sha256" : "7415e1ffea05db42215778e6c742f9b9195f7d6c8056284c075e18239e151e46"
+        },
+        "assessment_method" : "model_proposal",
+        "assessment_ref" : "assessment-model-b9c78ef6-7ed1-4f4b-b6c9-2798ad6bbcc4"
+      }, {
+        "evidence_id" : "evidence-0631dba0-4347-4a97-8c9a-affed63e9283",
+        "relation" : "refutes",
+        "quote" : {
+          "start" : 25,
+          "end" : 34,
+          "text" : "Limit: 20",
+          "sha256" : "b68cbaac28f32e5c09afff1e6944f14352f352a30d77947399ff75d4cb150178"
+        },
+        "assessment_method" : "model_proposal",
+        "assessment_ref" : "assessment-model-b9c78ef6-7ed1-4f4b-b6c9-2798ad6bbcc4"
+      } ],
+      "decision_status" : "contested",
+      "freshness" : "fresh"
+    }, {
+      "record_type" : "DecisionRecord",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-870b6de3-7c2f-4773-a351-d5364d26a550",
+      "decision_id" : "decision-claim-check-e6579ed12b4092efeab9e6f5ea66244991589b836852b64c-0",
+      "claim_id" : "claim-check-e6579ed12b4092efeab9e6f5ea66244991589b836852b64c-0",
+      "run_id" : "wf-2f940756-0692-422f-8467-52e1cffc8946",
+      "decision_status" : "contested",
+      "adopted_evidence_ids" : [ ],
+      "dismissed_evidence" : [ ],
+      "unresolved_evidence_ids" : [ "evidence-41f739bc-8d3a-4803-b11e-04ce2b25c137", "evidence-0631dba0-4347-4a97-8c9a-affed63e9283" ],
+      "rationale" : "Budgeted verifier proposal; original context/scope checked; observations limited to their recorded test. {\"limitations\":[\"Synthetic model receipt only\"],\"public_basis\":[{\"evidence_id\":\"evidence-41f739bc-8d3a-4803-b11e-04ce2b25c137\",\"reason\":\"Deterministic numeric relation stand-in; not a language model\"},{\"evidence_id\":\"evidence-0631dba0-4347-4a97-8c9a-affed63e9283\",\"reason\":\"Deterministic numeric relation stand-in; not a language model\"}]}",
+      "gaps" : [ "Applicable sources disagree; no independently verified resolution is available" ],
+      "policy_version" : "0.1.0",
+      "recorded_at" : "2026-09-29T10:43:41.844854Z",
+      "assessment_method" : "model_proposal"
+    }, {
+      "record_type" : "Challenge",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-870b6de3-7c2f-4773-a351-d5364d26a550",
+      "challenge_id" : "challenge-claim-check-e6579ed12b4092efeab9e6f5ea66244991589b836852b64c-0",
+      "claim_id" : "claim-check-e6579ed12b4092efeab9e6f5ea66244991589b836852b64c-0",
+      "run_id" : "wf-2f940756-0692-422f-8467-52e1cffc8946",
+      "task_id" : "task-main",
+      "kind" : "direct_conflict",
+      "status" : "open",
+      "evidence_ids" : [ "evidence-41f739bc-8d3a-4803-b11e-04ce2b25c137", "evidence-0631dba0-4347-4a97-8c9a-affed63e9283" ],
+      "requested_actions" : [ "seek_counterevidence" ],
+      "response_decision_id" : null,
+      "remaining_gaps" : [ "Applicable sources disagree; no independently verified resolution is available" ],
+      "recorded_at" : "2026-09-29T10:43:41.844893Z"
+    }, {
+      "record_type" : "ResearchPacket",
+      "schema_version" : "0.1.0",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-870b6de3-7c2f-4773-a351-d5364d26a550",
+      "packet_id" : "packet-b85f6081c77a17f15fe478f67c56e97bd5ec22772126f4eb",
+      "run_id" : "wf-2f940756-0692-422f-8467-52e1cffc8946",
+      "task_id" : "task-main",
+      "context_id" : null,
+      "status" : "partial",
+      "claim_ids" : [ "claim-check-e6579ed12b4092efeab9e6f5ea66244991589b836852b64c-0" ],
+      "evidence_ids" : [ "evidence-41f739bc-8d3a-4803-b11e-04ce2b25c137", "evidence-0631dba0-4347-4a97-8c9a-affed63e9283" ],
+      "decision_ids" : [ "decision-claim-check-e6579ed12b4092efeab9e6f5ea66244991589b836852b64c-0" ],
+      "challenge_ids" : [ "challenge-claim-check-e6579ed12b4092efeab9e6f5ea66244991589b836852b64c-0" ],
+      "limitations" : [ "Verifier relations are proposals, not a universal factual truth guarantee", "Source version declarations and test observations have their recorded scope only" ],
+      "gaps" : [ "Applicable sources disagree; no independently verified resolution is available" ],
+      "recorded_at" : "2026-09-29T10:43:41.860440Z"
+    } ],
+    "external_refs" : [ {
+      "record_type" : "ResearchProject",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-870b6de3-7c2f-4773-a351-d5364d26a550"
+    }, {
+      "record_type" : "Run",
+      "run_id" : "wf-2f940756-0692-422f-8467-52e1cffc8946",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-870b6de3-7c2f-4773-a351-d5364d26a550"
+    }, {
+      "record_type" : "Task",
+      "task_id" : "task-main",
+      "run_id" : "wf-2f940756-0692-422f-8467-52e1cffc8946",
+      "status" : "done",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-870b6de3-7c2f-4773-a351-d5364d26a550"
+    }, {
+      "record_type" : "Assessment",
+      "assessment_id" : "assessment-model-b9c78ef6-7ed1-4f4b-b6c9-2798ad6bbcc4",
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-870b6de3-7c2f-4773-a351-d5364d26a550"
+    }, {
+      "record_type" : "Receipt",
+      "receipt_id" : "read-6ee1db90-36c5-45ba-b1ed-e40d1e3bcb6d",
+      "run_id" : "wf-2f940756-0692-422f-8467-52e1cffc8946",
+      "task_id" : "task-main",
+      "status" : "completed",
+      "authorized" : true,
+      "source_bindings" : [ {
+        "source_id" : "peer-first",
+        "snapshot_sha256" : "bdac437ab7dc2f6b1033067e6797c704ae0a49a5e16e12fa28f3e4614da4d6b3",
+        "source_metadata_sha256" : "46ffe68af45f5ce8480dc48344ce1fabf537d054b24dcf8cb4e91058af0cb3b4"
+      } ],
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-870b6de3-7c2f-4773-a351-d5364d26a550"
+    }, {
+      "record_type" : "Receipt",
+      "receipt_id" : "read-83e4fb0d-1fd1-4898-b3a3-9563833d34de",
+      "run_id" : "wf-2f940756-0692-422f-8467-52e1cffc8946",
+      "task_id" : "task-main",
+      "status" : "completed",
+      "authorized" : true,
+      "source_bindings" : [ {
+        "source_id" : "peer-second",
+        "snapshot_sha256" : "6ef9b2e355c9edca94ac6e87f7d000d55e1a321b98694548619fe3525137ae33",
+        "source_metadata_sha256" : "550001056bd748cc64312608871290dd3ab5a116de097c1a5eb16020a3c5c241"
+      } ],
+      "tenant_id" : "fixture-tenant",
+      "owner_id" : "fixture-owner",
+      "project_id" : "project-870b6de3-7c2f-4773-a351-d5364d26a550"
+    } ],
+    "semantic_truth_guaranteed" : false,
+    "actual_persistence" : true
+  } ]
+}

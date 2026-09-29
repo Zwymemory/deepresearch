@@ -1,0 +1,182 @@
+{
+  "date": "2026-09-29",
+  "baseline_sha": "186a03f747951b40f7de284e6bd298a3f3eef94f",
+  "scope": "B actual service/read/adjudication/storage in isolated PG; synthetic transport and verifier receipt",
+  "real_external_network": false,
+  "real_model": false,
+  "live_services_changed": false,
+  "semantic_truth_guaranteed": false,
+  "A_jwt_project_acl_and_SQL_budget_adapter_verified": false,
+  "java": [
+    {
+      "class": "SafeWebReaderTest",
+      "kind": "surefire",
+      "tests": 12,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "class": "EvidenceQuoteTest",
+      "kind": "surefire",
+      "tests": 2,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "class": "EvidenceConfigurationTest",
+      "kind": "surefire",
+      "tests": 2,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "class": "DifyCitationValidatorTest",
+      "kind": "surefire",
+      "tests": 4,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "class": "DifyToolServiceTest",
+      "kind": "surefire",
+      "tests": 13,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "class": "RagflowClientTest",
+      "kind": "surefire",
+      "tests": 2,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "class": "RagflowDifyKbToolGatewayTest",
+      "kind": "surefire",
+      "tests": 2,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "class": "TavilySearchClientTest",
+      "kind": "surefire",
+      "tests": 6,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "class": "EvidenceServiceIT",
+      "kind": "failsafe",
+      "tests": 9,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "class": "DifyWebSourcesIT",
+      "kind": "failsafe",
+      "tests": 4,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    }
+  ],
+  "java_total": 56,
+  "python_tests": 29,
+  "ruff": "passed",
+  "frozen_contract_gate": {
+    "status": "offline_contracts_passed",
+    "runtime_tests": 38,
+    "knowledge_tests": 39,
+    "knowledge_fixtures": 11,
+    "cross_negative_cases": 7,
+    "freeze_unchanged": true
+  },
+  "actual_service_exports": {
+    "path": "testdata/agent-round1/evidence/service-records-2026-09-29.json",
+    "sha256": "be8bbdf9678be858bcae403dd74d1937df461da32b8cc943dfe6ffe29baee5af",
+    "cases": [
+      {
+        "fixture_id": "empty-retrieval",
+        "records_checked": 4,
+        "memory_requests": [],
+        "semantic_verification": false,
+        "runtime_execution": false
+      },
+      {
+        "fixture_id": "wrong-material",
+        "records_checked": 5,
+        "memory_requests": [],
+        "semantic_verification": false,
+        "runtime_execution": false
+      },
+      {
+        "fixture_id": "version-difference",
+        "records_checked": 7,
+        "memory_requests": [],
+        "semantic_verification": false,
+        "runtime_execution": false
+      },
+      {
+        "fixture_id": "unresolved-conflict",
+        "records_checked": 6,
+        "memory_requests": [],
+        "semantic_verification": false,
+        "runtime_execution": false
+      }
+    ],
+    "standard_schema_and_frozen_rules": true
+  },
+  "source_file_sha256": {
+    "src/main/java/com/deepresearch/evidence/EvidenceAdjudicator.java": "57e2936fe1f854f49cf4064f3ccb78b83933cf851bf6d0724f387046645e9849",
+    "src/main/java/com/deepresearch/evidence/EvidenceAuthority.java": "b4dec613aff489eac9da8fb3d8217172e347291f7f02eed8b3a95819433ca806",
+    "src/main/java/com/deepresearch/evidence/EvidenceConfiguration.java": "553b41412d17baaec94900178e722b2975b97fcce9d7a81c124cdffd4ea2047c",
+    "src/main/java/com/deepresearch/evidence/EvidenceController.java": "c39f5491393b38dd01189d373719e7aaa9ca2b95a43b29aad5f59dc6348f8e63",
+    "src/main/java/com/deepresearch/evidence/EvidenceDtos.java": "cfcb999a4ecfec4375f987354d28e0084b2d3a4c3d819f635586a74b2683452e",
+    "src/main/java/com/deepresearch/evidence/EvidenceException.java": "11c5a3d575b2acfc7b3e3831ed400efda901adb1d0b27566b775f3218183a7c8",
+    "src/main/java/com/deepresearch/evidence/EvidenceJson.java": "8d3d380224d53364e359e30cd5197cab5513650c0e506ce3a9bda5bb83da4483",
+    "src/main/java/com/deepresearch/evidence/EvidenceService.java": "13ef87e789666645c0cdc38ecc71e28a1e80c5a56fbb39840d974eb7b7b606f1",
+    "src/main/java/com/deepresearch/evidence/EvidenceStore.java": "de0cf5a815b1dd26c74c31e4e28d78a0727bb12f07051f5f38732ac16dfd5750",
+    "src/main/java/com/deepresearch/evidence/JdbcEvidenceStore.java": "cce894043356527cffd7fa46747be6119e7b90c902e7412762883c9b1a5741d0",
+    "src/main/java/com/deepresearch/evidence/ManagedSourceReader.java": "2081896d10c60bc0d1163aafbae728fccb4d5d016b9752f107522d0c46267b17",
+    "src/main/java/com/deepresearch/evidence/PinnedHttpTransport.java": "384800da3aa3a51eb73be64607073955aff650cdb2d39567d5004008cd28711e",
+    "src/main/java/com/deepresearch/evidence/SafeWebReader.java": "5537454fd916f69152bcd97845d005a6c9abfbd1a7caf7a09e8751a488a172e3",
+    "src/main/java/com/deepresearch/evidence/SourceReader.java": "5464fc946755944fa54157dc74b66c343bb12a268f231df6a2038385e581fdd3",
+    "src/main/resources/db/migration/V18__agent_evidence.sql": "3178744a28440f75f696e218624969d2c31dd5dda285c4865e51d9361d89beda",
+    "src/test/java/com/deepresearch/evidence/EvidenceConfigurationTest.java": "bdd5fc40eea52478343375265e60d6f30f4809ac9b068c8a72ac194ff8182b77",
+    "src/test/java/com/deepresearch/evidence/EvidenceQuoteTest.java": "f523f90c971ace34509c04a8eeb7db1501d07a8a733fed1d7aae9e01c18d4ab9",
+    "src/test/java/com/deepresearch/evidence/EvidenceServiceIT.java": "76b1d18a09555488117948bc3b89a5c01190a40bcc53f3ec634b6401cba6b471",
+    "src/test/java/com/deepresearch/evidence/SafeWebReaderTest.java": "847f9e3890401f435ddb5fc43d7cc6e9f3858a6d76c862f2cc3b8fcd226d1c9c",
+    "testdata/agent-round1/evidence/prepare_real_acceptance.py": "0298a9565d486c45eb3eaafe4ce10a31919a8949d7b7cd927bd38d4db5e7ee97",
+    "testdata/agent-round1/evidence/scenarios.json": "83c5f3bffc09fc8f4b47fcd812b110c3dc3934e80f991fc3a5ed79c025dc7086",
+    "testdata/agent-round1/evidence/sources/controlled-observation.md": "cf2b409effd13d9544061fe6a51812dd8590d9cb96d6e34211a40b8571ebe522",
+    "testdata/agent-round1/evidence/sources/peer-first.md": "830dd4f2b33f7822c8217135998220635985eb16529bc9e6804b2c0f31fb29bc",
+    "testdata/agent-round1/evidence/sources/peer-second.md": "8ef66956b75602c6dc9006f51976a9ffa7a046d754d9f747725f730e7c26f9b4",
+    "testdata/agent-round1/evidence/sources/version-one.md": "adf5a7c9ed335afbc3af6015e864db5b3d8778bb6875f970db589e3773cd9f9c",
+    "testdata/agent-round1/evidence/sources/version-two.md": "60ba867d7d0f27aacbcd231479073142a255c2259d15e60e4f45012d2c3f3f10",
+    "testdata/agent-round1/evidence/sources/wrong-guide.md": "ba0241eddc879b5c660de52aea8923d5ae2e20138c6d4d42288bddc21a8395e7",
+    "testdata/agent-round1/evidence/verify_service_records.py": "2a2a5d3372f2bacc37e90e720e107dba85951f3ecb714361e80428903ab279b2",
+    "workflow-service/src/deepresearch_workflow/evidence_check.py": "c7fb05039ea82411dbfbf818a80419e30397171d9381d3a310eae49f51a8e13d",
+    "workflow-service/tests/test_evidence_acceptance.py": "a8e24951e4fdef81dea99a68debec33a58da73ea6ff825c536e422ead85234b5",
+    "workflow-service/tests/test_evidence_check.py": "e2d83bb152663fb2f2d95d3845868fced7d37f1cad5916cabbefeaf908d44735"
+  },
+  "commands": [
+    "mvn -q -Pintegration -Dit.test=EvidenceServiceIT,DifyWebSourcesIT -Dtest=SafeWebReaderTest,EvidenceQuoteTest,EvidenceConfigurationTest,DifyCitationValidatorTest,DifyToolServiceTest,RagflowClientTest,RagflowDifyKbToolGatewayTest,TavilySearchClientTest verify",
+    "PYTHONPATH=workflow-service/src workflow-service/.venv/bin/python -m pytest workflow-service/tests/test_evidence_check.py workflow-service/tests/test_evidence_acceptance.py",
+    "workflow-service/.venv/bin/python -B testdata/agent-round1/evidence/verify_service_records.py",
+    "workflow-service/.venv/bin/python -B contracts/agent/v0/validate.py"
+  ],
+  "remaining_joint_work": [
+    "A EvidenceAuthority/V17/route/JWT/scopes/SQL budget wiring",
+    "combined fixed candidate review and HTTP/ledger/recovery gate",
+    "finite real-model and original-source acceptance with manual semantic review"
+  ]
+}

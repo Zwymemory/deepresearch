@@ -14,6 +14,9 @@ public interface EvidenceAuthority {
     /** Verify A's completed budgeted check call binds these exact request/response bytes. */
     String modelReceipt(Grant grant, String checkId, String requestHash, String modelCallId, String responseHash);
     default Observation controlledObservation(Grant grant, Candidate candidate) { throw EvidenceException.denied(); }
+    /** Reserve a bounded live KB validation through A's ledger, or replay its completed hash. */
+    default PublicationReadPermit publicationRead(Grant grant, JsonNode evidence) { throw EvidenceException.denied(); }
+    default void completePublicationRead(Grant grant, PublicationReadPermit permit, String snapshotHash, String errorCode) { throw EvidenceException.denied(); }
 
     record Grant(AuthPrincipal principal, String projectId, String runId, String taskId,
                  String callId, String claimToken) { }
@@ -21,6 +24,7 @@ public interface EvidenceAuthority {
                      String chunkId, String title, String parentReceiptId) { }
     /** Trusted tool observation obtained by the port, never accepted from an HTTP/model body. */
     record Observation(String artifactId, String text, Instant observedAt) { }
+    record PublicationReadPermit(String operationId, String completedSnapshotHash) { }
 
     static EvidenceAuthority denyAll() {
         return new EvidenceAuthority() {
