@@ -43,7 +43,9 @@ Exact quotations are required even for insufficient relations.
 If language or scope cannot be established, choose insufficient and ask a specific follow-up.
 Contrary applicable sources remain a conflict; agreement or repost counts are not proof.
 Server prior_relations preserve previously applicable counterevidence and its exact basis.
-Do not relabel it to erase disagreement; cite any new document scope clarification publicly.
+Do not relabel it to erase disagreement. A URL or capture time does not prove a document
+revision or that another snapshot narrows an existing original's scope. Conflicting
+condition declarations remain ambiguous; do not choose just one to dismiss counterevidence.
 Return only the response object matching the supplied schema: claims and follow_up_actions.
 Do not return hidden reasoning. Reasons are short, public descriptions of the cited basis.
 For zero evidence, return zero relations and request a scoped search or stop with gaps.

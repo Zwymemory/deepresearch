@@ -28,7 +28,7 @@ PrepareRequest 有 claims（最多四个，text/kind/applicability）、evidence
 
 支持、反驳、不足与争议保存为不可变 Claim/Decision；记录采纳、弃用与未解决证据及原因。Challenge 带具体 search/read/recheck/counterevidence 建议；最多两轮补查后保留 unresolved/stop_with_gaps。相同 scoped Claim 集的调查指纹与 SQL 唯一键避免用新 call_id 重置轮次。旧结果不覆盖，新 check 通过 parent_check_id 保留纠正历史。
 
-B publish 验证当前 run 原文回执、完整 Evidence hash、候选身份、范围和支持状态；KB 还读取 live chunk 再校验。`EvidenceAuthority.publicationRead` 必须从 A 的 SQL 预算取得许可，`completePublicationRead` 结算成功或失败；默认拒绝。一次发布最多四份不同 KB Evidence 读取，复用 A 已完成许可须绑定同一运行/任务/证据/调用并带已核验快照 hash。已执行但结果未知的许可禁止盲重试。若中途失败，已执行的读取仍计入预算，A 不得发布部分答案。
+B publish 验证当前 run 原文回执、完整 Evidence hash、候选身份、范围和支持状态；KB 还读取 live chunk 再校验。`EvidenceAuthority.publicationRead` 必须从 A 的 SQL 预算取得许可，`completePublicationRead` 结算成功或失败；默认拒绝。单次核查仍最多四份原文，完整报告可在现有统一预算内复核多个调查的全部 KB 原文，不另设全局四份上限。复用 A 已完成许可须绑定同一运行/任务/证据/调用并带已核验快照 hash。已执行但结果未知的许可禁止盲重试。若中途失败，已执行的读取仍计入预算，A 不得通过支持子集掩盖失败。
 
 网页使用该 run 的不可变完成回执，没有额外无预算抓取。返回的 answer 只由通过核查的 Claim 原文、适用范围与编号引用构成，并附 `answer_sha256` 和 `validation_receipts`。A 必须发布该精确正文；额外模型叙述要先成为新 Claim 并核查。`semantic_truth_guaranteed=false` 始终保留。
 

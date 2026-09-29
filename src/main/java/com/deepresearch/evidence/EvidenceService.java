@@ -54,6 +54,7 @@ public final class EvidenceService {
             var metadata = object("source_id", sourceId, "snapshot_sha256", hash, "source_metadata_sha256", sha(canonical(source)),
                     "evidence_sha256", sha(canonical(evidence)), "requested_candidate", candidate,
                     "raw_response_sha256", document.rawResponseHash(), "truncated", document.truncated(), "verified_observation", document.verifiedObservation(),
+                    "condition_declaration_status", conditionDeclaration(original).state().name(),
                     "parent_receipt_id", candidate.parentReceiptId());
             return tx(g, () -> {
                 authority.commitRead(g, sourceId, evidence, begin.receiptId());
@@ -79,11 +80,27 @@ public final class EvidenceService {
         }
         return values.size() == 1 ? known(values.iterator().next()) : unknown("No unambiguous effective time declaration in original text");
     }
+    enum ConditionState { MISSING, DECLARED, AMBIGUOUS }
+    record ConditionDeclaration(ConditionState state, List<String> values) { }
+    static ConditionDeclaration conditionDeclaration(String original) {
+        var matcher = Pattern.compile("(?im)^Document conditions:[ \\t]*([^\\r\\n]*)$").matcher(original);
+        var values = new LinkedHashSet<String>(); boolean malformed = false;
+        while (matcher.find()) {
+            String value = matcher.group(1).strip();
+            if (value.isEmpty() || value.codePointCount(0, value.length()) > 1000) malformed = true;
+            else values.add(value);
+        }
+        ConditionState state = malformed || values.size() > 1 ? ConditionState.AMBIGUOUS
+                : values.isEmpty() ? ConditionState.MISSING : ConditionState.DECLARED;
+        return new ConditionDeclaration(state, List.copyOf(values));
+    }
     static List<String> declaredConditions(String original) {
-        var matcher = Pattern.compile("(?im)^Document conditions:[ \\t]*([^\\r\\n]+)$").matcher(original);
-        var values = new LinkedHashSet<String>();
-        while (matcher.find()) values.add(matcher.group(1).strip());
-        return values.size() == 1 ? List.copyOf(values) : List.of("Limited to this original document or recorded observation");
+        var declaration = conditionDeclaration(original);
+        return switch (declaration.state()) {
+            case DECLARED -> declaration.values();
+            case AMBIGUOUS -> List.of("Conflicting or invalid document conditions; scope is not established");
+            case MISSING -> List.of("Limited to this original document or recorded observation");
+        };
     }
     private JsonNode verifiedEvidence(EvidenceAuthority.Grant g, JsonNode evidence) {
         if (!g.runId().equals(evidence.path("run_id").asText()) || !g.projectId().equals(evidence.path("project_id").asText())
@@ -297,7 +314,19 @@ public final class EvidenceService {
         var goals = authority.reportGoals(g);
         if (goals == null || goals.size() > 64) throw new EvidenceException("REPORT_CAPACITY_EXCEEDED");
         var goalIds = new HashSet<String>();
-        for (var goal : goals) if (goal == null || !goalIds.add(id(goal.taskId())) || goal.status() == null || goal.text() == null) throw EvidenceException.denied();
+        var criterionIds = new HashSet<String>();
+        for (var goal : goals) {
+            if (goal == null || !goalIds.add(id(goal.taskId())) || goal.status() == null || goal.text() == null
+                    || goal.criteria() == null || goal.criteria().size() > 32 || goal.gaps() == null) throw EvidenceException.denied();
+            EvidenceAdjudicator.strings(JSON.valueToTree(goal.gaps()),64,1000);
+            for (var criterion : goal.criteria()) {
+                if (criterion == null || !criterionIds.add(id(criterion.criterionId())) || criterion.text() == null || criterion.status() == null
+                        || !Set.of("resolved","uncovered","blocked","stale").contains(criterion.status())
+                        || criterion.checkIds() == null || criterion.claimIds() == null || criterion.gaps() == null) throw EvidenceException.denied();
+                criterion.checkIds().forEach(EvidenceJson::id); criterion.claimIds().forEach(EvidenceJson::id);
+                EvidenceAdjudicator.strings(JSON.valueToTree(criterion.gaps()),64,1000);
+            }
+        }
         var current = new TreeMap<String, EvidenceStore.CheckEntry>();
         for (var entry : all) if (entry.check().status().equals("COMPLETED")) current.put(entry.investigation(), entry);
         var claimIds = new ArrayList<String>();
@@ -310,10 +339,28 @@ public final class EvidenceService {
         for (var entry : all) if (!entry.check().status().equals("COMPLETED"))
             unfinished.add(object("task_id", entry.taskId(), "investigation_id", entry.investigation(), "check_id", entry.check().checkId(), "reason", "Check has no completed, budget-attested assessment"));
         for (var goal : goals) {
-            // A owns objective/dependency completion. A resolved Claim cannot silently
-            // fulfill every objective of a task that A still calls pending/blocked.
-            if (!goal.status().equals("done")) unfinished.add(object("task_id", goal.taskId(), "text", goal.text(), "status", goal.status(), "reason", "Research goal remains unfinished"));
+            // A independently verifies original criteria, current checks and prerequisites.
+            // Stored done and legacy fixtures are not proof of complete coverage.
+            boolean unresolved = false;
+            for (var criterion : goal.criteria()) if (!criterion.status().equals("resolved") || !criterion.gaps().isEmpty()) {
+                unresolved = true;
+                unfinished.add(object("task_id",goal.taskId(),"criterion_id",criterion.criterionId(),"text",criterion.text(),
+                        "status",criterion.status(),"check_ids",criterion.checkIds(),"claim_ids",criterion.claimIds(),"gaps",criterion.gaps(),
+                        "reason","Acceptance criterion remains " + criterion.status() + (criterion.gaps().isEmpty() ? "" : ": " + canonical(JSON.valueToTree(criterion.gaps())))));
+            }
+            if (!goal.status().equals("done") || !goal.completionVerified() || goal.criteria().isEmpty() || unresolved || !goal.gaps().isEmpty()) {
+                var reasons = new ArrayList<String>();
+                if (!goal.status().equals("done")) reasons.add("Research goal remains unfinished");
+                if (!goal.completionVerified()) reasons.add("Native completion proof is not verified");
+                if (goal.criteria().isEmpty()) reasons.add("No acceptance-criterion coverage is available");
+                if (unresolved) reasons.add("Acceptance criteria remain unresolved");
+                reasons.addAll(goal.gaps());
+                unfinished.add(object("task_id",goal.taskId(),"text",goal.text(),"status",goal.status(),"completion_verified",goal.completionVerified(),
+                        "gaps",goal.gaps(),"reason",String.join("; ",reasons)));
+            }
         }
+        if (goals.isEmpty()) unfinished.add(object("task_id",g.taskId(),"text","Native research goals",
+                "reason","No native acceptance-criterion completion proof is available"));
         var published = new ArrayList<JsonNode>();
         var validatedLive = new HashSet<String>(); var validationReceipts = new ArrayList<String>();
         var resolvedCount = 0;
@@ -330,7 +377,7 @@ public final class EvidenceService {
             var cited = new LinkedHashSet<String>();
             decision.path("adopted_evidence_ids").forEach(e -> cited.add(e.asText()));
             decision.path("unresolved_evidence_ids").forEach(e -> cited.add(e.asText()));
-            // Dismissed scope material also proves how a prior conflict was resolved.
+            // Keep different-scope and insufficient material visible beside adopted quotes.
             claim.path("evidence_links").forEach(e -> cited.add(e.path("evidence_id").asText()));
             for (var identity : cited) {
                 var adopted = JSON.valueToTree(identity);
@@ -340,7 +387,6 @@ public final class EvidenceService {
                 if (!canonical(JSON.valueToTree(candidate)).equals(canonical(sourceMetadata.path("requested_candidate"))))
                     throw new EvidenceException("PUBLICATION_SOURCE_IDENTITY_CHANGED");
                 if (source.path("source").path("kind").asText().equals("knowledge") && validatedLive.add(adopted.asText())) {
-                    if (validatedLive.size() > 4) throw new EvidenceException("PUBLICATION_TOO_LARGE");
                     var permit = authority.publicationRead(g, source);
                     if (permit == null) throw EvidenceException.denied(); id(permit.operationId());
                     String currentHash = permit.completedSnapshotHash();
@@ -422,7 +468,7 @@ public final class EvidenceService {
                 "check_ids", all.stream().filter(e -> e.investigation().equals(identity)).map(e -> e.check().checkId()).toList(),
                 "current_check_id", current.containsKey(identity) ? current.get(identity).check().checkId() : null)).toList();
         var report = object("approved", true, "report_status", reportStatus, "terminal_status", complete ? "SUCCEEDED" : "INSUFFICIENT_EVIDENCE", "investigations", investigations,
-                "run_id", g.runId(), "claims", published, "unfinished_goals", unfinished, "answer", answer.toString(), "answer_sha256", sha(answer.toString()),
+                "run_id", g.runId(), "goals", goals, "claims", published, "unfinished_goals", unfinished, "answer", answer.toString(), "answer_sha256", sha(answer.toString()),
                 "citations", references.values(), "validation_receipts", validationReceipts, "semantic_truth_guaranteed", false);
         if (canonical(report).getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 120000) throw new EvidenceException("REPORT_CAPACITY_EXCEEDED");
         return report;
