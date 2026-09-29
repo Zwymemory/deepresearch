@@ -62,21 +62,42 @@ class HttpEvidenceBackend:
 
     async def check(self, state, task, call_id, claims, gateway):
         identifiers = self.identifiers(state, task, call_id)
-        parent = state.get("packet", {}).get("check_id")
-        round_number = state.get("packet", {}).get("dispute_round", -1) + 1
+        current = state.get("packet", {})
+        investigation_id = current.get("investigation_id")
+        if investigation_id:
+            current = await self.post(
+                "/internal/agent/evidence/investigations",
+                {"identifiers": identifiers, "investigation_id": investigation_id},
+            )
+            if current.get("errorCode"):
+                return current
+        parent = current.get("check_id")
+        round_number = current.get("dispute_round", -1) + 1
         if round_number > 2:
             return {"gaps": ["争议补查上限已到"], "errorCode": "DISPUTE_LIMIT"}
-        original = state.get("packet", {}).get("claim_specs")
+        original = current.get("claim_specs")
         if original and canonical(original) != canonical(claims):
             return {"gaps": ["补查必须保持原结论的适用条件"], "errorCode": "CLAIM_SCOPE_CHANGED"}
+        available = {e["evidence_id"] for e in state.get("evidence", [])}
+        selected = (
+            state.get("selected_evidence_ids") or task.get("evidence_ids") or sorted(available)
+        )
+        if set(selected) - available:
+            return {"errorCode": "EVIDENCE_NOT_IN_CURRENT_RUN"}
+        # Explicitly carry prior contrary material. B independently computes this
+        # set from its immutable check chain, so a client cannot omit it.
+        evidence_ids = list(dict.fromkeys([*current.get("required_evidence_ids", []), *selected]))
+        # B persists capacity failures. Rejecting locally would let a later
+        # subset erase newly encountered material from the authoritative report.
         prepared = await self.post(
             "/internal/agent/evidence/checks/prepare",
             {
                 "identifiers": identifiers,
                 "claims": claims,
-                "evidence_ids": [e["evidence_id"] for e in state["evidence"]][-4:],
+                "evidence_ids": evidence_ids,
                 "dispute_round": round_number,
                 "parent_check_id": parent,
+                "investigation_id": investigation_id,
             },
         )
         if prepared.get("errorCode"):
@@ -126,7 +147,7 @@ class HttpEvidenceBackend:
             checked = prepared["immediate_result"]
         if checked.get("errorCode"):
             return checked
-        check_ids = [*state.get("packet", {}).get("check_ids", []), prepared["check_id"]]
+        check_ids = list(dict.fromkeys([*current.get("check_ids", []), prepared["check_id"]]))
         packet = await self.post(
             "/internal/agent/evidence/packets", {"identifiers": identifiers, "check_ids": check_ids}
         )
@@ -139,23 +160,13 @@ class HttpEvidenceBackend:
             "check_ids": check_ids,
             "dispute_round": round_number,
             "claim_specs": claims,
+            "investigation_id": prepared.get("investigation_id"),
+            "required_evidence_ids": prepared.get("required_evidence_ids", evidence_ids),
             "gaps": packet.get("gaps", []),
         }
 
     async def publish(self, state, task, call_id, decision):
-        packet = state.get("packet", {})
-        supported = [
-            r["claim_id"]
-            for r in packet.get("records", [])
-            if r.get("record_type") == "Claim" and r.get("decision_status") == "supported"
-        ]
-        if not supported or not packet.get("packet_id"):
-            return {"approved": False, "errorCode": "NO_SUPPORTED_CLAIMS"}
         return await self.post(
             "/internal/agent/publication",
-            {
-                "identifiers": self.identifiers(state, task, call_id),
-                "packet_id": packet["packet_id"],
-                "claim_ids": supported,
-            },
+            {"identifiers": self.identifiers(state, task, call_id)},
         )

@@ -69,13 +69,23 @@ public class WorkflowRepository {
     }
 
     public boolean sealedAgentPublication(String runId,String answer,List<String> citations) {
+        return sealedAgentReport(runId,answer,citations,null).isPresent();
+    }
+    public Optional<com.fasterxml.jackson.databind.JsonNode> sealedAgentReport(String runId,String answer,List<String> citations,String terminalStatus) {
         try {
-            return Boolean.TRUE.equals(jdbcTemplate.queryForObject("""
-                SELECT EXISTS (SELECT 1 FROM agent_research_publication
+            return jdbcTemplate.query("""
+                SELECT result::text FROM agent_research_publication
                     WHERE run_id=? AND status='COMPLETED' AND answer_hash=?
-                    AND result->>'answer'=? AND citations=CAST(? AS jsonb))
-                """,Boolean.class,runId,com.deepresearch.agent.ToolArgumentFingerprint.sha256(answer),
-                    answer,objectMapper.writeValueAsString(citations)));
+                    AND result->>'answer'=? AND citations=CAST(? AS jsonb)
+                    AND (?::text IS NULL OR result->>'terminal_status'=?)
+                    ORDER BY completed_at DESC LIMIT 1
+                """,(rs,n)-> {
+                    try { return objectMapper.readTree(rs.getString(1)); }
+                    catch (com.fasterxml.jackson.core.JsonProcessingException invalid) {
+                        throw new IllegalArgumentException("publication proof invalid",invalid);
+                    }
+                },runId,com.deepresearch.agent.ToolArgumentFingerprint.sha256(answer),
+                    answer,objectMapper.writeValueAsString(citations),terminalStatus,terminalStatus).stream().findFirst();
         } catch (com.fasterxml.jackson.core.JsonProcessingException invalid) {
             throw new IllegalArgumentException("publication citations invalid",invalid);
         }

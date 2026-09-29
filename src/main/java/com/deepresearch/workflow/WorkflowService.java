@@ -215,14 +215,15 @@ public class WorkflowService {
         } catch (IllegalArgumentException failure) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "claimToken 格式无效");
         }
-        String answer = request.answer() == null ? "" : request.answer().trim();
+        String answer = request.answer() == null ? "" : request.answer();
         List<String> citations = request.citations() == null ? List.of() : request.citations().stream()
                 .map(value -> value == null ? "" : value.trim()).toList();
         if (requested == WorkflowStatus.SUCCEEDED && (answer.isBlank() || citations.isEmpty())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "SUCCEEDED 必须包含非空答案和至少一个可信引用");
         }
-        if (requested == WorkflowStatus.SUCCEEDED && !validCitationContract(answer, citations)) {
+        if ((requested == WorkflowStatus.SUCCEEDED || requested == WorkflowStatus.INSUFFICIENT_EVIDENCE && !citations.isEmpty())
+                && !validCitationContract(answer, citations)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "SUCCEEDED 的 [来源N] 与 citations 必须满足 INDEXED_V1 映射");
         }
@@ -234,6 +235,10 @@ public class WorkflowService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "引用校验失败不得发布候选答案或引用");
         }
+        WorkflowRepository.RunRow row = repository.find(runId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "workflow 不存在"));
+        boolean agentRun="/api/research/agents".equals(row.endpoint());
+        if (!agentRun) answer=answer.trim();
         String usageJson = writeJson(request.usage() == null ? Map.of() : request.usage());
         Map<String, Object> finalResponse = new LinkedHashMap<>();
         finalResponse.put("answer", answer);
@@ -241,17 +246,20 @@ public class WorkflowService {
         finalResponse.put("citationContract",
                 requested == WorkflowStatus.SUCCEEDED ? CITATION_CONTRACT : "NONE");
         finalResponse.put("insufficientEvidence", requested == WorkflowStatus.INSUFFICIENT_EVIDENCE);
+        WorkflowStatus current = status(row.status());
+        if (agentRun && (requested==WorkflowStatus.SUCCEEDED || requested==WorkflowStatus.INSUFFICIENT_EVIDENCE
+                || !answer.isBlank() || !citations.isEmpty())) {
+            var report=repository.sealedAgentReport(runId,answer,citations,requested.name())
+                    .orElseThrow(()->new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Agent 正文、引用和完整性终态必须与服务端发布证明一致"));
+            for (String field:List.of("report_status","claims","unfinished_goals","semantic_truth_guaranteed","citationDetails")) {
+                finalResponse.put(field,report.get(field));
+            }
+            if (!citations.isEmpty()) finalResponse.put("citationContract",CITATION_CONTRACT);
+        }
         String finalResponseJson = writeJson(finalResponse);
         String finalizeFingerprint = finalizeFingerprint(requested, finalResponseJson, usageJson,
                 errorCode, errorMessage);
-
-        WorkflowRepository.RunRow row = repository.find(runId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "workflow 不存在"));
-        WorkflowStatus current = status(row.status());
-        if (requested==WorkflowStatus.SUCCEEDED && "/api/research/agents".equals(row.endpoint())
-                && !repository.sealedAgentPublication(runId,answer,citations)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Agent 答案必须与服务端已核查的发布内容一致");
-        }
         if (current.terminal()) {
             if (sameFinalization(row, requested, claimToken, finalizeFingerprint)) {
                 return new FinalizeResponse(runId, current.name(), true);
