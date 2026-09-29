@@ -17,7 +17,7 @@
 
 - 运行与发布复审：`01a0ed44-fd2c-78e1-b9d5-d749250e8d28`。
 - 证据与裁决复审：`01a0ed44-ff0a-7cb0-b42f-fc134aa127d6`。
-- 交接说明：`/Users/zwy/Claude/Projects/.codex-handoffs/deepresearch-agent-round1-recheck.md`。
+- 交接说明：`../.codex-handoffs/deepresearch-agent-round1-recheck.md`。
 
 ## 主对话独立联合验证
 
@@ -103,8 +103,8 @@ PYTHONDONTWRITEBYTECODE=1 workflow-service/.venv/bin/python -B contracts/agent/v
 
 ## 新对话的定向审查记录
 
-- 运行审查：`/Users/zwy/Claude/Projects/.codex-handoffs/deepresearch-agent-round1-recheck-runtime.md`。
-- 证据审查：`/Users/zwy/Claude/Projects/.codex-handoffs/deepresearch-agent-round1-recheck-evidence.md`。
+- 运行审查：`../.codex-handoffs/deepresearch-agent-round1-recheck-runtime.md`。
+- 证据审查：`../.codex-handoffs/deepresearch-agent-round1-recheck-evidence.md`。
 
 本报告 N1–N4 是下一次修复的统一编号，各独立报告编号可能不同。针对本次确定缺陷修复后，再固定新候选复验；不重新扩大本轮功能范围。
 

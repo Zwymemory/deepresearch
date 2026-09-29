@@ -88,8 +88,8 @@ PYTHONDONTWRITEBYTECODE=1 workflow-service/.venv/bin/python -B contracts/agent/v
 
 两次交叉审查均使用精确已提交版本，在 ignored target 资料包中做定向复现；未修改实现或正式服务。其结果用于确认上述缺陷，不能计作真实模型验收。主对话独立运行联合门禁，并另行复现 R3。
 
-- 本地 A → B 记录：`/Users/zwy/Claude/Projects/.codex-handoffs/deepresearch-agent-round1-review-a.md`。
-- 本地 B → A 记录：`/Users/zwy/Claude/Projects/.codex-handoffs/deepresearch-agent-round1-review-b.md`。
+- 本地 A → B 记录：`../.codex-handoffs/deepresearch-agent-round1-review-a.md`。
+- 本地 B → A 记录：`../.codex-handoffs/deepresearch-agent-round1-review-b.md`。
 
 主报告编号 R1–R5 为修复统一编号；交叉报告内部编号各自独立。
 

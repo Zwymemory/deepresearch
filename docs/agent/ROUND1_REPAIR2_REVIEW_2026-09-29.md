@@ -82,14 +82,14 @@ workflow-service/.venv/bin/ruff check workflow-service/src workflow-service/test
 
 复现资料：
 
-- `/Users/zwy/Claude/Projects/deepresearch-ragflow/target/root-repair2-probe-60wk46oe/combined/src/test/java/com/deepresearch/workflow/AgentRuntimePostgresIT.java`，方法 `reviewSealedReportCanIgnoreNewPendingSupplementOfAnUnboundInvestigation`。
+- `target/root-repair2-probe-60wk46oe/combined/src/test/java/com/deepresearch/workflow/AgentRuntimePostgresIT.java`，方法 `reviewSealedReportCanIgnoreNewPendingSupplementOfAnUnboundInvestigation`。
 - `/tmp/deepresearch-root-repair2-probe-java-final.log`。
-- `/Users/zwy/Claude/Projects/deepresearch-ragflow/target/root-repair2-probe-60wk46oe/source-verification.json`：685 个归档输入中仅上述隔离 IT 文件追加复现，生产实现与候选逐一一致。
+- `target/root-repair2-probe-60wk46oe/source-verification.json`：685 个归档输入中仅上述隔离 IT 文件追加复现，生产实现与候选逐一一致。
 
-复现命令在 combined 目录：
+复现命令在 combined 目录（先将 AGENT_PYTHON 设置为已安装项目依赖的 Python 解释器；本地 target 产物与交接文件不随仓库发布）：
 
 ```sh
-AGENT_PYTHON=/Users/zwy/Claude/Projects/deepresearch-ragflow/workflow-service/.venv/bin/python \
+AGENT_PYTHON="$AGENT_PYTHON" \
 PYTHONDONTWRITEBYTECODE=1 mvn -o -q -Pintegration -Dtest=__RootReviewOnly__ \
   -Dsurefire.failIfNoSpecifiedTests=false \
   '-Dit.test=AgentRuntimePostgresIT#reviewSealedReportCanIgnoreNewPendingSupplementOfAnUnboundInvestigation' verify
@@ -110,6 +110,6 @@ PYTHONDONTWRITEBYTECODE=1 mvn -o -q -Pintegration -Dtest=__RootReviewOnly__ \
 - A「DeepResearch Agent 运行与发布复审」`01a0ed44-fd2c-78e1-b9d5-d749250e8d28`：负责 F1；独占 Java workflow/evidence 的必要状态证明、报告及测试；如确需向前迁移，可用尚未使用的 V22，V17–V21 和冻结 v0 不改。
 - B「DeepResearch Agent 证据与裁决复审」`01a0ed44-ff0a-7cb0-b42f-fc134aa127d6`：负责 F2；本次独占 Python 静态清理，不编辑 A 的 Java 实现。若 A 需要 Python 变更，先说明确切文件并协调，不能并行覆盖。
 
-以包含本报告的后继文档提交为共同基线。A 使用 `/Users/zwy/Claude/Projects/deepresearch-github` 新分支 `feat/agent-report-state-repair`；B 使用 `/Users/zwy/Claude/Projects/deepresearch-ragflow` 新分支 `feat/agent-static-gates`。保留旧分支、用户 `docs/interview/`、复现资料及现有服务。技术任务继续 GPT-6-sol / xhigh。
+以包含本报告的后继文档提交为共同基线。A 使用 `../deepresearch-github` 新分支 `feat/agent-report-state-repair`；B 使用 `仓库根目录` 新分支 `feat/agent-static-gates`。保留旧分支、用户 `docs/interview/`、复现资料及现有服务。技术任务继续 GPT-6-sol / xhigh。
 
 更新各自现有 repair2 交付文档中的 phase、final_sha=tested_sha、tested_peer_sha、修复与验证边界即可，不新增一套交接文档。完成后停止，等待固定组合复验。禁止部署、push、改正式配置/密钥/卷/知识文档、真实付费调用和下一阶段功能开发。

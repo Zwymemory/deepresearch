@@ -30,4 +30,4 @@ A 拥有原生标准、活动核查映射、依赖快照和真实 SQL 结算的�
 
 B 不新增迁移，不改 V17–V20 或冻结 contracts/agent/v0；A 的 V21 属于独立运行侧交付。维护用例包含条件解析、真实服务/临时 PG 的争议与范围、2+2/2+3 报告、预算拒绝保留历史，以及未覆盖/过期/legacy/完整标准报告。
 
-精确 final/tested/peer SHA、验证命令、结果计数和实际 HTTP/JWT 联合边界见本地交接 `/Users/zwy/Claude/Projects/.codex-handoffs/deepresearch-agent-round1-repair2-evidence.md`。未验收真实模型、公网/TLS、现有 RAGFlow 或生产受控实验；没有升级正式服务、推送、发布或启动研究记忆/多 Agent。
+精确 final/tested/peer SHA、验证命令、结果计数和实际 HTTP/JWT 联合边界见本地交接 `../.codex-handoffs/deepresearch-agent-round1-repair2-evidence.md`。未验收真实模型、公网/TLS、现有 RAGFlow 或生产受控实验；没有升级正式服务、推送、发布或启动研究记忆/多 Agent。
