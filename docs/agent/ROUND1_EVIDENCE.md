@@ -10,7 +10,7 @@
 
 Python `deepresearch_workflow.evidence_check` 仅提供 `build_verifier_messages(request,request_sha256)`、`response_schema(request)` 和 `parse_verifier_response(raw,request,request_sha256)`。它不调用模型、工具、HTTP 或数据库。A 在其持久预算入口执行核查；B complete 必须取得绑定 check/request/response 的已完成模型回执。
 
-PrepareRequest 有 claims（最多四个，text/kind/applicability）、evidence_ids（最多四个）、dispute_round（0/1/2）和 parent_check_id。空证据仍为中性核查请求，不能伪造一次模型调用。requires_model=false 仅表示已有完成记录可重放。请求/响应各限 65536 UTF-8 字节。语义核查不保证自然语言事实为真。
+PrepareRequest 有 claims（最多四个，text/kind/applicability）、evidence_ids（最多四个）、dispute_round（0/1/2）和 parent_check_id。空证据仍为中性核查请求，不能伪造一次模型调用。requires_model=false 仅表示已有完成记录可重放。请求/响应各限 65536 UTF-8 字节；生成的 schema/user 消息封套另留 8192 字节，避免可接受请求仅因封套开销失败，不增加来源容量。所有消息仍须经过 A 的统一 token 预算。语义核查不保证自然语言事实为真。
 
 ## 读取与来源
 
@@ -46,7 +46,7 @@ V18 新增原文回执、冻结记录和核查表；事务锁定当前 run 的 o
 | Java 既有 Dify/RAGFlow/Tavily 回归 | 27 项通过 | 所选旧引用与工具路径的协议回归 |
 | PostgreSQL 证据集成 | 9 项通过 | 四例经过 reader/service/裁决/持久化/packet；版本与时间；真实 owner fence、回滚、取消、不可变、许可门禁 |
 | PostgreSQL 旧网页来源集成 | 4 项通过 | V18 并存时所选旧来源/回执路径仍可运行 |
-| Python 核查与有限清单 | 29 项通过，Ruff 通过 | 独立解析、原文/hash/上下文校验、原始模型回执绑定、调用量边界 |
+| Python 核查与有限清单 | 30 项通过，Ruff 通过 | 独立解析、原文/hash/上下文校验、原始模型回执绑定、消息封套上限、调用量边界 |
 | 第 0 轮联合冻结门禁 | 38 + 39 项、11 个知识夹具与 7 个跨线负例通过 | 冻结文件未改，既有合约仍能复验 |
 
 四例实际落库记录见 `testdata/agent-round1/evidence/service-records-2026-09-29.json`，机器摘要见同目录 `verification-2026-09-29.json`。外部 Assessment/Receipt 授权引用是测试适配提供的夹具声明；不能当作真实 JWT、SQL 模型预算或项目 ACL 的证明。冻结规则验证器的 `runtime_execution=false` 表示它本身仅校验导出，不否定此前 Java 服务与隔离 PG 的实际执行。

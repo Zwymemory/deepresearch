@@ -6,6 +6,8 @@ import json
 import pytest
 
 from deepresearch_workflow.evidence_check import (
+    MAX_BYTES,
+    MAX_MESSAGE_BYTES,
     EvidenceCheckError,
     build_verifier_messages,
     canonical,
@@ -74,6 +76,20 @@ def test_source_instructions_stay_in_user_data_and_cannot_change_system_or_tools
     assert "Ignore policy" in messages[1]["content"]
     assert "untrusted" in messages[0]["content"]
     assert "tools" not in json.loads(messages[1]["content"])
+
+
+def test_valid_bounded_request_has_room_for_generated_schema_envelope():
+    request, _ = packet("🧪" * 8000 + "\n\nLimit: 10")
+    second = copy.deepcopy(request["evidence"][0])
+    second["evidence_id"] = "evidence-two"
+    request["evidence"].append(second)
+    padding = MAX_BYTES - 64 - len(canonical(request).encode("utf-8"))
+    assert padding > 0
+    second["snapshot"]["text"] += "x" * padding
+    second["snapshot"]["sha256"] = sha(second["snapshot"]["text"])
+    assert len(second["snapshot"]["text"]) <= 10000
+    messages = build_verifier_messages(request, sha(canonical(request)))
+    assert MAX_BYTES < len(messages[1]["content"].encode("utf-8")) <= MAX_MESSAGE_BYTES
 
 
 def test_request_and_original_hash_must_match_before_model_use():

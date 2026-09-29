@@ -90,7 +90,7 @@
     }
   ],
   "java_total": 56,
-  "python_tests": 29,
+  "python_tests": 30,
   "ruff": "passed",
   "frozen_contract_gate": {
     "status": "offline_contracts_passed",
@@ -164,9 +164,9 @@
     "testdata/agent-round1/evidence/sources/version-two.md": "60ba867d7d0f27aacbcd231479073142a255c2259d15e60e4f45012d2c3f3f10",
     "testdata/agent-round1/evidence/sources/wrong-guide.md": "ba0241eddc879b5c660de52aea8923d5ae2e20138c6d4d42288bddc21a8395e7",
     "testdata/agent-round1/evidence/verify_service_records.py": "2a2a5d3372f2bacc37e90e720e107dba85951f3ecb714361e80428903ab279b2",
-    "workflow-service/src/deepresearch_workflow/evidence_check.py": "c7fb05039ea82411dbfbf818a80419e30397171d9381d3a310eae49f51a8e13d",
+    "workflow-service/src/deepresearch_workflow/evidence_check.py": "0df60a1c30a1a954b3a60ab02af869ba7bc72fbe921f24c89ea2d15d3dda99a3",
     "workflow-service/tests/test_evidence_acceptance.py": "a8e24951e4fdef81dea99a68debec33a58da73ea6ff825c536e422ead85234b5",
-    "workflow-service/tests/test_evidence_check.py": "e2d83bb152663fb2f2d95d3845868fced7d37f1cad5916cabbefeaf908d44735"
+    "workflow-service/tests/test_evidence_check.py": "611f28532a0583b548f6ebed1f50fd040578c53a798b29c4fa06634f554fd796"
   },
   "commands": [
     "mvn -q -Pintegration -Dit.test=EvidenceServiceIT,DifyWebSourcesIT -Dtest=SafeWebReaderTest,EvidenceQuoteTest,EvidenceConfigurationTest,DifyCitationValidatorTest,DifyToolServiceTest,RagflowClientTest,RagflowDifyKbToolGatewayTest,TavilySearchClientTest verify",
