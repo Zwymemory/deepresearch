@@ -209,12 +209,14 @@ class SqlAgentLedger:
         return {
             "modelCalls": data["model_calls"],
             "toolCalls": data["tool_calls"],
-            "inputTokens": None if data["input_unknown"] else data["input_measured"],
-            "outputTokens": None if data["output_unknown"] else data["output_measured"],
+            # PostgreSQL SUM(bigint) is numeric: psycopg returns Decimal. Keep
+            # persisted usage JSON-native before the next model request is encoded.
+            "inputTokens": None if data["input_unknown"] else int(data["input_measured"]),
+            "outputTokens": None if data["output_unknown"] else int(data["output_measured"]),
             "inputTokensStatus": "unknown" if data["input_unknown"] else "known",
             "outputTokensStatus": "unknown" if data["output_unknown"] else "known",
-            "inputAdmissionTokens": data["input_charged"],
-            "outputAdmissionTokens": data["output_charged"],
+            "inputAdmissionTokens": int(data["input_charged"]),
+            "outputAdmissionTokens": int(data["output_charged"]),
             "estimatedCost": None,
             "costStatus": "unknown",
             "currency": "CNY",
