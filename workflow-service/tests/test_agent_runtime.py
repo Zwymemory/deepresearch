@@ -193,6 +193,14 @@ class ObservationDrivenModel:
                     ],
                     "reason": "核对原文的支持、反证与版本",
                 }
+        if value.get("action") == "check_claims":
+            task = next(
+                (t for t in payload["tasks"] if t["status"] in {"pending", "running", "blocked"}),
+                payload["tasks"][-1],
+            )
+            value["criterion_bindings"] = [
+                {"criterion_id": task["criteria"][0]["criterion_id"], "claim_index": 0}
+            ]
         return ModelResult(value=value, input_tokens=120, output_tokens=100)
 
 

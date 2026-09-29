@@ -51,7 +51,13 @@ class AgentTask(TaskDraft):
     task_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{0,63}$")
     status: Literal["pending", "running", "blocked", "done", "cancelled"] = "pending"
     evidence_ids: list[str] = Field(default_factory=list, max_length=32)
+    criteria: list[dict[str, Any]] = Field(default_factory=list, max_length=5)
     plan_version: int = Field(ge=1)
+
+
+class CriterionBinding(StrictModel):
+    criterion_id: Identifier
+    claim_index: int = Field(ge=0, le=3)
 
 
 class AgentDecision(StrictModel):
@@ -71,6 +77,7 @@ class AgentDecision(StrictModel):
     source_id: str | None = Field(default=None, max_length=300)
     tasks: list[TaskDraft] = Field(default_factory=list, max_length=8)
     claims: list[ClaimDraft] = Field(default_factory=list, max_length=4)
+    criterion_bindings: list[CriterionBinding] = Field(default_factory=list, max_length=4)
     answer: str | None = Field(default=None, min_length=1, max_length=6000)
     citations: list[Identifier] = Field(default_factory=list, max_length=16)
     gaps: list[ShortText] = Field(default_factory=list, max_length=8)

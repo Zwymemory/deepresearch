@@ -93,6 +93,8 @@ public class AgentPublicationController {
                 throw new EvidenceException("REPORT_CAPACITY_EXCEEDED");
             return tx.execute(status->{
                 authority.lock(g); if (!authority.active(g)) throw EvidenceException.denied();
+                if (!canonical(JSON.valueToTree(authority.reportGoals(g))).equals(canonical(checked.path("goals"))))
+                    throw new EvidenceException("REPORT_STATE_CHANGED");
                 db.update("""
                     UPDATE agent_research_publication SET status='COMPLETED',answer_hash=?,citations=CAST(? AS jsonb),result=CAST(? AS jsonb),proof=CAST(? AS jsonb),completed_at=now()
                     WHERE run_id=? AND call_id=? AND status='EXECUTING'

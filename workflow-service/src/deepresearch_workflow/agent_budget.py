@@ -201,6 +201,9 @@ class SqlAgentLedger:
         }
 
     async def save_tasks(self, run_id, claim_token, tasks):
+        from .agent_completion import ensure_criteria
+
+        ensure_criteria(run_id, tasks)
         async with self.repository.pool.connection() as conn:
             async with conn.transaction():
                 await self.repository._lock_active_budget_run(conn, run_id, claim_token)
@@ -231,6 +234,69 @@ class SqlAgentLedger:
                     if cursor.rowcount != 1:
                         raise WorkflowExecutionError(
                             "任务目标或版本不能静默改写", error_code="AGENT_TASK_MISMATCH"
+                        )
+                    for criterion in task["criteria"]:
+                        await conn.execute(
+                            """INSERT INTO agent_research_criterion
+                            (run_id,task_id,criterion_id,criterion_index,criterion_text,claim_token)
+                            VALUES (%s,%s,%s,%s,%s,%s::uuid)
+                            ON CONFLICT (run_id,task_id,criterion_id) DO NOTHING""",
+                            (
+                                run_id,
+                                task["task_id"],
+                                criterion["criterion_id"],
+                                criterion["index"],
+                                criterion["text"],
+                                claim_token,
+                            ),
+                        )
+
+    async def begin_check(self, run_id, claim_token, task, selected, entry, key):
+        from .agent_completion import server_identity
+
+        identity = server_identity(entry["claim_specs"])
+        async with self.repository.pool.connection() as conn:
+            async with conn.transaction():
+                await self.repository._lock_active_budget_run(conn, run_id, claim_token)
+                await conn.execute(
+                    """INSERT INTO agent_research_investigation_progress
+                    (run_id,investigation,current_call_id,claim_token) VALUES (%s,%s,%s,%s::uuid)
+                    ON CONFLICT (run_id,investigation) DO UPDATE
+                    SET current_call_id=EXCLUDED.current_call_id,
+                        claim_token=EXCLUDED.claim_token""",
+                    (run_id, identity, key, claim_token),
+                )
+            # Keep the pending attempt durable even if a coverage write is rejected.
+            async with conn.transaction():
+                await self.repository._lock_active_budget_run(conn, run_id, claim_token)
+                cursor = await conn.execute(
+                    "SELECT agent_task_dependency_snapshot(%s,%s) AS snapshot",
+                    (run_id, task["task_id"]),
+                )
+                snapshot = (await cursor.fetchone())["snapshot"]
+                for criterion in task["criteria"]:
+                    if criterion["criterion_id"] not in selected:
+                        continue
+                    expected = criterion["expected_claim"]
+                    cursor = await conn.execute(
+                        """UPDATE agent_research_criterion SET expected_claim=%s,expected_hash=%s,
+                        investigation=%s,last_call_id=%s,dependency_snapshot=%s,claim_token=%s::uuid
+                        WHERE run_id=%s AND task_id=%s AND criterion_id=%s""",
+                        (
+                            Jsonb(expected),
+                            hashlib.sha256(canonical(expected).encode()).hexdigest(),
+                            identity,
+                            key,
+                            Jsonb(snapshot),
+                            claim_token,
+                            run_id,
+                            task["task_id"],
+                            criterion["criterion_id"],
+                        ),
+                    )
+                    if cursor.rowcount != 1:
+                        raise WorkflowExecutionError(
+                            "完成标准缺少原生绑定", error_code="AGENT_CRITERION_MISSING"
                         )
 
     async def scope(self, run_id, claim_token):

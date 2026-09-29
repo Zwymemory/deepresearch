@@ -865,7 +865,11 @@
         var tasks = Array.isArray(payload.tasks) ? payload.tasks : [];
         $("agentPlanText").textContent = "计划版本 " + payload.planVersion + "\n" + tasks.map(function(task) {
           var status = {pending: "待执行", running: "执行中", done: "已完成", blocked: "待解决", cancelled: "已取消"}[task.status] || task.status;
-          return task.objective + "（" + status + "）\n完成标准：" + (task.acceptance_criteria || []).join("；") + "\n证据：" + task.evidenceCount + " 条";
+          var criteria = Array.isArray(task.criteria) && task.criteria.length ? task.criteria.map(function(criterion) {
+            var state = {resolved: "已核查", uncovered: "尚未核查", blocked: "待解决", stale: "前提已变化，需复核"}[criterion.status] || "尚未核查";
+            return criterion.text + "（" + state + "）";
+          }).join("；") : (task.acceptance_criteria || []).join("；");
+          return task.objective + "（" + status + "）\n完成标准：" + criteria + "\n证据：" + task.evidenceCount + " 条";
         }).join("\n\n");
         return (payload.reason || "计划状态已更新") + " · 版本 " + payload.planVersion;
       }

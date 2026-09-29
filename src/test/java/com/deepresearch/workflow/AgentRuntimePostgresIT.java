@@ -112,11 +112,19 @@ class AgentRuntimePostgresIT {
         var model=object("value",response,"request_binding",object("check_id",prepared.check_id(),"request_sha256",prepared.request_sha256(),"response_sha256",sha(canonical(response))));
         b.db.update("INSERT INTO agent_research_operation(run_id,operation_key,attempt,kind,purpose,request_hash,status,input_reserved,output_reserved,claim_token) VALUES (?,'model:check',1,'MODEL','CHECK',?,'RESERVED',100,100,?::uuid)",check.run_id(),"b".repeat(64),check.claim_token());
         b.db.update("UPDATE agent_research_operation SET status='SETTLED',safe_result=?::jsonb,actual_usage='{}',settled_at=now() WHERE run_id=? AND operation_key='model:check'",canonical(model),check.run_id());
-        b.service.complete("Bearer fixture-service",new EvidenceDtos.CompleteRequest(check,prepared.check_id(),"model:check",response));
+        registerCriterion(b,check,prepared,0,"quote verified");
+        var outcome=b.service.complete("Bearer fixture-service",new EvidenceDtos.CompleteRequest(check,prepared.check_id(),"model:check",response));
+        b.authority.settle(b.authority.authorize("Bearer fixture-service","check_claims",check),object("records",outcome.records(),"check_id",prepared.check_id(),"gaps",List.of()));
         b.db.update("UPDATE agent_research_task SET status='done' WHERE run_id=? AND task_id=?",check.run_id(),check.task_id());
         var packet=b.service.packet("Bearer fixture-service",new EvidenceDtos.PacketRequest(check,List.of(prepared.check_id())));
         var publish=operation(b,3,"PUBLICATION");
         return new EvidenceDtos.PublishRequest(publish,packet.path("packet_id").asText(),List.of(claim));
+    }
+    private void registerCriterion(Bridge b,EvidenceDtos.Identifiers check,EvidenceDtos.PreparedCheck prepared,int index,String criterionText) {
+        String identity=AgentCompletionService.criterionId(check.run_id(),check.task_id(),index,criterionText);
+        JsonNode expected=AgentCompletionService.normalize(prepared.request().path("claims").get(index));
+        b.db.update("INSERT INTO agent_research_investigation_progress(run_id,investigation,current_call_id,claim_token) VALUES (?,?,?,?::uuid) ON CONFLICT (run_id,investigation) DO UPDATE SET current_call_id=EXCLUDED.current_call_id,claim_token=EXCLUDED.claim_token",check.run_id(),prepared.investigation_id(),check.call_id(),check.claim_token());
+        b.db.update("INSERT INTO agent_research_criterion(run_id,task_id,criterion_id,criterion_index,criterion_text,expected_claim,expected_hash,investigation,last_call_id,dependency_snapshot,claim_token) VALUES (?,?,?,?,?,?::jsonb,?,?,?,?::jsonb,?::uuid)",check.run_id(),check.task_id(),identity,index,criterionText,canonical(expected),sha(canonical(expected)),prepared.investigation_id(),check.call_id(),b.db.queryForObject("SELECT agent_task_dependency_snapshot(?,?)::text",String.class,check.run_id(),check.task_id()),check.claim_token());
     }
     @Test void actualEvidenceBridgeSealsExactAnswerAndReplaysWithoutAdditionalReads() {
         Bridge b=bridge(16);var request=supportedPacket(b);
@@ -168,5 +176,153 @@ class AgentRuntimePostgresIT {
             b.db.queryForList("SELECT * FROM agent_research_source_validation WHERE run_id=?",b.ids.run_id());
         })).isInstanceOf(org.springframework.dao.DataAccessException.class);
         assertThat(b.reads.get()).isEqualTo(1);
+    }
+
+    private EvidenceDtos.RecordResult completePrepared(Bridge b,EvidenceDtos.Identifiers ids,EvidenceDtos.PreparedCheck prepared,String modelId) {
+        var proposals=new java.util.ArrayList<JsonNode>();
+        for(var claim:prepared.request().path("claims")) {
+            var relations=new java.util.ArrayList<JsonNode>();
+            for(var evidence:prepared.request().path("evidence")) relations.add(object("evidence_id",evidence.path("evidence_id"),"relation","supports","quote",evidence.path("snapshot").path("text").asText(),"reason","Complete original contains the selected fact"));
+            proposals.add(object("claim_id",claim.path("claim_id"),"relations",relations,"limitations",List.of()));
+        }
+        var response=object("claims",proposals,"follow_up_actions",List.of());
+        var bound=object("value",response,"request_binding",object("check_id",prepared.check_id(),"request_sha256",prepared.request_sha256(),"response_sha256",sha(canonical(response))));
+        b.db.update("INSERT INTO agent_research_operation(run_id,operation_key,attempt,kind,purpose,request_hash,status,input_reserved,output_reserved,claim_token) VALUES (?,?,1,'MODEL','CHECK',?,'RESERVED',100,100,?::uuid)",ids.run_id(),modelId,sha(modelId),ids.claim_token());
+        b.db.update("UPDATE agent_research_operation SET status='SETTLED',safe_result=?::jsonb,actual_usage='{}',settled_at=now() WHERE run_id=? AND operation_key=?",canonical(bound),ids.run_id(),modelId);
+        var result=b.service.complete("Bearer fixture-service",new EvidenceDtos.CompleteRequest(ids,prepared.check_id(),modelId,response));
+        b.authority.settle(b.authority.authorize("Bearer fixture-service","check_claims",ids),object("records",result.records(),"check_id",prepared.check_id(),"gaps",List.of()));
+        return result;
+    }
+    @Test void storedDoneAndOneRealClaimCannotCoverAnAdditionalNativeStandard() {
+        Bridge b=bridge(16);var publication=supportedPacket(b);
+        b.db.update("UPDATE agent_research_task SET acceptance_criteria=ARRAY['quote verified','Verify the per-minute request rate'] WHERE run_id=?",b.ids.run_id());
+        var report=b.publication.publish("Bearer fixture-service",publication);
+        assertThat(report.path("terminal_status").asText()).isEqualTo("INSUFFICIENT_EVIDENCE");
+        assertThat(report.path("answer").asText()).contains("Verify the per-minute request rate");
+    }
+    @Test void sealedCompleteReportCannotFinalizeAfterItsCurrentInvestigationFails() {
+        Bridge b=bridge(16);var request=supportedPacket(b);var report=b.publication.publish("Bearer fixture-service",request);
+        var repository=new WorkflowRepository(b.db,JSON);var citations=List.of("kb:ragflow:dataset:document:chunk");
+        assertThat(repository.sealedAgentReport(b.ids.run_id(),report.path("answer").asText(),citations,"SUCCEEDED")).isPresent();
+        var failed=operation(b,4,"TOOL");
+        b.db.update("UPDATE agent_research_investigation_progress SET current_call_id=?,claim_token=?::uuid WHERE run_id=?",failed.call_id(),failed.claim_token(),b.ids.run_id());
+        b.authority.settle(b.authority.authorize("Bearer fixture-service","check_claims",failed),object("errorCode","CHECK_OPERATION_FAILED"));
+        assertThat(repository.sealedAgentReport(b.ids.run_id(),report.path("answer").asText(),citations,"SUCCEEDED")).isEmpty();
+        var workflows=new WorkflowService(repository,mock(AgentStateService.class),mock(UserContextService.class),JSON,true,Duration.ofSeconds(180));
+        assertThatThrownBy(()->b.tx.executeWithoutResult(status->workflows.finalizeRun(b.ids.run_id(),new WorkflowDtos.FinalizeRequest(b.ids.claim_token(),"SUCCEEDED",report.path("answer").asText(),citations,null,null,null)))).isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+        assertThat(b.db.queryForObject("SELECT status FROM agent_workflow_run WHERE run_id=?",String.class,b.ids.run_id())).isEqualTo("WORKING");
+    }
+    @Test void lostLegacyMappingDoesNotDefaultToSatisfiedAndCrossRunCriterionIdentityIsRejected() {
+        Bridge b=bridge(16);var publication=supportedPacket(b);
+        b.db.update("DELETE FROM agent_research_criterion WHERE run_id=?",b.ids.run_id());
+        b.db.update("INSERT INTO agent_research_criterion(run_id,task_id,criterion_id,criterion_index,criterion_text,claim_token) VALUES (?,'task-main',?,0,'quote verified',?::uuid)",b.ids.run_id(),AgentCompletionService.criterionId("a-different-run","task-main",0,"quote verified"),b.ids.claim_token());
+        var goals=b.authority.reportGoals(b.authority.authorize("Bearer fixture-service","publish_evidence",publication.identifiers()));
+        assertThat(goals.get(0).completionVerified()).isFalse();assertThat(goals.get(0).criteria().get(0).status()).isEqualTo("uncovered");
+        assertThat(b.publication.publish("Bearer fixture-service",publication).path("terminal_status").asText()).isEqualTo("INSUFFICIENT_EVIDENCE");
+    }
+    @Test void criterionIdentityInitialScopeAndCurrentAttemptCannotBeRewrittenFromOldReceipts() {
+        Bridge b=bridge(16);supportedPacket(b);
+        assertThatThrownBy(()->b.db.update("UPDATE agent_research_criterion SET criterion_id='forged' WHERE run_id=?",b.ids.run_id())).isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThatThrownBy(()->b.db.update("UPDATE agent_research_criterion SET expected_claim='{}',expected_hash=? WHERE run_id=?",sha("{}"),b.ids.run_id())).isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThatThrownBy(()->b.db.update("UPDATE agent_research_investigation_progress SET current_call_id='search-parent' WHERE run_id=?",b.ids.run_id())).isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThatThrownBy(()->b.tx.executeWithoutResult(status->{b.db.execute("SET LOCAL ROLE deepresearch_workflow");b.db.update("DELETE FROM agent_research_criterion WHERE run_id=?",b.ids.run_id());})).isInstanceOf(org.springframework.dao.DataAccessException.class);
+    }
+    @Test void reservedUnrelatedOperationCannotBorrowOldCheckOrDuplicateAnotherCriterionBinding() {
+        Bridge b=bridge(16);var publication=supportedPacket(b);String run=b.ids.run_id();
+        b.db.update("UPDATE agent_research_task SET acceptance_criteria=ARRAY['quote verified','A second independent standard'] WHERE run_id=?",run);
+        var old=b.db.queryForMap("SELECT expected_claim::text AS expected_claim,expected_hash,investigation FROM agent_research_criterion WHERE run_id=?",run);
+        var attempt=operation(b,4,"TOOL");
+        assertThatThrownBy(()->b.db.update("INSERT INTO agent_research_criterion(run_id,task_id,criterion_id,criterion_index,criterion_text,expected_claim,expected_hash,investigation,last_call_id,claim_token) VALUES (?,'task-main',?,1,'A second independent standard',?::jsonb,?,?,?,?::uuid)",run,AgentCompletionService.criterionId(run,"task-main",1,"A second independent standard"),old.get("expected_claim"),old.get("expected_hash"),old.get("investigation"),attempt.call_id(),attempt.claim_token())).isInstanceOf(org.springframework.dao.DataAccessException.class);
+        String original=b.db.queryForObject("SELECT safe_result::text FROM agent_research_operation WHERE run_id=? AND operation_key=?",String.class,run,"tool-"+"2".repeat(32));
+        b.db.update("UPDATE agent_research_investigation_progress SET current_call_id=?,claim_token=?::uuid WHERE run_id=?",attempt.call_id(),attempt.claim_token(),run);
+        assertThatThrownBy(()->b.db.update("INSERT INTO agent_research_criterion(run_id,task_id,criterion_id,criterion_index,criterion_text,expected_claim,expected_hash,investigation,last_call_id,claim_token) VALUES (?,'task-main',?,1,'A second independent standard',?::jsonb,?,?,?,?::uuid)",run,AgentCompletionService.criterionId(run,"task-main",1,"A second independent standard"),old.get("expected_claim"),old.get("expected_hash"),old.get("investigation"),attempt.call_id(),attempt.claim_token())).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        // Even a settled wrapper with byte-identical old records cannot attest a new check.
+        b.authority.settle(b.authority.authorize("Bearer fixture-service","check_claims",attempt),parseJson(original));
+        var goals=b.authority.reportGoals(b.authority.authorize("Bearer fixture-service","publish_evidence",publication.identifiers()));
+        assertThat(goals.get(0).completionVerified()).isFalse();
+        assertThat(goals.get(0).criteria().get(0).status()).isEqualTo("blocked");
+        assertThat(goals.get(0).criteria().get(1).status()).isEqualTo("uncovered");
+    }
+    private JsonNode parseJson(String text) {
+        try{return JSON.readTree(text);}catch(Exception malformed){throw new AssertionError(malformed);}
+    }
+
+    record MultiKnowledge(AgentPublicationController publication,EvidenceDtos.ReportRequest request) {}
+    private MultiKnowledge multipleKnowledgeInvestigations(Bridge b,int count) {
+        var searchEvidence=new java.util.ArrayList<JsonNode>();
+        for(int i=1;i<=count;i++) searchEvidence.add(object("evidenceId","ragflow:dataset:document:chunk-"+i,
+            "uriOrChunkKey","ragflow:dataset:document:chunk-"+i,"title","Managed source "+i));
+        b.db.update("UPDATE agent_workflow_tool_receipt SET mcp_safe_result=?::jsonb WHERE run_id=? AND call_id='search-parent'",canonical(object("success",true,"tool","kb_search","evidence",searchEvidence)),b.ids.run_id());
+        b.db.update("INSERT INTO agent_research_task(run_id,task_id,objective,status,acceptance_criteria,plan_version,task_json,claim_token) SELECT run_id,'task-second','Independent rate goal','running',ARRAY['Scoped rate decision'],1,'{}',claim_token FROM agent_research_task WHERE run_id=? AND task_id='task-main'",b.ids.run_id());
+        SourceReader reader=(g,c)->{b.reads.incrementAndGet();String text=b.text+"Source chunk "+c.chunkId()+".\n";
+            return new SourceReader.Document(text,c.title(),object("kind","knowledge_chunk","dataset_id",c.datasetId(),"document_id",c.documentId(),"chunk_id",c.chunkId()),"document_chunk",Instant.now(),sha(text),false,false);};
+        var manager=new DataSourceTransactionManager(b.db.getDataSource());
+        var service=new EvidenceService(b.authority,new JdbcEvidenceStore(b.db,new TransactionTemplate(manager)),reader);
+        var combined=new Bridge(b.db,b.tx,b.authority,service,new AgentPublicationController(b.authority,service,b.db,manager),b.ids,b.reads,b.text);
+        var originals=new java.util.ArrayList<JsonNode>();
+        for(int i=1;i<=count;i++) originals.add(service.read("Bearer fixture-service",new EvidenceDtos.ReadRequest(operation(b,i,"TOOL"),"ragflow:dataset:document:chunk-"+i)));
+        for(int group=0;group<2;group++) {
+            var raw=operation(b,count+group+1,"TOOL");
+            var check=new EvidenceDtos.Identifiers(raw.project_id(),raw.run_id(),group==0?"task-main":"task-second",raw.call_id(),raw.claim_token());
+            var selected=group==0?originals.subList(0,2):originals.subList(2,count);
+            var scope=object("subject","API limits","version",known("2.0"),"valid_at",unknown("No applicable date"),"conditions",List.of());
+            var prepared=service.prepare("Bearer fixture-service",new EvidenceDtos.PrepareRequest(check,List.of(new EvidenceDtos.ClaimSpec(group==0?"Document version is 2.0.":"Version 2.0 allows 100 requests.","factual",scope)),selected.stream().map(e->e.path("evidence_id").asText()).toList(),0,null));
+            registerCriterion(combined,check,prepared,0,group==0?"quote verified":"Scoped rate decision");
+            completePrepared(combined,check,prepared,"model:multi-"+group);
+        }
+        b.db.update("UPDATE agent_research_task SET status='done' WHERE run_id=?",b.ids.run_id());
+        return new MultiKnowledge(combined.publication,new EvidenceDtos.ReportRequest(operation(b,count+3,"PUBLICATION")));
+    }
+    private void assertWholeKnowledgeReport(int sources) {
+        Bridge b=bridge(16);var multi=multipleKnowledgeInvestigations(b,sources);
+        var report=multi.publication.publish("Bearer fixture-service",multi.request);
+        assertThat(report.path("report_status").asText()).isEqualTo("complete");
+        assertThat(report.path("claims")).hasSize(2);assertThat(report.path("citations")).hasSize(sources);
+        assertThat(b.reads.get()).isEqualTo(sources*2);
+        assertThat(b.db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='TOOL'",Integer.class,b.ids.run_id())).isEqualTo(sources*2+4);
+        assertThat(b.db.queryForObject("SELECT count(*) FROM agent_research_publication WHERE run_id=? AND status='COMPLETED'",Integer.class,b.ids.run_id())).isEqualTo(1);
+        assertThat(multi.publication.publish("Bearer fixture-service",multi.request)).isEqualTo(report);
+        assertThat(b.reads.get()).isEqualTo(sources*2);
+    }
+    @Test void twoPlusTwoKnowledgeOriginalsSealWithRealCriterionProofAndSharedSqlBudget() {assertWholeKnowledgeReport(4);}
+    @Test void twoPlusThreeKnowledgeOriginalsSealWithRealCriterionProofAndSharedSqlBudget() {assertWholeKnowledgeReport(5);}
+    @Test void multiInvestigationBudgetRefusalPreservesBothChecksAndCannotSealSupportedSubset() {
+        Bridge b=bridge(13);var multi=multipleKnowledgeInvestigations(b,5);
+        assertThatThrownBy(()->multi.publication.publish("Bearer fixture-service",multi.request)).isInstanceOf(EvidenceException.class).hasMessageContaining("AGENT_BUDGET_EXCEEDED");
+        assertThat(b.db.queryForObject("SELECT count(*) FROM agent_evidence_check WHERE run_id=? AND status='COMPLETED'",Integer.class,b.ids.run_id())).isEqualTo(2);
+        assertThat(b.db.queryForObject("SELECT count(*) FROM agent_research_source_validation WHERE run_id=? AND status='COMPLETED'",Integer.class,b.ids.run_id())).isEqualTo(4);
+        assertThat(b.db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='TOOL'",Integer.class,b.ids.run_id())).isEqualTo(13);
+        assertThat(b.db.queryForObject("SELECT count(*) FROM agent_research_publication WHERE run_id=? AND status='COMPLETED'",Integer.class,b.ids.run_id())).isZero();
+    }
+    @Test void sharedFailedAttemptIndependentlyInvalidatesDoneGoalsAndPreviouslyUsedDependentProof() throws Exception {
+        Bridge b=bridge(16);var publication=supportedPacket(b);
+        String run=b.ids.run_id();
+        b.db.update("INSERT INTO agent_research_task(run_id,task_id,objective,dependencies,status,acceptance_criteria,plan_version,task_json,claim_token) VALUES (?,'task-child','Derived rate conclusion',ARRAY['task-main'],'running',ARRAY['Verify the derived rate'],1,'{}',?::uuid)",run,b.ids.claim_token());
+        JsonNode evidence=JSON.readTree(b.db.queryForObject("SELECT payload::text FROM agent_evidence_record WHERE run_id=? AND record_type='Evidence'",String.class,run));
+        JsonNode scope=object("subject","API limits","version",known("2.0"),"valid_at",unknown("No applicable date"),"conditions",List.of());
+        var raw=operation(b,4,"TOOL");var child=new EvidenceDtos.Identifiers(run,run,"task-child",raw.call_id(),raw.claim_token());
+        var prepared=b.service.prepare("Bearer fixture-service",new EvidenceDtos.PrepareRequest(child,List.of(new EvidenceDtos.ClaimSpec("The API allows 100 requests.","factual",scope)),List.of(evidence.path("evidence_id").asText()),0,null));
+        registerCriterion(b,child,prepared,0,"Verify the derived rate");completePrepared(b,child,prepared,"model:child");
+        b.db.update("UPDATE agent_research_task SET status='done' WHERE run_id=?",run);
+        var grant=b.authority.authorize("Bearer fixture-service","publish_evidence",publication.identifiers());
+        assertThat(b.authority.reportGoals(grant)).allSatisfy(g->assertThat(g.completionVerified()).isTrue());
+        String investigation=b.db.queryForObject("SELECT investigation FROM agent_research_criterion WHERE run_id=? AND task_id='task-main'",String.class,run);
+        var failed=operation(b,5,"TOOL");
+        b.db.update("UPDATE agent_research_investigation_progress SET current_call_id=?,claim_token=?::uuid WHERE run_id=? AND investigation=?",failed.call_id(),failed.claim_token(),run,investigation);
+        b.authority.settle(b.authority.authorize("Bearer fixture-service","check_claims",failed),object("errorCode","CHECK_OPERATION_FAILED"));
+        var afterFailure=b.authority.reportGoals(grant);
+        assertThat(afterFailure).allSatisfy(g->assertThat(g.completionVerified()).isFalse());
+        assertThat(afterFailure.stream().filter(g->g.taskId().equals("task-child")).findFirst().orElseThrow().criteria().get(0).status()).isEqualTo("stale");
+        String parent=b.db.queryForObject("SELECT check_id FROM agent_evidence_check WHERE run_id=? AND investigation=? ORDER BY dispute_round DESC LIMIT 1",String.class,run,investigation);
+        var retry=operation(b,6,"TOOL");
+        var recovery=b.service.prepare("Bearer fixture-service",new EvidenceDtos.PrepareRequest(retry,List.of(new EvidenceDtos.ClaimSpec("Version 2.0 allows 100 requests.","factual",scope)),List.of(evidence.path("evidence_id").asText()),1,parent));
+        b.db.update("UPDATE agent_research_investigation_progress SET current_call_id=?,claim_token=?::uuid WHERE run_id=? AND investigation=?",retry.call_id(),retry.claim_token(),run,investigation);
+        completePrepared(b,retry,recovery,"model:parent-recovered");
+        var recovered=b.authority.reportGoals(grant);
+        assertThat(recovered.stream().filter(g->g.taskId().equals("task-main")).findFirst().orElseThrow().completionVerified()).isTrue();
+        assertThat(recovered.stream().filter(g->g.taskId().equals("task-child")).findFirst().orElseThrow().completionVerified()).isFalse();
+        var report=b.publication.publish("Bearer fixture-service",publication);
+        assertThat(report.path("terminal_status").asText()).isEqualTo("INSUFFICIENT_EVIDENCE");
+        assertThat(report.path("answer").asText()).contains("Verify the derived rate","Prerequisite proof changed");
     }
 }
