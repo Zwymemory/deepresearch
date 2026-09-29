@@ -22,6 +22,29 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /** Real V1-V16 migration/receipt checks without starting Elasticsearch or a provider. */
 @Testcontainers
 class DifyWebSourcesIT {
+    @Test
+    void finalMessagesAndSummaryMaintenanceAreAtomicAndIdempotentWithoutGeneration() {
+        String run = "wf-summary-outbox-it"; createRun(run);
+        var row = repository.find(run).orElseThrow();
+        tx.executeWithoutResult(s -> repository.insertFinalMessages(run, row.sessionId(), row.userId(),
+                "question", "answer", true));
+        tx.executeWithoutResult(s -> repository.insertFinalMessages(run, row.sessionId(), row.userId(),
+                "question", "answer", true));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM agent_message WHERE run_id=?", Integer.class, run)).isEqualTo(2);
+        var events = repository.eventsAfter(run, 0, 20).stream()
+                .filter(e -> e.type().equals("SESSION_SUMMARY_MAINTENANCE_REQUIRED")).toList();
+        assertThat(events).hasSize(1);
+        assertThat(events.get(0).payload().path("generation").asText()).isEqualTo("deferred");
+
+        String rolledBack = "wf-summary-rollback-it"; createRun(rolledBack);
+        var before = repository.find(rolledBack).orElseThrow();
+        tx.executeWithoutResult(s -> {
+            repository.insertFinalMessages(rolledBack, before.sessionId(), before.userId(), "q", "a", true);
+            s.setRollbackOnly();
+        });
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM agent_message WHERE run_id=?", Integer.class, rolledBack)).isZero();
+        assertThat(repository.eventsAfter(rolledBack, 0, 20)).noneMatch(e -> e.type().equals("SESSION_SUMMARY_MAINTENANCE_REQUIRED"));
+    }
     @Container
     static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>(DockerImageName.parse("pgvector/pgvector:pg16"))
             .withDatabaseName("deepresearch").withUsername("deepresearch").withPassword("deepresearch")

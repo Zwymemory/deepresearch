@@ -1,0 +1,372 @@
+{
+  "fixture_id": "runtime-foundation",
+  "fixture_origin": "synthetic",
+  "implementation_status": "expected_only",
+  "authorized_scope": {
+    "tenant_id": "fixture-tenant",
+    "owner_id": "fixture-owner",
+    "project_id": "fixture-project"
+  },
+  "records": [
+    {
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "record_type": "ResearchProject",
+      "objective": "Synthetic contract exercise only",
+      "scope": "Local fixtures; no live research or API",
+      "status": "active",
+      "unresolved_questions": [
+        "Need an authorized current-run receipt"
+      ],
+      "version": 1,
+      "created_at": "2026-09-29T00:00:00Z",
+      "updated_at": "2026-09-29T00:01:00Z"
+    },
+    {
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "record_type": "Task",
+      "task_id": "fixture-task",
+      "run_id": "fixture-run",
+      "parent_task_id": null,
+      "agent_id": "fixture-agent",
+      "objective": "Check a remembered lead with authorized KB retrieval",
+      "dependencies": [],
+      "status": "blocked",
+      "allowed_tools": [
+        "kb_search"
+      ],
+      "acceptance_criteria": [
+        "Obtain current-run evidence or retain a gap"
+      ],
+      "evidence_ids": [],
+      "failure": {
+        "code": "NO_EVIDENCE",
+        "brief_reason": "Synthetic expected gap; no model action was executed."
+      },
+      "budget_id": "fixture-budget",
+      "plan_version": 1,
+      "version": 2,
+      "idempotency_key": "fixture-task-v2",
+      "created_at": "2026-09-29T00:00:00Z",
+      "updated_at": "2026-09-29T00:01:00Z"
+    },
+    {
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "record_type": "Budget",
+      "budget_id": "fixture-budget",
+      "run_id": "fixture-run",
+      "limits": {
+        "max_decision_steps": 4,
+        "max_model_calls": 4,
+        "max_tool_calls": 4,
+        "max_concurrent_agents": 2,
+        "max_delegation_depth": 1,
+        "max_conflict_rounds": 1,
+        "wall_time_ms": 120000,
+        "input_tokens": {
+          "status": "unknown",
+          "value": null,
+          "reason": "Dify baseline has no configured per-run input cap."
+        },
+        "output_tokens": {
+          "status": "known",
+          "value": 9216
+        },
+        "cost": {
+          "status": "unknown",
+          "value": null,
+          "reason": "Baseline plugin price is unconfigured."
+        }
+      },
+      "usage": {
+        "decision_steps": {
+          "status": "known",
+          "value": 1
+        },
+        "model_calls": {
+          "status": "known",
+          "value": 1
+        },
+        "tool_calls": {
+          "status": "known",
+          "value": 0
+        },
+        "input_tokens": {
+          "status": "known",
+          "value": 720
+        },
+        "output_tokens": {
+          "status": "known",
+          "value": 120
+        },
+        "cost": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No configured price or native currency/amount in this synthetic observation."
+        }
+      },
+      "reservations": [
+        {
+          "reservation_id": "fixture-reservation",
+          "task_id": "fixture-task",
+          "resource": "tool_calls",
+          "amount": 1,
+          "settled_amount": null,
+          "state": "reserved",
+          "idempotency_key": "fixture-tool-call"
+        }
+      ],
+      "deadline_at": "2026-09-29T00:02:00Z",
+      "version": 1
+    },
+    {
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "record_type": "AgentContext",
+      "context_id": "fixture-context",
+      "run_id": "fixture-run",
+      "original_question": "Continue the synthetic research",
+      "legacy_unscoped": false,
+      "trust": "untrusted_context_not_evidence",
+      "entries": [
+        {
+          "entry_id": "summary-entry",
+          "kind": "session_summary",
+          "content": "Prior question remains unresolved.",
+          "source_memory_id": null,
+          "source_run_id": null,
+          "selected": true,
+          "injected": true,
+          "used": {
+            "status": "unknown",
+            "verification_refs": []
+          },
+          "truncated": false,
+          "source_memory_version": null,
+          "purpose": "historical_context"
+        },
+        {
+          "entry_id": "recent-entry",
+          "kind": "recent_message",
+          "content": "用户: continue the synthetic research",
+          "source_memory_id": null,
+          "source_run_id": null,
+          "selected": true,
+          "injected": true,
+          "used": {
+            "status": "unknown",
+            "verification_refs": []
+          },
+          "truncated": false,
+          "source_memory_version": null,
+          "purpose": "historical_context"
+        },
+        {
+          "entry_id": "memory-entry",
+          "kind": "memory",
+          "content": "An unverified old lead; it cannot be cited as current evidence.",
+          "source_memory_id": null,
+          "source_run_id": null,
+          "selected": true,
+          "injected": true,
+          "used": {
+            "status": "unknown",
+            "verification_refs": []
+          },
+          "truncated": false,
+          "source_memory_version": null,
+          "purpose": "research_lead"
+        }
+      ],
+      "prepared_at": "2026-09-29T00:00:00Z"
+    },
+    {
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "record_type": "AgentEvent",
+      "event_id": "fixture-event-1",
+      "run_id": "fixture-run",
+      "task_id": null,
+      "agent_id": "fixture-agent",
+      "sequence": 1,
+      "event_type": "CONTEXT_INJECTED",
+      "before_state": null,
+      "after_state": null,
+      "brief_reason": "Synthetic protocol trace, not live execution.",
+      "references": {
+        "evidence_ids": [],
+        "memory_ids": [],
+        "decision_ids": [],
+        "context_id": "fixture-context",
+        "verification_ids": []
+      },
+      "usage": {
+        "decision_steps": {
+          "status": "known",
+          "value": 1
+        },
+        "model_calls": {
+          "status": "known",
+          "value": 1
+        },
+        "tool_calls": {
+          "status": "known",
+          "value": 0
+        },
+        "input_tokens": {
+          "status": "known",
+          "value": 720
+        },
+        "output_tokens": {
+          "status": "known",
+          "value": 120
+        },
+        "cost": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No configured price or native currency/amount in this synthetic observation."
+        }
+      },
+      "recorded_at": "2026-09-29T00:01:00Z",
+      "idempotency_key": "fixture-event-key-1"
+    },
+    {
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "record_type": "AgentEvent",
+      "event_id": "fixture-event-2",
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "agent_id": "fixture-agent",
+      "sequence": 2,
+      "event_type": "TASK_STARTED",
+      "before_state": "pending",
+      "after_state": "running",
+      "brief_reason": "Synthetic protocol trace, not live execution.",
+      "references": {
+        "evidence_ids": [],
+        "memory_ids": [],
+        "decision_ids": [],
+        "context_id": "fixture-context",
+        "verification_ids": []
+      },
+      "usage": {
+        "decision_steps": {
+          "status": "known",
+          "value": 1
+        },
+        "model_calls": {
+          "status": "known",
+          "value": 1
+        },
+        "tool_calls": {
+          "status": "known",
+          "value": 0
+        },
+        "input_tokens": {
+          "status": "known",
+          "value": 720
+        },
+        "output_tokens": {
+          "status": "known",
+          "value": 120
+        },
+        "cost": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No configured price or native currency/amount in this synthetic observation."
+        }
+      },
+      "recorded_at": "2026-09-29T00:01:00Z",
+      "idempotency_key": "fixture-event-key-2"
+    },
+    {
+      "schema_version": "0.1.0",
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "record_type": "AgentEvent",
+      "event_id": "fixture-event-3",
+      "run_id": "fixture-run",
+      "task_id": "fixture-task",
+      "agent_id": "fixture-agent",
+      "sequence": 3,
+      "event_type": "TASK_BLOCKED",
+      "before_state": "running",
+      "after_state": "blocked",
+      "brief_reason": "Synthetic protocol trace, not live execution.",
+      "references": {
+        "evidence_ids": [],
+        "memory_ids": [],
+        "decision_ids": [],
+        "context_id": "fixture-context",
+        "verification_ids": []
+      },
+      "usage": {
+        "decision_steps": {
+          "status": "known",
+          "value": 1
+        },
+        "model_calls": {
+          "status": "known",
+          "value": 1
+        },
+        "tool_calls": {
+          "status": "known",
+          "value": 0
+        },
+        "input_tokens": {
+          "status": "known",
+          "value": 720
+        },
+        "output_tokens": {
+          "status": "known",
+          "value": 120
+        },
+        "cost": {
+          "status": "unknown",
+          "value": null,
+          "reason": "No configured price or native currency/amount in this synthetic observation."
+        }
+      },
+      "recorded_at": "2026-09-29T00:01:00Z",
+      "idempotency_key": "fixture-event-key-3"
+    }
+  ],
+  "external_refs": [
+    {
+      "tenant_id": "fixture-tenant",
+      "owner_id": "fixture-owner",
+      "project_id": "fixture-project",
+      "record_type": "Run",
+      "run_id": "fixture-run",
+      "allowed_tools": [
+        "kb_search",
+        "web_search"
+      ],
+      "agent_ids": [
+        "fixture-agent"
+      ]
+    }
+  ],
+  "expected_actions": [
+    "Treat history as a lead; obtain authorized evidence or preserve a gap."
+  ],
+  "prohibited_inferences": [
+    "No real Agent behavior, model use, cross-session persistence or live ACL is proven by this fixture."
+  ]
+}

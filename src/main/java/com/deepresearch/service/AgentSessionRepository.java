@@ -82,8 +82,8 @@ class AgentSessionRepository {
         jdbcTemplate.update("""
                 UPDATE agent_session
                 SET summary = ?, summary_message_count = ?, summary_updated_at = now(), updated_at = now()
-                WHERE session_id = ?
-                """, summary, messageCount, sessionId);
+                WHERE session_id = ? AND summary_message_count < ?
+                """, summary, messageCount, sessionId, messageCount);
     }
 
     void insertMessage(String messageId, String sessionId, String runId, String role, String content) {

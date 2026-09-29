@@ -36,6 +36,7 @@ class ConversationCompressionCoordinator {
         }
         List<String> delta = sessionRepository.messagesForSummary(sessionId, summarized, older - summarized);
         String summary = summaryService.summarize(sessionRepository.summary(sessionId), delta);
+        if (summary == null || summary.isBlank()) return;
         sessionRepository.updateSummary(sessionId, summary, older);
     }
 }

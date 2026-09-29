@@ -1,0 +1,1567 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deepresearch.local/contracts/agent/v0/runtime.schema.json",
+  "title": "Proposed Agent runtime records 0.1.0",
+  "$comment": "Round 0 structure/trace protocol plus offline integrity checks; new agent dispatch/budget/ACL protocols are proposed, not deployed.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ResearchProject"
+    },
+    {
+      "$ref": "#/$defs/Task"
+    },
+    {
+      "$ref": "#/$defs/Budget"
+    },
+    {
+      "$ref": "#/$defs/AgentEvent"
+    },
+    {
+      "$ref": "#/$defs/AgentContext"
+    }
+  ],
+  "$defs": {
+    "OpaqueId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^\\S+$"
+    },
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(?:Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "Count": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "known"
+            },
+            "value": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "status",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "unknown"
+            },
+            "value": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          },
+          "required": [
+            "status",
+            "value",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Money": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "known"
+            },
+            "value": {
+              "type": "object",
+              "properties": {
+                "amount": {
+                  "type": "string",
+                  "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]{1,8})?$"
+                },
+                "currency": {
+                  "type": "string",
+                  "pattern": "^[A-Z]{3}$"
+                },
+                "basis": {
+                  "enum": [
+                    "provider_reported",
+                    "price_table_estimate"
+                  ]
+                }
+              },
+              "required": [
+                "amount",
+                "currency",
+                "basis"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "status",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "unknown"
+            },
+            "value": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          },
+          "required": [
+            "status",
+            "value",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Usage": {
+      "type": "object",
+      "properties": {
+        "decision_steps": {
+          "$ref": "#/$defs/Count"
+        },
+        "model_calls": {
+          "$ref": "#/$defs/Count"
+        },
+        "tool_calls": {
+          "$ref": "#/$defs/Count"
+        },
+        "input_tokens": {
+          "$ref": "#/$defs/Count"
+        },
+        "output_tokens": {
+          "$ref": "#/$defs/Count"
+        },
+        "cost": {
+          "$ref": "#/$defs/Money"
+        }
+      },
+      "required": [
+        "decision_steps",
+        "model_calls",
+        "tool_calls",
+        "input_tokens",
+        "output_tokens",
+        "cost"
+      ],
+      "additionalProperties": false
+    },
+    "Limits": {
+      "type": "object",
+      "properties": {
+        "max_decision_steps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "max_model_calls": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "max_tool_calls": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "max_concurrent_agents": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "max_delegation_depth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "max_conflict_rounds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "wall_time_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "input_tokens": {
+          "$ref": "#/$defs/Count"
+        },
+        "output_tokens": {
+          "$ref": "#/$defs/Count"
+        },
+        "cost": {
+          "$ref": "#/$defs/Money"
+        }
+      },
+      "required": [
+        "max_decision_steps",
+        "max_model_calls",
+        "max_tool_calls",
+        "max_concurrent_agents",
+        "max_delegation_depth",
+        "max_conflict_rounds",
+        "wall_time_ms",
+        "input_tokens",
+        "output_tokens",
+        "cost"
+      ],
+      "additionalProperties": false
+    },
+    "Reservation": {
+      "type": "object",
+      "properties": {
+        "reservation_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "task_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "resource": {
+          "enum": [
+            "model_calls",
+            "tool_calls",
+            "input_tokens",
+            "output_tokens"
+          ]
+        },
+        "amount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "settled_amount": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "state": {
+          "enum": [
+            "reserved",
+            "settled",
+            "released",
+            "unknown"
+          ]
+        },
+        "idempotency_key": {
+          "$ref": "#/$defs/OpaqueId"
+        }
+      },
+      "required": [
+        "reservation_id",
+        "task_id",
+        "resource",
+        "amount",
+        "settled_amount",
+        "state",
+        "idempotency_key"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "settled"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "settled_amount": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "reserved",
+                  "released",
+                  "unknown"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "settled_amount": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ContextEntry": {
+      "type": "object",
+      "properties": {
+        "entry_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "kind": {
+          "enum": [
+            "session_summary",
+            "recent_message",
+            "memory"
+          ]
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "source_memory_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_run_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "selected": {
+          "type": "boolean"
+        },
+        "injected": {
+          "type": "boolean"
+        },
+        "used": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "enum": [
+                "unknown",
+                "confirmed",
+                "not_used"
+              ]
+            },
+            "verification_refs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/OpaqueId"
+              },
+              "maxItems": 64,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "status",
+            "verification_refs"
+          ],
+          "additionalProperties": false
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "source_memory_version": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "purpose": {
+          "enum": [
+            "historical_context",
+            "research_lead",
+            "result_reuse"
+          ]
+        }
+      },
+      "required": [
+        "entry_id",
+        "kind",
+        "content",
+        "source_memory_id",
+        "source_run_id",
+        "selected",
+        "injected",
+        "used",
+        "truncated",
+        "source_memory_version",
+        "purpose"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "injected": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "selected": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "used": {
+                "properties": {
+                  "status": {
+                    "const": "confirmed"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "injected": {
+                "const": true
+              },
+              "used": {
+                "properties": {
+                  "verification_refs": {
+                    "minItems": 1
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "used": {
+                "properties": {
+                  "verification_refs": {
+                    "maxItems": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_memory_id": {
+                "type": "string"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "kind": {
+                "const": "memory"
+              },
+              "source_memory_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "purpose": {
+                "enum": [
+                  "research_lead",
+                  "result_reuse"
+                ]
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "source_memory_version": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "purpose": {
+                "const": "result_reuse"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "kind": {
+                "const": "memory"
+              },
+              "source_memory_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source_memory_version": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "used": {
+                "properties": {
+                  "status": {
+                    "const": "not_used"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "injected": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ResearchProject": {
+      "type": "object",
+      "properties": {
+        "record_type": {
+          "const": "ResearchProject"
+        },
+        "schema_version": {
+          "const": "0.1.0"
+        },
+        "tenant_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "owner_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "project_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "objective": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "status": {
+          "enum": [
+            "active",
+            "paused",
+            "completed",
+            "archived"
+          ]
+        },
+        "unresolved_questions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "maxItems": 64,
+          "uniqueItems": true
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "created_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "updated_at": {
+          "$ref": "#/$defs/Timestamp"
+        }
+      },
+      "required": [
+        "record_type",
+        "schema_version",
+        "tenant_id",
+        "owner_id",
+        "project_id",
+        "objective",
+        "scope",
+        "status",
+        "unresolved_questions",
+        "version",
+        "created_at",
+        "updated_at"
+      ],
+      "additionalProperties": false
+    },
+    "Task": {
+      "type": "object",
+      "properties": {
+        "record_type": {
+          "const": "Task"
+        },
+        "schema_version": {
+          "const": "0.1.0"
+        },
+        "tenant_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "owner_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "project_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "task_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "run_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "parent_task_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "agent_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "objective": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OpaqueId"
+          },
+          "maxItems": 64,
+          "uniqueItems": true
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "running",
+            "blocked",
+            "done",
+            "cancelled"
+          ]
+        },
+        "allowed_tools": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "kb_search",
+              "web_search",
+              "calculator",
+              "read_source",
+              "delegate"
+            ]
+          },
+          "maxItems": 5,
+          "uniqueItems": true
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OpaqueId"
+          },
+          "maxItems": 64,
+          "uniqueItems": true
+        },
+        "failure": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "brief_reason": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                }
+              },
+              "required": [
+                "code",
+                "brief_reason"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "budget_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "plan_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "idempotency_key": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "created_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "updated_at": {
+          "$ref": "#/$defs/Timestamp"
+        }
+      },
+      "required": [
+        "record_type",
+        "schema_version",
+        "tenant_id",
+        "owner_id",
+        "project_id",
+        "task_id",
+        "run_id",
+        "parent_task_id",
+        "agent_id",
+        "objective",
+        "dependencies",
+        "status",
+        "allowed_tools",
+        "acceptance_criteria",
+        "evidence_ids",
+        "failure",
+        "budget_id",
+        "plan_version",
+        "version",
+        "idempotency_key",
+        "created_at",
+        "updated_at"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "blocked"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "failure": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Budget": {
+      "type": "object",
+      "properties": {
+        "record_type": {
+          "const": "Budget"
+        },
+        "schema_version": {
+          "const": "0.1.0"
+        },
+        "tenant_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "owner_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "project_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "budget_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "run_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "limits": {
+          "$ref": "#/$defs/Limits"
+        },
+        "usage": {
+          "$ref": "#/$defs/Usage"
+        },
+        "reservations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Reservation"
+          },
+          "maxItems": 64
+        },
+        "deadline_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "record_type",
+        "schema_version",
+        "tenant_id",
+        "owner_id",
+        "project_id",
+        "budget_id",
+        "run_id",
+        "limits",
+        "usage",
+        "reservations",
+        "deadline_at",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "AgentEvent": {
+      "type": "object",
+      "properties": {
+        "record_type": {
+          "const": "AgentEvent"
+        },
+        "schema_version": {
+          "const": "0.1.0"
+        },
+        "tenant_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "owner_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "project_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "event_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "run_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "task_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "agent_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "event_type": {
+          "enum": [
+            "PLAN_CREATED",
+            "PLAN_REVISED",
+            "TASK_DELEGATED",
+            "TASK_STARTED",
+            "TASK_BLOCKED",
+            "TASK_DONE",
+            "TASK_CANCELLED",
+            "RUN_CANCELLED",
+            "RUN_RESUMED",
+            "BUDGET_RESERVED",
+            "BUDGET_SETTLED",
+            "CONTEXT_SELECTED",
+            "CONTEXT_INPUT_PREPARED",
+            "CONTEXT_INJECTED",
+            "CONTEXT_USE_VERIFIED",
+            "SOURCE_READ",
+            "CONFLICT_FOUND",
+            "DECISION_RECORDED",
+            "MEMORY_USED",
+            "MEMORY_COMMITTED",
+            "MEMORY_RECHECK_REQUIRED",
+            "SESSION_SUMMARY_MAINTENANCE_REQUIRED"
+          ]
+        },
+        "before_state": {
+          "oneOf": [
+            {
+              "enum": [
+                "pending",
+                "running",
+                "blocked",
+                "done",
+                "cancelled"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "after_state": {
+          "oneOf": [
+            {
+              "enum": [
+                "pending",
+                "running",
+                "blocked",
+                "done",
+                "cancelled"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "brief_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "references": {
+          "type": "object",
+          "properties": {
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/OpaqueId"
+              },
+              "maxItems": 64,
+              "uniqueItems": true
+            },
+            "memory_ids": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/OpaqueId"
+              },
+              "maxItems": 64,
+              "uniqueItems": true
+            },
+            "decision_ids": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/OpaqueId"
+              },
+              "maxItems": 64,
+              "uniqueItems": true
+            },
+            "context_id": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/OpaqueId"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "verification_ids": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/OpaqueId"
+              },
+              "maxItems": 64,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "evidence_ids",
+            "memory_ids",
+            "decision_ids",
+            "context_id",
+            "verification_ids"
+          ],
+          "additionalProperties": false
+        },
+        "usage": {
+          "$ref": "#/$defs/Usage"
+        },
+        "recorded_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "idempotency_key": {
+          "$ref": "#/$defs/OpaqueId"
+        }
+      },
+      "required": [
+        "record_type",
+        "schema_version",
+        "tenant_id",
+        "owner_id",
+        "project_id",
+        "event_id",
+        "run_id",
+        "task_id",
+        "agent_id",
+        "sequence",
+        "event_type",
+        "before_state",
+        "after_state",
+        "brief_reason",
+        "references",
+        "usage",
+        "recorded_at",
+        "idempotency_key"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "event_type": {
+                "enum": [
+                  "MEMORY_USED",
+                  "CONTEXT_USE_VERIFIED"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "references": {
+                "properties": {
+                  "verification_ids": {
+                    "minItems": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "AgentContext": {
+      "type": "object",
+      "properties": {
+        "record_type": {
+          "const": "AgentContext"
+        },
+        "schema_version": {
+          "const": "0.1.0"
+        },
+        "tenant_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "owner_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "project_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "context_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "run_id": {
+          "$ref": "#/$defs/OpaqueId"
+        },
+        "original_question": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "legacy_unscoped": {
+          "type": "boolean"
+        },
+        "trust": {
+          "const": "untrusted_context_not_evidence"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ContextEntry"
+          },
+          "maxItems": 32
+        },
+        "prepared_at": {
+          "$ref": "#/$defs/Timestamp"
+        }
+      },
+      "required": [
+        "record_type",
+        "schema_version",
+        "tenant_id",
+        "owner_id",
+        "project_id",
+        "context_id",
+        "run_id",
+        "original_question",
+        "legacy_unscoped",
+        "trust",
+        "entries",
+        "prepared_at"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "legacy_unscoped": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "project_id": {
+                "type": "null"
+              },
+              "entries": {
+                "items": {
+                  "properties": {
+                    "source_memory_id": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/OpaqueId"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "FixtureReference": {
+      "$comment": "Typed fixture reference stub, not a complete runtime record, live permission grant or proof of actual model usage.",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "record_type": {
+              "const": "ResearchProject"
+            },
+            "tenant_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "owner_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "project_id": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/OpaqueId"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "record_type",
+            "tenant_id",
+            "owner_id",
+            "project_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "record_type": {
+              "const": "Run"
+            },
+            "tenant_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "owner_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "project_id": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/OpaqueId"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "run_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "allowed_tools": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "kb_search",
+                  "web_search",
+                  "calculator",
+                  "read_source",
+                  "delegate"
+                ]
+              },
+              "uniqueItems": true
+            },
+            "agent_ids": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/OpaqueId"
+              },
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "record_type",
+            "tenant_id",
+            "owner_id",
+            "project_id",
+            "run_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "record_type": {
+              "const": "Task"
+            },
+            "tenant_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "owner_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "project_id": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/OpaqueId"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "task_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "run_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "status": {
+              "enum": [
+                "pending",
+                "running",
+                "blocked",
+                "done",
+                "cancelled"
+              ]
+            }
+          },
+          "required": [
+            "record_type",
+            "tenant_id",
+            "owner_id",
+            "project_id",
+            "task_id",
+            "run_id",
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "record_type": {
+              "const": "Session"
+            },
+            "tenant_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "owner_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "project_id": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/OpaqueId"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "session_id": {
+              "$ref": "#/$defs/OpaqueId"
+            }
+          },
+          "required": [
+            "record_type",
+            "tenant_id",
+            "owner_id",
+            "project_id",
+            "session_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "record_type": {
+              "const": "AgentContext"
+            },
+            "tenant_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "owner_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "project_id": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/OpaqueId"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "context_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "run_id": {
+              "$ref": "#/$defs/OpaqueId"
+            }
+          },
+          "required": [
+            "record_type",
+            "tenant_id",
+            "owner_id",
+            "project_id",
+            "context_id",
+            "run_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "record_type": {
+              "const": "Assessment"
+            },
+            "tenant_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "owner_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "project_id": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/OpaqueId"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "assessment_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "status": {
+              "enum": [
+                "confirmed",
+                "unverified"
+              ]
+            },
+            "observed_model_usage": {
+              "type": "boolean"
+            },
+            "context_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "entry_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "memory_ids": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/OpaqueId"
+              },
+              "uniqueItems": true
+            },
+            "run_id": {
+              "$ref": "#/$defs/OpaqueId"
+            }
+          },
+          "required": [
+            "record_type",
+            "tenant_id",
+            "owner_id",
+            "project_id",
+            "assessment_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "record_type": {
+              "const": "Receipt"
+            },
+            "tenant_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "owner_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "project_id": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/OpaqueId"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "receipt_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "run_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "task_id": {
+              "$ref": "#/$defs/OpaqueId"
+            },
+            "status": {
+              "enum": [
+                "completed",
+                "pending",
+                "failed",
+                "unknown"
+              ]
+            },
+            "authorized": {
+              "type": "boolean"
+            },
+            "source_bindings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "source_id": {
+                    "$ref": "#/$defs/OpaqueId"
+                  },
+                  "snapshot_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "source_metadata_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                },
+                "required": [
+                  "source_id",
+                  "snapshot_sha256",
+                  "source_metadata_sha256"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 64
+            }
+          },
+          "required": [
+            "record_type",
+            "tenant_id",
+            "owner_id",
+            "project_id",
+            "receipt_id",
+            "run_id",
+            "task_id",
+            "status",
+            "authorized",
+            "source_bindings"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

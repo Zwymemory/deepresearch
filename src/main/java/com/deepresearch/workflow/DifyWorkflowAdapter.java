@@ -70,11 +70,28 @@ public class DifyWorkflowAdapter {
     private void run(String runId) {
         WorkflowRepository.RunRow row = repository.find(runId).orElseThrow();
         try {
-            String summary = json.readTree(row.contextSnapshotJson()).path("sessionSummary").asText("");
+            DifyContextInputs.Prepared context = DifyContextInputs.prepare(row.contextSnapshotJson(), json);
             Map<String, Object> inputs = Map.of("question", row.question(), "java_run_id", runId,
                     "allowed_tools", String.join(",", row.requestedScopes()),
-                    "session_summary", summary);
-            client.run(inputs, internalUser(row), event -> onEvent(runId, event));
+                    "session_summary", context.sessionSummaryInput());
+            repository.insertEvent(runId, "dify:context:prepared", "SYSTEM", null,
+                    "CONTEXT_INPUT_PREPARED", json.writeValueAsString(context.diagnostics()));
+            client.run(inputs, internalUser(row), event -> {
+                onEvent(runId, event);
+                if ("workflow_started".equals(event.path("event").asText())
+                        && !event.path("workflow_run_id").asText("").isBlank()
+                        && !event.path("task_id").asText("").isBlank()) {
+                    var acknowledged = new java.util.LinkedHashMap<>(context.diagnostics());
+                    acknowledged.put("injected", acknowledged.remove("submitted"));
+                    acknowledged.put("delivery", "workflow_request_acknowledged");
+                    try {
+                        repository.insertEvent(runId, "dify:context:injected", "SYSTEM", null,
+                                "CONTEXT_INJECTED", json.writeValueAsString(acknowledged));
+                    } catch (com.fasterxml.jackson.core.JsonProcessingException failure) {
+                        throw new IllegalStateException("context diagnostic serialization failed", failure);
+                    }
+                }
+            });
             var mapping = repository.difyMapping(runId).orElseThrow();
             if (mapping.workflowRunId() != null) reconcile(runId);
             else markDispatchUnknown(runId);

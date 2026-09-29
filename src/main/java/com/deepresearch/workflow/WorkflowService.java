@@ -403,7 +403,8 @@ public class WorkflowService {
 
     private String truncate(String value, int limit) {
         String normalized = value == null ? "" : value.trim();
-        return normalized.length() <= limit ? normalized : normalized.substring(0, limit) + "…";
+        return normalized.codePointCount(0, normalized.length()) <= limit ? normalized
+                : normalized.substring(0, normalized.offsetByCodePoints(0, limit)) + "…";
     }
 
     private String writeJson(Object value) {

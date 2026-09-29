@@ -14,7 +14,7 @@ import java.math.BigDecimal;
  * @param answer        最终回答（关键论断带 [来源N] 引用）
  * @param rounds        实际推理的轮数
  * @param finished      是否在最大轮数内自然给出答案（false 表示是达到上限后被强制收尾的）
- * @param memoryContext W9.5 本轮使用的记忆上下文，便于观察 summary/recent/memory 是否生效
+ * @param memoryContext W9.5 本轮选入的上下文；不能据此认定模型实际使用记忆
  * @param steps         每一轮的推理轨迹
  * @param events        Agent 运行事件流，用于普通响应和 SSE 进度展示
  */
@@ -102,11 +102,22 @@ public record AgentResearchResponse(
     }
 
     public record Diagnostics(
-            boolean summaryUsed,
+            boolean summarySelected,
             int recentMessageCount,
             int selectedMemoryCount,
             int totalMemoryCount,
             String reason
     ) {
+        /** Legacy Java accessor meant selection; it is no longer emitted as a usage claim. */
+        @Deprecated
+        @com.fasterxml.jackson.annotation.JsonIgnore
+        public boolean summaryUsed() {
+            return summarySelected;
+        }
+
+        @com.fasterxml.jackson.annotation.JsonProperty("modelUseVerification")
+        public String modelUseVerification() {
+            return "unknown";
+        }
     }
 }
