@@ -25,9 +25,41 @@
 - [三个真实保存运行](citation-ui-saved-check-2026-09-28.json)共 7 条引用：页面标题、URL、编号、内部 ID 与后端 `finalResponse` 精确对应，刷新后保持一致，正文编号可以打开引用面板。本次呈现验证只有 GET，没有新建真实 workflow。
 - 实际点击 Python 官方文档卡片，浏览器新标签加载 `https://docs.python.org/3/library/asyncio.html`，并确认 `window.opener === null`。这证明普通网页跳转，不证明历史答案全部正确。
 
-这些是呈现与恢复验证。答案支持和偶发模型空输出的修复结果由另一个固定版本报告记录；历史 4/5、V7 full37 与原失败保留。统一部署后的版本与真实 UI 核对另行补充。
+这些准备检查是呈现与恢复验证。答案支持和偶发模型空输出的修复结果由另一个固定版本报告记录；历史 4/5、V7 full37 与原失败保留。统一服务后的独立检查如下。
 
-### 截图
+## 2026-09-29 统一源码部署与真实页面验收
+
+合并已审阅的 Dify 最终证据提交 `e9a3b470437907a82d935d82b44b30aaaa2c9040` 与前端改动，源构建提交为 `e263bc1f71f309f41a377eebceb715fc0bf7d179`。Dify 实现实测为 `3c77d31c3bed4662369ab8622cc9133788972975`，发布 **Evidence v15 Query**，源 DSL SHA256 `87a3e241456c34dbf5dcb772fd0667b08e527650f586ee097411676b0fc05033`，发布 API 读回精确匹配 40 节点/37 边。本次没有重派模型或网页搜索，使用该版本已完成的五类保存结果，质量审阅仍见[固定 16 场景报告](WEB_QUALITY_REPAIR_2026-09-28.md)。
+
+独立检出目录先保留旧未跟踪截图，再核对准确 HEAD，从正常 Dockerfile 编译源码。一次切换被旧截图阻止；随之误启动的旧检出构建已主动中止、未部署，失败与私有备份记录保留。成功构建沿用[已记录的 Maven 缓存](build-cache-provenance-2026-09-28.json)，不是无缓存新机安装。新镜像 ID `sha256:59e4b8c5c13fef4dc30fa9b6e30c0ae4bf36c8e993390e8ea2664cdcc4209857`，manifest `092548309d3a1fd4620029ef8e1e3c41693e2f01d8095a511367781faadd1ee5`，config `68a9ff6fcc67634bd4fa4a15c69f5efa95559ae59fb94464aa52d7cd98aea899`。两个时间点确认无活动 workflow 后，只更新 app；已有 `.env`、数据库、八文档和外部服务数据卷保留。
+
+真实服务 `/demo.html` 返回 200，SHA256 为 `c5965c8563d59734fe4e5173623f707a432f59b6dc0e98cc0336367e7f8828ac`，与受测前端相同。本次浏览器移除了客户端替换，直接读取部署 jar 的页面，使用原 QA USER 身份只读已有结果。[脱敏机器记录](citation-ui-served-check-2026-09-29.json)在原始精确匹配完成后才哈希 run/source ID。
+
+| 保存结果 | 终态 | 来源数 | 逐个正文目标 | 刷新后匹配 |
+|---|---|---:|---:|---|
+| 原问题网页 | SUCCEEDED | 3 | 4 | 是 |
+| 项目知识库 + 官方网页 | SUCCEEDED | 2 | 4 | 是 |
+| Java 与 Python 职责 | SUCCEEDED | 1 | 2 | 是 |
+| JWT 公开资料边界 | SUCCEEDED | 2 | 2 | 是 |
+| 银行信息缺乏支持 | INSUFFICIENT_EVIDENCE | 0 | 0 | 是 |
+
+全部 9 条来源的编号、唯一 ID、实际标题、完整原摘录与 `finalResponse` 匹配；内部 ID 默认折叠。逐个点击全部 12 个正文标记，记录真实 `scrollIntoView` 目标均为各自卡片；刷新保持同一映射。知识库没有虚构 URL，无证据结果为空答零引用。银行场景有相关知识库检索行，但不支持所问值，不把它称为字面零检索。
+
+实际点击官方卡片，新标签页加载 `https://docs.python.org/3/library/asyncio.html`，观察标题为 Python 3.14.7 documentation 且 `window.opener === null`。这仅验证普通外链，不承诺定位原句，不补证旧版存档、原摘要或省略内容。闭合 run 的真实持久 SSE 共 48 条：读取前 5 条后按游标恢复 43 条，JSON payload 与完整基线逐条一致，包含 `DIFY_STAGE`；全过程新建 workflow POST 为 0。这是已完成记录的游标回放，**不是运行中断线、进程崩溃、取消或远端 stop 的新故障注入**。
+
+集成提交通过 44 项相关 Java 单元、4 项真实 PostgreSQL 检查、实际 DSL 契约、26 项评测测试、11 份历史 score 精确复算、8 文档 dry-run 和两个 Compose 配置。在线配置/Java/RAGFlow dataset/Dify App Key 预检通过；配置中的 ADMIN 令牌用于 corpus HTTP 时返回 401，未独立确认原因、未重签或修改 `.env`。部署后改用只读 PostgreSQL 核对，8 份本地文件/Java/同步映射 hash 相等且均 DONE；这与 Dify 交接前八份 file/Java/RAGFlow 检查分列，**不当作新的 RAGFlow API 内容抓取**。最终公开档案/完整历史和同一 Draft PR 的 CI 按最终 HEAD 另执行。
+
+### 统一服务的实际页面
+
+项目知识库完整覆盖 Java 与 Python 的职责，一条真实来源支持两句：
+
+![统一服务知识库答案](media/citation-ui-served-answer-kb-positive-2026-09-29.png)
+
+项目职责与 asyncio 的 I/O 用途，分别对应知识库和官方网页：
+
+![统一服务混合来源答案](media/citation-ui-served-answer-mixed-kb-web-2026-09-29.png)
+
+### 较早的准备截图
 
 真实保存网页结果的新客户端预览：
 
