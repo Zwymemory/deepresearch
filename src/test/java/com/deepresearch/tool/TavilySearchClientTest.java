@@ -68,8 +68,8 @@ class TavilySearchClientTest {
                       {"url":"https://docs.example.org/b","content":"subdomain"},
                       {"url":"https://notexample.org/c","content":"wrong suffix"},
                       {"url":"https://example.org.evil.com/d","content":"wrong prefix"},
-                      {"url":"https://example.org@evil.com/e","content":"user info"},
-                      {"url":"https://user@example.org/f","content":"credentials"},
+                      {"url":"https://example.org\u0040evil.com/e","content":"user info"},
+                      {"url":"https://user\u0040example.org/f","content":"credentials"},
                       {"url":"https://evil.com/?host=example.org","content":"query"},
                       {"url":"file://example.org/a","content":"wrong scheme"}
                     ]}
