@@ -61,3 +61,18 @@ evidence-v10-quality-live-2026-09-28.json 保留全部 16 次；连续原题十�
 claim-support-whole-question-audit-2026-09-28.json 保留十三次实际独立核验：原八例、两类拒答覆盖，以及上述原样尾段/同快照完整 Python 分句/原 Java-only 答案。十三例符合预定标签：旧尾段 supported=false、完整职责通过、Java-only 原整问覆盖为 []。Debug 会话过期的十三次 401 均发生在模型调用前并单列；通过原账户会话刷新后检查，不改变账户和权限。开发检查不计入最终连续队列。
 
 第三版仍使用原十六个问题、次序、期望和官方范围依据，保留前两轮失败记录。Java 源码和运行时输入树没有改变，可复用第二版正常源码构建镜像；另行固定当前 DSL/代码身份和该镜像来源后才开始第三轮。
+
+### 第三冻结版 9c66515：原题 10/10，质量 14/16，仍失败
+
+evidence-v11-quality-live-2026-09-28.json 保留完整十六次，不重抽样。发布为 Evidence v11 Whole / a794d841-f14b-4ef8-92fc-38989e8732c8，DSL SHA256 d04f74db1bfa91d9de498d34be0abba539902967316950b8a5c8f2f2fbca14de；Java 镜像仍来自 833b1e7，源码输入树与 9c66515 一致。
+
+原题十次均成功且记录审阅通过；全部十六次有十五次预期终态，六十个模型节点均 finish_reason=stop。审阅全部六十四条候选论断的自身引句，未发现本轮新的论断蕴含错误；十三个官网范围用例的发布网页引用及检索结果均在已核实范围。Native 耗时中位数 6.121 秒、P95 12.151 秒；总 token 中位数 8418，范围 2258–14320，单次运行 completion token 合计最多 499。有限样本及模型核验不能证明长期稳定性。
+
+两项整体验收缺口均保留：
+
+- mixed-kb-web / wf-b80d04c1-a56f-414d-8df0-2527d6e9f616：Java 与 Python 职责自身引文完整，原缺主语问题已修；但两条网页事实只回答 create_task 的并发机制和推荐的 async/await 写法，未说明适合的工作负载。核验把这两条机制事实错误映射到“适合哪类任务”及完整原问题，属于覆盖误批准。
+- kb-boundary / wf-3abc467d-8f8d-458b-871d-9dee49f9b720：kb_search 为 COMPLETED/OK，返回五条证据，其中含公开文档不包含 JWT 签名密钥的明示边界。Reviewer 却选择 INSUFFICIENT_EVIDENCE/NONE/空 boundary_support，review 验证节点随后输出 NO_RELEVANT_EVIDENCE；没有调用 Synthesizer 或支持核验。该代码表示没有获准的回答依据，不能解释成检索零结果。冻结期望为可引用的资料边界说明，故本项失败。
+
+kb-positive 已同时回答 Java/Python，完整 Python 分句直接支持职责；kb-zero-evidence 同样检索到五条相关文档，但均未支持银行账户/开户地址或其明确排除，空答零引用符合原期望。记录审阅是 Codex 的逐条检查，不是独立人工裁决。
+
+一次只读登录探测误用旧路由收到 500，改用已有任务的正确路由后收到 200；没有创建任务或调用模型，单列 evidence-v11-quality-auth-setup-2026-09-28.json。原 USER token 有效，私有 .env 未变。下一版需区分“机制/能力”与“适用工作负载”等请求关系，并准确使用已有精确公开边界；保持预算、固定问题、标签、来源范围和八文档不变。
