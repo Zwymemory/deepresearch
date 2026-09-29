@@ -73,7 +73,10 @@ public class WorkflowRepository {
     }
     public Optional<com.fasterxml.jackson.databind.JsonNode> sealedAgentReport(String runId,String answer,List<String> citations,String terminalStatus) {
         try {
-            return jdbcTemplate.query("""
+            // finalizeRun holds this row lock until the terminal update. Every proof write fences on it.
+            if (jdbcTemplate.queryForList("SELECT run_id FROM agent_workflow_run WHERE run_id=? FOR UPDATE",runId).isEmpty())
+                return Optional.empty();
+            var sealed=jdbcTemplate.query("""
                 SELECT result::text FROM agent_research_publication
                     WHERE run_id=? AND status='COMPLETED' AND answer_hash=?
                     AND result->>'answer'=? AND citations=CAST(? AS jsonb)
@@ -86,6 +89,12 @@ public class WorkflowRepository {
                     }
                 },runId,com.deepresearch.agent.ToolArgumentFingerprint.sha256(answer),
                     answer,objectMapper.writeValueAsString(citations),terminalStatus,terminalStatus).stream().findFirst();
+            if (sealed.isEmpty()) return sealed;
+            var current=new AgentCompletionService(jdbcTemplate).goalsForRun(runId);
+            if (current.isEmpty() || !com.deepresearch.evidence.EvidenceJson.canonical(com.deepresearch.evidence.EvidenceJson.JSON.valueToTree(current))
+                    .equals(com.deepresearch.evidence.EvidenceJson.canonical(sealed.get().path("goals"))))
+                return Optional.empty();
+            return sealed;
         } catch (com.fasterxml.jackson.core.JsonProcessingException invalid) {
             throw new IllegalArgumentException("publication citations invalid",invalid);
         }

@@ -12,6 +12,15 @@ public final class AgentCompletionService {
     private final JdbcTemplate db;
     public AgentCompletionService(JdbcTemplate db) { this.db=db; }
     private record Task(String id,String text,String status,List<String> criteria,List<String> dependencies) { }
+    /** Only a control-plane database caller may resolve this identity; no request-supplied scope. */
+    public List<EvidenceAuthority.ReportGoal> goalsForRun(String run) {
+        var identity=db.queryForList("SELECT project_id,tenant_id,owner_id FROM agent_research_run WHERE run_id=?",run);
+        if(identity.size()!=1) return List.of();
+        var row=identity.get(0);
+        return goals(new EvidenceAuthority.Grant(new com.deepresearch.security.AuthPrincipal(
+            (String)row.get("tenant_id"),(String)row.get("owner_id"),List.of()),
+            (String)row.get("project_id"),run,null,null,null));
+    }
     public List<EvidenceAuthority.ReportGoal> goals(EvidenceAuthority.Grant grant) {
         var tasks=db.query("SELECT task_id,objective,status,acceptance_criteria,dependencies FROM agent_research_task WHERE run_id=? ORDER BY plan_version,task_id",
             (r,n)->new Task(r.getString(1),r.getString(2),r.getString(3),List.of((String[])r.getArray(4).getArray()),List.of((String[])r.getArray(5).getArray())),grant.runId());

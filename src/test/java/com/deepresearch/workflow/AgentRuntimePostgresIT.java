@@ -200,6 +200,18 @@ class AgentRuntimePostgresIT {
         assertThat(report.path("terminal_status").asText()).isEqualTo("INSUFFICIENT_EVIDENCE");
         assertThat(report.path("answer").asText()).contains("Verify the per-minute request rate");
     }
+    @Test void sealedCompleteReportCannotFinalizeAfterItsCurrentInvestigationFails() {
+        Bridge b=bridge(16);var request=supportedPacket(b);var report=b.publication.publish("Bearer fixture-service",request);
+        var repository=new WorkflowRepository(b.db,JSON);var citations=List.of("kb:ragflow:dataset:document:chunk");
+        assertThat(repository.sealedAgentReport(b.ids.run_id(),report.path("answer").asText(),citations,"SUCCEEDED")).isPresent();
+        var failed=operation(b,4,"TOOL");
+        b.db.update("UPDATE agent_research_investigation_progress SET current_call_id=?,claim_token=?::uuid WHERE run_id=?",failed.call_id(),failed.claim_token(),b.ids.run_id());
+        b.authority.settle(b.authority.authorize("Bearer fixture-service","check_claims",failed),object("errorCode","CHECK_OPERATION_FAILED"));
+        assertThat(repository.sealedAgentReport(b.ids.run_id(),report.path("answer").asText(),citations,"SUCCEEDED")).isEmpty();
+        var workflows=new WorkflowService(repository,mock(AgentStateService.class),mock(UserContextService.class),JSON,true,Duration.ofSeconds(180));
+        assertThatThrownBy(()->b.tx.executeWithoutResult(status->workflows.finalizeRun(b.ids.run_id(),new WorkflowDtos.FinalizeRequest(b.ids.claim_token(),"SUCCEEDED",report.path("answer").asText(),citations,null,null,null)))).isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+        assertThat(b.db.queryForObject("SELECT status FROM agent_workflow_run WHERE run_id=?",String.class,b.ids.run_id())).isEqualTo("WORKING");
+    }
     @Test void lostLegacyMappingDoesNotDefaultToSatisfiedAndCrossRunCriterionIdentityIsRejected() {
         Bridge b=bridge(16);var publication=supportedPacket(b);
         b.db.update("DELETE FROM agent_research_criterion WHERE run_id=?",b.ids.run_id());
