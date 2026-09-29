@@ -98,6 +98,12 @@ class WorkflowMcpReceiptServiceTest {
                 "{\"success\":true,\"code\":\"OK\",\"tool\":\"kb_search\",\"evidence\":[]}");
     }
 
+    @Test void agentMcpRequiresTheUnifiedOperationReservationBeforeExecution() {
+        when(repository.agentIdentity("run-1")).thenReturn(Optional.of(new WorkflowRepository.AgentIdentity("tenant","owner")));
+        assertThat(service.begin(context,"kb_search",Map.of("query","MCP-7788")).errorCode()).isEqualTo("MCP_AGENT_BUDGET_REQUIRED");
+        verify(repository,org.mockito.Mockito.never()).beginMcpToolExecution(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString());
+    }
+
     @Test
     void canonicalizesArgumentOrderBeforeFingerprinting() {
         Map<String, Object> first = new LinkedHashMap<>();

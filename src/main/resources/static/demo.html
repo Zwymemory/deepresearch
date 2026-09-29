@@ -135,7 +135,7 @@
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
 
     .mode-switch {
-      display: grid; grid-template-columns: 1fr 1fr;
+      display: grid; grid-template-columns: repeat(3, 1fr);
       gap: 4px; padding: 4px; margin-bottom: 18px;
       border-radius: 12px; background: #edf1f7;
     }
@@ -545,7 +545,7 @@
     <aside class="panel control-panel" aria-label="研究控制台">
       <p class="eyebrow">New research</p>
       <h2>开始一次研究</h2>
-      <p class="muted small">由 Planner 拆解任务，Worker 检索，Reviewer 核验，再由 Synthesizer 合成答案。</p>
+      <p id="researchModeIntro" class="muted small">由 Planner 拆解任务，Worker 检索，Reviewer 核验，再由 Synthesizer 合成答案。</p>
 
       <div class="mode-switch" role="tablist" aria-label="运行模式">
         <button id="workflowModeButton" class="mode-button active" type="button" role="tab" aria-selected="true">Durable Workflow</button>
@@ -864,7 +864,8 @@
       if (type === "AGENT_PLAN_REVISED" || type === "AGENT_PLAN_UPDATED") {
         var tasks = Array.isArray(payload.tasks) ? payload.tasks : [];
         $("agentPlanText").textContent = "计划版本 " + payload.planVersion + "\n" + tasks.map(function(task) {
-          return task.objective + "（" + task.status + "）\n完成标准：" + (task.acceptance_criteria || []).join("；") + "\n证据：" + task.evidenceCount + " 条";
+          var status = {pending: "待执行", running: "执行中", done: "已完成", blocked: "待解决", cancelled: "已取消"}[task.status] || task.status;
+          return task.objective + "（" + status + "）\n完成标准：" + (task.acceptance_criteria || []).join("；") + "\n证据：" + task.evidenceCount + " 条";
         }).join("\n\n");
         return (payload.reason || "计划状态已更新") + " · 版本 " + payload.planVersion;
       }
@@ -1396,6 +1397,10 @@
       $("modeNote").textContent = autonomous ? "根据观察决定下一步 · 读取原文与核查结论 · 缺少证据时保留问题" : workflow ?
         "Java 控制的可恢复工作流 · DeepSeek API 推理 · 受权工具调用 · 状态/SSE 可恢复" :
         "Java/Spring AI 单 Agent 编排 · DeepSeek API 推理 · Java 直接执行工具 · 不具备 Workflow 恢复";
+      $("researchModeIntro").textContent = autonomous ? "一个研究助手根据最新观察决定检索、核查或补查；无法核实的内容保留为待查事项。" : workflow ? "由 Planner 拆解任务，Worker 检索，Reviewer 核验，再由 Synthesizer 合成答案。" : "一个研究助手调用工具收集资料并整理回答。";
+      if (state.status === "READY") {
+        $("runDescription").textContent = autonomous ? "输入问题后，查看研究计划、下一步行动和证据核查结果；没有解决的问题会保留说明。" : workflow ? "输入问题后，页面将实时展示规划、并行执行、审阅、修订与合成阶段；每个事件都来自可重放的安全轨迹。" : "输入问题后，查看单 Agent 的检索过程和回答。";
+      }
       $("modeValue").textContent = autonomous ? "自主研究" : workflow ? "WORKFLOW" : "SINGLE AGENT";
       $("startLabel").textContent = workflow ? "开始研究" : "运行基线";
     }

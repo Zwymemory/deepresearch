@@ -11,7 +11,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import java.util.List;
-import java.util.UUID;
 
 /** Live control-plane adapter. Only Java-owned search receipts supply source locators. */
 @Service
@@ -73,7 +72,8 @@ public class AgentEvidenceAuthority implements EvidenceAuthority {
             if (!body.path("success").asBoolean()) continue;
             for (JsonNode item:body.path("evidence")) {
                 String original=item.path("evidenceId").asText();
-                String identity=original.length()<=128?original:"source-"+EvidenceJson.sha(original);
+                String bounded=original.substring(0,original.offsetByCodePoints(0,Math.min(300,original.codePointCount(0,original.length()))));
+                String identity=bounded.codePointCount(0,bounded.length())<=128?bounded:"source-"+EvidenceJson.sha(bounded);
                 if (!sourceId.equals(identity)) continue;
                 String locator=item.path("uriOrChunkKey").asText();
                 String tool=(String)row.get("tool_name");
@@ -87,15 +87,32 @@ public class AgentEvidenceAuthority implements EvidenceAuthority {
                 String[] parts=(locator.startsWith("ragflow:")?"kb:"+locator:locator).split(":",-1);
                 if (parts.length!=5 || !parts[0].equals("kb") || !parts[1].equals("ragflow")
                         || parts[2].isBlank() || parts[3].isBlank() || parts[4].isBlank()) throw EvidenceException.denied();
-                if (purpose(g).equals("PUBLICATION")) reserveValidation(g,sourceId);
                 return new Candidate(sourceId,"knowledge",null,parts[2],parts[3],parts[4],item.path("title").asText(),(String)row.get("call_id"));
             }
         }
         throw EvidenceException.denied();
     }
-    private void reserveValidation(Grant g,String sourceId) {
-        tx.executeWithoutResult(status->{
+    @Override public PublicationReadPermit publicationRead(Grant g,JsonNode evidence) {
+        return tx.execute(status->{
             lock(g); if (!active(g)) throw EvidenceException.denied();
+            if (!purpose(g).equals("PUBLICATION") || !g.runId().equals(evidence.path("run_id").asText())
+                    || !g.projectId().equals(evidence.path("project_id").asText())
+                    || !g.principal().tenantId().equals(evidence.path("tenant_id").asText())
+                    || !g.principal().userId().equals(evidence.path("owner_id").asText())
+                    || !"knowledge".equals(evidence.path("source").path("kind").asText())) throw EvidenceException.denied();
+            String evidenceId=EvidenceJson.id(evidence.path("evidence_id").asText());
+            String expected=evidence.path("snapshot").path("sha256").asText();
+            if (!expected.equals(EvidenceJson.sha(evidence.path("snapshot").path("text").asText()))) throw EvidenceException.denied();
+            String fingerprint=EvidenceJson.sha(EvidenceJson.canonical(EvidenceJson.object("run",g.runId(),"project",g.projectId(),
+                    "task",g.taskId(),"call",g.callId(),"evidence",evidenceId,"snapshot",expected,"receipt",evidence.path("receipt_id").asText())));
+            String key="server:publication-read:"+EvidenceJson.sha(g.runId()+":"+g.callId()+":"+evidenceId).substring(0,48);
+            var prior=db.queryForList("SELECT request_hash,status,snapshot_hash FROM agent_research_source_validation WHERE run_id=? AND operation_id=?",g.runId(),key);
+            if (!prior.isEmpty()) {
+                var previous=prior.get(0);
+                if (!fingerprint.equals(previous.get("request_hash"))) throw EvidenceException.denied();
+                if (previous.get("status").equals("COMPLETED")) return new PublicationReadPermit(key,(String)previous.get("snapshot_hash"));
+                throw new EvidenceException("PUBLICATION_READ_UNKNOWN");
+            }
             var row=db.queryForMap("SELECT budget,(SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='TOOL') AS n FROM agent_workflow_run WHERE run_id=?",g.runId(),g.runId());
             JsonNode budget;
             try { budget=EvidenceJson.JSON.readTree(row.get("budget").toString()); }
@@ -105,7 +122,33 @@ public class AgentEvidenceAuthority implements EvidenceAuthority {
             db.update("""
                 INSERT INTO agent_research_operation(run_id,operation_key,attempt,kind,purpose,request_hash,status,input_reserved,output_reserved,claim_token)
                 VALUES (?,?,1,'TOOL','PUBLICATION',?,'RESERVED',0,0,?::uuid)
-                """,g.runId(),g.callId()+":validation:"+UUID.randomUUID(),EvidenceJson.sha(sourceId),g.claimToken());
+                """,g.runId(),key,fingerprint,g.claimToken());
+            db.update("""
+                INSERT INTO agent_research_source_validation(run_id,operation_id,parent_call_id,task_id,evidence_id,project_id,tenant_id,owner_id,
+                    request_hash,expected_snapshot_hash,status,claim_token)
+                VALUES (?,?,?,?,?,?,?,?,?,?,'EXECUTING',?::uuid)
+                """,g.runId(),key,g.callId(),g.taskId(),evidenceId,g.projectId(),g.principal().tenantId(),g.principal().userId(),fingerprint,expected,g.claimToken());
+            return new PublicationReadPermit(key,null);
+        });
+    }
+    @Override public void completePublicationRead(Grant g,PublicationReadPermit permit,String snapshotHash,String errorCode) {
+        tx.executeWithoutResult(status->{
+            lock(g);if (!active(g) || !purpose(g).equals("PUBLICATION") || permit==null) throw EvidenceException.denied();
+            if ((errorCode==null && (snapshotHash==null || !snapshotHash.matches("[0-9a-f]{64}")))
+                    || (errorCode!=null && (snapshotHash!=null || !errorCode.matches("[A-Z0-9_]{1,64}")))) throw EvidenceException.denied();
+            int n=db.update("""
+                UPDATE agent_research_source_validation SET status=?,snapshot_hash=?,error_code=?,completed_at=now()
+                WHERE run_id=? AND operation_id=? AND parent_call_id=? AND task_id=? AND project_id=? AND tenant_id=? AND owner_id=?
+                    AND status='EXECUTING' AND claim_token=?::uuid
+                """,errorCode==null?"COMPLETED":"FAILED",snapshotHash,errorCode,g.runId(),permit.operationId(),g.callId(),g.taskId(),g.projectId(),
+                    g.principal().tenantId(),g.principal().userId(),g.claimToken());
+            if (n!=1) throw EvidenceException.denied();
+            JsonNode result=EvidenceJson.object("snapshot_sha256",snapshotHash,"error_code",errorCode);
+            n=db.update("""
+                UPDATE agent_research_operation SET status='SETTLED',safe_result=CAST(? AS jsonb),actual_usage='{}'::jsonb,settled_at=now()
+                WHERE run_id=? AND operation_key=? AND status='RESERVED' AND claim_token=?::uuid
+                """,EvidenceJson.canonical(result),g.runId(),permit.operationId(),g.claimToken());
+            if (n!=1) throw EvidenceException.denied();
         });
     }
     void lock(Grant g) { db.queryForList("SELECT run_id FROM agent_workflow_run WHERE run_id=? FOR UPDATE",g.runId()); }

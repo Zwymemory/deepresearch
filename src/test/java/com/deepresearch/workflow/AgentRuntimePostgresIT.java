@@ -148,4 +148,24 @@ class AgentRuntimePostgresIT {
         assertThatThrownBy(()->b.service.read("Bearer fixture-service",new EvidenceDtos.ReadRequest(ids,"ragflow:dataset:document:chunk"))).isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
         assertThat(b.reads.get()).isZero();
     }
+    @Test void publicationReadPermitsReplayKnownHashesAndDenyInFlightOrForgedReceipts() {
+        Bridge b=bridge(16);var read=operation(b,1,"TOOL");
+        JsonNode evidence=b.service.read("Bearer fixture-service",new EvidenceDtos.ReadRequest(read,"ragflow:dataset:document:chunk"));
+        var pub=operation(b,2,"PUBLICATION");var grant=b.authority.authorize("Bearer fixture-service","publish_evidence",pub);
+        var permit=b.authority.publicationRead(grant,evidence);
+        assertThat(permit.completedSnapshotHash()).isNull();
+        assertThatThrownBy(()->b.authority.publicationRead(grant,evidence)).isInstanceOf(EvidenceException.class).hasMessageContaining("PUBLICATION_READ_UNKNOWN");
+        b.authority.completePublicationRead(grant,permit,sha(b.text),null);
+        assertThat(b.authority.publicationRead(grant,evidence).completedSnapshotHash()).isEqualTo(sha(b.text));
+        assertThat(b.db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='TOOL'",Integer.class,b.ids.run_id())).isEqualTo(4);
+        assertThatThrownBy(()->b.tx.executeWithoutResult(status->{
+            b.db.execute("SET LOCAL ROLE deepresearch_workflow");
+            b.db.update("UPDATE agent_research_operation SET safe_result='{}'::jsonb WHERE run_id=? AND operation_key=?",b.ids.run_id(),permit.operationId());
+        })).isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThatThrownBy(()->b.tx.executeWithoutResult(status->{
+            b.db.execute("SET LOCAL ROLE deepresearch_workflow");
+            b.db.queryForList("SELECT * FROM agent_research_source_validation WHERE run_id=?",b.ids.run_id());
+        })).isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThat(b.reads.get()).isEqualTo(1);
+    }
 }

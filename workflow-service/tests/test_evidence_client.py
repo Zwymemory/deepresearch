@@ -50,12 +50,7 @@ async def test_peer_verifier_request_and_model_receipt_bind_exact_response_and_c
                     {
                         "evidence_id": record["evidence_id"],
                         "relation": "supports",
-                        "quote": {
-                            "start": 0,
-                            "end": len(text),
-                            "text": text,
-                            "sha256": hashlib.sha256(text.encode()).hexdigest(),
-                        },
+                        "quote": text,
                         "reason": "Synthetic complete paragraph",
                     }
                 ],

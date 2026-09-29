@@ -154,10 +154,8 @@ class ObservationDrivenModel:
                     ],
                     "reason": "观察到反证或缺口，增加核查目标",
                 }
-            elif (
-                not payload["candidates"]
-                or (last.get("action") == "search"
-                and not last.get("candidates"))
+            elif not payload["candidates"] or (
+                last.get("action") == "search" and not last.get("candidates")
             ):
                 if packet:
                     value = {
@@ -377,6 +375,54 @@ async def test_source_text_mutation_changes_subsequent_actions():
     assert any(e.event_type == "AGENT_PLAN_REVISED" for e in first[2].events)
     assert not any(e.event_type == "AGENT_PLAN_REVISED" for e in second[2].events)
     assert len(second[4].requests) < len(first[4].requests)
+
+
+async def test_empty_web_search_can_switch_to_kb_without_rebinding_task_scope():
+    context = setup("version-difference")
+    model, tools = context[4], context[5]
+    original_invoke, original_execute = model.invoke, tools.execute
+    granted_tools = {}
+
+    async def decide_from_empty_result(request):
+        observations = request.payload.get("observations", [])
+        last = observations[-1] if observations else {}
+        if last.get("action") == "search" and not last.get("candidates"):
+            model.requests.append(request)
+            return ModelResult(
+                value={
+                    "action": "search",
+                    "query": request.payload["original_question"],
+                    "tool": "kb_search",
+                    "reason": "网页检索为空，改查获准的知识库",
+                },
+                input_tokens=120,
+                output_tokens=100,
+            )
+        return await original_invoke(request)
+
+    async def enforce_single_tool_grant(request):
+        # Same invariant as WorkflowAccessService: an execution task cannot
+        # acquire a second tool scope. It must remain possible to change tools.
+        prior = granted_tools.setdefault(request.task.task_id, request.task.tool)
+        assert prior == request.task.tool
+        if request.task.tool == "web_search":
+            tools.calls.append(request)
+            return ToolExecutionResult(call_id=request.call_id, evidence=[])
+        return await original_execute(request)
+
+    model.invoke, tools.execute = decide_from_empty_result, enforce_single_tool_grant
+    run = context[1].model_copy(
+        update={"requested_scopes": [*context[1].requested_scopes, "kb_search"]}
+    )
+    await context[0].run_claimed(run)
+
+    assert context[7].requests[-1].status == "SUCCEEDED"
+    assert [request.task.tool for request in tools.calls] == ["web_search", "kb_search"]
+    assert len(granted_tools) == 2
+    assert all(request.task.task_id == request.call_id for request in tools.calls)
+    assert len(context[3].tasks) == 1
+    assert context[3].tasks[0]["task_id"] not in granted_tools
+    assert context[3].tasks[0]["evidence_ids"]
 
 
 async def test_unified_model_budget_includes_decision_and_verifier_calls():

@@ -72,17 +72,18 @@ public class AgentPublicationController {
                     UPDATE agent_research_publication SET status='COMPLETED',answer_hash=?,citations=CAST(? AS jsonb),result=CAST(? AS jsonb),proof=CAST(? AS jsonb),completed_at=now()
                     WHERE run_id=? AND call_id=? AND status='EXECUTING'
                     """,sha(answer),canonical(JSON.valueToTree(citations)),canonical(result),canonical(checked),g.runId(),g.callId());
-                db.update("""
-                    UPDATE agent_research_operation SET status='SETTLED',safe_result='{}'::jsonb,actual_usage='{}'::jsonb,settled_at=now()
-                    WHERE run_id=? AND operation_key LIKE ? AND kind='TOOL' AND status='RESERVED' AND claim_token=?::uuid
-                    """,g.runId(),g.callId()+":validation:%",g.claimToken());
                 authority.settle(g,result); return result;
             });
         } catch (RuntimeException failure) {
             tx.executeWithoutResult(status->{
                 authority.lock(g);
                 db.update("UPDATE agent_research_publication SET status='UNKNOWN' WHERE run_id=? AND call_id=? AND status='EXECUTING'",g.runId(),g.callId());
-                db.update("UPDATE agent_research_operation SET status='UNKNOWN',settled_at=now() WHERE run_id=? AND operation_key LIKE ? AND status='RESERVED'",g.runId(),g.callId()+":validation:%");
+                db.update("""
+                    UPDATE agent_research_operation o SET status='UNKNOWN',settled_at=now()
+                    FROM agent_research_source_validation v WHERE v.run_id=o.run_id AND v.operation_id=o.operation_key
+                    AND v.run_id=? AND v.parent_call_id=? AND v.status='EXECUTING' AND o.status='RESERVED'
+                    """,g.runId(),g.callId());
+                db.update("UPDATE agent_research_source_validation SET status='UNKNOWN',completed_at=now() WHERE run_id=? AND parent_call_id=? AND status='EXECUTING'",g.runId(),g.callId());
             });
             throw failure;
         }

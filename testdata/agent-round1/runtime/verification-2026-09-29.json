@@ -1,0 +1,259 @@
+{
+  "round": 1,
+  "result": "local_runtime_candidate_verified",
+  "baseline_sha": "186a03f747951b40f7de284e6bd298a3f3eef94f",
+  "a_parent_commit": "ef08be02b77ddbdcc564afe72436ecf166693e07",
+  "a_version_binding": "Exact final commit is recorded in the external runtime handoff; source digests below bind executable gate inputs to that commit.",
+  "peer_committed_sha": "9e606b16302cbddcc02d2e8763002bbcc73bfe19",
+  "source_bundle": "/Users/zwy/Claude/Projects/deepresearch-github/target/agent-round1-aejjfimu",
+  "branch_merge_performed": false,
+  "python_runtime_protocol_tests": {
+    "tests": 46,
+    "result": "passed",
+    "modules": [
+      "test_agent_runtime",
+      "test_agent_model",
+      "test_evidence_client",
+      "test_runner",
+      "test_domain"
+    ]
+  },
+  "python_legacy_regression": {
+    "tests": 60,
+    "result": "passed",
+    "modules": [
+      "test_graph",
+      "test_citation_mapping",
+      "test_query_fidelity",
+      "test_http_contracts",
+      "test_repository"
+    ]
+  },
+  "python_postgres_tests": {
+    "tests": 7,
+    "result": "passed",
+    "entrypoint": "nested subprocess in AgentRuntimePostgresIT",
+    "isolation": "Testcontainers disposable PostgreSQL, real Flyway V1-V19, sidecar role and fresh connection pools"
+  },
+  "java_suites": [
+    {
+      "name": "com.deepresearch.workflow.DifyContextInputsTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.deepresearch.workflow.WorkflowAccessServiceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.deepresearch.workflow.WorkflowMcpReceiptServiceTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.deepresearch.workflow.WorkflowServiceTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.deepresearch.mcp.McpKnowledgeLoopIT",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.deepresearch.workflow.AgentRuntimePostgresIT",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "offline_frozen_contracts": {
+    "runtime_tests": 38,
+    "knowledge_tests": 39,
+    "result": "offline_contracts_passed",
+    "freeze": "frozen_for_round_1"
+  },
+  "ui_preview": {
+    "url": "http://127.0.0.1:18090/demo.html",
+    "result": "default and three modes observed; native plan expanded",
+    "authenticated": false,
+    "research_run_created": false,
+    "file_sha256": "99ebf4d19b5bbc42e85abed5c3c048e1a8e01368feabc0d0845517ad1f799d17",
+    "scope": "Final UI labels were checked separately after the executable gate; no API execution."
+  },
+  "ruff": {
+    "result": "passed",
+    "scope": "new agent modules and tests",
+    "ignored_rules": [
+      "RUF001",
+      "RUF003",
+      "E501",
+      "ASYNC240"
+    ]
+  },
+  "diff_checks": "passed",
+  "staged_secret_scan": "no leaks found",
+  "real_model_calls": 0,
+  "real_external_source_reads": 0,
+  "live_deployment": false,
+  "semantic_truth_guaranteed": false,
+  "provider_usage_measurement": "synthetic unit metadata only; actual provider token/cost remains unknown",
+  "remaining_gaps": [
+    "Main review and combined commit integration",
+    "Real HTTP identity, live source and finite real model acceptance",
+    "Manual semantic review",
+    "Research memory CRUD/index/deletion propagation",
+    "Pending summary maintenance worker"
+  ],
+  "gate_source_file_sha256": [
+    {
+      "path": "src/main/java/com/deepresearch/config/SecurityConfig.java",
+      "sha256": "f29ca26dba17d9ffc84ce85217a310000cbb071f1c6e83c66eefe8541f2f4eb8"
+    },
+    {
+      "path": "src/main/java/com/deepresearch/web/WorkflowController.java",
+      "sha256": "bea73b272d3850c429dfdc0308b71932b2e68a26a1fc97449f14dfe320294bcf"
+    },
+    {
+      "path": "src/main/java/com/deepresearch/web/dto/AgentResearchResponse.java",
+      "sha256": "e60bcf65a134629a0d8e2dc756d0319e7a74b7878bdc7a6449176942af7e318e"
+    },
+    {
+      "path": "src/main/java/com/deepresearch/workflow/AgentEvidenceAuthority.java",
+      "sha256": "c2f6fb9b0e618d6b8d6d7ea6803e1a857d5e9d30085a1005bf6bab2c22669fb9"
+    },
+    {
+      "path": "src/main/java/com/deepresearch/workflow/AgentPublicationController.java",
+      "sha256": "55b8346f32d738d30dcb05164b37166ebb44ce57fc29c64a9cf3400f317b1a2e"
+    },
+    {
+      "path": "src/main/java/com/deepresearch/workflow/AgentRunAuthorization.java",
+      "sha256": "42f568fbcc5aa261f00f089c0592d75c57c56a4442d250767c97e1a0be32f077"
+    },
+    {
+      "path": "src/main/java/com/deepresearch/workflow/AgentRunService.java",
+      "sha256": "6e459d162a4e82b0bc72c65f0502f3e4d3396bbd1bf9129b27669b6a395c92f5"
+    },
+    {
+      "path": "src/main/java/com/deepresearch/workflow/AgentWorkflowController.java",
+      "sha256": "e5ef1c2acf051fe11a1c311725a2afb6ed3635ba9cd38498fa684e1f87b0dade"
+    },
+    {
+      "path": "src/main/java/com/deepresearch/workflow/WorkflowAccessService.java",
+      "sha256": "b4831bc7c756143db219e57d173f77527f853d8f0db101701c54cfa9127e02e2"
+    },
+    {
+      "path": "src/main/java/com/deepresearch/workflow/WorkflowDtos.java",
+      "sha256": "e971d610773587ea3614faa41043f55458fd2b25116b46c52405cbd86b189636"
+    },
+    {
+      "path": "src/main/java/com/deepresearch/workflow/WorkflowMcpReceiptService.java",
+      "sha256": "bf51efa530a45858854b61b9a6e7999f1170a913286bcd1d52322c4227f45625"
+    },
+    {
+      "path": "src/main/java/com/deepresearch/workflow/WorkflowRepository.java",
+      "sha256": "dabd25db7a5ea4c5ac0621bb24099e0e6ea08b3c48dd46ac9825b1825d8793e4"
+    },
+    {
+      "path": "src/main/java/com/deepresearch/workflow/WorkflowService.java",
+      "sha256": "3c8de282454c41c2239330b8711f8410d90fd14469a3e06a5ff55a3a15a6bb73"
+    },
+    {
+      "path": "src/main/resources/db/migration/V17__autonomous_agent_runtime.sql",
+      "sha256": "801007712f562c0539ef0f07283daf8f65ae03ece278b6189ac342090105b829"
+    },
+    {
+      "path": "src/main/resources/db/migration/V19__agent_publication_read_permits.sql",
+      "sha256": "4e46c07a6f87e634ffa5f6d9261d8be6ad85487b3f4957773466d6cbc3ab1916"
+    },
+    {
+      "path": "src/test/java/com/deepresearch/workflow/AgentRuntimePostgresIT.java",
+      "sha256": "df3d8b8b80a9b9ad64eebdf6239c45048389fd85fd0598621e234750db56dbce"
+    },
+    {
+      "path": "src/test/java/com/deepresearch/workflow/DifyContextInputsTest.java",
+      "sha256": "f229353b664238a17d14dc18f87d1532e141b59c5263a21d003e6cc3292d9674"
+    },
+    {
+      "path": "src/test/java/com/deepresearch/workflow/WorkflowMcpReceiptServiceTest.java",
+      "sha256": "8ccbbfad243912a2fc65c5431595c63fdbe241a7283ddd3928d13fc2e8a3c06c"
+    },
+    {
+      "path": "workflow-service/pyproject.toml",
+      "sha256": "52a904ffd0c63574b4e6dab64fada6d097100888e824685ab7390c851efe147f"
+    },
+    {
+      "path": "workflow-service/src/deepresearch_workflow/agent_budget.py",
+      "sha256": "8d3508b62fb66189d94cc6698bca44b1e603bbf1d2a93e07d8948064f26610e5"
+    },
+    {
+      "path": "workflow-service/src/deepresearch_workflow/agent_model.py",
+      "sha256": "5f607fd69742ef83c3835bb51dca117a6a128fcc4cd471f2ae8568fece1a15c6"
+    },
+    {
+      "path": "workflow-service/src/deepresearch_workflow/agent_protocol.py",
+      "sha256": "0fdfb440875f6c13edeb8bc66641172cfa3015901acf55b6d7bf3dbc0c17ebd1"
+    },
+    {
+      "path": "workflow-service/src/deepresearch_workflow/agent_runtime.py",
+      "sha256": "55485eeca60dd723e0d1f847c416d0a3eaeaae22ae91e14635e3264deaf25ea6"
+    },
+    {
+      "path": "workflow-service/src/deepresearch_workflow/app.py",
+      "sha256": "33d1c60dbe54a59dc8ba6c35cfb82e37999956add477df34b1c0ddab04a15499"
+    },
+    {
+      "path": "workflow-service/src/deepresearch_workflow/domain.py",
+      "sha256": "b373f2467cc6fc5d62011bb0857b040834edc90880a89c1668b067e19d6767dc"
+    },
+    {
+      "path": "workflow-service/src/deepresearch_workflow/evidence_client.py",
+      "sha256": "66bd9098840669cb4f55f6a0cd246c5adce56319672de03efd710d2cfdd1df29"
+    },
+    {
+      "path": "workflow-service/src/deepresearch_workflow/graph.py",
+      "sha256": "5b0b0629572dc56b79fda11279fed66836b93258e1ec37bbc103e790dcf15d1b"
+    },
+    {
+      "path": "workflow-service/src/deepresearch_workflow/repository.py",
+      "sha256": "2875c509035af8fa2e3d3030fa54f25ba1ee58b685d315eab19b739d2f4b6e16"
+    },
+    {
+      "path": "workflow-service/src/deepresearch_workflow/runner.py",
+      "sha256": "73ca82c83a5f0fa0b1455a67e13848446b0b0739ed030569d516310ded8b823c"
+    },
+    {
+      "path": "workflow-service/tests/test_agent_model.py",
+      "sha256": "e6d39b800d3eaa76caee8b53fe4d491a24cb86c622a14d8c9ac03ae0e4d8f275"
+    },
+    {
+      "path": "workflow-service/tests/test_agent_postgres.py",
+      "sha256": "6e48413c7946d95aa20bab3a08aec605d04378976c2ca42d344a587fd7b8f167"
+    },
+    {
+      "path": "workflow-service/tests/test_agent_runtime.py",
+      "sha256": "d65aec0ae979b6aee0cf339a44dc86c0c7fe48723f3533a92635606dc1a1ad9f"
+    },
+    {
+      "path": "workflow-service/tests/test_evidence_client.py",
+      "sha256": "619a7086eb2fa13c1256b72c8a8715c13b7ce13cc745b4fe41bb341e9db7f7c0"
+    },
+    {
+      "path": "workflow-service/uv.lock",
+      "sha256": "568da9702c0e22c3bef063ca5951afb06ed6b15474afeefc34b07b883329d7eb"
+    }
+  ],
+  "secret_scan_initial_flag": "generic-api-key matched a public source-file SHA-256 beside the WorkflowAccessService filename; no credential. Hash records are now structured as path/sha256 fields."
+}
