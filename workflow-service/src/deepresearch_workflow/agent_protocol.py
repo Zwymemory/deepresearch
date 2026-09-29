@@ -70,7 +70,13 @@ class AgentDecision(StrictModel):
         description="Brief public action rationale; no private reasoning",
     )
     task_id: str | None = Field(default=None, max_length=64)
-    investigation_id: Identifier | None = None
+    investigation_id: Identifier | None = Field(
+        default=None,
+        description=(
+            "Server-issued identity from a previous successful check. "
+            "Omit for the first check of a claim group; never invent one."
+        ),
+    )
     evidence_ids: list[Identifier] = Field(default_factory=list, max_length=32)
     query: str | None = Field(default=None, min_length=1, max_length=1000)
     tool: Literal["kb_search", "web_search", "calculator"] | None = None

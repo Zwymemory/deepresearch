@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock
 import httpx
 import pytest
 
-from deepresearch_workflow.agent_model import OpenAIAgentModel
 from deepresearch_workflow.agent_budget import SqlAgentLedger
+from deepresearch_workflow.agent_model import OpenAIAgentModel
 from deepresearch_workflow.agent_protocol import ModelRequest
 from deepresearch_workflow.graph import WorkflowExecutionError
 from deepresearch_workflow.settings import Settings
