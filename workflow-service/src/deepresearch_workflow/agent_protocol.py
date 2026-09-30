@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Annotated, Any, Literal
 
 from pydantic import Field, field_validator, model_validator
@@ -30,9 +30,37 @@ class UnknownValue(StrictModel):
 TaggedValue = Annotated[KnownValue | UnknownValue, Field(discriminator="status")]
 
 _VALID_AT_PATTERN = (
-    r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
-    r"(?:\.[0-9]{1,9})?(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    r"^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T"
+    r"(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]"
+    r"(?:\.[0-9]{1,9})?(?:Z|[+-](?:(?:0[0-9]|1[0-7]):[0-5][0-9]|18:00))$"
 )
+
+
+def valid_at_instant(value: str) -> tuple[int, int]:
+    """Return an exact UTC ordinal-second/nanosecond pair without float or truncation."""
+    if not isinstance(value, str) or re.fullmatch(_VALID_AT_PATTERN, value) is None:
+        raise ValueError("valid_at needs a real offset timestamp with seconds")
+    try:
+        local = datetime.fromisoformat(value[:19])
+    except ValueError:
+        raise ValueError("valid_at must be a real calendar date") from None
+    if value.endswith("Z"):
+        zone = "Z"
+        fraction = value[19:-1]
+    else:
+        zone = value[-6:]
+        fraction = value[19:-6]
+    nanos = int(fraction[1:].ljust(9, "0")) if fraction else 0
+    offset_seconds = 0
+    if zone != "Z":
+        hours, minutes = int(zone[1:3]), int(zone[4:6])
+        if minutes > 59 or hours > 18 or (hours == 18 and minutes != 0):
+            raise ValueError("valid_at timezone offset is outside the supported range")
+        offset_seconds = (hours * 60 + minutes) * 60 * (1 if zone[0] == "+" else -1)
+    local_seconds = (
+        local.toordinal() * 86400 + local.hour * 3600 + local.minute * 60 + local.second
+    )
+    return local_seconds - offset_seconds, nanos
 
 
 class KnownValidAt(StrictModel):
@@ -48,15 +76,7 @@ class KnownValidAt(StrictModel):
     @field_validator("value")
     @classmethod
     def real_offset_datetime(cls, value: str) -> str:
-        if re.fullmatch(_VALID_AT_PATTERN, value) is None:
-            raise ValueError("valid_at needs seconds and an explicit timezone")
-        try:
-            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError as invalid:
-            raise ValueError("valid_at must be a real calendar date") from invalid
-        offset = parsed.utcoffset()
-        if offset is None or abs(offset) > timedelta(hours=18):
-            raise ValueError("valid_at timezone offset is outside the supported range")
+        valid_at_instant(value)
         return value
 
 

@@ -672,7 +672,10 @@ class EvidenceServiceIT {
         var h=new Harness(); h.source("declared-time","web","Version: 2026-09-27 修订版\n\nValid at: 2026-09-27T00:00:00Z\n\nLimit: 10");
         var evidence=h.read("declared-time","read-declared-time");
         assertThat(evidence.path("applicability").path("valid_at").path("value").asText()).isEqualTo("2026-09-27T00:00:00Z");
-        for (String invalid : List.of("2026-09-27 修订版","2026-09-27","2026-09-27T00:00:00","2026-02-30T00:00:00Z","2026-09-27T00:00:00+18:01")) {
+        for (String invalid : List.of("2026-09-27 修订版","2026-09-27","2026-09-27T00:00:00","2026-02-30T00:00:00Z",
+                "2026-09-27T00:00:00+00:60","2026-09-27T00:00:00-00:60","2026-09-27T00:00:00+00:99","2026-09-27T00:00:00-00:99",
+                "2026-09-27T00:00:00+17:60","2026-09-27T00:00:00-17:60",
+                "2026-09-27T00:00:00+18:01","2026-09-27T00:00:00-18:01")) {
             var application=(ObjectNode)spec("The request limit is 10.","2026-09-27 修订版").applicability().deepCopy();
             application.set("valid_at",known(invalid));
             assertThatThrownBy(()->h.prepare(List.of(new EvidenceDtos.ClaimSpec("The request limit is 10.","factual",application)),List.of(evidence),0,null,"bad-time-"+invalid.hashCode()))
@@ -681,8 +684,25 @@ class EvidenceServiceIT {
         var knownScope=(ObjectNode)spec("The request limit is 10.","2026-09-27 修订版").applicability().deepCopy();
         knownScope.set("valid_at",known("2026-09-27T08:00:00+08:00"));
         assertThat(h.prepare(List.of(new EvidenceDtos.ClaimSpec("The request limit is 10.","factual",knownScope)),List.of(evidence),0,null,"known-time").check_id()).isNotBlank();
+        var boundaryScope=(ObjectNode)knownScope.deepCopy(); boundaryScope.set("valid_at",known("2026-09-27T18:00:00+18:00"));
+        assertThat(h.prepare(List.of(new EvidenceDtos.ClaimSpec("The request limit is 10.","factual",boundaryScope)),List.of(evidence),0,null,"boundary-time").check_id()).isNotBlank();
+        var negativeBoundary=(ObjectNode)knownScope.deepCopy(); negativeBoundary.set("valid_at",known("2026-09-26T06:00:00-18:00"));
+        assertThat(h.prepare(List.of(new EvidenceDtos.ClaimSpec("The request limit is 10.","factual",negativeBoundary)),List.of(evidence),0,null,"negative-boundary-time").check_id()).isNotBlank();
         var unknownScope=(ObjectNode)spec("The request limit is 10.","2026-09-27 修订版").applicability().deepCopy();
         assertThat(h.prepare(List.of(new EvidenceDtos.ClaimSpec("The request limit is 10.","factual",unknownScope)),List.of(evidence),0,null,"unknown-time").check_id()).isNotBlank();
+    }
+    @Test void nanosecondDifferenceIsNotAnEquivalentEffectiveTime() {
+        var h=new Harness(); h.source("nanos","web","Version: 1.0\n\nValid at: 2026-09-27T00:00:00.123456001Z\n\nLimit: 10");
+        var evidence=h.read("nanos","read-nanos");
+        assertThat(evidence.path("applicability").path("valid_at").path("value").asText()).isEqualTo("2026-09-27T00:00:00.123456001Z");
+        var different=(ObjectNode)spec("The request limit is 10.","1.0").applicability().deepCopy();
+        different.set("valid_at",known("2026-09-27T00:00:00.123456999Z"));
+        var prepared=h.prepare(List.of(new EvidenceDtos.ClaimSpec("The request limit is 10.","factual",different)),List.of(evidence),0,null,"prepare-different");
+        assertThat(statuses(h.complete(prepared,propose(prepared.request()),"complete-different"))).containsExactly("insufficient");
+        var equivalent=(ObjectNode)spec("The request limit is 10.","1.0").applicability().deepCopy();
+        equivalent.set("valid_at",known("2026-09-27T08:00:00.123456001+08:00"));
+        var match=h.prepare(List.of(new EvidenceDtos.ClaimSpec("The request limit is 10.","factual",equivalent)),List.of(evidence),0,null,"prepare-equivalent");
+        assertThat(statuses(h.complete(match,propose(match.request()),"complete-equivalent"))).containsExactly("supported");
     }
     @Test void databaseOwnerFenceRejectsDifferentAuthenticatedOwnerBeforeRead() {
         var h = new Harness(); h.source("page","web","Version: 1.0\n\nLimit: 10");
