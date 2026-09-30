@@ -1,0 +1,401 @@
+{
+  "schema_version": "1",
+  "provenance": "A six bounded real HTTP/JWT research attempts; B independently audited captured search/read/check/report receipts and original context",
+  "baseline_sha": "b9b20ada48eed889a3ae486dbd429f934bfc7c64",
+  "B_source_interface_sha": "08e81f926acd742e8459b1646cbb3cd0baa68f3e",
+  "last_actual_runtime_build_sha": "ebe8d8195c6dcd9fb24f0711d66194d42c44fa05",
+  "attempted_run_count": 6,
+  "attempted_initial_case_count": 4,
+  "targeted_retry_count": 2,
+  "maximum_run_count": 8,
+  "stop_reason": "mixed and version-conditions consecutively ended FAILED/AGENT_MODEL_INVALID; both retry slots already consumed, so stop pending diagnosis",
+  "unattempted_cases": [
+    "contradictory-material",
+    "insufficient-evidence"
+  ],
+  "attempts": [
+    {
+      "scenario": "knowledge-only",
+      "run_id": "wf-36a933af-8531-48c0-8631-fcb392dd70fb",
+      "retry_of": null,
+      "actual_build_sha": "bab042e281ddd055a8709e724bfbebc2ecc0c6ea",
+      "terminal_status": "FAILED",
+      "error_code": "AGENT_MODEL_INVALID",
+      "source_classification": "real-public-curated",
+      "manual_semantic_result": "failed_model_wiring",
+      "manual_reason": "Authentic owned KB hit; next decision failed locally before original read. No source semantics assessed.",
+      "search_hits": [
+        {
+          "kind": "kb_search",
+          "source_id": "ragflow:742fd7f2bc2311f18a819d2ead8954c1:8aaa41a2bc2311f18a819d2ead8954c1:e4ec689d63440796",
+          "known_owned_document": true
+        }
+      ],
+      "original_sources": [],
+      "checked_claim_count": 0,
+      "native_decision_statuses": [],
+      "citation_positions_and_hashes": [],
+      "source_structure_checks": {
+        "passed": 1,
+        "failed": 0,
+        "limitation": "Only applicable checks ran; zero failures does not imply full semantic coverage."
+      },
+      "report_status": null,
+      "unfinished_goal_count": null,
+      "usage": {
+        "model_admissions": 3,
+        "tool_admissions": 1,
+        "decision_admissions": 2,
+        "model_settled": 1,
+        "model_unknown_or_inflight": 2,
+        "actual_input_tokens": 2248,
+        "actual_output_tokens": 109,
+        "input_usage_missing": 2,
+        "output_usage_missing": 2,
+        "actual_bill_or_cost": null,
+        "cost_note": "unknown; admission estimates are not provider bills"
+      }
+    },
+    {
+      "scenario": "knowledge-only",
+      "run_id": "wf-ba1f5ed0-7a31-4fa5-b9ec-e2a9a6583e1c",
+      "retry_of": "wf-36a933af-8531-48c0-8631-fcb392dd70fb",
+      "actual_build_sha": "30fdec9ce1875cd97e88f2b79c00134faa370e5a",
+      "terminal_status": "INSUFFICIENT_EVIDENCE",
+      "error_code": null,
+      "source_classification": "real-public-curated",
+      "manual_semantic_result": "safe_but_task_incomplete",
+      "manual_reason": "Owned original read and hash match; material contains all three requested facts, but invented first-check investigation ID prevented claims/citations.",
+      "search_hits": [
+        {
+          "kind": "kb_search",
+          "source_id": "ragflow:742fd7f2bc2311f18a819d2ead8954c1:8aaa41a2bc2311f18a819d2ead8954c1:e4ec689d63440796",
+          "known_owned_document": true
+        }
+      ],
+      "original_sources": [
+        {
+          "kind": "knowledge",
+          "title": "public-iana-example-domains.md",
+          "locator": {
+            "kind": "knowledge_chunk",
+            "chunk_id": "e4ec689d63440796",
+            "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+            "document_id": "8aaa41a2bc2311f18a819d2ead8954c1"
+          },
+          "snapshot_sha256": "c394abc66a65a19ee716069d42c876a2a2caef521299bd19ef56960ea925f598",
+          "declared_version": {
+            "value": null,
+            "reason": "No explicit document version declaration",
+            "status": "unknown"
+          },
+          "conditions": [
+            "Limited to this original document or recorded observation"
+          ]
+        }
+      ],
+      "checked_claim_count": 0,
+      "native_decision_statuses": [],
+      "citation_positions_and_hashes": [],
+      "source_structure_checks": {
+        "passed": 9,
+        "failed": 0,
+        "limitation": "Only applicable checks ran; zero failures does not imply full semantic coverage."
+      },
+      "report_status": "insufficient",
+      "unfinished_goal_count": 2,
+      "usage": {
+        "model_admissions": 4,
+        "tool_admissions": 3,
+        "decision_admissions": 4,
+        "model_settled": 4,
+        "model_unknown_or_inflight": 0,
+        "actual_input_tokens": 15591,
+        "actual_output_tokens": 1475,
+        "input_usage_missing": 0,
+        "output_usage_missing": 0,
+        "actual_bill_or_cost": null,
+        "cost_note": "unknown; admission estimates are not provider bills"
+      }
+    },
+    {
+      "scenario": "knowledge-only",
+      "run_id": "wf-6e2dd257-b242-4508-bab0-c1ea818c58ef",
+      "retry_of": "wf-ba1f5ed0-7a31-4fa5-b9ec-e2a9a6583e1c",
+      "actual_build_sha": "ebe8d8195c6dcd9fb24f0711d66194d42c44fa05",
+      "terminal_status": "SUCCEEDED",
+      "error_code": null,
+      "source_classification": "real-public-curated",
+      "manual_semantic_result": "passed_within_real_public_curated_scope",
+      "manual_reason": "Three supported claims match the curated card and its reviewed IANA basis; checked originals, native goal completion and three citations verified.",
+      "search_hits": [
+        {
+          "kind": "kb_search",
+          "source_id": "ragflow:742fd7f2bc2311f18a819d2ead8954c1:8aaa41a2bc2311f18a819d2ead8954c1:e4ec689d63440796",
+          "known_owned_document": true
+        }
+      ],
+      "original_sources": [
+        {
+          "kind": "knowledge",
+          "title": "public-iana-example-domains.md",
+          "locator": {
+            "kind": "knowledge_chunk",
+            "chunk_id": "e4ec689d63440796",
+            "dataset_id": "742fd7f2bc2311f18a819d2ead8954c1",
+            "document_id": "8aaa41a2bc2311f18a819d2ead8954c1"
+          },
+          "snapshot_sha256": "c394abc66a65a19ee716069d42c876a2a2caef521299bd19ef56960ea925f598",
+          "declared_version": {
+            "value": null,
+            "reason": "No explicit document version declaration",
+            "status": "unknown"
+          },
+          "conditions": [
+            "Limited to this original document or recorded observation"
+          ]
+        }
+      ],
+      "checked_claim_count": 3,
+      "native_decision_statuses": [
+        "supported",
+        "supported",
+        "supported"
+      ],
+      "citation_positions_and_hashes": [
+        {
+          "evidence_id": "evidence-0a891d3e-d6ce-4e48-9d40-b38e42fd8dff",
+          "source_id": "ragflow:742fd7f2bc2311f18a819d2ead8954c1:8aaa41a2bc2311f18a819d2ead8954c1:e4ec689d63440796",
+          "relation": "supports",
+          "start_codepoint": 0,
+          "end_codepoint": 670,
+          "quote_sha256": "c394abc66a65a19ee716069d42c876a2a2caef521299bd19ef56960ea925f598",
+          "original_snapshot_sha256": "c394abc66a65a19ee716069d42c876a2a2caef521299bd19ef56960ea925f598",
+          "quote_text": "omitted from public artifact"
+        },
+        {
+          "evidence_id": "evidence-0a891d3e-d6ce-4e48-9d40-b38e42fd8dff",
+          "source_id": "ragflow:742fd7f2bc2311f18a819d2ead8954c1:8aaa41a2bc2311f18a819d2ead8954c1:e4ec689d63440796",
+          "relation": "supports",
+          "start_codepoint": 0,
+          "end_codepoint": 670,
+          "quote_sha256": "c394abc66a65a19ee716069d42c876a2a2caef521299bd19ef56960ea925f598",
+          "original_snapshot_sha256": "c394abc66a65a19ee716069d42c876a2a2caef521299bd19ef56960ea925f598",
+          "quote_text": "omitted from public artifact"
+        },
+        {
+          "evidence_id": "evidence-0a891d3e-d6ce-4e48-9d40-b38e42fd8dff",
+          "source_id": "ragflow:742fd7f2bc2311f18a819d2ead8954c1:8aaa41a2bc2311f18a819d2ead8954c1:e4ec689d63440796",
+          "relation": "supports",
+          "start_codepoint": 0,
+          "end_codepoint": 670,
+          "quote_sha256": "c394abc66a65a19ee716069d42c876a2a2caef521299bd19ef56960ea925f598",
+          "original_snapshot_sha256": "c394abc66a65a19ee716069d42c876a2a2caef521299bd19ef56960ea925f598",
+          "quote_text": "omitted from public artifact"
+        }
+      ],
+      "source_structure_checks": {
+        "passed": 15,
+        "failed": 0,
+        "limitation": "Only applicable checks ran; zero failures does not imply full semantic coverage."
+      },
+      "report_status": "complete",
+      "unfinished_goal_count": 0,
+      "usage": {
+        "model_admissions": 5,
+        "tool_admissions": 5,
+        "decision_admissions": 4,
+        "model_settled": 5,
+        "model_unknown_or_inflight": 0,
+        "actual_input_tokens": 28663,
+        "actual_output_tokens": 2276,
+        "input_usage_missing": 0,
+        "output_usage_missing": 0,
+        "actual_bill_or_cost": null,
+        "cost_note": "unknown; admission estimates are not provider bills"
+      }
+    },
+    {
+      "scenario": "web-only",
+      "run_id": "wf-ac077ab9-912c-47e4-894b-a8199e454dbc",
+      "retry_of": null,
+      "actual_build_sha": "ebe8d8195c6dcd9fb24f0711d66194d42c44fa05",
+      "terminal_status": "INSUFFICIENT_EVIDENCE",
+      "error_code": null,
+      "source_classification": "real-public",
+      "manual_semantic_result": "safe_but_task_incomplete",
+      "manual_reason": "Actual IANA page includes requested facts, but model promoted page revision to known valid_at, producing CHECK_REQUEST_INVALID twice. Zero checked claims/citations.",
+      "search_hits": [
+        {
+          "kind": "web_search",
+          "source_id": "https://www.iana.org/domains/reserved",
+          "known_owned_document": false
+        },
+        {
+          "kind": "web_search",
+          "source_id": "https://www.iana.org/help/example-domains",
+          "known_owned_document": false
+        },
+        {
+          "kind": "web_search",
+          "source_id": "https://gnso.icann.org/sites/default/files/filefield_6441/icannandiana-reserved-names-v.12.pdf",
+          "known_owned_document": false
+        },
+        {
+          "kind": "web_search",
+          "source_id": "https://github.com/orgs/mdn/discussions/450",
+          "known_owned_document": false
+        },
+        {
+          "kind": "web_search",
+          "source_id": "https://www.iana.org/news/2024/example-domain-http-methods",
+          "known_owned_document": false
+        }
+      ],
+      "original_sources": [
+        {
+          "kind": "web",
+          "title": "Example Domains",
+          "locator": {
+            "uri": "https://www.iana.org/help/example-domains",
+            "kind": "web_uri"
+          },
+          "snapshot_sha256": "9fcf59ddeda8811d0631eae204201f1b93f98b493e07015dfbfb69db7b40bbb2",
+          "declared_version": {
+            "value": null,
+            "reason": "No explicit document version declaration",
+            "status": "unknown"
+          },
+          "conditions": [
+            "Limited to this original document or recorded observation"
+          ]
+        }
+      ],
+      "checked_claim_count": 0,
+      "native_decision_statuses": [],
+      "citation_positions_and_hashes": [],
+      "source_structure_checks": {
+        "passed": 9,
+        "failed": 0,
+        "limitation": "Only applicable checks ran; zero failures does not imply full semantic coverage."
+      },
+      "report_status": "insufficient",
+      "unfinished_goal_count": 3,
+      "usage": {
+        "model_admissions": 4,
+        "tool_admissions": 5,
+        "decision_admissions": 4,
+        "model_settled": 4,
+        "model_unknown_or_inflight": 0,
+        "actual_input_tokens": 18347,
+        "actual_output_tokens": 1449,
+        "input_usage_missing": 0,
+        "output_usage_missing": 0,
+        "actual_bill_or_cost": null,
+        "cost_note": "unknown; admission estimates are not provider bills"
+      }
+    },
+    {
+      "scenario": "mixed",
+      "run_id": "wf-45944543-67b0-494b-b21b-97b593f73bff",
+      "retry_of": null,
+      "actual_build_sha": "ebe8d8195c6dcd9fb24f0711d66194d42c44fa05",
+      "terminal_status": "FAILED",
+      "error_code": "AGENT_MODEL_INVALID",
+      "source_classification": "real-public-and-real-public-curated",
+      "manual_semantic_result": "failed_model_response",
+      "manual_reason": "Owned KB search hit only. No web source or original was read; model error cause not established.",
+      "search_hits": [
+        {
+          "kind": "kb_search",
+          "source_id": "ragflow:742fd7f2bc2311f18a819d2ead8954c1:8aaa41a2bc2311f18a819d2ead8954c1:e4ec689d63440796",
+          "known_owned_document": true
+        }
+      ],
+      "original_sources": [],
+      "checked_claim_count": 0,
+      "native_decision_statuses": [],
+      "citation_positions_and_hashes": [],
+      "source_structure_checks": {
+        "passed": 1,
+        "failed": 0,
+        "limitation": "Only applicable checks ran; zero failures does not imply full semantic coverage."
+      },
+      "report_status": null,
+      "unfinished_goal_count": null,
+      "usage": {
+        "model_admissions": 4,
+        "tool_admissions": 1,
+        "decision_admissions": 2,
+        "model_settled": 1,
+        "model_unknown_or_inflight": 3,
+        "actual_input_tokens": 2326,
+        "actual_output_tokens": 105,
+        "input_usage_missing": 3,
+        "output_usage_missing": 3,
+        "actual_bill_or_cost": null,
+        "cost_note": "unknown; admission estimates are not provider bills"
+      }
+    },
+    {
+      "scenario": "version-conditions",
+      "run_id": "wf-af24406d-ecdd-485b-9b26-f4e297ce1778",
+      "retry_of": null,
+      "actual_build_sha": "ebe8d8195c6dcd9fb24f0711d66194d42c44fa05",
+      "terminal_status": "FAILED",
+      "error_code": "AGENT_MODEL_INVALID",
+      "source_classification": "synthetic",
+      "manual_semantic_result": "failed_model_response",
+      "manual_reason": "All three relevant synthetic document IDs appeared in retrieval, but no original was read; model error cause not established.",
+      "search_hits": [
+        {
+          "kind": "kb_search",
+          "source_id": "ragflow:742fd7f2bc2311f18a819d2ead8954c1:8ab280f6bc2311f18a819d2ead8954c1:7a957fffe59d59d1",
+          "known_owned_document": true
+        },
+        {
+          "kind": "kb_search",
+          "source_id": "ragflow:742fd7f2bc2311f18a819d2ead8954c1:8ab4ffc0bc2311f18a819d2ead8954c1:bd05d474b2727877",
+          "known_owned_document": true
+        },
+        {
+          "kind": "kb_search",
+          "source_id": "ragflow:742fd7f2bc2311f18a819d2ead8954c1:8ab01c80bc2311f18a819d2ead8954c1:256bcb0a9fd8149c",
+          "known_owned_document": true
+        }
+      ],
+      "original_sources": [],
+      "checked_claim_count": 0,
+      "native_decision_statuses": [],
+      "citation_positions_and_hashes": [],
+      "source_structure_checks": {
+        "passed": 3,
+        "failed": 0,
+        "limitation": "Only applicable checks ran; zero failures does not imply full semantic coverage."
+      },
+      "report_status": null,
+      "unfinished_goal_count": null,
+      "usage": {
+        "model_admissions": 3,
+        "tool_admissions": 1,
+        "decision_admissions": 2,
+        "model_settled": 1,
+        "model_unknown_or_inflight": 2,
+        "actual_input_tokens": 2322,
+        "actual_output_tokens": 127,
+        "input_usage_missing": 2,
+        "output_usage_missing": 2,
+        "actual_bill_or_cost": null,
+        "cost_note": "unknown; admission estimates are not provider bills"
+      }
+    }
+  ],
+  "model_admissions_total": 23,
+  "tool_admissions_total": 16,
+  "settled_model_calls_with_usage": 16,
+  "models_unknown_or_inflight_total": 7,
+  "known_input_tokens_total": 69497,
+  "known_output_tokens_total": 5541,
+  "provider_bill_and_cost": "unknown; neither admission estimate nor corpus token_count is an invoice",
+  "real_vs_fixture_boundary": "All six attempts used the configured real decision provider; the three attempted public-source scenarios were knowledge-only, web-only, and mixed (the latter failed before web search). Version-conditions attempted real-model retrieval of synthetic cards but failed before original reading. The other two synthetic scenarios were not run. Unit/PG fixtures are separate."
+}
