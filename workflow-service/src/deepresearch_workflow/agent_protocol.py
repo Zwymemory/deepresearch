@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import re
+from datetime import datetime, timedelta
 from typing import Annotated, Any, Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 from typing_extensions import TypedDict
 
 from .domain import AgentRunBudget as AgentRunBudget
@@ -27,11 +29,44 @@ class UnknownValue(StrictModel):
 
 TaggedValue = Annotated[KnownValue | UnknownValue, Field(discriminator="status")]
 
+_VALID_AT_PATTERN = (
+    r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
+    r"(?:\.[0-9]{1,9})?(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+)
+
+
+class KnownValidAt(StrictModel):
+    status: Literal["known"]
+    value: str = Field(
+        min_length=1,
+        max_length=200,
+        pattern=_VALID_AT_PATTERN,
+        json_schema_extra={"format": "date-time"},
+        description="Fact-effective RFC3339 timestamp with seconds and explicit timezone",
+    )
+
+    @field_validator("value")
+    @classmethod
+    def real_offset_datetime(cls, value: str) -> str:
+        if re.fullmatch(_VALID_AT_PATTERN, value) is None:
+            raise ValueError("valid_at needs seconds and an explicit timezone")
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError as invalid:
+            raise ValueError("valid_at must be a real calendar date") from invalid
+        offset = parsed.utcoffset()
+        if offset is None or abs(offset) > timedelta(hours=18):
+            raise ValueError("valid_at timezone offset is outside the supported range")
+        return value
+
+
+ValidAtValue = Annotated[KnownValidAt | UnknownValue, Field(discriminator="status")]
+
 
 class ClaimScope(StrictModel):
     subject: str = Field(min_length=1, max_length=1000)
     version: TaggedValue
-    valid_at: TaggedValue
+    valid_at: ValidAtValue
     conditions: list[ShortText] = Field(default_factory=list, max_length=20)
 
 

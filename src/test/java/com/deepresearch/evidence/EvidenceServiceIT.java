@@ -668,6 +668,22 @@ class EvidenceServiceIT {
         String accepted=output.records().get(0).path("claim_id").asText();
         assertThat(unknown.service.publish("test-service-token",new EvidenceDtos.PublishRequest(unknown.ids("publish"),packet.path("packet_id").asText(),List.of(accepted))).path("answer").asText()).contains("仅描述引用快照");
     }
+    @Test void factEffectiveTimeRequiresRealOffsetTimestampWhileVersionRemainsText() {
+        var h=new Harness(); h.source("declared-time","web","Version: 2026-09-27 修订版\n\nValid at: 2026-09-27T00:00:00Z\n\nLimit: 10");
+        var evidence=h.read("declared-time","read-declared-time");
+        assertThat(evidence.path("applicability").path("valid_at").path("value").asText()).isEqualTo("2026-09-27T00:00:00Z");
+        for (String invalid : List.of("2026-09-27 修订版","2026-09-27","2026-09-27T00:00:00","2026-02-30T00:00:00Z","2026-09-27T00:00:00+18:01")) {
+            var application=(ObjectNode)spec("The request limit is 10.","2026-09-27 修订版").applicability().deepCopy();
+            application.set("valid_at",known(invalid));
+            assertThatThrownBy(()->h.prepare(List.of(new EvidenceDtos.ClaimSpec("The request limit is 10.","factual",application)),List.of(evidence),0,null,"bad-time-"+invalid.hashCode()))
+                    .hasMessageContaining("CHECK_REQUEST_INVALID");
+        }
+        var knownScope=(ObjectNode)spec("The request limit is 10.","2026-09-27 修订版").applicability().deepCopy();
+        knownScope.set("valid_at",known("2026-09-27T08:00:00+08:00"));
+        assertThat(h.prepare(List.of(new EvidenceDtos.ClaimSpec("The request limit is 10.","factual",knownScope)),List.of(evidence),0,null,"known-time").check_id()).isNotBlank();
+        var unknownScope=(ObjectNode)spec("The request limit is 10.","2026-09-27 修订版").applicability().deepCopy();
+        assertThat(h.prepare(List.of(new EvidenceDtos.ClaimSpec("The request limit is 10.","factual",unknownScope)),List.of(evidence),0,null,"unknown-time").check_id()).isNotBlank();
+    }
     @Test void databaseOwnerFenceRejectsDifferentAuthenticatedOwnerBeforeRead() {
         var h = new Harness(); h.source("page","web","Version: 1.0\n\nLimit: 10");
         h.principal = new AuthPrincipal("fixture-tenant","different-owner",List.of("USER"));
