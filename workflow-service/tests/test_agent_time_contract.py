@@ -10,7 +10,13 @@ import pytest
 from jsonschema import Draft202012Validator
 from pydantic import ValidationError
 
-from deepresearch_workflow.agent_protocol import AgentDecision, ClaimDraft, ClaimScope, ModelResult
+from deepresearch_workflow.agent_protocol import (
+    AgentDecision,
+    ClaimDraft,
+    ClaimScope,
+    ModelResult,
+    valid_at_instant,
+)
 from deepresearch_workflow.agent_runtime import AutonomousResearchGraph
 
 from .test_agent_runtime import setup
@@ -34,7 +40,14 @@ def scope(valid_at, *, version="2026-09-27 修订版"):
 
 @pytest.mark.parametrize(
     "value",
-    ["2026-09-27T08:30:45Z", "2026-09-27T16:30:45+08:00", "2026-09-27T08:30:45.123Z"],
+    [
+        "2026-09-27T08:30:45Z",
+        "2026-09-27T16:30:45+08:00",
+        "2026-09-27T08:30:45.123Z",
+        "2026-09-27T08:30:45.123456789Z",
+        "2026-09-27T08:30:45+18:00",
+        "2026-09-27T08:30:45-18:00",
+    ],
 )
 def test_valid_at_accepts_real_timestamp_without_narrowing_version(value):
     parsed = ClaimScope.model_validate(scope({"status": "known", "value": value}))
@@ -55,7 +68,14 @@ def test_unknown_fact_time_retains_reason_and_does_not_reject_version_text():
         "2026-09-27",
         "2026-09-27T08:30:45",
         "2026-02-30T08:30:45Z",
+        "2026-09-27T08:30:45+00:60",
+        "2026-09-27T08:30:45-00:60",
+        "2026-09-27T08:30:45+00:99",
+        "2026-09-27T08:30:45-00:99",
+        "2026-09-27T08:30:45+17:60",
+        "2026-09-27T08:30:45-17:60",
         "2026-09-27T08:30:45+18:01",
+        "2026-09-27T08:30:45-18:01",
     ],
 )
 def test_invalid_fact_time_is_rejected_at_runtime(value):
@@ -83,6 +103,55 @@ def test_model_schema_exposes_time_profile_but_keeps_version_generic():
     assert not Draft202012Validator(schema).is_valid(candidate)
     candidate["claims"][0]["applicability"]["valid_at"] = UNKNOWN_TIME
     assert Draft202012Validator(schema).is_valid(candidate)
+    for invalid_zone in (
+        "+00:60",
+        "-00:60",
+        "+00:99",
+        "-00:99",
+        "+17:60",
+        "-17:60",
+        "+18:01",
+        "-18:01",
+    ):
+        candidate["claims"][0]["applicability"]["valid_at"] = {
+            "status": "known",
+            "value": "2026-09-27T08:30:45" + invalid_zone,
+        }
+        assert not Draft202012Validator(schema).is_valid(candidate)
+
+
+@pytest.mark.parametrize("digits", range(1, 10))
+def test_parser_keeps_every_fractional_digit(digits):
+    value = "2026-09-27T00:00:00." + "123456789"[:digits] + "Z"
+    expected_nanos = int("123456789"[:digits].ljust(9, "0"))
+    assert valid_at_instant(value)[1] == expected_nanos
+
+
+@pytest.mark.parametrize(
+    ("source", "claim", "matches"),
+    [
+        ("2026-09-27T00:00:00.123456001Z", "2026-09-27T00:00:00.123456999Z", False),
+        ("2026-09-27T00:00:00.1Z", "2026-09-27T00:00:00.100000000Z", True),
+        ("2026-09-27T00:00:00.123456789+08:00", "2026-09-26T16:00:00.123456789Z", True),
+        ("2026-09-27T00:00:00.000000001+18:00", "2026-09-26T06:00:00.000000001Z", True),
+    ],
+)
+def test_source_binding_compares_exact_instants(source, claim, matches):
+    record = {
+        "evidence_id": "time-original",
+        "applicability": {"valid_at": {"status": "known", "value": source}},
+    }
+    draft = ClaimDraft.model_validate(
+        {
+            "text": "The limit applies at the declared time.",
+            "kind": "factual",
+            "applicability": scope({"status": "known", "value": claim}),
+        }
+    )
+    issue = AutonomousResearchGraph.time_scope_issue([draft], [record], ["time-original"])
+    assert (issue is None) is matches
+    if not matches:
+        assert issue["fieldPath"] == "claims[0].applicability.valid_at"
 
 
 def test_historical_web_revision_and_observation_time_cannot_become_fact_time():

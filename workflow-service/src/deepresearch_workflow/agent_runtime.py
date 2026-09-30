@@ -17,7 +17,14 @@ from .agent_investigations import (
     public_investigations,
     select_investigation,
 )
-from .agent_protocol import AgentDecision, AgentRunBudget, AgentState, AgentTask, ModelRequest
+from .agent_protocol import (
+    AgentDecision,
+    AgentRunBudget,
+    AgentState,
+    AgentTask,
+    ModelRequest,
+    valid_at_instant,
+)
 from .domain import EventRecord, ToolExecutionRequest, ToolName, UsageDelta, WorkItem
 from .graph import (
     RunBudgetExceededError,
@@ -278,15 +285,13 @@ class AutonomousResearchGraph:
             source_time = row.get("applicability", {}).get("valid_at", {})
             if source_time.get("status") == "known":
                 try:
-                    declared.add(
-                        datetime.fromisoformat(source_time["value"].replace("Z", "+00:00"))
-                    )
+                    declared.add(valid_at_instant(source_time["value"]))
                 except (KeyError, TypeError, ValueError):
                     continue
         for index, claim in enumerate(claims):
             valid_at = claim.applicability.valid_at
             if valid_at.status == "known":
-                requested = datetime.fromisoformat(valid_at.value.replace("Z", "+00:00"))
+                requested = valid_at_instant(valid_at.value)
                 if requested not in declared:
                     return {
                         "errorCode": "CLAIM_VALID_AT_NOT_DECLARED",
