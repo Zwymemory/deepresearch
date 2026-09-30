@@ -196,6 +196,12 @@ class AutonomousResearchGraph:
                 "acceptance_criteria; it grants no tools.\n"
                 "check_claims requires scoped text/kind/applicability and exact evidence; no "
                 "unsupported certainty.\n"
+                "Claim applicability.valid_at is a fact-effective timestamp, not a page "
+                "revision, retrieval, upload or observation time. Use known only when a "
+                "selected read original explicitly declares the same effective timestamp "
+                "with seconds and timezone. Otherwise use unknown with a concrete reason; "
+                "unknown time does not prevent checking facts supported by the original. "
+                "Version remains a separate text field, not a date.\n"
                 "Bind each covered criterion explicitly with criterion_bindings (criterion_id and "
                 "claim_index).\n"
                 "Criterion IDs in tasks are immutable; a stored criterion must reuse its initial "
@@ -262,6 +268,36 @@ class AutonomousResearchGraph:
                 snapshot["context_preview_only"] = True
             result.append(item)
         return result
+
+    @staticmethod
+    def time_scope_issue(claims, records, selected_ids):
+        """Bind a known fact-effective time to selected originals, never fetch metadata."""
+        selected = [row for row in records if row.get("evidence_id") in selected_ids]
+        declared = set()
+        for row in selected:
+            source_time = row.get("applicability", {}).get("valid_at", {})
+            if source_time.get("status") == "known":
+                try:
+                    declared.add(
+                        datetime.fromisoformat(source_time["value"].replace("Z", "+00:00"))
+                    )
+                except (KeyError, TypeError, ValueError):
+                    continue
+        for index, claim in enumerate(claims):
+            valid_at = claim.applicability.valid_at
+            if valid_at.status == "known":
+                requested = datetime.fromisoformat(valid_at.value.replace("Z", "+00:00"))
+                if requested not in declared:
+                    return {
+                        "errorCode": "CLAIM_VALID_AT_NOT_DECLARED",
+                        "fieldPath": f"claims[{index}].applicability.valid_at",
+                        "correction": (
+                            "Use status=unknown with a reason unless a selected read original "
+                            "explicitly declares this fact-effective timestamp. Page revision, "
+                            "retrieval, upload and observation times do not establish it."
+                        ),
+                    }
+        return None
 
     async def act(self, state):
         await self.guard(state)
@@ -354,7 +390,17 @@ class AutonomousResearchGraph:
         )
         gateway = self.gateway(state)
         update = {"tasks": tasks}
-        if decision.action == "search":
+        time_issue = None
+        if decision.action == "check_claims":
+            selected_ids = (
+                decision.evidence_ids
+                or task.get("evidence_ids")
+                or sorted(row["evidence_id"] for row in state["evidence"])
+            )
+            time_issue = self.time_scope_issue(decision.claims, state["evidence"], selected_ids)
+        if time_issue is not None:
+            observation = {"action": "check_claims", **time_issue}
+        elif decision.action == "search":
             if decision.tool not in state["requested_scopes"]:
                 return observe({"action": "search", "errorCode": "TOOL_SCOPE_DENIED"})
             work = WorkItem(
