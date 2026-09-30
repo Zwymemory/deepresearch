@@ -8,12 +8,15 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from jsonschema import Draft202012Validator
+from jsonschema.exceptions import ValidationError as JsonSchemaValidationError
 from psycopg.types.json import Jsonb
+from pydantic import ValidationError as PydanticValidationError
 from referencing import Registry
 
-from .agent_model import MODEL_RULES, AgentModel
+from .agent_model import MODEL_RULES, AgentModel, AgentModelFailure
 from .agent_protocol import AgentRunBudget, ModelRequest, ModelResult
 from .graph import (
+    ModelCallError,
     RunBudgetExceededError,
     RunCancelledError,
     RunTimedOutError,
@@ -27,6 +30,21 @@ def canonical(value):
     return json.dumps(
         value, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False
     )
+
+
+# These are field names in the public Agent function contracts, not model-supplied
+# values. A path outside this vocabulary is represented as an anonymous field.
+SAFE_FIELDS = frozenset({
+    "action", "answer", "applicability", "claims", "conditions", "criterion_bindings",
+    "criterion_id", "evidence_ids", "gaps", "investigation_id", "kind", "query",
+    "reason", "source_id", "status", "subject", "task_id", "tool", "valid_at",
+    "value", "version",
+})
+
+
+def safe_issue_path(parts):
+    names = [part for part in parts if type(part) is str and part in SAFE_FIELDS]
+    return ".".join(names[:4]) or "unknown_field"
 
 
 class SqlAgentLedger:
@@ -75,6 +93,13 @@ class SqlAgentLedger:
                     )
                 if latest and latest["status"] == "SETTLED":
                     return {"replay": latest["safe_result"], "attempt": latest["attempt"]}
+                if latest and latest["status"] == "UNKNOWN" and kind == "MODEL":
+                    usage = latest["actual_usage"] or {}
+                    failure = usage.get("model_failure") if type(usage) is dict else None
+                    if type(failure) is dict and failure.get("retryable") is False:
+                        raise WorkflowExecutionError(
+                            "模型操作不可重复请求", error_code="AGENT_MODEL_NOT_RETRYABLE"
+                        )
                 if latest and latest["status"] == "RESERVED":
                     if str(latest["claim_token"]) == claim_token:
                         raise WorkflowExecutionError(
@@ -169,7 +194,7 @@ class SqlAgentLedger:
                     (
                         "UNKNOWN" if unknown else "SETTLED",
                         None if unknown else Jsonb(value),
-                        None if unknown else Jsonb(usage),
+                        Jsonb(usage) if not unknown or usage else None,
                         run_id,
                         key,
                         attempt,
@@ -350,14 +375,72 @@ class AgentBudgetGateway:
         self.run_id, self.claim_token, self.budget = run_id, claim_token, budget
         self.ledger, self.model, self.guard = ledger, model, guard
 
+    @staticmethod
+    def classify_model_failure(key, attempt, error, result, schema_name):
+        failure_kind, error_class, retryable, status_code, paths = (
+            "SCHEMA", "validator_rejected", False, None, [],
+        )
+        tool_call_count = None
+        if isinstance(error, AgentModelFailure):
+            failure_kind, error_class, retryable = (
+                error.failure_kind, error.error_class, error.retryable,
+            )
+            status_code, tool_call_count = error.status_code, error.tool_call_count
+            input_tokens, output_tokens = error.input_tokens, error.output_tokens
+        else:
+            input_tokens = result.input_tokens if result is not None else None
+            output_tokens = result.output_tokens if result is not None else None
+            if isinstance(error, JsonSchemaValidationError):
+                error_class = "schema_validation"
+                paths = [safe_issue_path(error.absolute_path)]
+            elif isinstance(error, PydanticValidationError):
+                error_class = "schema_validation"
+                paths = sorted({safe_issue_path(item["loc"]) for item in error.errors()})[:4]
+            elif not isinstance(error, WorkflowExecutionError):
+                error_class = "model_unclassified"
+        failure = ModelCallError(
+            key, failure_kind=failure_kind, attempt=attempt,
+            error_class=error_class, retryable=retryable,
+        )
+        failure.status_code = status_code
+        failure.validation_issue_codes = paths
+        failure.tool_call_count = tool_call_count
+        failure.schema_name = schema_name
+        metadata = {
+            "failure_kind": failure_kind,
+            "error_class": error_class,
+            "retryable": retryable,
+        }
+        if status_code is not None:
+            metadata["status_code"] = status_code
+        if paths:
+            metadata["validation_issue_codes"] = paths
+        if tool_call_count is not None:
+            metadata["tool_call_count"] = tool_call_count
+        usage = {"model_failure": metadata}
+        if type(input_tokens) is int and 0 <= input_tokens <= 2**63 - 1:
+            usage["input_tokens"] = input_tokens
+        if type(output_tokens) is int and 0 <= output_tokens <= 2**63 - 1:
+            usage["output_tokens"] = output_tokens
+        return failure, usage
+
     async def model_call(
         self, key, purpose, request: ModelRequest, validate: Callable | None = None
     ):
         # A byte ceiling includes visible messages, schema and framing allowance. It is
         # conservative admission accounting, not a claim about provider-measured tokens.
-        request_data = {**request.model_dump(mode="json", by_alias=True), "rules": MODEL_RULES}
-        input_reserved = len(canonical(request_data).encode()) + 1024
-        request_hash = hashlib.sha256(canonical(request_data).encode()).hexdigest()
+        try:
+            request_data = {**request.model_dump(mode="json", by_alias=True), "rules": MODEL_RULES}
+            encoded_request = canonical(request_data).encode()
+        except Exception:
+            failure = ModelCallError(
+                key,
+                failure_kind="SCHEMA", attempt=0,
+                error_class="request_encoding", retryable=False,
+            )
+            raise failure from None
+        input_reserved = len(encoded_request) + 1024
+        request_hash = hashlib.sha256(encoded_request).hexdigest()
         for _ in range(2):
             await self.guard()
             try:
@@ -378,6 +461,7 @@ class AgentBudgetGateway:
                 result = ModelResult.model_validate(reservation["replay"])
                 self.check_bounds(result, input_reserved, request.max_output_tokens)
                 return result
+            result = None
             try:
                 result = await self.model.invoke(request)
                 # Remote refs cannot cause a network fetch or grant model-supplied authority.
@@ -402,26 +486,42 @@ class AgentBudgetGateway:
                         }
                     }
                 )
-                await self.guard()
+            except (RunBudgetExceededError, RunCancelledError, RunTimedOutError, StaleClaimError):
+                raise
+            except Exception as error:
+                failure, usage = self.classify_model_failure(
+                    key, reservation["attempt"], error, result, request.name,
+                )
+                try:
+                    await self.ledger.settle(
+                        self.run_id, self.claim_token, key, reservation["attempt"],
+                        {}, usage, unknown=True,
+                    )
+                except StaleClaimError:
+                    raise
+                except Exception:
+                    raise WorkflowExecutionError(
+                        "Agent 模型回执结算失败", error_code="AGENT_SETTLEMENT_FAILED"
+                    ) from None
+                if failure.retryable and reservation["attempt"] < 2:
+                    continue
+                raise failure from None
+            await self.guard()
+            try:
                 await self.ledger.settle(
-                    self.run_id,
-                    self.claim_token,
-                    key,
-                    reservation["attempt"],
+                    self.run_id, self.claim_token, key, reservation["attempt"],
                     result.model_dump(mode="json"),
                     result.model_dump(mode="json", exclude={"value"}),
                 )
-                self.check_bounds(result, input_reserved, request.max_output_tokens)
-                return result
-            except (RunBudgetExceededError, RunCancelledError, RunTimedOutError, StaleClaimError):
+            except StaleClaimError:
                 raise
             except Exception:
-                await self.ledger.settle(
-                    self.run_id, self.claim_token, key, reservation["attempt"], {}, {}, unknown=True
-                )
-        raise WorkflowExecutionError(
-            "Agent 模型结果无法解析\uff0c已计入重试预算", error_code="AGENT_MODEL_INVALID"
-        )
+                raise WorkflowExecutionError(
+                    "Agent 模型回执结算失败", error_code="AGENT_SETTLEMENT_FAILED"
+                ) from None
+            self.check_bounds(result, input_reserved, request.max_output_tokens)
+            return result
+        raise AssertionError("bounded model admission loop exited without a result")
 
     async def tool_call(
         self, key, purpose, payload, invoke: Callable[[], Awaitable[dict[str, Any]]]

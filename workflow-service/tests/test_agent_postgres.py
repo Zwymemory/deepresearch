@@ -15,10 +15,15 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from psycopg.types.json import Jsonb
 
 from deepresearch_workflow.agent_budget import AgentBudgetGateway, SqlAgentLedger
+from deepresearch_workflow.agent_model import AgentModelFailure
 from deepresearch_workflow.agent_protocol import AgentRunBudget, ModelRequest, ModelResult
 from deepresearch_workflow.agent_runtime import AutonomousResearchGraph
 from deepresearch_workflow.domain import ClaimedRun, WorkflowStatus
-from deepresearch_workflow.graph import RunBudgetExceededError, WorkflowExecutionError
+from deepresearch_workflow.graph import (
+    ModelCallError,
+    RunBudgetExceededError,
+    WorkflowExecutionError,
+)
 from deepresearch_workflow.ports import BudgetClaimConflictError, RepositoryEventSink
 from deepresearch_workflow.repository import PostgresWorkflowRepository, checkpoint_pool
 from deepresearch_workflow.runner import WorkflowRunner
@@ -251,7 +256,7 @@ async def test_database_trigger_rejects_direct_overallocation_and_role_cannot_re
         await repo.close()
 
 
-async def test_bad_model_json_retry_is_charged_and_known_replay_never_dispatches():
+async def test_explicit_rate_limit_retry_is_charged_and_known_replay_never_dispatches():
     budget = AgentRunBudget(runtime="agent")
     repo, ledger, run, claim = await seed(budget)
 
@@ -261,7 +266,10 @@ async def test_bad_model_json_retry_is_charged_and_known_replay_never_dispatches
         async def invoke(self, request):
             self.calls += 1
             if self.calls == 1:
-                raise ValueError("bad provider JSON")
+                raise AgentModelFailure(
+                    "http_rate_limit", "RATE_LIMIT", retryable=True,
+                    status_code=429, input_tokens=11, output_tokens=3,
+                )
             return ModelResult(value={"accepted": True}, input_tokens=100, output_tokens=10)
 
     async def guard():
@@ -291,17 +299,74 @@ async def test_bad_model_json_retry_is_charged_and_known_replay_never_dispatches
         usage = await ledger.summary(run, claim)
         assert (
             usage["modelCalls"] == 2
-            and usage["inputTokens"] is None
-            and usage["outputTokens"] is None
+            and usage["inputTokens"] == 111
+            and usage["outputTokens"] == 13
         )
         async with await psycopg.AsyncConnection.connect(URL) as conn:
             statuses = await (
                 await conn.execute(
-                    "SELECT status FROM agent_research_operation WHERE run_id=%s ORDER BY attempt",
+                    "SELECT status,actual_usage,safe_result FROM agent_research_operation "
+                    "WHERE run_id=%s ORDER BY attempt",
                     (run,),
                 )
             ).fetchall()
             assert [row[0] for row in statuses] == ["UNKNOWN", "SETTLED"]
+            assert statuses[0][1]["input_tokens"] == 11
+            assert statuses[0][1]["model_failure"] == {
+                "failure_kind": "RATE_LIMIT", "error_class": "http_rate_limit",
+                "retryable": True, "status_code": 429,
+            }
+            assert statuses[0][2] is None
+    finally:
+        await repo.close()
+
+
+async def test_invalid_model_result_is_unknown_with_known_usage_and_never_reissued():
+    budget = AgentRunBudget(runtime="agent")
+    repo, ledger, run, claim = await seed(budget)
+
+    class Model:
+        calls = 0
+
+        async def invoke(self, _):
+            self.calls += 1
+            raise AgentModelFailure(
+                "function_json", "SCHEMA", input_tokens=23, output_tokens=8,
+            )
+
+    async def guard():
+        assert (await repo.assert_active_claim(run, claim))[0]
+
+    model = Model()
+    gateway = AgentBudgetGateway(
+        run_id=run, claim_token=claim, budget=budget, ledger=ledger,
+        model=model, guard=guard,
+    )
+    request = ModelRequest(
+        name="Check", instruction="fixture", payload={}, schema={"type": "object"},
+    )
+    try:
+        with pytest.raises(ModelCallError) as rejected:
+            await gateway.model_call("model:invalid", "CHECK", request)
+        assert rejected.value.error_class == "function_json"
+        assert rejected.value.retryable is False
+        with pytest.raises(WorkflowExecutionError) as replay:
+            await gateway.model_call("model:invalid", "CHECK", request)
+        assert replay.value.error_code == "AGENT_MODEL_NOT_RETRYABLE"
+        assert model.calls == 1
+        usage = await ledger.summary(run, claim)
+        assert usage["modelCalls"] == 1
+        assert usage["inputTokens"] == 23 and usage["outputTokens"] == 8
+        async with await psycopg.AsyncConnection.connect(URL) as conn:
+            row = await (await conn.execute(
+                "SELECT status,safe_result,actual_usage FROM agent_research_operation "
+                "WHERE run_id=%s AND operation_key='model:invalid'",
+                (run,),
+            )).fetchone()
+        assert row[0] == "UNKNOWN" and row[1] is None
+        assert row[2]["model_failure"] == {
+            "failure_kind": "SCHEMA", "error_class": "function_json", "retryable": False,
+        }
     finally:
         await repo.close()
 
