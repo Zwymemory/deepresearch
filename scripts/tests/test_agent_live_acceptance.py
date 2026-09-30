@@ -1,5 +1,6 @@
 """Paid-run guardrails fail before HTTP submission; no model/network calls here."""
 import importlib.util
+import json
 from pathlib import Path
 import sys
 import tempfile
@@ -77,7 +78,76 @@ class AdmissionTests(unittest.TestCase):
         self.assertEqual(summary["actual_input_tokens"], 20)
         self.assertEqual(summary["output_usage_missing"], 1)
         self.assertEqual(summary["model_unknown_or_inflight"], 1)
+        self.assertEqual(summary["model_result_unavailable"], 1)
+        self.assertEqual(summary["model_unknown_receipts"], 1)
+        self.assertEqual(summary["input_usage_missing"], 1)
         self.assertIsNone(summary["actual_bill_or_cost"])
+
+    def test_unknown_model_result_can_have_known_usage_and_safe_failure_metadata(self):
+        private = "PRIVATE-RAW-PROVIDER-RESPONSE"
+        database = {"operations": [
+            {"kind": "MODEL", "purpose": "DECISION", "operation_key": "decision-1",
+             "attempt": 1, "status": "UNKNOWN", "safe_result": {"raw": private},
+             "actual_usage": {
+                 "input_tokens": 41, "output_tokens": 7, "raw_response": private,
+                 "model_failure": {
+                     "failure_kind": "SCHEMA", "error_class": "schema_validation",
+                     "retryable": False,
+                     "validation_issue_codes": ["claims.applicability.valid_at", private],
+                     "raw_exception": private,
+                 },
+             }},
+            {"kind": "MODEL", "purpose": "CHECK", "operation_key": "check-1",
+             "attempt": 1, "status": "UNKNOWN", "safe_result": None,
+             "actual_usage": None},
+        ]}
+        summary = live.usage_summary(database)
+        receipts = live.model_receipts(database)
+        exported = live.audit_database(database)
+        self.assertEqual(summary["model_result_unavailable"], 2)
+        self.assertEqual(summary["actual_input_tokens"], 41)
+        self.assertEqual(summary["actual_output_tokens"], 7)
+        self.assertEqual(summary["input_usage_missing"], 1)
+        self.assertEqual(summary["output_usage_missing"], 1)
+        self.assertFalse(receipts[0]["result_usable"])
+        self.assertTrue(receipts[0]["input_usage_known"])
+        self.assertEqual(receipts[0]["failure"], {
+            "failure_kind": "SCHEMA", "error_class": "schema_validation",
+            "retryable": False,
+            "validation_issue_codes": ["claims.applicability.valid_at"],
+        })
+        self.assertFalse(receipts[1]["input_usage_known"])
+        self.assertIsNone(exported["operations"][0]["safe_result"])
+        self.assertNotIn(private, json.dumps({"receipts": receipts, "database": exported}))
+        self.assertEqual(database["operations"][0]["safe_result"], {"raw": private})
+
+    def test_provider_status_is_numeric_and_unrecognized_metadata_is_not_exported(self):
+        private = "PRIVATE-RAW-ERROR"
+        database = {"operations": [
+            {"kind": "MODEL", "purpose": "DECISION", "operation_key": "decision-1",
+             "attempt": 1, "status": "UNKNOWN", "safe_result": None,
+             "actual_usage": {"model_failure": {
+                 "failure_kind": "RATE_LIMIT", "error_class": "http_rate_limit",
+                 "retryable": True, "status_code": 429, "tool_call_count": 1,
+                 "provider_error": private,
+             }}},
+            {"kind": "MODEL", "purpose": "DECISION", "operation_key": "decision-2",
+             "attempt": 1, "status": "UNKNOWN", "safe_result": None,
+             "actual_usage": {"input_tokens": True, "model_failure": {
+                 "failure_kind": [private], "error_class": private,
+                 "retryable": True, "status_code": private,
+             }}},
+        ]}
+        receipts = live.model_receipts(database)
+        self.assertEqual(receipts[0]["failure"], {
+            "failure_kind": "RATE_LIMIT", "error_class": "http_rate_limit",
+            "retryable": True, "status_code": 429, "tool_call_count": 1,
+        })
+        self.assertNotIn("failure", receipts[1])
+        self.assertFalse(receipts[1]["input_usage_known"])
+        self.assertNotIn(private, json.dumps({
+            "receipts": receipts, "database": live.audit_database(database)
+        }))
 
 
 if __name__ == "__main__":

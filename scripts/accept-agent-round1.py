@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Bounded autonomous real-model acceptance, with verified local build identity."""
 import argparse
+import copy
 import fcntl
 import json
 import os
@@ -13,6 +14,20 @@ from agent_live_common import LIMITS, TERMINAL, http_json, read_private, verify_
 
 CASES = {"knowledge-only", "web-only", "mixed", "version-conditions",
          "contradictory-material", "insufficient-evidence"}
+MODEL_FAILURE_KINDS = {"TIMEOUT", "RATE_LIMIT", "SCHEMA", "PROVIDER"}
+MODEL_ERROR_CLASSES = {
+    "request_encoding", "transport_timeout", "transport_error", "http_auth",
+    "http_rate_limit", "http_upstream", "http_other", "response_json",
+    "response_shape", "output_truncated", "function_count", "function_name",
+    "function_arguments", "function_oversized", "function_json", "function_shape",
+    "schema_validation", "validator_rejected", "model_unclassified",
+}
+MODEL_ISSUE_FIELDS = {
+    "action", "answer", "applicability", "claims", "conditions", "criterion_bindings",
+    "criterion_id", "evidence_ids", "gaps", "investigation_id", "kind", "query",
+    "reason", "source_id", "status", "subject", "task_id", "tool", "valid_at",
+    "value", "version",
+}
 
 
 def validate_sources(sources):
@@ -105,14 +120,105 @@ def capture_database(ready, credentials, run):
     return output
 
 
+def measured_tokens(value):
+    return value if type(value) is int and 0 <= value <= 2**63 - 1 else None
+
+
+def safe_model_failure(value):
+    if not isinstance(value, dict):
+        return None
+    kind, error_class, retryable = (
+        value.get("failure_kind"), value.get("error_class"), value.get("retryable")
+    )
+    if (type(kind) is not str or kind not in MODEL_FAILURE_KINDS
+            or type(error_class) is not str or error_class not in MODEL_ERROR_CLASSES
+            or type(retryable) is not bool):
+        return None
+    safe = {"failure_kind": kind, "error_class": error_class, "retryable": retryable}
+    status = value.get("status_code")
+    if type(status) is int and 100 <= status <= 599:
+        safe["status_code"] = status
+    count = value.get("tool_call_count")
+    if type(count) is int and 0 <= count <= 100:
+        safe["tool_call_count"] = count
+    paths = value.get("validation_issue_codes")
+    if isinstance(paths, list):
+        safe_paths = []
+        for path in paths[:4]:
+            if path == "unknown_field":
+                safe_paths.append(path)
+            elif (type(path) is str and 1 <= len(path.split(".")) <= 4
+                  and all(part in MODEL_ISSUE_FIELDS for part in path.split("."))):
+                safe_paths.append(path)
+        if safe_paths:
+            safe["validation_issue_codes"] = safe_paths
+    return safe
+
+
+def safe_model_usage(value):
+    if not isinstance(value, dict):
+        return {}
+    safe = {}
+    for name in ("input_tokens", "output_tokens"):
+        amount = measured_tokens(value.get(name))
+        if amount is not None:
+            safe[name] = amount
+    failure = safe_model_failure(value.get("model_failure"))
+    if failure is not None:
+        safe["model_failure"] = failure
+    return safe
+
+
+def model_receipts(database):
+    receipts = []
+    for row in database["operations"]:
+        if row.get("kind") != "MODEL":
+            continue
+        usage = safe_model_usage(row.get("actual_usage"))
+        status = row.get("status")
+        purpose = row.get("purpose")
+        receipt = {
+            "model_sequence": len(receipts) + 1,
+            "attempt": row.get("attempt") if type(row.get("attempt")) is int else None,
+            "purpose": purpose if type(purpose) is str and purpose in {"DECISION", "CHECK"} else None,
+            "status": status if type(status) is str and status in {"SETTLED", "UNKNOWN", "RESERVED"} else "UNRECOGNIZED",
+            "result_usable": status == "SETTLED",
+            "input_tokens": usage.get("input_tokens"),
+            "output_tokens": usage.get("output_tokens"),
+            "input_usage_known": "input_tokens" in usage,
+            "output_usage_known": "output_tokens" in usage,
+        }
+        if "model_failure" in usage:
+            receipt["failure"] = usage["model_failure"]
+        receipts.append(receipt)
+    return receipts
+
+
+def audit_database(database):
+    """Keep old audit evidence, but never export unclassified model failure payloads."""
+    safe = copy.deepcopy(database)
+    for row in safe["operations"]:
+        if row.get("kind") != "MODEL":
+            continue
+        if row.get("status") != "SETTLED":
+            row["safe_result"] = None
+            row["actual_usage"] = safe_model_usage(row.get("actual_usage"))
+        elif isinstance(row.get("actual_usage"), dict):
+            row["actual_usage"].pop("model_failure", None)
+    return safe
+
+
 def usage_summary(database):
     models = [row for row in database["operations"] if row["kind"] == "MODEL"]
     tools = [row for row in database["operations"] if row["kind"] == "TOOL"]
-    actual = [row.get("actual_usage") or {} for row in models]
+    actual = [safe_model_usage(row.get("actual_usage")) for row in models]
     return {"model_admissions": len(models), "tool_admissions": len(tools),
             "decision_admissions": len({row["operation_key"] for row in models if row["purpose"] == "DECISION"}),
             "model_settled": sum(row["status"] == "SETTLED" for row in models),
             "model_unknown_or_inflight": sum(row["status"] != "SETTLED" for row in models),
+            "model_result_unavailable": sum(row["status"] != "SETTLED" for row in models),
+            "model_unknown_receipts": sum(row["status"] == "UNKNOWN" for row in models),
+            "model_inflight_receipts": sum(row["status"] == "RESERVED" for row in models),
             "actual_input_tokens": sum(row.get("input_tokens") or 0 for row in actual),
             "actual_output_tokens": sum(row.get("output_tokens") or 0 for row in actual),
             "input_usage_missing": sum(row.get("input_tokens") is None for row in actual),
@@ -181,10 +287,12 @@ def main():
             write_private(journal_path, journal)
             database = capture_database(ready, credentials, row["runId"])
             usage = usage_summary(database)
+            diagnostics = model_receipts(database)
             if usage["decision_admissions"] > 8 or usage["model_admissions"] > 16 or usage["tool_admissions"] > 16:
                 raise ValueError("Actual operation ledger exceeded the authorized run limits")
             audit = scrub({"case": case, "run": row, "build_verification": identity,
-                           "view": view, "database": database, "usage": usage,
+                           "view": view, "database": audit_database(database), "usage": usage,
+                           "model_receipts": diagnostics,
                            "model": ready["model"], "source_classification": case["source_classification"],
                            "manual_review_status": "pending", "fixtures": False}, secrets)
             path = args.state_dir / (row["runId"] + ".json")
@@ -192,7 +300,8 @@ def main():
             row.update({"audit_path": str(path), "usage": usage})
             write_private(journal_path, journal)
             print(json.dumps({"scenario": args.scenario, "runId": row["runId"], "status": row["status"],
-                              "errorCode": row["errorCode"], "usage": usage}, ensure_ascii=False), flush=True)
+                              "errorCode": row["errorCode"], "usage": usage,
+                              "model_receipts": diagnostics}, ensure_ascii=False), flush=True)
         except Exception as error:
             # A lost POST response can still have started a run: never mark it safe to rerun.
             row["validation_error_type"] = type(error).__name__
