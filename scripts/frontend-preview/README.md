@@ -33,3 +33,16 @@ node scripts/frontend-preview/capture.mjs   # 输出到被忽略的 output/playw
 ```
 
 预览通过只说明页面在这些合成响应下的呈现与交互正确，**不代表**真实后端、模型或检索质量。
+
+## React 预览（Milestone 1）
+
+React 版本位于 `frontend/`，使用自带的示例数据，不依赖本预览服务器：
+
+```bash
+npm --prefix frontend ci && npm --prefix frontend run dev   # http://127.0.0.1:5173/
+PLAYWRIGHT_CORE=/path/to/node_modules/playwright-core \
+CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+node scripts/frontend-preview/capture-react.mjs   # 输出到 output/playwright/react-preview/
+```
+
+两个版本可以同时运行，分别在 8090（V1）与 5173（React）对比。
