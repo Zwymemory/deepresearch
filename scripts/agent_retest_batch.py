@@ -235,6 +235,16 @@ def validate_history(journal, batch_id=BATCH):
 
 
 def matching_review(review_state, row, source_sha256, batch_id=BATCH):
+    # New versioned audits must validate their actual persisted native mappings.
+    # Unversioned historical audits remain readable and are never retrofitted.
+    if row.get("audit_path"):
+        audit = read_private(row["audit_path"])
+        if "audit_version" in audit or any(key in audit.get("database", {}) for key in ("capture", "requirements", "requirement_bindings")):
+            from agent_acceptance_v22 import validate_saved_audit
+            native = validate_saved_audit(audit)
+            if (native["status"] == "invalid" or row.get("status") == "SUCCEEDED"
+                    and not native["eligible_for_complete_review"]):
+                raise ValueError("Native requirement audit incomplete or mismatched")
     if not review_state.get("ready") or review_state.get("batch_id") != batch_id:
         raise ValueError("B scenario readiness required")
     if review_state.get("source_manifest_sha256") != source_sha256:

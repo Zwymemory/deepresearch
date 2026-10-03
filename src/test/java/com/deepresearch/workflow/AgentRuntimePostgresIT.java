@@ -196,6 +196,26 @@ class AgentRuntimePostgresIT {
         assertThat(b.db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL'",Integer.class,b.ids.run_id())).isEqualTo(models);
         assertThat(b.db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND operation_key LIKE 'server:publication-read:%'",Integer.class,b.ids.run_id())).isGreaterThan(0);
     }
+    @Test void nativeRequirementExportBindsBothCheckedOriginalObligations() throws Exception {
+        Bridge b=dualRequirements(true);
+        var output=Path.of("target/v22-native-audit-"+UUID.randomUUID()+".json").toAbsolutePath();
+        var log=Path.of("target/v22-native-export-probe.log").toAbsolutePath();
+        var builder=new ProcessBuilder(System.getenv().getOrDefault("AGENT_PYTHON","python3"),"-B",
+                "scripts/tests/v22_capture_probe.py",b.ids.run_id(),output.toString())
+                .redirectErrorStream(true).redirectOutput(log.toFile());
+        builder.environment().put("PYTHONPATH",Path.of("workflow-service/src").toAbsolutePath().toString());
+        builder.environment().put("PYTHONDONTWRITEBYTECODE","1");
+        builder.environment().put("AGENT_TEST_ISOLATED","1");
+        builder.environment().put("TEST_AGENT_DATABASE_URL","postgresql://"+PG.getUsername()+":"+PG.getPassword()+"@"+PG.getHost()+":"+PG.getMappedPort(5432)+"/"+PG.getDatabaseName());
+        var process=builder.start();
+        assertThat(process.waitFor(30,TimeUnit.SECONDS)).isTrue();
+        assertThat(process.exitValue()).withFailMessage(Files.readString(log)).isZero();
+        var proof=JSON.readTree(Files.readString(output)).path("native_requirements_validation");
+        assertThat(proof.path("mapping_complete").asBoolean()).isTrue();
+        assertThat(proof.path("eligible_for_complete_review").asBoolean()).isTrue();
+        assertThat(proof.path("requirements")).hasSize(2);
+        assertThat(proof.path("semantic_review_required").asBoolean()).isTrue();
+    }
     @Test void originalManifestAndAssociationsAreImmutableAndCannotBeFabricatedFromCheckReceipt() throws Exception {
         Bridge b=dualRequirements(true);String run=b.ids.run_id();
         assertThatThrownBy(()->b.db.update("UPDATE agent_research_requirements SET manifest=jsonb_set(manifest,'{question_sha256}',to_jsonb(?::text)) WHERE run_id=?","e".repeat(64),run)).isInstanceOf(org.springframework.dao.DataAccessException.class);

@@ -12,6 +12,7 @@ from uuid import uuid4
 
 from agent_live_common import LIMITS, TERMINAL, file_sha, http_json, read_private, verify_runtime, write_private
 import agent_retest_batch as retest
+from agent_acceptance_v22 import CAPTURE_LIMITS, CAPTURE_VERSION, finalize_audit, validate_saved_audit
 
 CASES = {"knowledge-only", "web-only", "mixed", "version-conditions",
          "contradictory-material", "insufficient-evidence"}
@@ -102,19 +103,48 @@ def capture_database(ready, credentials, run):
         "run": "SELECT run_id,question,status,stage,budget,usage,error_code,error_message,deadline_at,created_at,updated_at FROM agent_workflow_run WHERE run_id=%s",
         "operations": "SELECT operation_key,attempt,kind,purpose,status,input_reserved,output_reserved,actual_usage,safe_result,created_at,settled_at FROM agent_research_operation WHERE run_id=%s ORDER BY created_at,operation_key,attempt",
         "tasks": "SELECT task_id,objective,status,acceptance_criteria,dependencies,plan_version,task_json FROM agent_research_task WHERE run_id=%s ORDER BY task_id",
-        "criteria": "SELECT task_id,criterion_id,criterion_text,expected_claim,expected_hash,investigation,last_call_id,dependency_snapshot FROM agent_research_criterion WHERE run_id=%s ORDER BY task_id,criterion_index",
+        "criteria": "SELECT task_id,criterion_id,criterion_index,criterion_text,expected_claim,expected_hash,investigation,last_call_id,dependency_snapshot FROM agent_research_criterion WHERE run_id=%s ORDER BY task_id,criterion_index",
         "checks": "SELECT check_id,task_id,call_id,investigation,dispute_round,parent_check_id,request_sha256,response_sha256,status,request,result FROM agent_evidence_check WHERE run_id=%s ORDER BY created_at,check_id",
         "read_receipts": "SELECT receipt_id,source_id,parent_receipt_id,status,error_code,record_json,metadata FROM agent_evidence_read_receipt WHERE run_id=%s ORDER BY created_at,receipt_id",
         "records": "SELECT record_type,record_id,version,payload_sha256,payload FROM agent_evidence_record WHERE run_id=%s ORDER BY record_type,record_id,version",
         "publications": "SELECT call_id,status,answer_hash,result,proof FROM agent_research_publication WHERE run_id=%s ORDER BY completed_at,call_id",
         "tool_receipts": "SELECT call_id,task_id,tool_name,status,safe_result,error_code,mcp_execution_status,mcp_safe_result FROM agent_workflow_tool_receipt WHERE run_id=%s ORDER BY call_id",
+        "requirements": "SELECT run_id,manifest,declaration_key,declaration_attempt FROM agent_research_requirements WHERE run_id=%s ORDER BY run_id",
+        "requirement_bindings": "SELECT run_id,requirement_id,task_id,criterion_id FROM agent_research_requirement_binding WHERE run_id=%s ORDER BY requirement_id",
+        "investigation_progress": "SELECT investigation,current_call_id FROM agent_research_investigation_progress WHERE run_id=%s ORDER BY investigation",
     }
+    limits = CAPTURE_LIMITS
     output = {}
-    with psycopg.connect(host="127.0.0.1", port=ready["database_port"], dbname="deepresearch",
-                          user="deepresearch", password=credentials["POSTGRES_PASSWORD"], row_factory=dict_row) as conn:
-        conn.execute("SET TRANSACTION READ ONLY")
-        for key, sql in queries.items():
-            output[key] = conn.execute(sql, (run,)).fetchall()
+    counts = {}
+    key = None
+    try:
+        with psycopg.connect(host="127.0.0.1", port=ready["database_port"], dbname="deepresearch",
+                              user="deepresearch", password=credentials["POSTGRES_PASSWORD"], row_factory=dict_row) as conn:
+            conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+            conn.execute("SET LOCAL statement_timeout='10s'")
+            counts = {}
+            total_bytes = 0
+            for key, sql in queries.items():
+                measured = conn.execute("SELECT count(*) AS n,coalesce(sum(octet_length(row_to_json(x)::text)),0) AS bytes,coalesce(max(octet_length(row_to_json(x)::text)),0) AS largest FROM (" + sql + ") x", (run,)).fetchone()
+                counts[key] = {"rows": measured["n"], "bytes": measured["bytes"]}
+                total_bytes += measured["bytes"]
+                if (measured["n"] > limits[key] or measured["largest"] > 1048576
+                        or total_bytes > 8388608):
+                    return {"capture": {"contract_version": CAPTURE_VERSION, "run_id": run,
+                        "status": "incomplete", "error_code": "CAPTURE_BOUND_EXCEEDED",
+                        "table": key, "counts": counts, "row_limits": limits,
+                        "max_row_bytes": 1048576, "max_total_bytes": 8388608},
+                        "operations": [], "records": []}
+                output[key] = conn.execute(sql + " LIMIT " + str(limits[key] + 1), (run,)).fetchall()
+                if len(output[key]) != measured["n"]:
+                    raise ValueError("Run capture changed within the read-only snapshot")
+    except psycopg.Error as error:
+        return {"capture": {"contract_version": CAPTURE_VERSION, "run_id": run,
+            "status": "incomplete", "error_code": "CAPTURE_SCHEMA_UNAVAILABLE"
+            if error.sqlstate in {"42P01", "42703"} else "CAPTURE_SQL_UNAVAILABLE",
+            "table": key, "counts": counts, "row_limits": limits,
+            "max_row_bytes": 1048576, "max_total_bytes": 8388608},
+            "operations": [], "records": []}
     if len(output["run"]) != 1:
         raise ValueError("Isolated database does not contain the actual HTTP run")
     budget = output["run"][0]["budget"]
@@ -122,6 +152,9 @@ def capture_database(ready, credentials, run):
                 "maxInputTokens": 64000, "maxOutputTokens": 16384}
     if any(budget.get(k) != v for k, v in expected.items()):
         raise ValueError("Actual persisted run budget differs from the authorized limits")
+    output["capture"] = {"contract_version": CAPTURE_VERSION, "run_id": run,
+        "status": "complete", "counts": counts, "row_limits": limits,
+        "max_row_bytes": 1048576, "max_total_bytes": 8388608}
     return output
 
 
@@ -393,13 +426,18 @@ def execute_batch(args, ready, sources, cases):
             row["validation_error_type"] = "ActualResultTransportMismatch"
         if not request_binding["matches"]:
             row["validation_error_type"] = "PersistedRequestMismatch"
-        audit = scrub({"batch_id": args.batch, "case": case, "run": row, "build_verification": identity,
+        audit = finalize_audit(scrub({"batch_id": args.batch, "case": case, "run": row, "build_verification": identity,
                        "view": view, "database": audit_database(database),
                        "persisted_request_binding": request_binding, "usage": usage,
                        "model_receipts": diagnostics, "model": ready["model"],
                        "actual_model_identity_receipts": actual_model_identity,
                        "source_classification": case["source_classification"],
-                       "manual_review_status": "pending", "fixtures": False}, secrets)
+                       "manual_review_status": "pending", "fixtures": False}, secrets))
+        native = validate_saved_audit(audit)
+        if (native["status"] == "invalid" or row["status"] == "SUCCEEDED"
+                and not native["eligible_for_complete_review"]):
+            row.setdefault("validation_error_type", "NativeRequirementAuditIncomplete")
+            audit["run"] = scrub(row, secrets)
         path = args.state_dir / (row["runId"] + ".json")
         if path.exists():
             raise ValueError("Existing run audit cannot be overwritten")
@@ -515,11 +553,16 @@ def main():
             diagnostics = model_receipts(database)
             if usage["decision_admissions"] > 8 or usage["model_admissions"] > 16 or usage["tool_admissions"] > 16:
                 raise ValueError("Actual operation ledger exceeded the authorized run limits")
-            audit = scrub({"case": case, "run": row, "build_verification": identity,
+            audit = finalize_audit(scrub({"case": case, "run": row, "build_verification": identity,
                            "view": view, "database": audit_database(database), "usage": usage,
                            "model_receipts": diagnostics,
                            "model": ready["model"], "source_classification": case["source_classification"],
-                           "manual_review_status": "pending", "fixtures": False}, secrets)
+                           "manual_review_status": "pending", "fixtures": False}, secrets))
+            native = validate_saved_audit(audit)
+            if (native["status"] == "invalid" or row["status"] == "SUCCEEDED"
+                    and not native["eligible_for_complete_review"]):
+                row["validation_error_type"] = "NativeRequirementAuditIncomplete"
+                audit["run"] = scrub(row, secrets)
             path = args.state_dir / (row["runId"] + ".json")
             write_private(path, audit)
             row.update({"audit_path": str(path), "usage": usage})

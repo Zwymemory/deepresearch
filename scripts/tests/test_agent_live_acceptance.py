@@ -167,10 +167,14 @@ class AdmissionTests(unittest.TestCase):
             def execute(self, sql, parameters=None):
                 queries.append((sql, parameters))
                 self.rows = [saved] if "FROM agent_workflow_run" in sql else []
+                self.measured = {"n": len(self.rows), "bytes": len(json.dumps(self.rows)), "largest": 500}
                 return self
 
             def fetchall(self):
                 return self.rows
+
+            def fetchone(self):
+                return self.measured
 
         psycopg = ModuleType("psycopg")
         rows = ModuleType("psycopg.rows")
@@ -180,8 +184,9 @@ class AdmissionTests(unittest.TestCase):
             result = live.capture_database({"database_port": 15432},
                                            {"POSTGRES_PASSWORD": "test"}, "wf-test")
         self.assertEqual(result["run"][0]["question"], "Actual saved question")
-        self.assertIn("question", queries[1][0].split(" FROM ")[0])
-        self.assertEqual(queries[1][1], ("wf-test",))
+        selections = [(sql, parameters) for sql, parameters in queries if sql.startswith("SELECT run_id,question")]
+        self.assertEqual(len(selections), 1)
+        self.assertEqual(selections[0][1], ("wf-test",))
 
     def test_request_binding_requires_saved_question_and_matching_run_ids(self):
         database = {"run": [{"run_id": "wf-test", "question": "Actual saved question"}]}

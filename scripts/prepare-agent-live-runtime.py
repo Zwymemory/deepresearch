@@ -16,6 +16,7 @@ from urllib.request import urlopen
 
 from agent_live_common import file_sha, http_json, read_private, source_digest, verify_runtime, write_private
 from agent_retest_batch import BATCH, BATCHES, JSON_WEB_BATCH, POST_IDENTITY_BATCH
+from agent_acceptance_v22 import candidate_schema_policy, verify_database_schema
 
 ISOLATION = "agent-live-20260930"
 CONTAINER = "deepresearch-agent-live-20260930-pg"
@@ -39,7 +40,7 @@ def build(root, state, sha, batch_id=BATCH):
     if batch_id not in BATCHES:
         raise ValueError("Unknown explicitly authorized batch")
     record_path = state / ("build.json" if batch_id == BATCH else batch_id + "-build.json")
-    if batch_id != BATCH and record_path.exists():
+    if record_path.exists():
         raise ValueError("Existing batch build record must be reconciled, never overwritten")
     if git(root, "rev-parse", sha).decode().strip() != sha:
         raise ValueError("Build requires an exact Git commit")
@@ -84,7 +85,7 @@ def build(root, state, sha, batch_id=BATCH):
         properties = z.read(entries[0]).decode()
         if "build.revision=" + sha not in properties or "build.source-manifest-sha256=" + digest not in properties:
             raise ValueError("Built artifact is missing the exact source identity")
-    output = {"build_sha": sha, "source_archive": str(source), "source_manifest_path": str(manifest),
+    output = {"build_sha": sha, "git_repository": str(root.resolve()), "source_archive": str(source), "source_manifest_path": str(manifest),
               "source_manifest_sha256": digest, "jar_path": str(jar), "jar_sha256": file_sha(jar),
               "sidecar_source_sha256": source_digest(source / "workflow-service/src")}
     write_private(record_path, output)
@@ -105,6 +106,7 @@ def wait_health(base, path, seconds=60):
 
 
 def start(state, credentials, built, python, ready_path, sources, model_name, batch_id=BATCH, agent_result_transport="function_call"):
+    schema_policy = candidate_schema_policy(built)
     if agent_result_transport not in {"function_call", "deepseek_json_object"} or (
             agent_result_transport == "deepseek_json_object" and model_name != "deepseek-flash"):
         raise ValueError("Unsupported Agent result transport capability")
@@ -114,7 +116,8 @@ def start(state, credentials, built, python, ready_path, sources, model_name, ba
         raise ValueError("JSON web batch requires explicit single-object transport")
     if batch_id not in BATCHES or (batch_id != BATCH and model_name != "deepseek-flash"):
         raise ValueError("New post-identity batch requires the explicit canonical request model")
-    if batch_id != BATCH and (ready_path.exists() or (state / (batch_id + "-api-token.json")).exists()):
+    token_record = state / ("api-token.json" if batch_id == BATCH else batch_id + "-api-token.json")
+    if ready_path.exists() or token_record.exists():
         raise ValueError("Existing batch runtime metadata must be reconciled, never overwritten")
     existing = subprocess.run(["docker", "inspect", CONTAINER], capture_output=True)
     database_exists = existing.returncode == 0
@@ -233,9 +236,9 @@ def start(state, credentials, built, python, ready_path, sources, model_name, ba
     wait_health(ready["app_base_url"], "/actuator/health")
     with database(credentials) as conn:
         conn.execute("CREATE SCHEMA IF NOT EXISTS langgraph AUTHORIZATION deepresearch_workflow")
-        migrations = conn.execute("SELECT max(version::int) FROM flyway_schema_history WHERE success AND type='SQL'").fetchone()[0]
-        if migrations != 21:
-            raise ValueError("Unexpected isolated database migration version")
+        schema_verification = verify_database_schema(conn, schema_policy)
+        migrations = schema_verification["migration_version"]
+    ready["schema_verification"] = schema_verification
     token = http_json(ready["app_base_url"], "/api/auth/dev-token", body={
         "tenantId": "agent-live-validation", "userId": "acceptance-20260930",
         "roles": ["USER"], "ttlSeconds": 86400})["token"]
@@ -277,8 +280,8 @@ def start(state, credentials, built, python, ready_path, sources, model_name, ba
             or sidecar_identity["model_identity"].get("result_transport") != agent_result_transport):
         raise ValueError("Actual sidecar request configuration differs")
     ready["model_identity"] = sidecar_identity["model_identity"]
+    ready["build_verification"] = verify_runtime({**ready, "ready": True}, token)
     ready.update({"ready": True, "phase": "runtime_ready_sources_pending"})
-    ready["build_verification"] = verify_runtime(ready, token)
     write_private(ready_path, ready)
     return ready
 
