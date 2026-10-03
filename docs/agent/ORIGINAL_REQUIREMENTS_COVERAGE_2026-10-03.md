@@ -10,6 +10,8 @@ The first existing budgeted decision response supplies `RequirementDraft` object
 
 All nonwhitespace original characters need anchors, including shared constraints. Span overlap is permitted for shared qualifiers. This is a literal anchoring check, **not a semantic completeness proof**: a planner can still give one inadequate obligation a full-question span. There is no punctuation splitter, keyword inference, question-specific rule or automatic generic requirement. Independent review and model instructions must assess extraction quality. The tests deliberately retain a bad full-question declaration example to make this limitation explicit. The module never represents its IDs/hashes as proof that every meaning was captured.
 
+Claim-to-obligation relevance is also semantic. Matching subject/version/time/conditions and a criterion ID cannot prove that Claim text answers the requirement. The planner must use precise obligation subjects/text and propose Claims that directly resolve those stored criteria. Independent semantic review must check that mapping; no additional unbudgeted model call is introduced to certify arbitrary-language entailment.
+
 At most 32 obligations and 16 spans per obligation are supported; limits reject instead of dropping requirements. The runtime must also obey its smaller task/criterion and output budgets. If a complete declaration cannot be obtained within those limits, it must preserve an honest gap. Missing manifests in legacy checkpoints are unknown coverage, not migrated proof from the first old task or Claim.
 
 ## Association and completion
@@ -39,6 +41,8 @@ workflow-service/.venv/bin/ruff check \
 ```
 
 The protected local failed-state hashes matched the handover: audit `ca52407cc14b89c141ef69d6487cb17e717953793d8c779b7d5bfb5bc69040e9`, selected state `21c0e24d21a84fb4fb0a7aefa6a3183e0b35bc9153ad66ddcf46c33e3c9f5bb3`, binding `771d95ff2d28f059f5781006e0066fe46c4233b6d133f6f5e4f7d4dcbc4ceae8`, independent reconstruction `9a2a07626f4e0b772b941683c15faa97979c545a292e23f369b62cfc1ce5f561`, prior proof manifest `ecbf6433a2d76b7accb982b8c7c2f5d7586c4b2a58ddf15b3489e846c91bbc56`. They were read only; raw diagnostic state/provider output was not added to tests or commits. The failed checkpoint has one task and one criterion; it is not relabeled as complete.
+
+All 42 historical B proof files were independently rehashed against that prior manifest and remained unchanged. The committed module/test/report delivery `a372a8d4e7bf8be784700d148ebe1da99a928849` passed the full committed public-tree/history gate: 191 commits, 836 files, zero leaks or waivers. A acquired this exact source through local cherry-pick `d9ee6784c8a7bdc32f0e652909bfc10ef43fa895`; integration review remains pending its combined candidate.
 
 ## Integration handoff
 
