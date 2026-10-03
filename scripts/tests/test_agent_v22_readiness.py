@@ -23,7 +23,9 @@ prepare = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(prepare)
 
 
-def built_fixture(directory):
+def built_fixture(
+    directory, identity_path="BOOT-INF/classes/META-INF/build-info.properties"
+):
     root = Path(directory)
     source = root / "source"
     blobs = {}
@@ -63,11 +65,13 @@ def built_fixture(directory):
     jar = root / "candidate.jar"
     with zipfile.ZipFile(jar, "w") as out:
         out.writestr(
-            "BOOT-INF/classes/META-INF/build-info.properties",
+            identity_path,
             "build.revision="
             + sha
             + "\nbuild.source-manifest-sha256="
             + file_sha(manifest)
+            + "\nbuild.isolation-id="
+            + native.ISOLATION_ID
             + "\n",
         )
         for name in blobs:
@@ -249,6 +253,43 @@ def recount(database):
 
 
 class SchemaTests(unittest.TestCase):
+    def test_both_existing_jar_identity_layouts_work_but_missing_or_duplicate_fail(
+        self,
+    ):
+        locations = (
+            "BOOT-INF/classes/META-INF/build-info.properties",
+            "META-INF/build-info.properties",
+        )
+        for location in locations:
+            with tempfile.TemporaryDirectory() as directory:
+                built = built_fixture(directory, location)
+                self.assertEqual(
+                    len(native.candidate_schema_policy(built)["migrations"]), 22
+                )
+                with zipfile.ZipFile(built["jar_path"], "a") as jar:
+                    jar.writestr(
+                        next(name for name in locations if name != location),
+                        jar.read(location),
+                    )
+                built["jar_sha256"] = file_sha(built["jar_path"])
+                with self.assertRaisesRegex(ValueError, "IDENTITY_RESOURCE_INVALID"):
+                    native.candidate_schema_policy(built)
+        with tempfile.TemporaryDirectory() as directory:
+            built = built_fixture(directory)
+            jar_path = Path(built["jar_path"])
+            with zipfile.ZipFile(jar_path) as jar:
+                retained = {
+                    name: jar.read(name)
+                    for name in jar.namelist()
+                    if name not in locations
+                }
+            with zipfile.ZipFile(jar_path, "w") as jar:
+                for name, data in retained.items():
+                    jar.writestr(name, data)
+            built["jar_sha256"] = file_sha(jar_path)
+            with self.assertRaisesRegex(ValueError, "IDENTITY_RESOURCE_INVALID"):
+                native.candidate_schema_policy(built)
+
     def test_verified_candidate_policy_and_tampered_local_identity(self):
         with tempfile.TemporaryDirectory() as directory:
             built = built_fixture(directory)

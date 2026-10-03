@@ -15,6 +15,7 @@ from agent_live_common import file_sha, read_private
 AUDIT_VERSION = "agent-live-audit/2"
 CAPTURE_VERSION = "agent-native-capture/2"
 SCHEMA_POLICY = "committed-v1-v22/1"
+ISOLATION_ID = "agent-live-20260930"
 MIGRATIONS = "src/main/resources/db/migration/"
 CAPTURE_LIMITS = {
     "run": 1,
@@ -130,7 +131,18 @@ def candidate_schema_policy(built):
     rows = []
     source = Path(built["source_archive"])
     with zipfile.ZipFile(built["jar_path"]) as jar:
-        identity = jar.read("BOOT-INF/classes/META-INF/build-info.properties").decode()
+        identities = [
+            name
+            for name in jar.namelist()
+            if name
+            in {
+                "BOOT-INF/classes/META-INF/build-info.properties",
+                "META-INF/build-info.properties",
+            }
+        ]
+        if len(identities) != 1:
+            raise ValueError("SCHEMA_JAR_IDENTITY_RESOURCE_INVALID")
+        identity = jar.read(identities[0]).decode()
         properties = dict(
             line.split("=", 1)
             for line in identity.splitlines()
@@ -140,6 +152,7 @@ def candidate_schema_policy(built):
             properties.get("build.revision") != sha
             or properties.get("build.source-manifest-sha256")
             != built["source_manifest_sha256"]
+            or properties.get("build.isolation-id") != ISOLATION_ID
         ):
             raise ValueError("SCHEMA_JAR_IDENTITY_MISMATCH")
         names = sorted(name for name in blobs if name.startswith(MIGRATIONS))
@@ -182,6 +195,7 @@ def candidate_schema_policy(built):
         "candidate_sha": sha,
         "source_manifest_sha256": built["source_manifest_sha256"],
         "jar_sha256": built["jar_sha256"],
+        "isolation_id": ISOLATION_ID,
         "migrations": rows,
     }
 
