@@ -213,7 +213,7 @@ class AdmissionTests(unittest.TestCase):
             args = SimpleNamespace(retry_of=None, fix_description=None,
                                    review_state=state / "review.json",
                                    sources_ready=state / "sources.json",
-                                   state_dir=state, scenario="web-only")
+                                   state_dir=state, scenario="web-only", batch=live.retest.BATCH)
             row = {"scenario": "web-only", "runId": None, "status": "REQUEST_RESERVED",
                    "build_sha": "a" * 40, "idempotency_key": "request-key"}
             database = {"run": [{"run_id": "wf-test", "question": "Actual saved question"}],
@@ -239,7 +239,7 @@ class AdmissionTests(unittest.TestCase):
                       {"runId": "wf-test", "status": "SUCCEEDED"}]),
                   patch.object(live, "capture_database", return_value=database),
                   patch.object(live.retest, "reserve", return_value=row),
-                  patch.object(live.retest, "update", side_effect=lambda _, value: updates.append(value.copy())),
+                  patch.object(live.retest, "update", side_effect=lambda _, value, _batch: updates.append(value.copy())),
                   patch.object(live, "publish_batch_manifest")):
                 with self.assertRaisesRegex(ValueError, "Persisted research request differs"):
                     live.execute_batch(args, ready, {"final_sha": "b" * 40}, {"web-only": case})

@@ -15,7 +15,7 @@ import zipfile
 from urllib.request import urlopen
 
 from agent_live_common import file_sha, http_json, read_private, source_digest, verify_runtime, write_private
-from agent_retest_batch import BATCH
+from agent_retest_batch import BATCH, BATCHES, POST_IDENTITY_BATCH
 
 ISOLATION = "agent-live-20260930"
 CONTAINER = "deepresearch-agent-live-20260930-pg"
@@ -35,7 +35,12 @@ def database(credentials):
                           user="deepresearch", password=credentials["POSTGRES_PASSWORD"])
 
 
-def build(root, state, sha):
+def build(root, state, sha, batch_id=BATCH):
+    if batch_id not in BATCHES:
+        raise ValueError("Unknown explicitly authorized batch")
+    record_path = state / ("build.json" if batch_id == BATCH else batch_id + "-build.json")
+    if batch_id == POST_IDENTITY_BATCH and record_path.exists():
+        raise ValueError("Existing batch build record must be reconciled, never overwritten")
     if git(root, "rev-parse", sha).decode().strip() != sha:
         raise ValueError("Build requires an exact Git commit")
     directory = state / ("build-" + sha[:12])
@@ -82,7 +87,7 @@ def build(root, state, sha):
     output = {"build_sha": sha, "source_archive": str(source), "source_manifest_path": str(manifest),
               "source_manifest_sha256": digest, "jar_path": str(jar), "jar_sha256": file_sha(jar),
               "sidecar_source_sha256": source_digest(source / "workflow-service/src")}
-    write_private(state / "build.json", output)
+    write_private(record_path, output)
     return output
 
 
@@ -99,9 +104,13 @@ def wait_health(base, path, seconds=60):
     raise ValueError("Isolated service did not become healthy within the preparation window")
 
 
-def start(state, credentials, built, python, ready_path, sources, model_name):
+def start(state, credentials, built, python, ready_path, sources, model_name, batch_id=BATCH):
     if model_name not in {"deepseek-flash", "deepseek-v4-flash"}:
         raise ValueError("Explicit supported request model required; retired aliases do not pin V4")
+    if batch_id not in BATCHES or (batch_id == POST_IDENTITY_BATCH and model_name != "deepseek-flash"):
+        raise ValueError("New post-identity batch requires the explicit canonical request model")
+    if batch_id == POST_IDENTITY_BATCH and (ready_path.exists() or (state / (batch_id + "-api-token.json")).exists()):
+        raise ValueError("Existing batch runtime metadata must be reconciled, never overwritten")
     existing = subprocess.run(["docker", "inspect", CONTAINER], capture_output=True)
     database_exists = existing.returncode == 0
     if database_exists:
@@ -202,8 +211,8 @@ def start(state, credentials, built, python, ready_path, sources, model_name):
     subprocess.run(command, check=True, capture_output=True)
     image_id = json.loads(subprocess.check_output(["docker", "image", "inspect", image]))[0]["Id"]
     ready = {**built, "phase": "starting", "ready": False, "isolation_id": ISOLATION,
-             "batch_id": BATCH, "historical_state_dir": str(state.resolve()),
-             "run_manifest_path": str((ready_path.parent / "agent-live-retest-runs-20261003.json").resolve()),
+             "batch_id": batch_id, "historical_state_dir": str(state.resolve()),
+             "run_manifest_path": str((ready_path.parent / ("agent-live-post-identity-runs-20261003.json" if batch_id == POST_IDENTITY_BATCH else "agent-live-retest-runs-20261003.json")).resolve()),
              "scenario_manifest_path": str((source / "testdata/agent-live/sources/scenarios.json").resolve()),
              "scenario_manifest_sha256": file_sha(source / "testdata/agent-live/sources/scenarios.json"),
              "ci": None, "research_runs_submitted": 0,
@@ -225,7 +234,7 @@ def start(state, credentials, built, python, ready_path, sources, model_name):
     token = http_json(ready["app_base_url"], "/api/auth/dev-token", body={
         "tenantId": "agent-live-validation", "userId": "acceptance-20260930",
         "roles": ["USER"], "ttlSeconds": 86400})["token"]
-    token_path = state / "api-token.json"
+    token_path = state / ("api-token.json" if batch_id == BATCH else batch_id + "-api-token.json")
     write_private(token_path, {"token": token})
     side_env = dict(os.environ)
     side_env.update({"WORKFLOW_DATABASE_URL": "postgresql://deepresearch_workflow:" + credentials["WORKFLOW_DB_PASSWORD"] + "@127.0.0.1:15432/deepresearch",
@@ -236,7 +245,7 @@ def start(state, credentials, built, python, ready_path, sources, model_name):
                      "LANGGRAPH_STRICT_MSGPACK": "true", "MAX_CONCURRENT_RUNS": "1", "WORKER_MAX_CONCURRENCY": "1",
                      "PYTHONDONTWRITEBYTECODE": "1"})
     identity_path = state / ("sidecar-identity-" + built["build_sha"][:12] + ".json")
-    side_log = (state / "sidecar.log").open("a")
+    side_log = (state / ("sidecar.log" if batch_id == BATCH else batch_id + "-sidecar.log")).open("a")
     side = subprocess.Popen([str(python), str(source / "scripts/agent-live-sidecar.py"),
                              "--source-dir", str(source / "workflow-service/src"),
                              "--source-sha256", built["sidecar_source_sha256"],
@@ -251,7 +260,7 @@ def start(state, credentials, built, python, ready_path, sources, model_name):
                   "model_identity": {"provider": "deepseek-openai-compatible", "name": model_name,
                                      "adapter": "OpenAIAgentModel", "endpoint": "https://api.deepseek.com"},
                   "ragflow_dataset_ids": datasets, "baseline_sha": "62e29a77130f727413558140a6c8872410a0b731",
-                  "migration_version": migrations, "max_research_runs": 8, "limits": {"decisions": 8, "models": 16, "tools": 16, "seconds": 180},
+                  "migration_version": migrations, "max_research_runs": 5 if batch_id == POST_IDENTITY_BATCH else 8, "limits": {"decisions": 8, "models": 16, "tools": 16, "seconds": 180, "input_tokens": 64000, "output_tokens": 16384},
                   "registry_configured": False, "real_research_runs_started": 0})
     write_private(ready_path, ready)
     wait_health(ready["sidecar_base_url"], "/internal/health/ready")
@@ -296,6 +305,7 @@ def main():
     parser.add_argument("--runtime-ready", type=Path, required=True)
     parser.add_argument("--build-sha")
     parser.add_argument("--start", action="store_true")
+    parser.add_argument("--batch", choices=BATCHES, default=BATCH)
     parser.add_argument("--model-name", choices=["deepseek-flash", "deepseek-v4-flash"],
                         help="Explicit request identity; legacy names route to V4.1 and do not pin retired V4")
     parser.add_argument("--python", type=Path)
@@ -308,14 +318,14 @@ def main():
     credentials = read_private(state / "credentials.json")
     sources = json.loads(args.sources_ready.read_text()) if args.sources_ready else None
     if args.build_sha:
-        built = build(root, state, args.build_sha)
+        built = build(root, state, args.build_sha, args.batch)
         print(json.dumps({"artifact_built": True, "build_sha": built["build_sha"], "jar_sha256": built["jar_sha256"]}), flush=True)
     else:
-        built = read_private(state / "build.json")
+        built = read_private(state / ("build.json" if args.batch == BATCH else args.batch + "-build.json"))
     if args.start:
         if not args.python or not args.model_name:
             raise ValueError("--python and explicit --model-name are required to start the sidecar")
-        ready = start(state, credentials, built, args.python, args.runtime_ready, sources, args.model_name)
+        ready = start(state, credentials, built, args.python, args.runtime_ready, sources, args.model_name, args.batch)
     else:
         ready = read_private(args.runtime_ready) if args.runtime_ready.exists() else None
     if sources and ready and sources.get("ready"):

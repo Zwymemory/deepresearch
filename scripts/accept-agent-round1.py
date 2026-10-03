@@ -52,6 +52,8 @@ def validate_sources(sources):
 
 def admit(journal, scenario, build_sha, retry_of, fix_description):
     rows = journal.get("runs", [])
+    if journal.get("authorized_batches"):
+        raise ValueError("Legacy allowance closed; use explicit pinned batch admission")
     if len(rows) >= 8:
         raise ValueError("Global eight-run validation limit reached")
     if any(row.get("status") not in TERMINAL and not row.get("request_failed") for row in rows):
@@ -295,6 +297,11 @@ def batch_prerequisites(ready, source_path, review_path, state):
             review.get("candidate_binding", {}).get("approved_for_live") is not True or
             review.get("candidate_binding", {}).get("observed_candidate_sha") != ready["build_sha"]):
         raise ValueError("B has not approved the exact candidate for live execution")
+    if (review.get("batch_id") not in retest.BATCHES
+            or review.get("batch_id") != ready.get("batch_id")
+            or ready.get("batch_id") == retest.POST_IDENTITY_BATCH
+            and ready.get("model_identity", {}).get("name") != "deepseek-flash"):
+        raise ValueError("Exact selected batch and canonical model readiness required")
     manifest = Path(ready["scenario_manifest_path"])
     if review.get("source_manifest_sha256") != file_sha(manifest) or ready.get("scenario_manifest_sha256") != file_sha(manifest):
         raise ValueError("B did not approve this exact source manifest")
@@ -305,10 +312,10 @@ def batch_prerequisites(ready, source_path, review_path, state):
     return review
 
 
-def publish_batch_manifest(state, ready):
+def publish_batch_manifest(state, ready, batch_id=retest.BATCH):
     with retest.journal_lock(state) as journal:
-        batch, rows = retest.validate_history(journal)
-        manifest = {"batch_id": retest.BATCH, "candidate_sha": ready["build_sha"],
+        batch, rows = retest.validate_history(journal, batch_id)
+        manifest = {"batch_id": batch_id, "candidate_sha": ready["build_sha"],
                     "source_manifest_sha256": batch["source_manifest_sha256"],
                     "historical_journal_sha256": batch["original_journal_sha256"],
                     "batch_status": batch["status"], "stop_reason": batch["stop_reason"],
@@ -333,15 +340,15 @@ def execute_batch(args, ready, sources, cases):
         raise ValueError("Actual runtime research model mismatch")
     secrets = [v for k, v in credentials.items() if any(part in k for part in ["KEY", "SECRET", "PASSWORD"])] + [token]
     before_model_calls = len(read_private(ready["model_identity_receipts_path"])["receipts"])
-    row = retest.reserve(args.state_dir, args.scenario, ready["build_sha"], sources["final_sha"], review)
+    row = retest.reserve(args.state_dir, args.scenario, ready["build_sha"], sources["final_sha"], review, args.batch)
     # Reservation is durable before the only POST. Exceptions consume the slot and stop.
     try:
-        publish_batch_manifest(args.state_dir, ready)
+        publish_batch_manifest(args.state_dir, ready, args.batch)
         case = cases[args.scenario]
         accepted = http_json(ready["app_base_url"], "/api/research/agents", token, body={
             "question": case["question"], "requestedTools": case["requested_tools"]}, key=row["idempotency_key"])
         row.update(runId=accepted["runId"], status=accepted["status"])
-        retest.update(args.state_dir, row)
+        retest.update(args.state_dir, row, args.batch)
         deadline = time.monotonic() + 195
         while True:
             view = http_json(ready["app_base_url"], "/api/research/workflows/" + row["runId"], token)
@@ -353,7 +360,7 @@ def execute_batch(args, ready, sources, cases):
             time.sleep(1)
         row.update(status=view["status"], errorCode=view.get("errorCode"),
                    ended_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
-        retest.update(args.state_dir, row)
+        retest.update(args.state_dir, row, args.batch)
         database = capture_database(ready, credentials, row["runId"])
         request_binding = persisted_request_binding(database, row["runId"], case["question"], view.get("runId"))
         usage = usage_summary(database)
@@ -368,7 +375,7 @@ def execute_batch(args, ready, sources, cases):
             row["validation_error_type"] = "ActualModelIdentityUnavailableOrMismatch"
         if not request_binding["matches"]:
             row["validation_error_type"] = "PersistedRequestMismatch"
-        audit = scrub({"batch_id": retest.BATCH, "case": case, "run": row, "build_verification": identity,
+        audit = scrub({"batch_id": args.batch, "case": case, "run": row, "build_verification": identity,
                        "view": view, "database": audit_database(database),
                        "persisted_request_binding": request_binding, "usage": usage,
                        "model_receipts": diagnostics, "model": ready["model"],
@@ -382,17 +389,17 @@ def execute_batch(args, ready, sources, cases):
         hashes = {record["payload"]["evidence_id"]: record["payload"]["snapshot"]["sha256"]
                   for record in database["records"] if record["record_type"] == "Evidence"}
         row.update(audit_path=str(path.resolve()), audit_sha256=file_sha(path), usage=usage, source_hashes=hashes)
-        retest.update(args.state_dir, row)
-        publish_batch_manifest(args.state_dir, ready)
+        retest.update(args.state_dir, row, args.batch)
+        publish_batch_manifest(args.state_dir, ready, args.batch)
         if not request_binding["matches"]:
             raise ValueError("Persisted research request differs from the submitted scenario")
-        print(json.dumps({"batch_id": retest.BATCH, "scenario": row["scenario"], "run_id": row["runId"],
+        print(json.dumps({"batch_id": args.batch, "scenario": row["scenario"], "run_id": row["runId"],
                           "status": row["status"], "error_code": row.get("errorCode"),
                           "usage": usage, "model_receipts": diagnostics}, ensure_ascii=False), flush=True)
     except Exception as error:
         row.setdefault("validation_error_type", type(error).__name__)
-        retest.update(args.state_dir, row)
-        publish_batch_manifest(args.state_dir, ready)
+        retest.update(args.state_dir, row, args.batch)
+        publish_batch_manifest(args.state_dir, ready, args.batch)
         raise
 
 
@@ -405,7 +412,7 @@ def main():
     parser.add_argument("--state-dir", type=Path, required=True)
     parser.add_argument("--retry-of")
     parser.add_argument("--fix-description")
-    parser.add_argument("--batch", choices=[retest.BATCH])
+    parser.add_argument("--batch", choices=retest.BATCHES)
     parser.add_argument("--review-state", type=Path)
     parser.add_argument("--authorize-batch", action="store_true")
     parser.add_argument("--authority", type=Path)
@@ -415,22 +422,24 @@ def main():
     ready = read_private(args.runtime_ready)
     sources = json.loads(args.sources_ready.read_text())
     cases = validate_sources(sources)
+    if args.batch and ready.get("batch_id") != args.batch:
+        raise ValueError("Ready record belongs to another batch")
     if args.batch and args.authorize_batch:
         if not args.authority or not args.historical_ready or not args.review_state:
             raise ValueError("Explicit authority, immutable stop history and B readiness required")
         batch_prerequisites(ready, args.sources_ready, args.review_state, args.state_dir)
-        retest.authorize(args.state_dir, ready["build_sha"], ready["scenario_manifest_sha256"], args.authority, args.historical_ready)
-        publish_batch_manifest(args.state_dir, ready)
-        print(json.dumps({"batch_id": retest.BATCH, "authorization_registered": True, "new_runs": 0}))
+        retest.authorize(args.state_dir, ready["build_sha"], ready["scenario_manifest_sha256"], args.authority, args.historical_ready, args.batch)
+        publish_batch_manifest(args.state_dir, ready, args.batch)
+        print(json.dumps({"batch_id": args.batch, "authorization_registered": True, "new_runs": 0}))
         return
     if args.batch and args.apply_reviews:
         batch_prerequisites(ready, args.sources_ready, args.review_state, args.state_dir)
-        retest.apply_reviews(args.state_dir, json.loads(args.review_state.read_text()))
-        publish_batch_manifest(args.state_dir, ready)
+        retest.apply_reviews(args.state_dir, json.loads(args.review_state.read_text()), args.batch)
+        publish_batch_manifest(args.state_dir, ready, args.batch)
         return
     if args.batch:
         if not args.execute:
-            print(json.dumps({"batch_id": retest.BATCH, "order": retest.ORDER, "new_run_limit": 5,
+            print(json.dumps({"batch_id": args.batch, "order": retest.ORDER, "new_run_limit": 5,
                               "research_reruns": 0, "model_execution": "not_started", "per_run": LIMITS}))
             return
         if not args.scenario or ready.get("tested_peer_sha") != sources["final_sha"] or not ready.get("registry_configured"):

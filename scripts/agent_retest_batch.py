@@ -13,6 +13,11 @@ from uuid import uuid4
 from agent_live_common import TERMINAL, file_sha, read_private, write_private
 
 BATCH = "round1-retest-20261003"
+POST_IDENTITY_BATCH = "round1-post-identity-20261003"
+BATCHES = (BATCH, POST_IDENTITY_BATCH)
+POST_IDENTITY_HISTORY_SHA = (
+    "de67f8017fa017f96e5e305ba9371673bfe3ca61b878ab3b544dd533eb53eea9"
+)
 ORDER = [
     "web-only",
     "mixed",
@@ -40,7 +45,14 @@ def journal_lock(state):
         yield read_private(state / "run-journal.json")
 
 
-def authorize(state, build_sha, source_sha256, authority_path, historical_ready_path):
+def authorize(
+    state,
+    build_sha,
+    source_sha256,
+    authority_path,
+    historical_ready_path,
+    batch_id=BATCH,
+):
     """Caller explicitly requests authorization registration, after candidate prerequisites."""
     state = Path(state).resolve()
     if not re.fullmatch(r"[a-f0-9]{40}", build_sha) or not re.fullmatch(
@@ -48,11 +60,29 @@ def authorize(state, build_sha, source_sha256, authority_path, historical_ready_
     ):
         raise ValueError("Exact candidate and source manifest required")
     with journal_lock(state) as journal:
-        if journal.get("authorized_batches"):
+        if batch_id not in BATCHES or batch_id in journal.get("authorized_batches", {}):
+            raise ValueError(
+                "Batch authorization unknown or already exists; never replace it"
+            )
+        expected_count = 6
+        if batch_id == POST_IDENTITY_BATCH:
+            prior, prior_rows = validate_history(journal)
+            if (
+                prior["status"] != "STOPPED"
+                or not prior["stop_reason"]
+                or len(prior_rows) != 1
+                or prior_rows[0].get("status") != "FAILED"
+                or file_sha(state / "run-journal.json") != POST_IDENTITY_HISTORY_SHA
+            ):
+                raise ValueError("Exact seven-row stopped predecessor required")
+            expected_count = 7
+        elif journal.get("authorized_batches"):
             raise ValueError("Batch authorization already exists; never replace it")
         rows = journal.get("runs", [])
-        if len(rows) != 6 or any(row.get("status") not in TERMINAL for row in rows):
-            raise ValueError("Expected six reconciled historical runs")
+        if len(rows) != expected_count or any(
+            row.get("status") not in TERMINAL for row in rows
+        ):
+            raise ValueError("Expected reconciled historical runs")
         if sum(bool(row.get("retry_of")) for row in rows) != 2:
             raise ValueError("Historical consumed retries differ")
         stopped = read_private(historical_ready_path)
@@ -60,7 +90,7 @@ def authorize(state, build_sha, source_sha256, authority_path, historical_ready_
             raise ValueError("Historical stop record required")
         if not Path(authority_path).is_file():
             raise ValueError("Explicit authorization document required")
-        snapshot = state / (BATCH + "-history.json")
+        snapshot = state / (batch_id + "-history.json")
         if snapshot.exists():
             raise ValueError(
                 "Existing history snapshot must be reconciled, never overwritten"
@@ -70,7 +100,7 @@ def authorize(state, build_sha, source_sha256, authority_path, historical_ready_
         with os.fdopen(descriptor, "wb") as stream:
             stream.write((state / "run-journal.json").read_bytes())
         batch = {
-            "batch_id": BATCH,
+            "batch_id": batch_id,
             "candidate_sha": build_sha,
             "source_manifest_sha256": source_sha256,
             "maximum_runs": 5,
@@ -91,17 +121,25 @@ def authorize(state, build_sha, source_sha256, authority_path, historical_ready_
             "status": "AUTHORIZED",
             "stop_reason": None,
         }
-        journal["authorized_batches"] = {BATCH: batch}
+        journal.setdefault("authorized_batches", {})[batch_id] = batch
         write_private(state / "run-journal.json", journal)
         return batch
 
 
-def validate_history(journal):
-    batch = journal.get("authorized_batches", {}).get(BATCH)
-    if not batch or set(journal["authorized_batches"]) != {BATCH}:
-        raise ValueError("Explicit authorized batch missing or unexpected batch")
+def validate_history(journal, batch_id=BATCH):
+    batches = journal.get("authorized_batches", {})
+    allowed = {BATCH} if batch_id == BATCH else set(BATCHES)
     if (
-        batch["maximum_runs"] != 5
+        batch_id not in BATCHES
+        or batch_id not in batches
+        or set(batches) not in ({BATCH}, set(BATCHES))
+        or not allowed <= set(batches)
+    ):
+        raise ValueError("Explicit authorized batch missing or unexpected batch")
+    batch = batches[batch_id]
+    if (
+        batch.get("batch_id") != batch_id
+        or batch["maximum_runs"] != 5
         or batch["maximum_research_reruns"] != 0
         or batch["scenario_order"] != ORDER
     ):
@@ -121,18 +159,39 @@ def validate_history(journal):
     original = read_private(batch["history_snapshot_path"])
     count = batch["history_count"]
     if (
-        count != 6
+        count != (6 if batch_id == BATCH else 7)
         or len(original["runs"]) != count
         or journal.get("runs", [])[:count] != original["runs"]
     ):
         raise ValueError("Historical rows changed")
     if {
         k: v for k, v in journal.items() if k not in {"runs", "authorized_batches"}
-    } != {k: v for k, v in original.items() if k != "runs"}:
+    } != {k: v for k, v in original.items() if k not in {"runs", "authorized_batches"}}:
         raise ValueError("Historical journal metadata changed")
-    rows = journal["runs"][count:]
+    if batch_id == POST_IDENTITY_BATCH:
+        if (
+            set(original.get("authorized_batches", {})) != {BATCH}
+            or original["authorized_batches"][BATCH] != batches[BATCH]
+            or batch["original_journal_sha256"] != POST_IDENTITY_HISTORY_SHA
+        ):
+            raise ValueError("Stopped predecessor authorization changed")
+        prior, prior_rows = validate_history(journal, BATCH)
+        if (
+            prior["status"] != "STOPPED"
+            or not prior["stop_reason"]
+            or len(prior_rows) != 1
+        ):
+            raise ValueError("Stopped predecessor history changed")
+    end = (
+        batches[POST_IDENTITY_BATCH]["history_count"]
+        if batch_id == BATCH and POST_IDENTITY_BATCH in batches
+        else len(journal["runs"])
+    )
+    if batch_id == BATCH and POST_IDENTITY_BATCH in batches and end != 7:
+        raise ValueError("Predecessor boundary changed")
+    rows = journal["runs"][count:end]
     if len(rows) > 5 or any(
-        row.get("batch_id") != BATCH
+        row.get("batch_id") != batch_id
         or row.get("scenario") != ORDER[i]
         or row.get("build_sha") != batch["candidate_sha"]
         or row.get("retry_of")
@@ -142,8 +201,8 @@ def validate_history(journal):
     return batch, rows
 
 
-def matching_review(review_state, row, source_sha256):
-    if not review_state.get("ready") or review_state.get("batch_id") != BATCH:
+def matching_review(review_state, row, source_sha256, batch_id=BATCH):
+    if not review_state.get("ready") or review_state.get("batch_id") != batch_id:
         raise ValueError("B scenario readiness required")
     if review_state.get("source_manifest_sha256") != source_sha256:
         raise ValueError("B reviewed a different source manifest")
@@ -171,15 +230,15 @@ def matching_review(review_state, row, source_sha256):
     return review
 
 
-def admit(journal, scenario, build_sha, review_state):
-    batch, rows = validate_history(journal)
+def admit(journal, scenario, build_sha, review_state, batch_id=BATCH):
+    batch, rows = validate_history(journal, batch_id)
     if batch["status"] != "AUTHORIZED" or batch.get("stop_reason"):
         raise ValueError("New batch stopped")
     if build_sha != batch["candidate_sha"]:
         raise ValueError("Only the pinned reviewed candidate is authorized")
     if (
         not review_state.get("ready")
-        or review_state.get("batch_id") != BATCH
+        or review_state.get("batch_id") != batch_id
         or review_state.get("source_manifest_sha256") != batch["source_manifest_sha256"]
     ):
         raise ValueError("B signed-off source readiness required")
@@ -198,7 +257,9 @@ def admit(journal, scenario, build_sha, review_state):
             "audit_sha256"
         ):
             raise ValueError("Prior audit missing or changed")
-        review = matching_review(review_state, row, batch["source_manifest_sha256"])
+        review = matching_review(
+            review_state, row, batch["source_manifest_sha256"], batch_id
+        )
         if review.get("decision") != "pass":
             raise ValueError("Independent semantic review did not pass")
         if row.get("semantic_review_sha256") and row[
@@ -207,23 +268,28 @@ def admit(journal, scenario, build_sha, review_state):
             raise ValueError("Prior independent verdict changed")
 
 
-def reserve(state, scenario, build_sha, peer_sha, review_state):
+def reserve(state, scenario, build_sha, peer_sha, review_state, batch_id=BATCH):
     with journal_lock(state) as journal:
-        admit(journal, scenario, build_sha, review_state)
-        batch, rows = validate_history(journal)
+        admit(journal, scenario, build_sha, review_state, batch_id)
+        batch, rows = validate_history(journal, batch_id)
         for prior in rows:
             review = matching_review(
-                review_state, prior, batch["source_manifest_sha256"]
+                review_state, prior, batch["source_manifest_sha256"], batch_id
             )
             prior["semantic_review_sha256"] = digest(review)
         row = {
-            "batch_id": BATCH,
+            "batch_id": batch_id,
             "scenario": scenario,
             "build_sha": build_sha,
             "peer_sha": peer_sha,
             "retry_of": None,
             "fix_description": None,
-            "idempotency_key": "live-retest-" + uuid4().hex,
+            "idempotency_key": (
+                "live-post-identity-"
+                if batch_id == POST_IDENTITY_BATCH
+                else "live-retest-"
+            )
+            + uuid4().hex,
             "status": "REQUEST_RESERVED",
             "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
@@ -232,9 +298,9 @@ def reserve(state, scenario, build_sha, peer_sha, review_state):
         return row
 
 
-def update(state, row):
+def update(state, row, batch_id=BATCH):
     with journal_lock(state) as journal:
-        batch, rows = validate_history(journal)
+        batch, rows = validate_history(journal, batch_id)
         matches = [
             item for item in rows if item["idempotency_key"] == row["idempotency_key"]
         ]
@@ -253,15 +319,17 @@ def update(state, row):
         write_private(Path(state) / "run-journal.json", journal)
 
 
-def apply_reviews(state, review_state):
+def apply_reviews(state, review_state, batch_id=BATCH):
     with journal_lock(state) as journal:
-        batch, rows = validate_history(journal)
+        batch, rows = validate_history(journal, batch_id)
         for row in rows:
             if not row.get("audit_sha256"):
                 continue
             if file_sha(row["audit_path"]) != row["audit_sha256"]:
                 raise ValueError("Reviewed audit changed")
-            review = matching_review(review_state, row, batch["source_manifest_sha256"])
+            review = matching_review(
+                review_state, row, batch["source_manifest_sha256"], batch_id
+            )
             if row.get("semantic_review_sha256") and row[
                 "semantic_review_sha256"
             ] != digest(review):
