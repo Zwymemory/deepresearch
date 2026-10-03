@@ -1,5 +1,7 @@
 package com.deepresearch.evidence.publicview;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+
 import com.deepresearch.evidence.EvidenceAdjudicator;
 import com.deepresearch.security.AuthPrincipal;
 import com.deepresearch.workflow.WorkflowService;
@@ -17,6 +19,7 @@ import static com.deepresearch.evidence.EvidenceJson.*;
 import static com.deepresearch.evidence.publicview.EvidenceViewDtos.*;
 import static com.deepresearch.evidence.publicview.EvidenceViewQuery.*;
 
+@ConditionalOnProperty(name = {"deepresearch.workflow.enabled", "deepresearch.agent.evidence.enabled"}, havingValue = "true")
 @Service
 public class EvidenceViewService {
     private static final Map<String, String> ID_FIELDS = Map.of("Evidence", "evidence_id", "Claim", "claim_id",
@@ -309,9 +312,9 @@ public class EvidenceViewService {
         return new Tagged("known", value);
     }
     private static Applicability applicability(JsonNode node) {
-        require(node.path("conditions").isArray() && node.path("conditions").size() <= 20);
+        EvidenceAdjudicator.strings(node.path("conditions"), 20, 1000);
         var conditions = new ArrayList<String>();
-        for (var condition : node.path("conditions")) { require(condition.isTextual() && condition.asText().length() <= 1000); conditions.add(condition.asText()); }
+        for (var condition : node.path("conditions")) conditions.add(condition.asText());
         return new Applicability(tagged(node.path("version"), false), tagged(node.path("valid_at"), true), List.copyOf(conditions));
     }
     private static String safeUrl(JsonNode source) {
