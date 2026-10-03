@@ -10,7 +10,7 @@ import time
 from urllib.parse import urlsplit
 
 
-def install_model_audit(httpx_module, path, expected):
+def install_model_audit(httpx_module, path, expected, expected_result_transport=None):
     """Observe existing completion calls under a versioned, exact provider policy."""
     from agent_live_common import read_private, write_private
     from deepresearch_workflow.agent_identity import (
@@ -20,6 +20,8 @@ def install_model_audit(httpx_module, path, expected):
     )
     if type(expected) is not str or expected not in REQUEST_MODELS:
         raise ValueError("Unsupported configured research request model")
+    if expected_result_transport not in {None, "function_call", "deepseek_json_object"}:
+        raise ValueError("Unsupported configured result transport")
     original = httpx_module.AsyncClient.send
     write_private(path, {"receipts": []})
 
@@ -29,7 +31,7 @@ def install_model_audit(httpx_module, path, expected):
         if not marked and not urlsplit(endpoint).path.endswith("/chat/completions"):
             return await original(client, request, **kwargs)
         started = time.time()
-        requested, request_reason = MISSING, None
+        requested, request_reason, request_data = MISSING, None, None
         try:
             request_data = decode_object(request.content, MAX_REQUEST_BYTES)
             requested = request_data.get("model", MISSING) if type(request_data) is dict else MISSING
@@ -44,7 +46,22 @@ def install_model_audit(httpx_module, path, expected):
                 request_reason = "request_model_mismatch"
             elif requested not in REQUEST_MODELS:
                 request_reason = "request_model_unsupported"
-        receipt = {"started_at_epoch": started, "request_model_matches": requested == expected,
+        transport = "unrecognized"
+        if type(request_data) is dict:
+            if (request_data.get("response_format") == {"type": "json_object"}
+                    and "tools" not in request_data and "tool_choice" not in request_data):
+                transport = "deepseek_json_object"
+            elif ("response_format" not in request_data and type(request_data.get("tools")) is list
+                  and type(request_data.get("tool_choice")) is dict):
+                transport = "function_call"
+        transport_matches = expected_result_transport is None or transport == expected_result_transport
+        if not transport_matches and request_reason is None:
+            request_reason = "request_json_invalid"
+        receipt = {"started_at_epoch": started,
+                   "wire": {"sha256": hashlib.sha256(request.content).hexdigest(),
+                            "bytes": len(request.content), "result_transport": transport,
+                            "configured_result_transport": expected_result_transport,
+                            "transport_matches": transport_matches}, "request_model_matches": requested == expected,
                    "provider_model": None, "identity_matches": None, "http_status": None,
                    "identity": identity_diagnostic(endpoint, requested, expected, {}),
                    "policy_evidence": list(EVIDENCE_SOURCES)}
@@ -124,7 +141,7 @@ def main():
         raise SystemExit("Unsupported Agent result transport capability")
     import httpx
     model_audit = args.identity_output.with_name(args.identity_output.stem + "-model-calls.json")
-    install_model_audit(httpx, model_audit, settings.model_name)
+    install_model_audit(httpx, model_audit, settings.model_name, settings.agent_result_transport)
     identity = {"pid": os.getpid(), "source_dir": str(source),
                 "source_sha256": source_digest(source), "model_class": OpenAIAgentModel.__name__,
                 "module_path": str(Path(module.__file__).resolve()), "fixtures": False,

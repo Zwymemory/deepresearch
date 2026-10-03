@@ -304,6 +304,16 @@ def batch_prerequisites(ready, source_path, review_path, state):
             or ready.get("batch_id") == retest.POST_IDENTITY_BATCH
             and ready.get("model_identity", {}).get("name") != "deepseek-flash"):
         raise ValueError("Exact selected batch and canonical model readiness required")
+    if ready.get("batch_id") == retest.JSON_WEB_BATCH:
+        model = ready.get("model_identity", {})
+        binding = review.get("candidate_binding", {})
+        if (model.get("name") != "deepseek-flash"
+                or model.get("endpoint") != "https://api.deepseek.com"
+                or model.get("result_transport") != "deepseek_json_object"
+                or model.get("transport_contract_version") != "agent-result-wire/1"
+                or binding.get("result_transport") != model.get("result_transport")
+                or binding.get("transport_contract_version") != model.get("transport_contract_version")):
+            raise ValueError("Actual runtime and B-approved JSON transport binding required")
     manifest = Path(ready["scenario_manifest_path"])
     if review.get("source_manifest_sha256") != file_sha(manifest) or ready.get("scenario_manifest_sha256") != file_sha(manifest):
         raise ValueError("B did not approve this exact source manifest")
@@ -321,7 +331,7 @@ def publish_batch_manifest(state, ready, batch_id=retest.BATCH):
                     "source_manifest_sha256": batch["source_manifest_sha256"],
                     "historical_journal_sha256": batch["original_journal_sha256"],
                     "batch_status": batch["status"], "stop_reason": batch["stop_reason"],
-                    "maximum_new_runs": 5, "maximum_research_reruns": 0,
+                    "maximum_new_runs": batch["maximum_runs"], "maximum_research_reruns": 0,
                     "runs": [{"scenario": row["scenario"], "run_id": row.get("runId"),
                               "build_sha": row["build_sha"], "status": row["status"],
                               "error_code": row.get("errorCode"), "audit_path": row.get("audit_path"),
@@ -375,6 +385,12 @@ def execute_batch(args, ready, sources, cases):
         if not actual_model_identity or any(call["request_model_matches"] is not True or
                 call["identity_matches"] is not True for call in actual_model_identity):
             row["validation_error_type"] = "ActualModelIdentityUnavailableOrMismatch"
+        if args.batch == retest.JSON_WEB_BATCH and any(
+                call.get("wire", {}).get("result_transport") != "deepseek_json_object"
+                or call.get("wire", {}).get("transport_matches") is not True
+                or call.get("wire", {}).get("configured_result_transport") != "deepseek_json_object"
+                for call in actual_model_identity):
+            row["validation_error_type"] = "ActualResultTransportMismatch"
         if not request_binding["matches"]:
             row["validation_error_type"] = "PersistedRequestMismatch"
         audit = scrub({"batch_id": args.batch, "case": case, "run": row, "build_verification": identity,
@@ -441,7 +457,7 @@ def main():
         return
     if args.batch:
         if not args.execute:
-            print(json.dumps({"batch_id": args.batch, "order": retest.ORDER, "new_run_limit": 5,
+            print(json.dumps({"batch_id": args.batch, "order": retest.scenario_order(args.batch), "new_run_limit": retest.maximum_runs(args.batch),
                               "research_reruns": 0, "model_execution": "not_started", "per_run": LIMITS}))
             return
         if not args.scenario or ready.get("tested_peer_sha") != sources["final_sha"] or not ready.get("registry_configured"):

@@ -14,7 +14,9 @@ from agent_live_common import TERMINAL, file_sha, read_private, write_private
 
 BATCH = "round1-retest-20261003"
 POST_IDENTITY_BATCH = "round1-post-identity-20261003"
-BATCHES = (BATCH, POST_IDENTITY_BATCH)
+JSON_WEB_BATCH = "round1-json-web-20261003"
+BATCHES = (BATCH, POST_IDENTITY_BATCH, JSON_WEB_BATCH)
+JSON_WEB_HISTORY_SHA = "85466bf90171915ade72dcd58156804412cd9623ae8b42693a7063fc575551f6"
 POST_IDENTITY_HISTORY_SHA = (
     "de67f8017fa017f96e5e305ba9371673bfe3ca61b878ab3b544dd533eb53eea9"
 )
@@ -25,6 +27,14 @@ ORDER = [
     "contradictory-material",
     "insufficient-evidence",
 ]
+
+
+def scenario_order(batch_id):
+    return ["web-only"] if batch_id == JSON_WEB_BATCH else ORDER
+
+
+def maximum_runs(batch_id):
+    return 1 if batch_id == JSON_WEB_BATCH else 5
 
 
 def digest(value):
@@ -65,7 +75,16 @@ def authorize(
                 "Batch authorization unknown or already exists; never replace it"
             )
         expected_count = 6
-        if batch_id == POST_IDENTITY_BATCH:
+        if batch_id == JSON_WEB_BATCH:
+            prior, prior_rows = validate_history(journal, POST_IDENTITY_BATCH)
+            if (
+                prior["status"] != "STOPPED" or not prior["stop_reason"]
+                or len(prior_rows) != 1 or prior_rows[0].get("status") != "FAILED"
+                or file_sha(state / "run-journal.json") != JSON_WEB_HISTORY_SHA
+            ):
+                raise ValueError("Exact eight-row stopped predecessor required")
+            expected_count = 8
+        elif batch_id == POST_IDENTITY_BATCH:
             prior, prior_rows = validate_history(journal)
             if (
                 prior["status"] != "STOPPED"
@@ -103,9 +122,9 @@ def authorize(
             "batch_id": batch_id,
             "candidate_sha": build_sha,
             "source_manifest_sha256": source_sha256,
-            "maximum_runs": 5,
+            "maximum_runs": maximum_runs(batch_id),
             "maximum_research_reruns": 0,
-            "scenario_order": ORDER,
+            "scenario_order": scenario_order(batch_id),
             "authorized_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "authority_sha256": file_sha(authority_path),
             "authority_path": str(Path(authority_path).resolve()),
@@ -121,6 +140,9 @@ def authorize(
             "status": "AUTHORIZED",
             "stop_reason": None,
         }
+        if batch_id == JSON_WEB_BATCH:
+            batch.update(result_transport="deepseek_json_object",
+                         transport_contract_version="agent-result-wire/1")
         journal.setdefault("authorized_batches", {})[batch_id] = batch
         write_private(state / "run-journal.json", journal)
         return batch
@@ -128,20 +150,20 @@ def authorize(
 
 def validate_history(journal, batch_id=BATCH):
     batches = journal.get("authorized_batches", {})
-    allowed = {BATCH} if batch_id == BATCH else set(BATCHES)
+    allowed = set(BATCHES[:BATCHES.index(batch_id) + 1]) if batch_id in BATCHES else set()
     if (
         batch_id not in BATCHES
         or batch_id not in batches
-        or set(batches) not in ({BATCH}, set(BATCHES))
+        or set(batches) not in ({BATCH}, {BATCH, POST_IDENTITY_BATCH}, set(BATCHES))
         or not allowed <= set(batches)
     ):
         raise ValueError("Explicit authorized batch missing or unexpected batch")
     batch = batches[batch_id]
     if (
         batch.get("batch_id") != batch_id
-        or batch["maximum_runs"] != 5
+        or batch["maximum_runs"] != maximum_runs(batch_id)
         or batch["maximum_research_reruns"] != 0
-        or batch["scenario_order"] != ORDER
+        or batch["scenario_order"] != scenario_order(batch_id)
     ):
         raise ValueError("Batch limits changed")
     if file_sha(batch["authority_path"]) != batch["authority_sha256"]:
@@ -159,7 +181,7 @@ def validate_history(journal, batch_id=BATCH):
     original = read_private(batch["history_snapshot_path"])
     count = batch["history_count"]
     if (
-        count != (6 if batch_id == BATCH else 7)
+        count != {BATCH: 6, POST_IDENTITY_BATCH: 7, JSON_WEB_BATCH: 8}[batch_id]
         or len(original["runs"]) != count
         or journal.get("runs", [])[:count] != original["runs"]
     ):
@@ -182,17 +204,28 @@ def validate_history(journal, batch_id=BATCH):
             or len(prior_rows) != 1
         ):
             raise ValueError("Stopped predecessor history changed")
-    end = (
-        batches[POST_IDENTITY_BATCH]["history_count"]
-        if batch_id == BATCH and POST_IDENTITY_BATCH in batches
-        else len(journal["runs"])
-    )
-    if batch_id == BATCH and POST_IDENTITY_BATCH in batches and end != 7:
+    if batch_id == JSON_WEB_BATCH:
+        if (
+            set(original.get("authorized_batches", {})) != {BATCH, POST_IDENTITY_BATCH}
+            or any(original["authorized_batches"][name] != batches[name]
+                   for name in (BATCH, POST_IDENTITY_BATCH))
+            or batch["original_journal_sha256"] != JSON_WEB_HISTORY_SHA
+            or batch.get("result_transport") != "deepseek_json_object"
+            or batch.get("transport_contract_version") != "agent-result-wire/1"
+        ):
+            raise ValueError("Stopped predecessor chain or selected transport changed")
+        prior, prior_rows = validate_history(journal, POST_IDENTITY_BATCH)
+        if prior["status"] != "STOPPED" or not prior["stop_reason"] or len(prior_rows) != 1:
+            raise ValueError("Stopped post-identity predecessor changed")
+    next_batch = (POST_IDENTITY_BATCH if batch_id == BATCH else
+                  JSON_WEB_BATCH if batch_id == POST_IDENTITY_BATCH else None)
+    end = batches[next_batch]["history_count"] if next_batch in batches else len(journal["runs"])
+    if next_batch in batches and end != (7 if batch_id == BATCH else 8):
         raise ValueError("Predecessor boundary changed")
     rows = journal["runs"][count:end]
-    if len(rows) > 5 or any(
+    if len(rows) > maximum_runs(batch_id) or any(
         row.get("batch_id") != batch_id
-        or row.get("scenario") != ORDER[i]
+        or row.get("scenario") != scenario_order(batch_id)[i]
         or row.get("build_sha") != batch["candidate_sha"]
         or row.get("retry_of")
         for i, row in enumerate(rows)
@@ -242,8 +275,16 @@ def admit(journal, scenario, build_sha, review_state, batch_id=BATCH):
         or review_state.get("source_manifest_sha256") != batch["source_manifest_sha256"]
     ):
         raise ValueError("B signed-off source readiness required")
-    if len(rows) >= 5 or scenario != ORDER[len(rows)]:
-        raise ValueError("Ordered five-run allowance only; no duplicate or rerun")
+    if batch_id == JSON_WEB_BATCH:
+        binding = review_state.get("candidate_binding", {})
+        if (binding.get("approved_for_live") is not True
+                or binding.get("observed_candidate_sha") != build_sha
+                or binding.get("result_transport") != "deepseek_json_object"
+                or binding.get("transport_contract_version") != "agent-result-wire/1"):
+            raise ValueError("B approval for exact candidate and JSON transport required")
+    order = scenario_order(batch_id)
+    if len(rows) >= maximum_runs(batch_id) or scenario != order[len(rows)]:
+        raise ValueError("Named ordered allowance only; no duplicate or rerun")
     for row in rows:
         if row.get("status") not in TERMINAL or row.get("validation_error_type"):
             raise ValueError(
@@ -285,7 +326,7 @@ def reserve(state, scenario, build_sha, peer_sha, review_state, batch_id=BATCH):
             "retry_of": None,
             "fix_description": None,
             "idempotency_key": (
-                "live-post-identity-"
+                "live-json-web-" if batch_id == JSON_WEB_BATCH else "live-post-identity-"
                 if batch_id == POST_IDENTITY_BATCH
                 else "live-retest-"
             )
@@ -341,7 +382,7 @@ def apply_reviews(state, review_state, batch_id=BATCH):
                     status="STOPPED", stop_reason="SEMANTIC_REVIEW_FAILED_OR_INCOMPLETE"
                 )
         if (
-            len(rows) == 5
+            len(rows) == maximum_runs(batch_id)
             and batch["status"] == "AUTHORIZED"
             and all(row.get("semantic_review_decision") == "pass" for row in rows)
         ):
