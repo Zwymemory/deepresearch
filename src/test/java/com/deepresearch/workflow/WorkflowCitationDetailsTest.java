@@ -69,7 +69,7 @@ class WorkflowCitationDetailsTest {
         var response = new McpToolResponse(true, "OK", "web_search", List.of(), List.of(web));
         var wrong = new WorkflowRepository.ToolReceiptRow("wrong", "task", "kb_search", "hash", mapper.writeValueAsString(response));
         var javascript = CitationDetail.web(web.sourceId(), "Title", "javascript:alert(1)", "text");
-        var credentials = CitationDetail.web(web.sourceId(), "Title", "https://user:pass@example.org/a", "text");
+        var credentials = CitationDetail.web(web.sourceId(), "Title", "https://user:pass@example.test/a", "text");
         var token = CitationDetail.web(web.sourceId(), "Title", "https://example.org/a?token=secret", "text");
         var mismatch = CitationDetail.web(web.sourceId(), "Title", "https://different.example.org/a", "text");
         assertThat(capture(List.of(web.sourceId()), wrong, receipt("web_search", javascript),
