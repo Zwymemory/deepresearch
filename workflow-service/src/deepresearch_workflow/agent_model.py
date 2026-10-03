@@ -7,6 +7,7 @@ from typing import Protocol
 
 import httpx
 
+from .agent_identity import ModelIdentityRejected, measured_usage, safe_identity_diagnostic
 from .agent_protocol import ModelRequest, ModelResult
 from .graph import WorkflowExecutionError
 from .settings import Settings
@@ -17,7 +18,7 @@ MODEL_RULES = (
 )
 
 FAILURE_CLASSES = frozenset({
-    "request_encoding", "transport_timeout", "transport_error", "http_auth",
+    "request_encoding", "transport_timeout", "transport_error", "identity_validation", "http_auth",
     "http_rate_limit", "http_upstream", "http_other", "response_json",
     "response_shape", "output_truncated", "function_count", "function_name",
     "function_arguments", "function_oversized", "function_json", "function_shape",
@@ -31,12 +32,16 @@ class AgentModelFailure(WorkflowExecutionError):
         self, error_class: str, failure_kind: str, *, retryable: bool = False,
         status_code: int | None = None, input_tokens: int | None = None,
         output_tokens: int | None = None, tool_call_count: int | None = None,
+        identity_diagnostic: dict | None = None,
     ):
         if error_class not in FAILURE_CLASSES or failure_kind not in {
             "TIMEOUT", "RATE_LIMIT", "SCHEMA", "PROVIDER"
         }:
             raise ValueError("unknown model failure classification")
-        super().__init__("Agent model call failed", error_code="AGENT_MODEL_INVALID")
+        super().__init__("Agent model call failed", error_code=(
+            "MODEL_IDENTITY_INVALID" if error_class == "identity_validation"
+            else "AGENT_MODEL_INVALID"
+        ))
         self.error_class = error_class
         self.failure_kind = failure_kind
         self.retryable = retryable
@@ -45,6 +50,7 @@ class AgentModelFailure(WorkflowExecutionError):
         )
         self.input_tokens = input_tokens
         self.output_tokens = output_tokens
+        self.identity_diagnostic = safe_identity_diagnostic(identity_diagnostic)
         self.tool_call_count = (
             tool_call_count
             if type(tool_call_count) is int and 0 <= tool_call_count <= 100
@@ -54,17 +60,6 @@ class AgentModelFailure(WorkflowExecutionError):
 
 class AgentModel(Protocol):
     async def invoke(self, request: ModelRequest) -> ModelResult: ...
-
-
-def measured_usage(data):
-    usage = data.get("usage") if type(data) is dict else None
-    usage = usage if type(usage) is dict else {}
-
-    def measured(name):
-        value = usage.get(name)
-        return value if type(value) is int and 0 <= value <= 2**63 - 1 else None
-
-    return measured("prompt_tokens"), measured("completion_tokens")
 
 
 class OpenAIAgentModel:
@@ -96,7 +91,8 @@ class OpenAIAgentModel:
 
         base = (self.settings.openai_base_url or "https://api.openai.com/v1").rstrip("/")
         try:
-            response = await self.client.post(
+            response = await self.client.request(
+                "POST",
                 base + "/chat/completions",
                 content=encoded,
                 headers={
@@ -104,7 +100,15 @@ class OpenAIAgentModel:
                     "Content-Type": "application/json",
                 },
                 timeout=self.settings.http_timeout_seconds,
+                follow_redirects=False,
+                extensions={"deepresearch_agent_model": True},
             )
+        except ModelIdentityRejected as error:
+            raise AgentModelFailure(
+                "identity_validation", "PROVIDER", status_code=error.status_code,
+                input_tokens=error.input_tokens, output_tokens=error.output_tokens,
+                identity_diagnostic=error.diagnostic,
+            ) from None
         except httpx.TimeoutException:
             # A timed-out request may have reached the provider; never blindly replay it.
             raise AgentModelFailure("transport_timeout", "TIMEOUT") from None

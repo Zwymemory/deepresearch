@@ -17,7 +17,7 @@ CASES = {"knowledge-only", "web-only", "mixed", "version-conditions",
          "contradictory-material", "insufficient-evidence"}
 MODEL_FAILURE_KINDS = {"TIMEOUT", "RATE_LIMIT", "SCHEMA", "PROVIDER"}
 MODEL_ERROR_CLASSES = {
-    "request_encoding", "transport_timeout", "transport_error", "http_auth",
+    "request_encoding", "transport_timeout", "transport_error", "identity_validation", "http_auth",
     "http_rate_limit", "http_upstream", "http_other", "response_json",
     "response_shape", "output_truncated", "function_count", "function_name",
     "function_arguments", "function_oversized", "function_json", "function_shape",
@@ -164,6 +164,45 @@ def safe_model_failure(value):
                 safe_paths.append(path)
         if safe_paths:
             safe["validation_issue_codes"] = safe_paths
+    identity = safe_identity_failure(value.get("identity"))
+    if identity is not None:
+        safe["identity"] = identity
+    return safe
+
+
+def safe_identity_failure(value):
+    """Export only the fixed identity-policy schema; arbitrary identifier text is excluded."""
+    reasons = {"accepted_canonical", "accepted_legacy_route", "endpoint_mismatch",
+               "request_model_mismatch", "request_model_unsupported", "request_method_mismatch",
+               "request_json_invalid", "request_oversized", "response_oversized",
+               "response_json_invalid", "response_shape", "response_model_missing",
+               "response_model_type_invalid", "response_model_oversized", "response_model_unsafe",
+               "response_model_mismatch", "response_model_unrecognized", "response_redirect"}
+    if (type(value) is not dict or value.get("policy_version") != "deepseek-flash-2026-09-10/1"
+            or type(value.get("reason")) is not str or value["reason"] not in reasons
+            or value.get("decision") != ("accept" if value["reason"].startswith("accepted_") else "reject")):
+        return None
+    safe = {key: value[key] for key in ("policy_version", "decision", "reason")}
+    for key in ("endpoint_matches", "response_endpoint_matches", "request_model_matches",
+                "requested_model_present", "response_model_present"):
+        if type(value.get(key)) is bool:
+            safe[key] = value[key]
+    enums = {"request_model_kind": {"canonical", "retired_alias", "unsupported"}}
+    for prefix in ("requested_model", "response_model"):
+        enums[prefix + "_type"] = {"missing", "null", "string", "boolean", "number", "array", "object"}
+        identifier = value.get(prefix + "_identifier")
+        if identifier is None or (type(identifier) is str and identifier in {
+                "deepseek-flash", "deepseek-v4-flash", "deepseek-v4-flash-vision-exp", "deepseek-v4-pro"}):
+            safe[prefix + "_identifier"] = identifier
+        length = value.get(prefix + "_length")
+        if type(length) is int and 0 <= length <= 524288:
+            safe[prefix + "_length"] = length
+        digest = value.get(prefix + "_sha256")
+        if type(digest) is str and re.fullmatch(r"[a-f0-9]{64}", digest):
+            safe[prefix + "_sha256"] = digest
+    for key, allowed in enums.items():
+        if type(value.get(key)) is str and value[key] in allowed:
+            safe[key] = value[key]
     return safe
 
 

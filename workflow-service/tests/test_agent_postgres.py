@@ -9,13 +9,14 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
+import httpx
 import psycopg
 import pytest
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from psycopg.types.json import Jsonb
 
 from deepresearch_workflow.agent_budget import AgentBudgetGateway, SqlAgentLedger
-from deepresearch_workflow.agent_model import AgentModelFailure
+from deepresearch_workflow.agent_model import AgentModelFailure, OpenAIAgentModel
 from deepresearch_workflow.agent_protocol import AgentRunBudget, ModelRequest, ModelResult
 from deepresearch_workflow.agent_runtime import AutonomousResearchGraph
 from deepresearch_workflow.domain import ClaimedRun, WorkflowStatus
@@ -29,6 +30,7 @@ from deepresearch_workflow.repository import PostgresWorkflowRepository, checkpo
 from deepresearch_workflow.runner import WorkflowRunner
 from deepresearch_workflow.settings import Settings
 
+from .test_agent_identity import install_observer
 from .test_agent_runtime import (
     EvidenceSubstitute,
     Finalizer,
@@ -267,8 +269,12 @@ async def test_explicit_rate_limit_retry_is_charged_and_known_replay_never_dispa
             self.calls += 1
             if self.calls == 1:
                 raise AgentModelFailure(
-                    "http_rate_limit", "RATE_LIMIT", retryable=True,
-                    status_code=429, input_tokens=11, output_tokens=3,
+                    "http_rate_limit",
+                    "RATE_LIMIT",
+                    retryable=True,
+                    status_code=429,
+                    input_tokens=11,
+                    output_tokens=3,
                 )
             return ModelResult(value={"accepted": True}, input_tokens=100, output_tokens=10)
 
@@ -298,9 +304,7 @@ async def test_explicit_rate_limit_retry_is_charged_and_known_replay_never_dispa
         ) == result and model.calls == 2
         usage = await ledger.summary(run, claim)
         assert (
-            usage["modelCalls"] == 2
-            and usage["inputTokens"] == 111
-            and usage["outputTokens"] == 13
+            usage["modelCalls"] == 2 and usage["inputTokens"] == 111 and usage["outputTokens"] == 13
         )
         async with await psycopg.AsyncConnection.connect(URL) as conn:
             statuses = await (
@@ -313,8 +317,10 @@ async def test_explicit_rate_limit_retry_is_charged_and_known_replay_never_dispa
             assert [row[0] for row in statuses] == ["UNKNOWN", "SETTLED"]
             assert statuses[0][1]["input_tokens"] == 11
             assert statuses[0][1]["model_failure"] == {
-                "failure_kind": "RATE_LIMIT", "error_class": "http_rate_limit",
-                "retryable": True, "status_code": 429,
+                "failure_kind": "RATE_LIMIT",
+                "error_class": "http_rate_limit",
+                "retryable": True,
+                "status_code": 429,
             }
             assert statuses[0][2] is None
     finally:
@@ -331,7 +337,10 @@ async def test_invalid_model_result_is_unknown_with_known_usage_and_never_reissu
         async def invoke(self, _):
             self.calls += 1
             raise AgentModelFailure(
-                "function_json", "SCHEMA", input_tokens=23, output_tokens=8,
+                "function_json",
+                "SCHEMA",
+                input_tokens=23,
+                output_tokens=8,
             )
 
     async def guard():
@@ -339,11 +348,18 @@ async def test_invalid_model_result_is_unknown_with_known_usage_and_never_reissu
 
     model = Model()
     gateway = AgentBudgetGateway(
-        run_id=run, claim_token=claim, budget=budget, ledger=ledger,
-        model=model, guard=guard,
+        run_id=run,
+        claim_token=claim,
+        budget=budget,
+        ledger=ledger,
+        model=model,
+        guard=guard,
     )
     request = ModelRequest(
-        name="Check", instruction="fixture", payload={}, schema={"type": "object"},
+        name="Check",
+        instruction="fixture",
+        payload={},
+        schema={"type": "object"},
     )
     try:
         with pytest.raises(ModelCallError) as rejected:
@@ -358,15 +374,98 @@ async def test_invalid_model_result_is_unknown_with_known_usage_and_never_reissu
         assert usage["modelCalls"] == 1
         assert usage["inputTokens"] == 23 and usage["outputTokens"] == 8
         async with await psycopg.AsyncConnection.connect(URL) as conn:
-            row = await (await conn.execute(
-                "SELECT status,safe_result,actual_usage FROM agent_research_operation "
-                "WHERE run_id=%s AND operation_key='model:invalid'",
-                (run,),
-            )).fetchone()
+            row = await (
+                await conn.execute(
+                    "SELECT status,safe_result,actual_usage FROM agent_research_operation "
+                    "WHERE run_id=%s AND operation_key='model:invalid'",
+                    (run,),
+                )
+            ).fetchone()
         assert row[0] == "UNKNOWN" and row[1] is None
         assert row[2]["model_failure"] == {
-            "failure_kind": "SCHEMA", "error_class": "function_json", "retryable": False,
+            "failure_kind": "SCHEMA",
+            "error_class": "function_json",
+            "retryable": False,
         }
+    finally:
+        await repo.close()
+
+
+async def test_observer_identity_rejection_persists_usage_once_and_cannot_replay(
+    tmp_path, monkeypatch
+):
+    budget = AgentRunBudget(runtime="agent")
+    repo, ledger, run, claim = await seed(budget)
+    path = tmp_path / "identity.json"
+    install_observer(path, monkeypatch)
+    calls = []
+
+    def transport(request):
+        calls.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "model": "deepseek-v4-pro",
+                "choices": "PRIVATE-REJECTED-CONTENT",
+                "usage": {
+                    "prompt_tokens": 47,
+                    "completion_tokens": 5,
+                    "total_tokens": 52,
+                    "prompt_cache_hit_tokens": 40,
+                    "completion_tokens_details": {"reasoning_tokens": 4},
+                },
+            },
+        )
+
+    async def guard():
+        assert (await repo.assert_active_claim(run, claim))[0]
+
+    request = ModelRequest(
+        name="Check", instruction="fixture", payload={}, schema={"type": "object"}
+    )
+    try:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(transport)) as client:
+            model = OpenAIAgentModel(
+                Settings(
+                    openai_key="fixture-only",
+                    model_name="deepseek-v4-flash",
+                    openai_base_url="https://api.deepseek.com",
+                ),
+                client,
+            )
+            gateway = AgentBudgetGateway(
+                run_id=run,
+                claim_token=claim,
+                budget=budget,
+                ledger=ledger,
+                model=model,
+                guard=guard,
+            )
+            with pytest.raises(ModelCallError) as rejected:
+                await gateway.model_call("model:identity", "CHECK", request)
+            assert rejected.value.error_code == "MODEL_IDENTITY_INVALID"
+            with pytest.raises(WorkflowExecutionError) as replay:
+                await gateway.model_call("model:identity", "CHECK", request)
+            assert replay.value.error_code == "AGENT_MODEL_NOT_RETRYABLE"
+        assert len(calls) == 1
+        usage = await ledger.summary(run, claim)
+        assert usage["modelCalls"] == 1
+        assert usage["inputTokens"] == 47 and usage["outputTokens"] == 5
+        async with await psycopg.AsyncConnection.connect(URL) as conn:
+            row = await (
+                await conn.execute(
+                    "SELECT status,safe_result,actual_usage FROM agent_research_operation "
+                    "WHERE run_id=%s AND operation_key='model:identity'",
+                    (run,),
+                )
+            ).fetchone()
+        assert row[0] == "UNKNOWN" and row[1] is None
+        assert row[2]["input_tokens"] == 47 and row[2]["output_tokens"] == 5
+        failure = row[2]["model_failure"]
+        assert failure["error_class"] == "identity_validation" and failure["retryable"] is False
+        assert failure["status_code"] == 200
+        assert failure["identity"]["reason"] == "response_model_mismatch"
+        assert "PRIVATE" not in json.dumps(row[2])
     finally:
         await repo.close()
 

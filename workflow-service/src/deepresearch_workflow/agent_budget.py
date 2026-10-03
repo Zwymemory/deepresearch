@@ -411,6 +411,8 @@ class AgentBudgetGateway:
             "error_class": error_class,
             "retryable": retryable,
         }
+        if isinstance(error, AgentModelFailure) and error.identity_diagnostic is not None:
+            metadata["identity"] = error.identity_diagnostic
         if status_code is not None:
             metadata["status_code"] = status_code
         if paths:

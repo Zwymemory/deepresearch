@@ -83,6 +83,8 @@ class ModelCallError(WorkflowExecutionError):
         self.retryable = retryable
         if failure_kind is not None:
             self.error_code = _MODEL_FAILURE_CODES.get(failure_kind, "MODEL_CALL_FAILED")
+        if error_class == "identity_validation":
+            self.error_code = "MODEL_IDENTITY_INVALID"
         super().__init__(f"model call failed during {operation_key}")
 
 

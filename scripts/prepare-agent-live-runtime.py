@@ -99,7 +99,9 @@ def wait_health(base, path, seconds=60):
     raise ValueError("Isolated service did not become healthy within the preparation window")
 
 
-def start(state, credentials, built, python, ready_path, sources):
+def start(state, credentials, built, python, ready_path, sources, model_name):
+    if model_name not in {"deepseek-flash", "deepseek-v4-flash"}:
+        raise ValueError("Explicit supported request model required; retired aliases do not pin V4")
     existing = subprocess.run(["docker", "inspect", CONTAINER], capture_output=True)
     database_exists = existing.returncode == 0
     if database_exists:
@@ -229,7 +231,7 @@ def start(state, credentials, built, python, ready_path, sources):
     side_env.update({"WORKFLOW_DATABASE_URL": "postgresql://deepresearch_workflow:" + credentials["WORKFLOW_DB_PASSWORD"] + "@127.0.0.1:15432/deepresearch",
                      "JAVA_BASE_URL": ready["app_base_url"], "MCP_URL": ready["app_base_url"] + "/mcp/sse",
                      "DEEPRESEARCH_INTERNAL_JWT_SECRET": credentials["DEEPRESEARCH_INTERNAL_JWT_SECRET"],
-                     "RUNNER_ENABLED": "true", "MODEL_PROVIDER": "openai", "MODEL_NAME": "deepseek-v4-flash",
+                     "RUNNER_ENABLED": "true", "MODEL_PROVIDER": "openai", "MODEL_NAME": model_name,
                      "OPENAI_API_KEY": credentials["DEEPSEEK_API_KEY"], "OPENAI_BASE_URL": "https://api.deepseek.com",
                      "LANGGRAPH_STRICT_MSGPACK": "true", "MAX_CONCURRENT_RUNS": "1", "WORKER_MAX_CONCURRENCY": "1",
                      "PYTHONDONTWRITEBYTECODE": "1"})
@@ -244,16 +246,21 @@ def start(state, credentials, built, python, ready_path, sources):
     ready.update({"sidecar_pid": side.pid, "sidecar_identity_path": str(identity_path),
                   "token_access": {"kind": "protected_json_file", "path": str(token_path), "mode": "0600"},
                   "credential_access": {"kind": "protected_json_file", "path": str(state / "credentials.json"), "mode": "0600"},
-                  "model": {"provider": "deepseek-openai-compatible", "name": "deepseek-v4-flash",
+                  "model": {"provider": "deepseek-openai-compatible", "name": model_name,
                             "adapter": "OpenAIAgentModel", "actual_cost": None},
-                  "model_identity": {"provider": "deepseek-openai-compatible", "name": "deepseek-v4-flash",
+                  "model_identity": {"provider": "deepseek-openai-compatible", "name": model_name,
                                      "adapter": "OpenAIAgentModel", "endpoint": "https://api.deepseek.com"},
                   "ragflow_dataset_ids": datasets, "baseline_sha": "62e29a77130f727413558140a6c8872410a0b731",
                   "migration_version": migrations, "max_research_runs": 8, "limits": {"decisions": 8, "models": 16, "tools": 16, "seconds": 180},
                   "registry_configured": False, "real_research_runs_started": 0})
     write_private(ready_path, ready)
     wait_health(ready["sidecar_base_url"], "/internal/health/ready")
-    ready["model_identity_receipts_path"] = read_private(identity_path)["model_identity_receipts_path"]
+    sidecar_identity = read_private(identity_path)
+    ready["model_identity_receipts_path"] = sidecar_identity["model_identity_receipts_path"]
+    if (sidecar_identity["model_identity"]["name"] != model_name
+            or sidecar_identity["model_identity"]["endpoint"] != "https://api.deepseek.com"):
+        raise ValueError("Actual sidecar request configuration differs")
+    ready["model_identity"] = sidecar_identity["model_identity"]
     ready.update({"ready": True, "phase": "runtime_ready_sources_pending"})
     ready["build_verification"] = verify_runtime(ready, token)
     write_private(ready_path, ready)
@@ -289,6 +296,8 @@ def main():
     parser.add_argument("--runtime-ready", type=Path, required=True)
     parser.add_argument("--build-sha")
     parser.add_argument("--start", action="store_true")
+    parser.add_argument("--model-name", choices=["deepseek-flash", "deepseek-v4-flash"],
+                        help="Explicit request identity; legacy names route to V4.1 and do not pin retired V4")
     parser.add_argument("--python", type=Path)
     parser.add_argument("--sources-ready", type=Path)
     args = parser.parse_args()
@@ -304,9 +313,9 @@ def main():
     else:
         built = read_private(state / "build.json")
     if args.start:
-        if not args.python:
-            raise ValueError("--python is required to start the existing sidecar environment")
-        ready = start(state, credentials, built, args.python, args.runtime_ready, sources)
+        if not args.python or not args.model_name:
+            raise ValueError("--python and explicit --model-name are required to start the sidecar")
+        ready = start(state, credentials, built, args.python, args.runtime_ready, sources, args.model_name)
     else:
         ready = read_private(args.runtime_ready) if args.runtime_ready.exists() else None
     if sources and ready and sources.get("ready"):
