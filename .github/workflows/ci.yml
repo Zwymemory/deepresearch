@@ -17,6 +17,8 @@ jobs:
           python-version: "3.12"
       - name: Verify DSL, evaluators and published redacted scores
         run: make showcase-check PYTHON=python
+      - name: Verify bounded live admission and model identity observer offline
+        run: python -B -m unittest discover -s scripts/tests -p 'test_agent*.py'
 
   java-unit:
     runs-on: ubuntu-latest

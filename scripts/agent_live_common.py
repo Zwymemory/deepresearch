@@ -124,5 +124,5 @@ def verify_runtime(ready, token):
         raise ValueError("Database is not isolated on its declared loopback port")
     if ready["database_volume"] not in [m.get("Name") for m in container["Mounts"]]:
         raise ValueError("Database volume does not match the environment")
-    return {"embedded_build": build, "jar_sha256": ready["jar_sha256"],
+    return {"embedded_build": build, "jar_sha256": ready["jar_sha256"], "model_identity": identity.get("model_identity"),
             "sidecar_source_sha256": ready["sidecar_source_sha256"], "verified": True}

@@ -10,7 +10,8 @@ import re
 import time
 from uuid import uuid4
 
-from agent_live_common import LIMITS, TERMINAL, http_json, read_private, verify_runtime, write_private
+from agent_live_common import LIMITS, TERMINAL, file_sha, http_json, read_private, verify_runtime, write_private
+import agent_retest_batch as retest
 
 CASES = {"knowledge-only", "web-only", "mixed", "version-conditions",
          "contradictory-material", "insufficient-evidence"}
@@ -226,6 +227,113 @@ def usage_summary(database):
             "actual_bill_or_cost": None, "cost_note": "unknown; admission estimates are not provider bills"}
 
 
+def batch_prerequisites(ready, source_path, review_path, state):
+    if Path(ready.get("historical_state_dir", "")).resolve() != state.resolve():
+        raise ValueError("Use the original protected campaign state directory")
+    ci = ready.get("ci", {})
+    required_jobs = {"showcase-offline", "java-unit", "python-unit", "integration",
+                     "workflow-postgres-integration", "secret-scan"}
+    jobs = ci.get("jobs", [])
+    if (ci.get("head_sha") != ready["build_sha"] or ci.get("conclusion") != "success"
+            or {job.get("name") for job in jobs} != required_jobs
+            or any(job.get("conclusion") != "success" for job in jobs)):
+        raise ValueError("Exact-candidate remote CI prerequisites missing or failed")
+    review = json.loads(review_path.read_text())
+    manifest = Path(ready["scenario_manifest_path"])
+    if review.get("source_manifest_sha256") != file_sha(manifest) or ready.get("scenario_manifest_sha256") != file_sha(manifest):
+        raise ValueError("B did not approve this exact source manifest")
+    scenario_manifest = json.loads(manifest.read_text())
+    source = json.loads(source_path.read_text())
+    if source["cases"] != scenario_manifest["cases"]:
+        raise ValueError("Runtime scenario questions differ from the reviewed manifest")
+    return review
+
+
+def publish_batch_manifest(state, ready):
+    with retest.journal_lock(state) as journal:
+        batch, rows = retest.validate_history(journal)
+        manifest = {"batch_id": retest.BATCH, "candidate_sha": ready["build_sha"],
+                    "source_manifest_sha256": batch["source_manifest_sha256"],
+                    "historical_journal_sha256": batch["original_journal_sha256"],
+                    "batch_status": batch["status"], "stop_reason": batch["stop_reason"],
+                    "maximum_new_runs": 5, "maximum_research_reruns": 0,
+                    "runs": [{"scenario": row["scenario"], "run_id": row.get("runId"),
+                              "build_sha": row["build_sha"], "status": row["status"],
+                              "error_code": row.get("errorCode"), "audit_path": row.get("audit_path"),
+                              "audit_sha256": row.get("audit_sha256"), "source_hashes": row.get("source_hashes", {}),
+                              "usage": row.get("usage"), "validation_error_type": row.get("validation_error_type")}
+                             for row in rows]}
+        write_private(ready["run_manifest_path"], manifest)
+
+
+def execute_batch(args, ready, sources, cases):
+    if args.retry_of or args.fix_description or not args.review_state:
+        raise ValueError("New batch allows no research rerun and requires independent review state")
+    review = batch_prerequisites(ready, args.sources_ready, args.review_state, args.state_dir)
+    credentials = read_private(ready["credential_access"]["path"])
+    token = read_private(ready["token_access"]["path"])["token"]
+    identity = verify_runtime(ready, token)
+    if identity.get("model_identity") != ready.get("model_identity"):
+        raise ValueError("Actual runtime research model mismatch")
+    secrets = [v for k, v in credentials.items() if any(part in k for part in ["KEY", "SECRET", "PASSWORD"])] + [token]
+    before_model_calls = len(read_private(ready["model_identity_receipts_path"])["receipts"])
+    row = retest.reserve(args.state_dir, args.scenario, ready["build_sha"], sources["final_sha"], review)
+    # Reservation is durable before the only POST. Exceptions consume the slot and stop.
+    try:
+        publish_batch_manifest(args.state_dir, ready)
+        case = cases[args.scenario]
+        accepted = http_json(ready["app_base_url"], "/api/research/agents", token, body={
+            "question": case["question"], "requestedTools": case["requested_tools"]}, key=row["idempotency_key"])
+        row.update(runId=accepted["runId"], status=accepted["status"])
+        retest.update(args.state_dir, row)
+        deadline = time.monotonic() + 195
+        while True:
+            view = http_json(ready["app_base_url"], "/api/research/workflows/" + row["runId"], token)
+            if view["status"] in TERMINAL:
+                break
+            if time.monotonic() >= deadline:
+                http_json(ready["app_base_url"], "/api/research/workflows/" + row["runId"] + "/cancel", token, body={})
+                raise ValueError("Run outcome uncertain after cancellation; stop batch")
+            time.sleep(1)
+        row.update(status=view["status"], errorCode=view.get("errorCode"),
+                   ended_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+        retest.update(args.state_dir, row)
+        database = capture_database(ready, credentials, row["runId"])
+        usage = usage_summary(database)
+        diagnostics = model_receipts(database)
+        actual_model_identity = read_private(ready["model_identity_receipts_path"])["receipts"][before_model_calls:]
+        if (usage["decision_admissions"] > 8 or usage["model_admissions"] > 16 or usage["tool_admissions"] > 16
+                or usage["actual_input_tokens"] > 64000 or usage["actual_output_tokens"] > 16384
+                or usage["model_result_unavailable"]):
+            row["validation_error_type"] = "UnavailableModelResultOrBudgetViolation"
+        if not actual_model_identity or any(call["request_model_matches"] is not True or
+                call["identity_matches"] is not True for call in actual_model_identity):
+            row["validation_error_type"] = "ActualModelIdentityUnavailableOrMismatch"
+        audit = scrub({"batch_id": retest.BATCH, "case": case, "run": row, "build_verification": identity,
+                       "view": view, "database": audit_database(database), "usage": usage,
+                       "model_receipts": diagnostics, "model": ready["model"],
+                       "actual_model_identity_receipts": actual_model_identity,
+                       "source_classification": case["source_classification"],
+                       "manual_review_status": "pending", "fixtures": False}, secrets)
+        path = args.state_dir / (row["runId"] + ".json")
+        if path.exists():
+            raise ValueError("Existing run audit cannot be overwritten")
+        write_private(path, audit)
+        hashes = {record["payload"]["evidence_id"]: record["payload"]["snapshot"]["sha256"]
+                  for record in database["records"] if record["record_type"] == "Evidence"}
+        row.update(audit_path=str(path.resolve()), audit_sha256=file_sha(path), usage=usage, source_hashes=hashes)
+        retest.update(args.state_dir, row)
+        publish_batch_manifest(args.state_dir, ready)
+        print(json.dumps({"batch_id": retest.BATCH, "scenario": row["scenario"], "run_id": row["runId"],
+                          "status": row["status"], "error_code": row.get("errorCode"),
+                          "usage": usage, "model_receipts": diagnostics}, ensure_ascii=False), flush=True)
+    except Exception as error:
+        row["validation_error_type"] = type(error).__name__
+        retest.update(args.state_dir, row)
+        publish_batch_manifest(args.state_dir, ready)
+        raise
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--execute", action="store_true")
@@ -235,10 +343,38 @@ def main():
     parser.add_argument("--state-dir", type=Path, required=True)
     parser.add_argument("--retry-of")
     parser.add_argument("--fix-description")
+    parser.add_argument("--batch", choices=[retest.BATCH])
+    parser.add_argument("--review-state", type=Path)
+    parser.add_argument("--authorize-batch", action="store_true")
+    parser.add_argument("--authority", type=Path)
+    parser.add_argument("--historical-ready", type=Path)
+    parser.add_argument("--apply-reviews", action="store_true")
     args = parser.parse_args()
     ready = read_private(args.runtime_ready)
     sources = json.loads(args.sources_ready.read_text())
     cases = validate_sources(sources)
+    if args.batch and args.authorize_batch:
+        if not args.authority or not args.historical_ready or not args.review_state:
+            raise ValueError("Explicit authority, immutable stop history and B readiness required")
+        batch_prerequisites(ready, args.sources_ready, args.review_state, args.state_dir)
+        retest.authorize(args.state_dir, ready["build_sha"], ready["scenario_manifest_sha256"], args.authority, args.historical_ready)
+        publish_batch_manifest(args.state_dir, ready)
+        print(json.dumps({"batch_id": retest.BATCH, "authorization_registered": True, "new_runs": 0}))
+        return
+    if args.batch and args.apply_reviews:
+        batch_prerequisites(ready, args.sources_ready, args.review_state, args.state_dir)
+        retest.apply_reviews(args.state_dir, json.loads(args.review_state.read_text()))
+        publish_batch_manifest(args.state_dir, ready)
+        return
+    if args.batch:
+        if not args.execute:
+            print(json.dumps({"batch_id": retest.BATCH, "order": retest.ORDER, "new_run_limit": 5,
+                              "research_reruns": 0, "model_execution": "not_started", "per_run": LIMITS}))
+            return
+        if not args.scenario or ready.get("tested_peer_sha") != sources["final_sha"] or not ready.get("registry_configured"):
+            raise ValueError("One reviewed scenario and registered source manifest required")
+        execute_batch(args, ready, sources, cases)
+        return
     plan = {"cases": list(cases), "maximum_runs": 8, "maximum_initial_runs": 6,
             "maximum_targeted_fix_retries": 2, "per_run": LIMITS,
             "model_execution": "not_started", "build_sha": ready["build_sha"],

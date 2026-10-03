@@ -107,8 +107,10 @@ def start(state, credentials, built, python, ready_path, sources):
             raise ValueError("Existing database is owned by another environment")
         if VOLUME not in [m.get("Name") for m in current["Mounts"]]:
             raise ValueError("Existing database volume does not match this validation")
-        if current["NetworkSettings"]["Ports"].get("5432/tcp") != [{"HostIp": "127.0.0.1", "HostPort": "15432"}]:
+        if current["HostConfig"]["PortBindings"].get("5432/tcp") != [{"HostIp": "127.0.0.1", "HostPort": "15432"}]:
             raise ValueError("Existing database is not on this validation's loopback port")
+        if not current["State"]["Running"]:
+            subprocess.run(["docker", "start", CONTAINER], check=True, capture_output=True)
     for port in ([PORTS["app"], PORTS["sidecar"]] if database_exists else PORTS.values()):
         with socket.socket() as probe:
             probe.bind(("127.0.0.1", port))
@@ -238,11 +240,14 @@ def start(state, credentials, built, python, ready_path, sources):
                   "credential_access": {"kind": "protected_json_file", "path": str(state / "credentials.json"), "mode": "0600"},
                   "model": {"provider": "deepseek-openai-compatible", "name": "deepseek-v4-flash",
                             "adapter": "OpenAIAgentModel", "actual_cost": None},
-                  "ragflow_dataset_ids": datasets, "baseline_sha": "b9b20ada48eed889a3ae486dbd429f934bfc7c64",
+                  "model_identity": {"provider": "deepseek-openai-compatible", "name": "deepseek-v4-flash",
+                                     "adapter": "OpenAIAgentModel", "endpoint": "https://api.deepseek.com"},
+                  "ragflow_dataset_ids": datasets, "baseline_sha": "62e29a77130f727413558140a6c8872410a0b731",
                   "migration_version": migrations, "max_research_runs": 8, "limits": {"decisions": 8, "models": 16, "tools": 16, "seconds": 180},
                   "registry_configured": False, "real_research_runs_started": 0})
     write_private(ready_path, ready)
     wait_health(ready["sidecar_base_url"], "/internal/health/ready")
+    ready["model_identity_receipts_path"] = read_private(identity_path)["model_identity_receipts_path"]
     ready.update({"ready": True, "phase": "runtime_ready_sources_pending"})
     ready["build_verification"] = verify_runtime(ready, token)
     write_private(ready_path, ready)
