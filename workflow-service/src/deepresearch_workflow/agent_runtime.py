@@ -11,10 +11,10 @@ from langgraph.graph import END, START, StateGraph
 
 from .agent_budget import AgentBudgetGateway, canonical
 from .agent_completion import begin_attempt, bind_criteria, ensure_criteria, recompute_tasks
+from .agent_context import CONTEXT_VERSION, decision_context
 from .agent_investigations import (
     InvestigationError,
     accept_check,
-    public_investigations,
     select_investigation,
 )
 from .agent_protocol import (
@@ -24,6 +24,16 @@ from .agent_protocol import (
     AgentTask,
     ModelRequest,
     valid_at_instant,
+)
+from .agent_requirements import (
+    CONTRACT_VERSION as REQUIREMENTS_VERSION,
+)
+from .agent_requirements import (
+    RequirementError,
+    bind_requirements,
+    evaluate_coverage,
+    freeze_requirements,
+    validate_requirement_claims,
 )
 from .domain import EventRecord, ToolExecutionRequest, ToolName, UsageDelta, WorkItem
 from .graph import (
@@ -151,6 +161,44 @@ class AutonomousResearchGraph:
             state["run_id"], self.claim_token, status="WORKING", stage="WORKING", usage=usage
         ):
             raise StaleClaimError("Agent claim 已变化")
+        coverage = evaluate_coverage(
+            state.get("original_requirements"),
+            state["tasks"],
+            state.get("investigations", {}),
+            state.get("requirement_bindings", []),
+        )
+        if (
+            coverage["complete"]
+            and all(task["status"] == "done" for task in state["tasks"])
+            and all(
+                entry.get("attempt_status") == "accepted"
+                and not entry.get("packet", {}).get("gaps")
+                for entry in state.get("investigations", {}).values()
+            )
+        ):
+            # Java constructs the cited answer from authoritative checked records.
+            # This is mechanical publication, no unbudgeted synthesis/model call.
+            decision = AgentDecision(
+                action="finish", reason="All original obligations have current verified coverage"
+            )
+            await self.emit(
+                state,
+                "AGENT_ACTION_SELECTED",
+                {
+                    "action": "finish",
+                    "reason": decision.reason,
+                    "planVersion": state["plan_version"],
+                    "taskId": None,
+                    "mechanicalPublication": True,
+                },
+                "closure-selected",
+            )
+            return {
+                "decision": decision.model_dump(mode="json"),
+                "agent_usage": summary,
+                "usage": usage.model_dump(),
+                "requirement_coverage": coverage,
+            }
         if (
             state.get("no_progress", 0) >= 2
             or state["decision_steps"] >= self.budget.max_decision_steps
@@ -170,29 +218,33 @@ class AutonomousResearchGraph:
                 "agent_usage": summary,
                 "usage": usage.model_dump(),
             }
-        payload = {
-            "original_question": state["question"],
-            "plan_version": state["plan_version"],
-            "tasks": state["tasks"],
-            "observations": state["observations"][-4:],
-            "candidates": state["candidates"][-8:],
-            "evidence": self.model_evidence(state["evidence"]),
-            "packet": state.get("packet", {}),
-            "investigations": public_investigations(state),
-            "allowed_tools": state["requested_scopes"],
-            "remaining_decisions": self.budget.max_decision_steps - state["decision_steps"],
-            # Input must survive a crash after model settlement but before its checkpoint.
-            "budget_usage": state.get("agent_usage", {}),
-            "prior_context": {
-                key: state.get("context_snapshot", {}).get(key)
-                for key in ["sessionSummary", "recentConversation", "memories", "truncated"]
-            },
-        }
+        payload = decision_context(state, self.budget)
         request = ModelRequest(
             name="AgentDecision",
             schema=AgentDecision.model_json_schema(),
             payload=payload,
+            request_binding={
+                "context_contract": CONTEXT_VERSION,
+                "requirements_contract": REQUIREMENTS_VERSION,
+            },
             instruction=(
+                "If original_requirements is absent, extract ALL independent subquestions and "
+                "substantive constraints from original_question into requirements in THIS "
+                "response, alongside the next action. Each requirement has text (max400), "
+                "question_spans [{start,end}] as exact Unicode codepoint half-open offsets, "
+                "kind and applicability (subject/version/valid_at/conditions). Anchor all "
+                "nonwhitespace question characters, overlapping shared qualifiers if needed. "
+                "One generic obligation cannot replace independent subquestions. Scope "
+                "must describe the fact to be checked, not a proposed conclusion. Never "
+                "change frozen requirements. Server creates a distinct criterion per obligation. "
+                "Use requirement_bindings only to associate an existing requirement_id with "
+                "an existing criterion_id; each obligation has a distinct criterion.\n"
+                "Resolve all canonical_objects references before choosing. Check histories, "
+                "unresolved counterevidence and original requirements remain mandatory. "
+                "Source previews explicitly mark omissions; do not infer unseen source text. "
+                "Once all original obligations have verified coverage, choose finish now "
+                "and synthesize within this budgeted response. Further research requires a "
+                "specific unresolved gap; preserve gaps if budgets cannot support closure.\n"
                 "Choose exactly one next action from "
                 "search/read_source/revise_plan/check_claims/finish/stop_with_gaps.\n"
                 "Keep original_question and its requirements unchanged. Create searches from "
@@ -209,6 +261,9 @@ class AutonomousResearchGraph:
                 "with seconds and timezone. Otherwise use unknown with a concrete reason; "
                 "unknown time does not prevent checking facts supported by the original. "
                 "Version remains a separate text field, not a date.\n"
+                "Each Claim must directly answer its criterion and original obligation, with "
+                "a precise subject preserving all substantive conditions. Scope equality or "
+                "IDs alone do not prove semantic relevance.\n"
                 "Bind each covered criterion explicitly with criterion_bindings (criterion_id and "
                 "claim_index).\n"
                 "Criterion IDs in tasks are immutable; a stored criterion must reuse its initial "
@@ -237,11 +292,32 @@ class AutonomousResearchGraph:
                 "identifiers from the original question."
             ),
         )
+
+        def validate_planning(value):
+            decision = AgentDecision.model_validate(value)
+            if (
+                not state.get("original_requirements")
+                and not state["tasks"]
+                and decision.action != "stop_with_gaps"
+            ):
+                freeze_requirements(
+                    state["run_id"],
+                    state["question"],
+                    [row.model_dump(mode="json") for row in decision.requirements],
+                )
+            elif decision.requirements:
+                freeze_requirements(
+                    state["run_id"],
+                    state["question"],
+                    [row.model_dump(mode="json") for row in decision.requirements],
+                    existing=state.get("original_requirements"),
+                )
+
         result = await self.gateway(state).model_call(
             f"model:agent:decision-{state['decision_steps'] + 1}",
             "DECISION",
             request,
-            AgentDecision.model_validate,
+            validate_planning,
         )
         decision = AgentDecision.model_validate(result.value)
         next_state = {**state, "decision_steps": state["decision_steps"] + 1}
@@ -310,13 +386,89 @@ class AutonomousResearchGraph:
         state = {**state, "claim_token": self.claim_token}
         decision = AgentDecision.model_validate(state["decision"])
         tasks = copy.deepcopy(state["tasks"])
+        manifest = state.get("original_requirements")
+        associations = state.get("requirement_bindings", [])
+        requirements_update = {}
+        try:
+            if decision.requirements:
+                manifest = freeze_requirements(
+                    state["run_id"],
+                    state["question"],
+                    [row.model_dump(mode="json") for row in decision.requirements],
+                    existing=manifest,
+                )
+                if not state.get("original_requirements"):
+                    # One native criterion per original obligation. No generic auto-goal.
+                    rows = manifest["requirements"]
+                    groups = [rows[index : index + 5] for index in range(0, len(rows), 5)]
+                    if len(tasks) + len(groups) > self.budget.max_tasks:
+                        raise RequirementError("REQUIREMENT_TASK_LIMIT")
+                    proposals = []
+                    for group in groups:
+                        identity = (
+                            "task-req-"
+                            + hashlib.sha256(
+                                canonical([row["requirement_id"] for row in group]).encode()
+                            ).hexdigest()[:40]
+                        )
+                        task = AgentTask(
+                            task_id=identity,
+                            objective=group[0]["text"][:280],
+                            acceptance_criteria=[row["text"] for row in group],
+                            plan_version=state["plan_version"],
+                        ).model_dump(mode="json")
+                        tasks.append(task)
+                        ensure_criteria(state["run_id"], [task])
+                        for row, criterion in zip(group, task["criteria"], strict=True):
+                            proposals.append(
+                                {
+                                    "requirement_id": row["requirement_id"],
+                                    "criterion_id": criterion["criterion_id"],
+                                }
+                            )
+                    associations = bind_requirements(
+                        manifest, tasks, proposals, existing=associations
+                    )
+            if manifest:
+                associations = bind_requirements(
+                    manifest,
+                    tasks,
+                    [row.model_dump(mode="json") for row in decision.requirement_bindings],
+                    existing=associations,
+                )
+                await self.ledger.save_tasks(state["run_id"], self.claim_token, tasks)
+                if hasattr(self.ledger, "save_requirements"):
+                    await self.ledger.save_requirements(
+                        state["run_id"],
+                        self.claim_token,
+                        manifest,
+                        associations,
+                        tasks,
+                        f"model:agent:decision-{state['decision_steps']}",
+                    )
+                requirements_update = {
+                    "original_requirements": manifest,
+                    "requirement_bindings": associations,
+                }
+                state = {**state, **requirements_update, "tasks": tasks}
+        except RequirementError as rejected:
+            return self.observation(state, {"action": decision.action, "errorCode": rejected.code})
         ensure_criteria(state["run_id"], tasks)
         recompute_tasks(tasks, state.get("investigations", {}))
 
         def observe(value):
-            return {**self.observation(state, value), "tasks": tasks}
+            return {**self.observation(state, value), "tasks": tasks, **requirements_update}
 
         publishing = decision.action in {"finish", "stop_with_gaps"}
+        coverage = evaluate_coverage(manifest, tasks, state.get("investigations", {}), associations)
+        if decision.action == "finish" and not coverage["complete"]:
+            return observe(
+                {
+                    "action": "finish",
+                    "errorCode": "ORIGINAL_REQUIREMENTS_INCOMPLETE",
+                    "gaps": coverage["gaps"],
+                }
+            )
         if decision.action == "revise_plan":
             if state["conflict_rounds"] >= self.budget.max_revision_rounds:
                 return observe({"action": "revise_plan", "errorCode": "REVISION_LIMIT"})
@@ -394,7 +546,7 @@ class AutonomousResearchGraph:
             ).hexdigest()[:32]
         )
         gateway = self.gateway(state)
-        update = {"tasks": tasks}
+        update = {"tasks": tasks, **requirements_update}
         time_issue = None
         if decision.action == "check_claims":
             selected_ids = (
@@ -475,6 +627,14 @@ class AutonomousResearchGraph:
             selected = []
             prior_criteria = copy.deepcopy(task["criteria"])
             try:
+                if manifest:
+                    validate_requirement_claims(
+                        manifest,
+                        tasks,
+                        [c.model_dump(mode="json") for c in decision.claims],
+                        [b.model_dump(mode="json") for b in decision.criterion_bindings],
+                        associations,
+                    )
                 selected = bind_criteria(
                     task,
                     [c.model_dump(mode="json") for c in decision.claims],
@@ -487,7 +647,7 @@ class AutonomousResearchGraph:
                     decision.investigation_id,
                     criterion_scoped=bool(selected),
                 )
-            except InvestigationError as rejected:
+            except (InvestigationError, RequirementError) as rejected:
                 task["criteria"] = prior_criteria
                 task["status"] = "blocked"
                 result = {"errorCode": rejected.code}
@@ -524,7 +684,7 @@ class AutonomousResearchGraph:
                     StaleClaimError,
                 ):
                     raise
-                except InvestigationError as rejected:
+                except (InvestigationError, RequirementError) as rejected:
                     result, accepted = {"errorCode": rejected.code}, False
                 except Exception as failed:
                     code = failed.error_code if isinstance(failed, WorkflowExecutionError) else None
@@ -554,6 +714,7 @@ class AutonomousResearchGraph:
                 and terminal in {"SUCCEEDED", "INSUFFICIENT_EVIDENCE"}
                 and report_status in {"complete", "partial", "insufficient"}
                 and (terminal == "SUCCEEDED") == (report_status == "complete")
+                and (terminal != "SUCCEEDED" or coverage["complete"])
                 and isinstance(result.get("answer"), str)
                 and bool(result["answer"].strip())
                 and isinstance(result.get("citations"), list)
@@ -575,6 +736,8 @@ class AutonomousResearchGraph:
                 )
                 return {
                     "tasks": tasks,
+                    **requirements_update,
+                    "requirement_coverage": coverage,
                     "final_status": terminal,
                     "final_answer": result["answer"],
                     "citations": result["citations"],
@@ -595,6 +758,12 @@ class AutonomousResearchGraph:
             "AGENT_PLAN_UPDATED",
             {"planVersion": state["plan_version"], "tasks": self.task_view(tasks)},
             "tasks-observed",
+        )
+        update["requirement_coverage"] = evaluate_coverage(
+            manifest,
+            tasks,
+            update.get("investigations", state.get("investigations", {})),
+            associations,
         )
         progress = self.progress_marker({**state, **update}) != self.progress_marker(state)
         update.update(observe(observation))

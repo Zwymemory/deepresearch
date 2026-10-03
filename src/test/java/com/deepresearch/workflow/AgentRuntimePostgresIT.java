@@ -100,7 +100,8 @@ class AgentRuntimePostgresIT {
                 ids.run_id(),ids.call_id(),purpose,"a".repeat(64),ids.claim_token());
         return ids;
     }
-    private EvidenceDtos.PublishRequest supportedPacket(Bridge b) {
+    private EvidenceDtos.PublishRequest supportedPacket(Bridge b) { return supportedPacket(b,true); }
+    private EvidenceDtos.PublishRequest supportedPacket(Bridge b,boolean declare) {
         var read=operation(b,1,"TOOL");JsonNode evidence=b.service.read("Bearer fixture-service",new EvidenceDtos.ReadRequest(read,"ragflow:dataset:document:chunk"));
         assertThat(b.db.queryForObject("SELECT status FROM agent_research_operation WHERE run_id=? AND operation_key=?",String.class,read.run_id(),read.call_id())).isEqualTo("SETTLED");
         var check=operation(b,2,"TOOL");
@@ -113,6 +114,7 @@ class AgentRuntimePostgresIT {
         b.db.update("INSERT INTO agent_research_operation(run_id,operation_key,attempt,kind,purpose,request_hash,status,input_reserved,output_reserved,claim_token) VALUES (?,'model:check',1,'MODEL','CHECK',?,'RESERVED',100,100,?::uuid)",check.run_id(),"b".repeat(64),check.claim_token());
         b.db.update("UPDATE agent_research_operation SET status='SETTLED',safe_result=?::jsonb,actual_usage='{}',settled_at=now() WHERE run_id=? AND operation_key='model:check'",canonical(model),check.run_id());
         registerCriterion(b,check,prepared,0,"quote verified");
+        if(declare) registerRequirements(b,List.of(object("task_id",check.task_id(),"criterion_id",AgentCompletionService.criterionId(check.run_id(),check.task_id(),0,"quote verified"),"text","quote verified","claim",AgentCompletionService.normalize(prepared.request().path("claims").get(0)))));
         var outcome=b.service.complete("Bearer fixture-service",new EvidenceDtos.CompleteRequest(check,prepared.check_id(),"model:check",response));
         b.authority.settle(b.authority.authorize("Bearer fixture-service","check_claims",check),object("records",outcome.records(),"check_id",prepared.check_id(),"gaps",List.of()));
         b.db.update("UPDATE agent_research_task SET status='done' WHERE run_id=? AND task_id=?",check.run_id(),check.task_id());
@@ -125,6 +127,84 @@ class AgentRuntimePostgresIT {
         JsonNode expected=AgentCompletionService.normalize(prepared.request().path("claims").get(index));
         b.db.update("INSERT INTO agent_research_investigation_progress(run_id,investigation,current_call_id,claim_token) VALUES (?,?,?,?::uuid) ON CONFLICT (run_id,investigation) DO UPDATE SET current_call_id=EXCLUDED.current_call_id,claim_token=EXCLUDED.claim_token",check.run_id(),prepared.investigation_id(),check.call_id(),check.claim_token());
         b.db.update("INSERT INTO agent_research_criterion(run_id,task_id,criterion_id,criterion_index,criterion_text,expected_claim,expected_hash,investigation,last_call_id,dependency_snapshot,claim_token) VALUES (?,?,?,?,?,?::jsonb,?,?,?,?::jsonb,?::uuid)",check.run_id(),check.task_id(),identity,index,criterionText,canonical(expected),sha(canonical(expected)),prepared.investigation_id(),check.call_id(),b.db.queryForObject("SELECT agent_task_dependency_snapshot(?,?)::text",String.class,check.run_id(),check.task_id()),check.claim_token());
+    }
+    private void registerRequirements(Bridge b,List<JsonNode> obligations) {
+        String run=b.ids.run_id(),question=b.db.queryForObject("SELECT question FROM agent_workflow_run WHERE run_id=?",String.class,run);
+        var declarations=new java.util.ArrayList<JsonNode>();var requirements=new java.util.ArrayList<JsonNode>();
+        for(var obligation:obligations) {
+            var draft=object("text",obligation.path("text"),"question_spans",List.of(object("start",0,"end",question.codePointCount(0,question.length()))),
+                "kind",obligation.path("claim").path("kind"),"applicability",obligation.path("claim").path("applicability"));
+            declarations.add(draft);
+            var requirement=(com.fasterxml.jackson.databind.node.ObjectNode)draft.deepCopy();
+            requirement.put("requirement_id","requirement-"+sha(canonical(object("contract_version","agent-original-requirements/1","run_id",run,"question_sha256",sha(question),"declaration",draft))).substring(0,48));
+            requirements.add(requirement);
+        }
+        requirements.sort(java.util.Comparator.comparing(r->r.path("requirement_id").asText()));
+        var manifest=object("contract_version","agent-original-requirements/1","run_id",run,"question_sha256",sha(question),
+            "question_length",question.codePointCount(0,question.length()),"requirements",requirements);
+        manifest.put("manifest_sha256",sha(canonical(manifest)));
+        b.db.update("INSERT INTO agent_research_operation(run_id,operation_key,attempt,kind,purpose,request_hash,status,input_reserved,output_reserved,claim_token) VALUES (?,'model:planning-fixture',1,'MODEL','DECISION',?,'RESERVED',1000,1000,?::uuid)",run,"d".repeat(64),b.ids.claim_token());
+        b.db.update("UPDATE agent_research_operation SET status='SETTLED',safe_result=?::jsonb,actual_usage='{}',settled_at=now() WHERE run_id=? AND operation_key='model:planning-fixture'",canonical(object("value",object("requirements",declarations))),run);
+        b.db.update("INSERT INTO agent_research_requirements(run_id,manifest,declaration_key,declaration_attempt,claim_token) VALUES (?,?::jsonb,'model:planning-fixture',1,?::uuid)",run,canonical(manifest),b.ids.claim_token());
+        for(int index=0;index<obligations.size();index++) {
+            String text=obligations.get(index).path("text").asText();
+            String id=requirements.stream().filter(r->r.path("text").asText().equals(text)).findFirst().orElseThrow().path("requirement_id").asText();
+            b.db.update("INSERT INTO agent_research_requirement_binding(run_id,requirement_id,task_id,criterion_id,claim_token) VALUES (?,?,?,?,?::uuid)",run,id,obligations.get(index).path("task_id").asText(),obligations.get(index).path("criterion_id").asText(),b.ids.claim_token());
+        }
+    }
+    private Bridge dualRequirements(boolean checkSecond) throws Exception {
+        Bridge b=bridge(16);supportedPacket(b,false);
+        b.db.update("UPDATE agent_workflow_run SET question='Verify API quota and document version under version 2.0' WHERE run_id=?",b.ids.run_id());
+        String text="Verify document version",task="task-version",run=b.ids.run_id();
+        b.db.update("INSERT INTO agent_research_task(run_id,task_id,objective,status,acceptance_criteria,plan_version,task_json,claim_token) VALUES (?,?,'Document version','running',ARRAY[?],1,'{}',?::uuid)",run,task,text,b.ids.claim_token());
+        String criterion=AgentCompletionService.criterionId(run,task,0,text);
+        JsonNode scope=object("subject","document version","version",known("2.0"),"valid_at",unknown("Not independently established"),"conditions",List.of());
+        JsonNode claim=object("text","Document version is 2.0.","kind","factual","applicability",scope);
+        b.db.update("INSERT INTO agent_research_criterion(run_id,task_id,criterion_id,criterion_index,criterion_text,claim_token) VALUES (?,?,?,0,?,?::uuid)",run,task,criterion,text,b.ids.claim_token());
+        if(checkSecond) {
+            JsonNode evidence=JSON.readTree(b.db.queryForObject("SELECT payload::text FROM agent_evidence_record WHERE run_id=? AND record_type='Evidence'",String.class,run));
+            var raw=operation(b,4,"TOOL");var ids=new EvidenceDtos.Identifiers(run,run,task,raw.call_id(),raw.claim_token());
+            var prepared=b.service.prepare("Bearer fixture-service",new EvidenceDtos.PrepareRequest(ids,List.of(new EvidenceDtos.ClaimSpec("Document version is 2.0.","factual",scope)),List.of(evidence.path("evidence_id").asText()),0,null));
+            // Initial uncovered row already exists; bind its current reserved attempt.
+            b.db.update("DELETE FROM agent_research_criterion WHERE run_id=? AND task_id=?",run,task);
+            registerCriterion(b,ids,prepared,0,text);completePrepared(b,ids,prepared,"model:document-version");
+        }
+        JsonNode first=JSON.readTree(b.db.queryForObject("SELECT expected_claim::text FROM agent_research_criterion WHERE run_id=? AND task_id='task-main'",String.class,run));
+        registerRequirements(b,List.of(object("task_id","task-main","criterion_id",AgentCompletionService.criterionId(run,"task-main",0,"quote verified"),"text","Verify API quota","claim",first),
+                object("task_id",task,"criterion_id",criterion,"text",text,"claim",claim)));
+        // Deliberately misleading task labels do not constitute requirement proof.
+        b.db.update("UPDATE agent_research_task SET status='done' WHERE run_id=?",run);
+        return b;
+    }
+    @Test void secondOriginalObligationBlocksCompleteEvenWithDoneTasksAndSupportedPacket() throws Exception {
+        Bridge b=dualRequirements(false);
+        var report=b.publication.publish("Bearer fixture-service",new EvidenceDtos.ReportRequest(operation(b,5,"PUBLICATION")));
+        assertThat(report.path("terminal_status").asText()).isEqualTo("INSUFFICIENT_EVIDENCE");
+        assertThat(report.path("report_status").asText()).isEqualTo("partial");
+        assertThat(report.path("answer").asText()).contains("Verify document version");
+        assertThat(report.path("unfinished_goals").toString()).contains("requirement-");
+        assertThat(b.db.queryForObject("SELECT count(*) FROM agent_research_publication WHERE run_id=? AND result->>'report_status'='complete'",Integer.class,b.ids.run_id())).isZero();
+    }
+    @Test void bothOriginalObligationsReachRealCitedPublicationWithNoSynthesisCall() throws Exception {
+        Bridge b=dualRequirements(true);
+        int models=b.db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL'",Integer.class,b.ids.run_id());
+        var report=b.publication.publish("Bearer fixture-service",new EvidenceDtos.ReportRequest(operation(b,5,"PUBLICATION")));
+        assertThat(report.path("terminal_status").asText()).isEqualTo("SUCCEEDED");
+        assertThat(report.path("report_status").asText()).isEqualTo("complete");
+        assertThat(report.path("claims")).hasSize(2);assertThat(report.path("citations")).hasSize(1);
+        assertThat(report.path("answer").asText()).contains("[来源1]");
+        assertThat(b.db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL'",Integer.class,b.ids.run_id())).isEqualTo(models);
+        assertThat(b.db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND operation_key LIKE 'server:publication-read:%'",Integer.class,b.ids.run_id())).isGreaterThan(0);
+    }
+    @Test void originalManifestAndAssociationsAreImmutableAndCannotBeFabricatedFromCheckReceipt() throws Exception {
+        Bridge b=dualRequirements(true);String run=b.ids.run_id();
+        assertThatThrownBy(()->b.db.update("UPDATE agent_research_requirements SET manifest=jsonb_set(manifest,'{question_sha256}',to_jsonb(?::text)) WHERE run_id=?","e".repeat(64),run)).isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThatThrownBy(()->b.db.update("UPDATE agent_research_requirement_binding SET criterion_id='forged' WHERE run_id=?",run)).isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThatThrownBy(()->b.db.update("UPDATE agent_research_requirements SET declaration_key='model:check' WHERE run_id=?",run)).isInstanceOf(org.springframework.dao.DataAccessException.class);
+        b.db.update("UPDATE agent_workflow_run SET question='A different original question' WHERE run_id=?",run);
+        var report=b.publication.publish("Bearer fixture-service",new EvidenceDtos.ReportRequest(operation(b,5,"PUBLICATION")));
+        assertThat(report.path("terminal_status").asText()).isEqualTo("INSUFFICIENT_EVIDENCE");
+        assertThat(report.path("answer").asText()).contains("Original requirement binding");
     }
     @Test void actualEvidenceBridgeSealsExactAnswerAndReplaysWithoutAdditionalReads() {
         Bridge b=bridge(16);var request=supportedPacket(b);
@@ -353,6 +433,9 @@ class AgentRuntimePostgresIT {
     }
     @Test void lostLegacyMappingDoesNotDefaultToSatisfiedAndCrossRunCriterionIdentityIsRejected() {
         Bridge b=bridge(16);var publication=supportedPacket(b);
+        assertThatThrownBy(()->b.db.update("DELETE FROM agent_research_criterion WHERE run_id=?",b.ids.run_id())).isInstanceOf(org.springframework.dao.DataAccessException.class);
+        // Admin-only legacy corruption fixture: sidecar has no DELETE privilege.
+        b.db.update("DELETE FROM agent_research_requirement_binding WHERE run_id=?",b.ids.run_id());
         b.db.update("DELETE FROM agent_research_criterion WHERE run_id=?",b.ids.run_id());
         b.db.update("INSERT INTO agent_research_criterion(run_id,task_id,criterion_id,criterion_index,criterion_text,claim_token) VALUES (?,'task-main',?,0,'quote verified',?::uuid)",b.ids.run_id(),AgentCompletionService.criterionId("a-different-run","task-main",0,"quote verified"),b.ids.claim_token());
         var goals=b.authority.reportGoals(b.authority.authorize("Bearer fixture-service","publish_evidence",publication.identifiers()));
@@ -400,6 +483,7 @@ class AgentRuntimePostgresIT {
         var combined=new Bridge(b.db,b.tx,b.authority,service,new AgentPublicationController(b.authority,service,b.db,manager),b.ids,b.reads,b.text);
         var originals=new java.util.ArrayList<JsonNode>();
         for(int i=1;i<=count;i++) originals.add(service.read("Bearer fixture-service",new EvidenceDtos.ReadRequest(operation(b,i,"TOOL"),"ragflow:dataset:document:chunk-"+i)));
+        var obligations=new java.util.ArrayList<JsonNode>();
         for(int group=0;group<2;group++) {
             var raw=operation(b,count+group+1,"TOOL");
             var check=new EvidenceDtos.Identifiers(raw.project_id(),raw.run_id(),group==0?"task-main":"task-second",raw.call_id(),raw.claim_token());
@@ -407,8 +491,11 @@ class AgentRuntimePostgresIT {
             var scope=object("subject","API limits","version",known("2.0"),"valid_at",unknown("No applicable date"),"conditions",List.of());
             var prepared=service.prepare("Bearer fixture-service",new EvidenceDtos.PrepareRequest(check,List.of(new EvidenceDtos.ClaimSpec(group==0?"Document version is 2.0.":"Version 2.0 allows 100 requests.","factual",scope)),selected.stream().map(e->e.path("evidence_id").asText()).toList(),0,null));
             registerCriterion(combined,check,prepared,0,group==0?"quote verified":"Scoped rate decision");
+            String criterion=group==0?"quote verified":"Scoped rate decision";
+            obligations.add(object("task_id",check.task_id(),"criterion_id",AgentCompletionService.criterionId(check.run_id(),check.task_id(),0,criterion),"text",criterion,"claim",AgentCompletionService.normalize(prepared.request().path("claims").get(0))));
             completePrepared(combined,check,prepared,"model:multi-"+group);
         }
+        registerRequirements(combined,obligations);
         b.db.update("UPDATE agent_research_task SET status='done' WHERE run_id=?",b.ids.run_id());
         return new MultiKnowledge(combined.publication,new EvidenceDtos.ReportRequest(operation(b,count+3,"PUBLICATION")));
     }

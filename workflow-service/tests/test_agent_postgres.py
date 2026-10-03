@@ -494,6 +494,10 @@ async def test_real_role_postgres_checkpoint_recovery_reuses_authorized_calls(
     saver = AsyncPostgresSaver(connections)
     await saver.setup()
     fixture = await asyncio.to_thread(_read_version_fixture)
+    async with await psycopg.AsyncConnection.connect(URL) as conn:
+        await conn.execute(
+            "UPDATE agent_workflow_run SET question=%s WHERE run_id=%s", (fixture["question"], run)
+        )
     records = [r for r in fixture["records"] if r["record_type"] == "Evidence"]
     oracle = ObservationDrivenModel()
     calls = []
@@ -594,9 +598,9 @@ async def test_real_role_postgres_checkpoint_recovery_reuses_authorized_calls(
             and len(tools.calls) == 1
             and len(evidence.publications) == 1
         )
-        assert finalizer.requests[-1].usage["modelCalls"] == 6
+        assert finalizer.requests[-1].usage["modelCalls"] == 5
         if wire_transport:
-            assert len(calls) == len(oracle.requests) == 6
+            assert len(calls) == len(oracle.requests) == 5
             assert len(oracle.requests[1].payload["candidates"]) >= 2
     finally:
         if client is not None:

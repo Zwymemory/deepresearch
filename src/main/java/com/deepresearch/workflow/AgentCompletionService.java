@@ -27,7 +27,9 @@ public final class AgentCompletionService {
         Map<String,Task> byId=new LinkedHashMap<>();tasks.forEach(t->byId.put(t.id,t));
         Map<String,EvidenceAuthority.ReportGoal> results=new HashMap<>();
         for(var task:tasks) verify(grant,task,byId,results,new HashSet<>());
-        return tasks.stream().map(t->results.get(t.id)).toList();
+        var goals=new ArrayList<>(tasks.stream().map(t->results.get(t.id)).toList());
+        goals.addAll(new AgentRequirementCompletionService(db).goals(grant.runId(),goals));
+        return goals;
     }
     private EvidenceAuthority.ReportGoal verify(EvidenceAuthority.Grant g,Task task,Map<String,Task> tasks,
             Map<String,EvidenceAuthority.ReportGoal> results,Set<String> trail) {

@@ -9,6 +9,7 @@ from typing import Annotated, Any, Literal
 from pydantic import Field, field_validator, model_validator
 from typing_extensions import TypedDict
 
+from .agent_requirements import RequirementBinding, RequirementDraft
 from .domain import AgentRunBudget as AgentRunBudget
 from .domain import StrictModel
 
@@ -57,9 +58,7 @@ def valid_at_instant(value: str) -> tuple[int, int]:
         if minutes > 59 or hours > 18 or (hours == 18 and minutes != 0):
             raise ValueError("valid_at timezone offset is outside the supported range")
         offset_seconds = (hours * 60 + minutes) * 60 * (1 if zone[0] == "+" else -1)
-    local_seconds = (
-        local.toordinal() * 86400 + local.hour * 3600 + local.minute * 60 + local.second
-    )
+    local_seconds = local.toordinal() * 86400 + local.hour * 3600 + local.minute * 60 + local.second
     return local_seconds - offset_seconds, nanos
 
 
@@ -116,6 +115,8 @@ class CriterionBinding(StrictModel):
 
 
 class AgentDecision(StrictModel):
+    requirements: list[RequirementDraft] = Field(default_factory=list, max_length=32)
+    requirement_bindings: list[RequirementBinding] = Field(default_factory=list, max_length=32)
     action: Literal[
         "search", "read_source", "revise_plan", "check_claims", "finish", "stop_with_gaps"
     ]
@@ -195,6 +196,9 @@ class AgentState(TypedDict, total=False):
     candidates: list[dict[str, Any]]
     evidence: list[dict[str, Any]]
     packet: dict[str, Any]
+    original_requirements: dict[str, Any]
+    requirement_bindings: list[dict[str, str]]
+    requirement_coverage: dict[str, Any]
     investigations: dict[str, dict[str, Any]]
     task_investigations: dict[str, str]
     no_progress: int

@@ -307,6 +307,84 @@ class SqlAgentLedger:
                             ),
                         )
 
+    async def save_requirements(
+        self, run_id, claim_token, manifest, bindings, tasks, declaration_key
+    ):
+        """CAS immutable manifest and append-only native criterion associations.
+
+        Replay after persistence/before checkpoint accepts the same immutable model
+        response and never changes the next prepared request using fresh DB data.
+        """
+        from .agent_requirements import bind_requirements, validate_manifest
+
+        manifest = validate_manifest(manifest, run_id=run_id)
+        bindings = bind_requirements(manifest, tasks, bindings)
+        task_for = {c["criterion_id"]: t["task_id"] for t in tasks for c in t["criteria"]}
+        async with self.repository.pool.connection() as conn:
+            async with conn.transaction():
+                await self.repository._lock_active_budget_run(conn, run_id, claim_token)
+                cursor = await conn.execute(
+                    "SELECT question FROM agent_workflow_run WHERE run_id=%s", (run_id,)
+                )
+                validate_manifest(
+                    manifest, run_id=run_id, question=(await cursor.fetchone())["question"]
+                )
+                cursor = await conn.execute(
+                    "SELECT manifest FROM agent_research_requirements WHERE run_id=%s", (run_id,)
+                )
+                saved = await cursor.fetchone()
+                if saved is None:
+                    cursor = await conn.execute(
+                        "SELECT attempt FROM agent_research_operation WHERE run_id=%s "
+                        "AND operation_key=%s "
+                        "AND status='SETTLED' AND kind='MODEL' AND purpose='DECISION' "
+                        "ORDER BY attempt DESC LIMIT 1",
+                        (run_id, declaration_key),
+                    )
+                    receipt = await cursor.fetchone()
+                    if receipt is None:
+                        raise WorkflowExecutionError(
+                            "Original requirements lack a settled planning receipt",
+                            error_code="REQUIREMENT_DECLARATION_MISSING",
+                        )
+                    await conn.execute(
+                        "INSERT INTO "
+                        "agent_research_requirements(run_id,manifest,declaration_key,"
+                        "declaration_attempt,claim_token) "
+                        "VALUES (%s,%s,%s,%s,%s::uuid)",
+                        (run_id, Jsonb(manifest), declaration_key, receipt["attempt"], claim_token),
+                    )
+                elif canonical(saved["manifest"]) != canonical(manifest):
+                    raise WorkflowExecutionError(
+                        "Original requirements cannot change", error_code="REQUIREMENTS_CHANGED"
+                    )
+                for row in bindings:
+                    cursor = await conn.execute(
+                        "INSERT INTO "
+                        "agent_research_requirement_binding(run_id,requirement_id,task_id,"
+                        "criterion_id,claim_token) "
+                        "VALUES (%s,%s,%s,%s,%s::uuid) ON CONFLICT "
+                        "(run_id,requirement_id) DO NOTHING",
+                        (
+                            run_id,
+                            row["requirement_id"],
+                            task_for[row["criterion_id"]],
+                            row["criterion_id"],
+                            claim_token,
+                        ),
+                    )
+                cursor = await conn.execute(
+                    "SELECT requirement_id,criterion_id FROM "
+                    "agent_research_requirement_binding WHERE run_id=%s ORDER BY requirement_id",
+                    (run_id,),
+                )
+                stored = [dict(row) for row in await cursor.fetchall()]
+                if canonical(stored) != canonical(bindings):
+                    raise WorkflowExecutionError(
+                        "Requirement associations cannot change or disappear",
+                        error_code="REQUIREMENT_BINDING_CHANGED",
+                    )
+
     async def begin_check(self, run_id, claim_token, task, selected, entry, key):
         from .agent_completion import server_identity
 

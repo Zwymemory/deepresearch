@@ -75,9 +75,13 @@ public final class AgentResearchStateService {
                 "operation_status",row.get("status"),"receipt_sha256",sha(canonical(body)),
                 "reason",completed?null:state.equals("pending")?"调查尚未完成":"调查失败或结果不确定"));
         }
+        var requirements=db.queryForList("SELECT manifest::text AS manifest,declaration_key,declaration_attempt FROM agent_research_requirements WHERE run_id=?",g.runId());
+        for(var row:requirements) row.put("manifest",parse((String)row.get("manifest")));
+        var requirementBindings=db.queryForList("SELECT requirement_id,task_id,criterion_id FROM agent_research_requirement_binding WHERE run_id=? ORDER BY requirement_id",g.runId());
         var snapshot=object("version",1,"run_id",g.runId(),"project_id",g.projectId(),"tenant_id",g.principal().tenantId(),
             "owner_id",g.principal().userId(),"checks",checks,"blocked",blocked,"records",records,
-            "source_reads",reads,"investigation_attempts",attempts,"goals",goals);
+            "source_reads",reads,"investigation_attempts",attempts,"goals",goals,
+            "original_requirements",requirements,"requirement_bindings",requirementBindings);
         // Publication reservations, validation receipts, seals, lease renewal and stage are not research changes.
         return object("version",1,"sha256",sha(canonical(snapshot)),"investigation_attempts",attempts);
     }

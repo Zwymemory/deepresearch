@@ -193,6 +193,29 @@ class ObservationDrivenModel:
                     ],
                     "reason": "核对原文的支持、反证与版本",
                 }
+        if (
+            request.name == "AgentDecision"
+            and not payload.get("original_requirements")
+            and not payload["tasks"]
+        ):
+            unknown = {
+                "status": "unknown",
+                "value": None,
+                "reason": "Synthetic scope not established",
+            }
+            value["requirements"] = [
+                {
+                    "text": payload["original_question"][:400],
+                    "question_spans": [{"start": 0, "end": len(payload["original_question"])}],
+                    "kind": "factual",
+                    "applicability": {
+                        "subject": payload["original_question"],
+                        "version": unknown,
+                        "valid_at": unknown,
+                        "conditions": [],
+                    },
+                }
+            ]
         if value.get("action") == "check_claims":
             task = next(
                 (t for t in payload["tasks"] if t["status"] in {"pending", "running", "blocked"}),
@@ -263,12 +286,40 @@ class EvidenceSubstitute:
                 payload={"texts": [e["snapshot"]["text"] for e in state["evidence"]]},
             ),
         )
+        records = []
+        for index, claim in enumerate(claims):
+            identity = "claim-" + hashlib.sha256((call_id + str(index)).encode()).hexdigest()[:40]
+            status = result.value["status"]
+            evidence_ids = [e["evidence_id"] for e in state["evidence"]]
+            records.extend(
+                [
+                    {
+                        "record_type": "Claim",
+                        **claim,
+                        "claim_id": identity,
+                        "run_id": state["run_id"],
+                        "freshness": "fresh",
+                        "decision_status": status,
+                        "evidence_links": [
+                            {"evidence_id": eid, "relation": "supports"} for eid in evidence_ids
+                        ],
+                    },
+                    {
+                        "record_type": "DecisionRecord",
+                        "decision_id": "decision-" + identity,
+                        "claim_id": identity,
+                        "run_id": state["run_id"],
+                        "decision_status": status,
+                        "adopted_evidence_ids": evidence_ids if status == "supported" else [],
+                        "unresolved_evidence_ids": [] if status == "supported" else evidence_ids,
+                        "gaps": [] if status == "supported" else ["counterevidence required"],
+                    },
+                ]
+            )
         return {
+            "check_id": "check-" + call_id,
             "status": result.value["status"],
-            "records": [
-                {"record_type": "Claim", **claim, "decision_status": result.value["status"]}
-                for claim in claims
-            ],
+            "records": records,
             "gaps": [] if result.value["status"] == "supported" else ["counterevidence required"],
             "follow_up_actions": []
             if result.value["status"] == "supported"
@@ -285,6 +336,7 @@ class EvidenceSubstitute:
             bool(packets)
             and all(p.get("status") == "supported" for p in packets)
             and all(t["status"] == "done" for t in state["tasks"])
+            and state.get("requirement_coverage", {}).get("complete", False)
         )
         return {
             "approved": True,
@@ -452,11 +504,11 @@ async def test_empty_web_search_can_switch_to_kb_without_rebinding_task_scope():
 
 
 async def test_unified_model_budget_includes_decision_and_verifier_calls():
-    context = setup("version-difference", budget=AgentRunBudget(runtime="agent", maxModelCalls=5))
+    context = setup("version-difference", budget=AgentRunBudget(runtime="agent", maxModelCalls=4))
     await context[0].run_claimed(context[1])
     assert context[7].requests[-1].status == "BUDGET_EXCEEDED"
-    assert len(context[4].requests) == 5
-    assert any(request.name == "SyntheticCheck" for request in context[4].requests)
+    assert len(context[4].requests) == 4
+    assert len(context[6].checks) == 1  # Verifier attempted through the same exhausted ledger.
     assert not context[6].publications
 
 
@@ -502,7 +554,7 @@ async def test_checkpoint_recovery_reuses_settled_calls_without_repeating_extern
     assert context[7].requests[-1].status == "SUCCEEDED"
     assert len(context[5].calls) == 1
     assert len(context[6].publications) == 1
-    assert len(context[4].requests) == 6
+    assert len(context[4].requests) == 5
 
 
 async def test_cancel_during_external_tool_prevents_evidence_and_publication():

@@ -312,6 +312,12 @@ async def test_final_actions_use_whole_report_status_and_preserve_reliable_parts
         "gaps": ["Remaining scoped issue"] if action == "stop_with_gaps" else [],
     }
     result = await context.graph.act(context.state)
+    if action == "finish" or report_status == "complete":
+        assert "final_status" not in result  # Legacy task labels cannot bypass original coverage.
+        assert result["observations"][-1]["errorCode"] == (
+            "ORIGINAL_REQUIREMENTS_INCOMPLETE" if action == "finish" else "PUBLICATION_NOT_APPROVED"
+        )
+        return
     assert result["final_status"] == terminal and result["citations"] == citations
     assert result["final_answer"] == report["answer"]
     assert result["tasks"][1]["status"] == "pending"  # Publication never declares a goal done.
@@ -327,4 +333,4 @@ async def test_subset_approved_without_report_completeness_cannot_finish_run():
     context.state["decision"] = {"action": "finish", "reason": "Request whole report"}
     result = await context.graph.act(context.state)
     assert "final_status" not in result
-    assert result["observations"][-1]["errorCode"] == "PUBLICATION_NOT_APPROVED"
+    assert result["observations"][-1]["errorCode"] == "ORIGINAL_REQUIREMENTS_INCOMPLETE"
