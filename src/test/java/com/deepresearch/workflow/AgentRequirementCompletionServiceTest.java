@@ -35,6 +35,13 @@ class AgentRequirementCompletionServiceTest {
         assertThat(AgentRequirementCompletionService.validManifest(manifest,"run",question,changed)).isFalse();
         assertThat(AgentRequirementCompletionService.validManifest(manifest("run",question,changed),"run",question,changed)).isFalse();
     }
+    @Test void pythonUnicodeWhitespaceBetweenAnchorsIsAcceptedWithoutChangingObligations() {
+        for(String space:List.of("\u0085","\u00a0","\u2007","\u202f","\u001c","\u001f")) {
+            String question="first"+space+"second";
+            var declarations=JSON.valueToTree(List.of(draft("First",0,5),draft("Second",6,12)));
+            assertThat(AgentRequirementCompletionService.validManifest(manifest("run",question,declarations),"run",question,declarations)).isTrue();
+        }
+    }
     @Test void genericWholeQuestionAnchorDoesNotCertifySemanticExtraction() {
         String question="encryption AND retention";
         var generic=JSON.valueToTree(List.of(draft("generic",0,question.length())));

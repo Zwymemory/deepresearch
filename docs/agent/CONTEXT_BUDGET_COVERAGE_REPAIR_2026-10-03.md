@@ -25,3 +25,7 @@ Local ignored logs/proofs: target/context-all-unit.log, context-agent-sql.log, c
 ## Limits
 
 Question anchors and stable IDs enforce structure and provenance. They cannot certify that a model extracted every semantic subquestion or that arbitrary-language Claim text answers its obligation; precise subjects/conditions and direct criterion-answering Claims are instructed and independently evaluated. Generic full-question anchors can still be semantically inadequate. Existing server evidence/quote/settlement authority remains necessary; helper scope equality is not truth. Offline semantic/transport fixtures cannot prove future live research success. Round1 remains unaccepted and all old nine rows/three STOPPED batches retain their historical status.
+
+## Independent review repair
+
+B reviewed immutable integrated410e253 and reproduced one P2 false-incompleteness defect: Java requirement anchors used Character.isWhitespace while Python str.isspace accepts additional Unicode separators. The native requirement checker now uses an equivalent Python predicate (isWhitespace OR isSpaceChar OR U+0085) for both span substance and uncovered-character checks. Six whitespace/control-separator regression cases pass; codepoint offsets, obligation content and source-quote semantics are unchanged. This adds one Java unit test (3 requirement unit tests, 340 broad unit cases including it). B/C final exact-SHA review remains pending until recorded in the final receipt.

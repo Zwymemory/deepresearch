@@ -87,13 +87,18 @@ public final class AgentRequirementCompletionService {
                     int start=span.path("start").asInt(-1),end=span.path("end").asInt(-1);
                     if(start<0 || end<=start || end>chars.length) return false;
                     boolean substantive=false;
-                    for(int i=start;i<end;i++) { anchors[i]=true;if(!Character.isWhitespace(chars[i])) substantive=true; }
+                    for(int i=start;i<end;i++) { anchors[i]=true;if(!questionWhitespace(chars[i])) substantive=true; }
                     if(!substantive) return false;
                 }
             }
-            for(int i=0;i<chars.length;i++) if(!Character.isWhitespace(chars[i]) && !anchors[i]) return false;
+            for(int i=0;i<chars.length;i++) if(!questionWhitespace(chars[i]) && !anchors[i]) return false;
             return true;
         } catch(RuntimeException invalid) { return false; }
+    }
+    private static boolean questionWhitespace(int codepoint) {
+        // Python str.isspace also includes Unicode Space_Separator and NEXT LINE.
+        // Java isWhitespace alone excludes NBSP, FIGURE/NARROW NBSP and U+0085.
+        return Character.isWhitespace(codepoint) || Character.isSpaceChar(codepoint) || codepoint==0x85;
     }
     private static JsonNode normalizeDraft(JsonNode raw) {
         ObjectNode draft=(ObjectNode)raw.deepCopy();
