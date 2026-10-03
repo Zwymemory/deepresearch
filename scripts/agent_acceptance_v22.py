@@ -480,9 +480,63 @@ def native_requirements_validation(database):
                 checked = checks[0]
                 if digest(checked["request"]) != checked["request_sha256"]:
                     raise ValueError("NATIVE_CHECK_REQUEST_HASH_MISMATCH")
+                request = checked["request"]
+                if (
+                    request["check_id"] != checked["check_id"]
+                    or request["investigation_id"] != checked["investigation"]
+                ):
+                    raise ValueError("NATIVE_CHECK_REQUEST_IDENTITY_MISMATCH")
                 packet = copy.deepcopy(checked["result"])
                 if any(digest(p) not in records for p in packet["records"]):
                     raise ValueError("NATIVE_CHECK_RECORD_NOT_EXPORTED")
+                expected = normalized_claim(c["expected_claim"])
+                requested = [
+                    claim
+                    for claim in request["claims"]
+                    if normalized_claim(claim) == expected
+                ]
+                if len(requested) != 1:
+                    raise ValueError("NATIVE_CHECK_REQUEST_CLAIM_MISMATCH")
+                requested_claim = requested[0]
+                checked_claims = [
+                    claim
+                    for claim in packet["records"]
+                    if claim["record_type"] == "Claim"
+                    and claim["claim_id"] == requested_claim["claim_id"]
+                    and normalized_claim(claim) == expected
+                ]
+                if len(checked_claims) != 1:
+                    raise ValueError("NATIVE_CHECK_RESULT_CLAIM_MISMATCH")
+                receipts = [
+                    operation["safe_result"]
+                    for operation in database["operations"]
+                    if operation["kind"] == "MODEL"
+                    and operation.get("purpose") == "CHECK"
+                    and operation["status"] == "SETTLED"
+                    and operation.get("safe_result", {})
+                    .get("request_binding", {})
+                    .get("check_id")
+                    == checked["check_id"]
+                ]
+                if len(receipts) != 1:
+                    raise ValueError("NATIVE_CHECK_MODEL_RECEIPT_MISSING_OR_AMBIGUOUS")
+                receipt = receipts[0]
+                binding = receipt["request_binding"]
+                if (
+                    binding["request_sha256"] != checked["request_sha256"]
+                    or binding["response_sha256"] != checked["response_sha256"]
+                    or digest(receipt["value"]) != checked["response_sha256"]
+                ):
+                    raise ValueError("NATIVE_CHECK_MODEL_RECEIPT_HASH_MISMATCH")
+                response_claims = [
+                    claim
+                    for claim in receipt["value"]["claims"]
+                    if claim["claim_id"] == requested_claim["claim_id"]
+                ]
+                if len(response_claims) != 1:
+                    raise ValueError("NATIVE_CHECK_MODEL_RESPONSE_CLAIM_MISMATCH")
+                if packet.get("check_id", checked["check_id"]) != checked["check_id"]:
+                    raise ValueError("NATIVE_CHECK_RESULT_IDENTITY_MISMATCH")
                 packet["check_id"] = checked["check_id"]
                 investigations[c["investigation"]] = {
                     "latest_call_id": c["last_call_id"],

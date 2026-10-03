@@ -1,5 +1,6 @@
 """Actual preparation/export validation functions; no services/provider requests."""
 
+import copy
 import importlib.util
 import json
 from pathlib import Path
@@ -204,7 +205,29 @@ def native_fixture():
             "unresolved_evidence_ids": [],
             "adopted_evidence_ids": ["ev-original"],
         }
-        request = {"check_id": check, "claims": [claim]}
+        request = {
+            "check_id": check,
+            "investigation_id": investigation,
+            "claims": [claim],
+        }
+        response = {"claims": [{"claim_id": claim["claim_id"], "relations": []}]}
+        response_sha = native.digest(response)
+        database["operations"].append(
+            {
+                "operation_key": "model-check-" + str(index),
+                "kind": "MODEL",
+                "purpose": "CHECK",
+                "status": "SETTLED",
+                "safe_result": {
+                    "value": response,
+                    "request_binding": {
+                        "check_id": check,
+                        "request_sha256": native.digest(request),
+                        "response_sha256": response_sha,
+                    },
+                },
+            }
+        )
         database["checks"].append(
             {
                 "check_id": check,
@@ -214,6 +237,7 @@ def native_fixture():
                 "status": "COMPLETED",
                 "request": request,
                 "request_sha256": native.digest(request),
+                "response_sha256": response_sha,
                 "result": {"records": [claim, decision]},
             }
         )
@@ -424,6 +448,60 @@ class NativeAuditTests(unittest.TestCase):
         self.assertTrue(result["mapping_complete"])
         self.assertTrue(result["eligible_for_complete_review"], result)
         self.assertTrue(result["semantic_review_required"])
+
+    def test_current_check_request_result_and_model_receipt_are_cross_bound(self):
+        for mutation in (
+            "check_id",
+            "investigation",
+            "claim_text",
+            "claim_id",
+            "receipt_request",
+            "receipt_response",
+            "response_body",
+            "response_claim",
+            "missing_receipt",
+            "duplicate_receipt",
+            "result_identity",
+        ):
+            db = native_fixture()
+            checked = db["checks"][0]
+            receipt_operation = next(
+                o for o in db["operations"] if o.get("purpose") == "CHECK"
+            )
+            receipt = receipt_operation["safe_result"]
+            if mutation == "check_id":
+                checked["request"]["check_id"] = "other"
+            elif mutation == "investigation":
+                checked["request"]["investigation_id"] = "other"
+            elif mutation == "claim_text":
+                checked["request"]["claims"][0]["text"] = "Unrelated claim"
+            elif mutation == "claim_id":
+                checked["request"]["claims"][0]["claim_id"] = "other"
+            elif mutation == "receipt_request":
+                receipt["request_binding"]["request_sha256"] = "0" * 64
+            elif mutation == "receipt_response":
+                receipt["request_binding"]["response_sha256"] = "0" * 64
+            elif mutation == "response_body":
+                receipt["value"]["claims"][0]["claim_id"] = "other"
+            elif mutation == "response_claim":
+                receipt["value"]["claims"][0]["claim_id"] = "other"
+                checked["response_sha256"] = native.digest(receipt["value"])
+                receipt["request_binding"]["response_sha256"] = checked[
+                    "response_sha256"
+                ]
+            elif mutation == "missing_receipt":
+                db["operations"].remove(receipt_operation)
+            elif mutation == "duplicate_receipt":
+                db["operations"].append(copy.deepcopy(receipt_operation))
+            elif mutation == "result_identity":
+                checked["result"]["check_id"] = "other"
+            checked["request_sha256"] = native.digest(checked["request"])
+            with self.subTest(mutation=mutation):
+                proof = native.validate_saved_audit(
+                    native.finalize_audit({"database": recount(db)})
+                )
+                self.assertEqual(proof["status"], "invalid", proof)
+                self.assertFalse(proof["eligible_for_complete_review"], proof)
 
     def test_question_manifest_receipt_native_mapping_and_source_mismatches_fail_closed(
         self,
