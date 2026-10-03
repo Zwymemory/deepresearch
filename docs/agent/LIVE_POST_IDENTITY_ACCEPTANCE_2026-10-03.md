@@ -26,8 +26,49 @@ PYTHONPATH=workflow-service/src python3.12 -B -m pytest workflow-service/tests/t
 make showcase-check PYTHON=python3
 ```
 
-## 实际结果
+## 实际结果：首项失败，后续停止
 
-本节在本轮运行完成或触发停止条件后更新。准备阶段不声称任何真实场景通过。每项的原问题、终态、账本、模型身份回执、原文／读取／引用哈希、任务标准、论断与发布证明保存在不可覆盖的受保护审计中，B 根据本轮实际产物独立判定。
+实际执行候选：`22e2b6b7ea5b29d91dcd28933dc965655bbb1826`。专用分支 `feat/agent-live-post-identity-20261003` 正常推送；[精确候选 CI 37116050021](https://github.com/Zwymemory/deepresearch/actions/runs/37116050021) 六项 job 全部成功。独立 B 代码复核通过 40 个脚本测试及基于真实七行日记副本的 32 项额外检查；实际 JAR、镜像、归档、sidecar 进程／健康、规范模型配置与既有四份资料注册绑定均通过，才批准第一项提交。
 
-首项失败、预算耗尽、身份错误、提交不确定或语义 fail/incomplete 时，立即停止后续付费研究，保留失败并将后续标为 not-run，完成离线归因。本轮无修复后同额度重跑。整体 Round 1 是否验收由协调侧综合两份报告决定。
+| 场景 | 本轮判定 | 实际结果 |
+| --- | --- | --- |
+| web-only | FAIL | FAILED / MODEL_SCHEMA_INVALID；第二次模型返回 2 个工具调用，单调用协议拒绝，研究证据链未完成 |
+| mixed | NOT RUN | 首项失败后停止 |
+| version-conditions | NOT RUN | 首项失败后停止 |
+| contradictory-material | NOT RUN | 首项失败后停止 |
+| insufficient-evidence | NOT RUN | 首项失败后停止 |
+
+本轮 1 次新研究提交、0 次顶层重跑、0 项语义通过。运行 `wf-49fbcf15-afb4-4a8c-be63-ad1bfcbacddc`；实际等待／执行窗口约 11 秒。B 针对该 run/build/audit/source hashes 的独立判定为 fail，已写入日记；新批次 STOPPED / SEMANTIC_REVIEW_FAILED_OR_INCOMPLETE。对 mixed 的只读准入检查明确拒绝，未尝试下一次付费调用。
+
+### 已证明的链路与失败归因
+
+两次真实模型请求都收到 HTTP200，规范请求／返回身份均为 `deepseek-flash`，`accepted_canonical`；模型身份修复在本次两条真实响应上有效。第一次决策成功选择 web_search，该工具完成真实搜索并返回 5 个候选，包含所需 IANA 地址。
+
+第二次决策返回的 `tool_calls` 数量为 2。适配器在消费具体函数与参数之前按既有单调用契约拒绝，安全分类 `SCHEMA/function_count`、`retryable=false`；账本为 UNKNOWN，结果不可用。原始被拒绝的函数名称与参数未保留，不能恢复或推定它们。这个证据定位到多工具调用响应与单决策接口之间的协议不符，不能推断 API 完全不可用、TUN 故障或 RAGFlow 检索故障。
+
+原问题与持久化问题／run ID 完全一致。数据库保存 2 次模型 admission、1 次工具 admission、1 项任务及标准；原文读取回执、check、采用的原文 Evidence、Claim／DecisionRecord、publication 均为 0，最终回答与引用为空。因此网页候选或结构完整不能证明题目事实与保障范围已完成核验，也不能把此失败记为“证据不足场景通过”。本次未调用 RAGFlow，不能对其真实质量下结论。
+
+### 实际用量与不可变证据
+
+| 调用 | 账本状态 | 输入 token | 输出 token |
+| --- | --- | ---: | ---: |
+| 第一次 DECISION | SETTLED | 2627 | 103 |
+| 第二次 DECISION | UNKNOWN，结果不可用 | 3863 | 229 |
+| 本轮合计 | 2 模型、2 决策、1 工具 | 6490 | 332 |
+
+输入／输出用量均已知，无缺失或 inflight；金额与 provider 账单未知。前置单 API 诊断的 333／33 不计入本表。计数、时间和 token 均未超过本轮上限；`UnavailableModelResultOrBudgetViolation` 在这里由结果不可用触发，没有观察到预算耗尽。
+
+- 不可覆盖审计 SHA-256：`5d99a88a24ef631a635e96fac8dfdaec4653c77ab79d0270ebfea6e0b81e9c9e`。
+- 不可覆盖 B 审查文件 SHA-256：`5f63ccaa72dade8008fd6f60e53a74f980f2a2822dd8121e22bc1f855624d348`；共享判定 digest：`a6a1f128a5d477ae085a7fe34abf319d4f6857ab0f47b2e7237e0e6c5befacb7`。
+- 捕获的搜索回执 SHA-256：`212b2d78b0d0610edc679d128f61362e15d5f7a5a164dfad35f6b34f3612cc68`。采用的原文 source_hashes 为空，因为没有进入 read_source；搜索候选和摘要不能代替原文与引用。
+- 新授权前旧日记字节快照 SHA-256：`de67f8017fa017f96e5e305ba9371673bfe3ca61b878ab3b544dd533eb53eea9`。旧七行、旧 STOPPED 授权对象及 13 个非日记保护文件未变。日记仅追加新授权、实际一行和绑定的独立判定，现共八行。
+
+原审计、实际响应身份／用量回执、来源候选与持久账本在受保护目录保存，不提交原文、密钥或 token。最终命令和哈希检查在外部运行回执及忽略目录中的 final-results 记录中，可按精确候选追溯。
+
+### 离线复现与后续边界
+
+从固定候选归档运行 HTTPX MockTransport，两条合成函数调用复现同样的 function_count2 / MODEL_SCHEMA_INVALID：仅 1 次 mock 发送／admission／UNKNOWN 结算，规范身份接受，合法用量保存，不自动重试。这只复现已观察到的调用数量与分类路径，不恢复真实被拒绝函数的内容，也不发起外部请求。
+
+准备阶段第一次本地端口探测在旧 Docker 代理释放期间立即失败；核对无 listener 且两个端口可绑定后恢复同一固定准备流程。此时尚无新 ready、授权或研究提交，未修改候选／上限，也没有付费研究重跑。两次准备日志均保留。生产环境、原密钥、前端、知识包未改；仅专属隔离应用替换候选并复用原数据库／卷。
+
+下一阶段应先核实 provider 的单工具调用约束与多调用响应政策，离线修复／验证单决策协议，再由协调侧决定新的受限真实验收。不能丢弃额外调用或把 UNKNOWN 结果算成功来掩盖问题。本批次不修复后重跑，不花未用额度，不开启记忆、多 Agent 或生产部署。整体 Round 1 目前没有验收通过。
