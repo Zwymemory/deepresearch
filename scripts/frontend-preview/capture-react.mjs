@@ -8,7 +8,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_CORE || "playwright-core");
-const BASE = process.env.REACT_PREVIEW_BASE || "http://127.0.0.1:5173";
+const BASE = (process.env.REACT_PREVIEW_BASE || "http://127.0.0.1:5173") + "/app";
 const OUT = process.argv[2] || "output/playwright/react-preview";
 mkdirSync(OUT, { recursive: true });
 

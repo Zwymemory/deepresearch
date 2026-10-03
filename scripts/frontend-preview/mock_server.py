@@ -8,7 +8,9 @@
     python3 scripts/frontend-preview/mock_server.py --port 8091
 
 场景通过页面地址的 ?scenario= 选择（API 请求的同源 Referer 会携带它）：
-    success（默认）| insufficient | failed | slow | disconnect | unknown | noweb
+    success（默认）| insufficient | failed | slow | disconnect | unknown | noweb | langgraph
+
+运行归属于创建它的 Bearer Token：换一个 Token 读取或取消会得到 404，用于验证前端的身份隔离。
 
 所有标题、链接、正文均为合成内容，页面会显示“本地演示数据”标识。
 这里的成功不代表真实后端、模型或检索质量。
@@ -230,6 +232,10 @@ class Run:
             final = {"answer": SUCCESS_ANSWER, "citations": [d["sourceId"] for d in details],
                      "citationDetails": list(reversed(details)), "citationContract": "INDEXED_V1",
                      "report_status": "complete"}
+            if self.scenario == "langgraph":
+                # 默认 LangGraph 路径的 finalResponse 不含 citationDetails（见 WorkflowService.finalize）。
+                final = {"answer": SUCCESS_ANSWER, "citations": [d["sourceId"] for d in details],
+                         "citationContract": "INDEXED_V1", "insufficientEvidence": False}
         elif status == "INSUFFICIENT_EVIDENCE":
             final = {"answer": PARTIAL_ANSWER, "citations": [KB_DOC_2["sourceId"]], "citationDetails": [KB_DOC_2],
                      "citationContract": "INDEXED_V1", "report_status": "partial",
@@ -279,6 +285,12 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def owned(self, run):
+        """只有创建运行的同一 Bearer Token 可以读取、订阅或取消它。"""
+        if run is None or getattr(run, "owner", None) != self.headers.get("Authorization", ""):
+            return None
+        return run
+
     def authorized(self) -> bool:
         if self.headers.get("Authorization", "").startswith("Bearer "):
             return True
@@ -320,7 +332,7 @@ class Handler(BaseHTTPRequestHandler):
         if len(parts) >= 4 and parts[:3] == ["api", "research", "workflows"]:
             if not self.authorized():
                 return
-            run = RUNS.get(parts[3])
+            run = self.owned(RUNS.get(parts[3]))
             if not run:
                 return self.send_json(404, {"error": "任务不存在或无权访问"})
             if len(parts) == 4:
@@ -342,11 +354,14 @@ class Handler(BaseHTTPRequestHandler):
             body = self.body()
             scenario = self.scenario()
             fingerprint = json.dumps(body, sort_keys=True)
+            owner = self.headers.get("Authorization", "")
+            key = owner + "\n" + key  # 幂等键按身份隔离
             with LOCK:
                 if scenario == "unknown" and key not in UNKNOWN_FAILED:
                     # 第一次创建“在响应前中断”：服务端其实已经保存任务，安全重试会命中同一幂等键。
                     UNKNOWN_FAILED.add(key)
                     run = Run("success", body, path)
+                    run.owner = owner
                     RUNS[run.id] = run
                     BY_KEY[key] = (fingerprint, run)
                     return self.send_json(502, {"error": "预览：模拟网关在响应前中断"})
@@ -357,6 +372,7 @@ class Handler(BaseHTTPRequestHandler):
                     replayed = True
                 else:
                     run = Run(scenario, body, path)
+                    run.owner = owner
                     RUNS[run.id] = run
                     BY_KEY[key] = (fingerprint, run)
                     replayed = False
@@ -367,7 +383,7 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/research/workflows/") and path.endswith("/cancel"):
             if not self.authorized():
                 return
-            run = RUNS.get(path.split("/")[4])
+            run = self.owned(RUNS.get(path.split("/")[4]))
             if not run:
                 return self.send_json(404, {"error": "任务不存在或无权访问"})
             already = run.terminal()

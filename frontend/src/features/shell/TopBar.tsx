@@ -1,16 +1,37 @@
 import { useEffect, useRef, useState } from "react";
 import type { Theme } from "../../app/theme";
+import type { Connection } from "../../live/useLiveResearch";
 import { Icon } from "../../ui/Icon";
+
+export type AppMode = "live" | "demo";
 
 interface Props {
   theme: Theme;
+  mode: AppMode;
+  connection: Connection;
+  identityLabel: string | null;
   onToggleTheme: (origin: HTMLElement | null) => void;
   onHome: () => void;
   onOpenRecent: () => void;
   onOpenIdentity: () => void;
+  onExitDemo: () => void;
 }
 
-export function TopBar({ theme, onToggleTheme, onHome, onOpenRecent, onOpenIdentity }: Props) {
+/** The connection label always states the actual operating mode — never "online" for fixtures or the mock. */
+function ConnectionBadge({ mode, connection }: { mode: AppMode; connection: Connection }) {
+  if (mode === "demo") {
+    return <span className="mode-badge" data-tone="demo" role="status" title="示例数据模式：不连接任何服务，不发送凭据，不发起付费调用">
+      <span className="dot" aria-hidden="true" />示例数据<span className="text-long">&nbsp;· 未连接后端</span></span>;
+  }
+  const [tone, label, title] =
+    connection.state === "checking" ? ["neutral", "正在检查服务", "正在检查同源 API"] :
+    connection.state === "offline" ? ["error", "API 未连接", "同源 /api/ping 无响应"] :
+    connection.kind === "preview" ? ["demo", "预览服务器 · 模拟 API", "当前连接的是本地预览服务器，返回的是合成数据"] :
+    ["ok", "Java API 在线", "同源 Java 服务的 /api/ping 已响应"];
+  return <span className="mode-badge" data-tone={tone} role="status" title={title}><span className="dot" aria-hidden="true" />{label}</span>;
+}
+
+export function TopBar({ theme, mode, connection, identityLabel, onToggleTheme, onHome, onOpenRecent, onOpenIdentity, onExitDemo }: Props) {
   const [scrolled, setScrolled] = useState(false);
   const themeButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -26,17 +47,21 @@ export function TopBar({ theme, onToggleTheme, onHome, onOpenRecent, onOpenIdent
         <span className="brand-name">DeepResearch</span>
       </button>
       <div className="top-actions">
-        {/* The connection label always reflects the actual operating mode. */}
-        <span className="mode-badge" role="status" title="当前为示例数据模式：页面不连接 Java API，也不会发送凭据或发起付费调用">
-          <span className="dot" aria-hidden="true" />示例数据<span className="text-long">&nbsp;· 未连接后端</span>
-        </span>
+        <ConnectionBadge mode={mode} connection={connection} />
+        {mode === "demo" ? (
+          <button type="button" className="btn btn-quiet btn-sm top-label" onClick={onExitDemo}>退出示例</button>
+        ) : null}
         <button type="button" className="icon-btn" onClick={onOpenRecent} aria-label="最近的研究"><Icon name="clock" /></button>
         <button ref={themeButton} type="button" className="icon-btn" aria-pressed={mist}
           aria-label={mist ? "当前为雾夜主题，切换到晴空主题" : "当前为晴空主题，切换到雾夜主题"}
           onClick={() => onToggleTheme(themeButton.current)}>
           <span className="theme-orb" aria-hidden="true" />
         </button>
-        <button type="button" className="icon-btn" onClick={onOpenIdentity} aria-label="连接与身份"><Icon name="key" /></button>
+        <button type="button" className={"identity-btn" + (mode === "live" && !identityLabel ? " unauth" : "")} onClick={onOpenIdentity}
+          aria-label={"连接与身份：" + (mode === "demo" ? "示例模式" : identityLabel ?? "未认证")}>
+          <Icon name="key" />
+          <span className="top-label">{mode === "demo" ? "示例" : identityLabel ?? "未认证"}</span>
+        </button>
       </div>
     </header>
   );

@@ -16,8 +16,8 @@ function useNarrow(query = "(max-width: 760px)") {
 
 const chipFor = (c: NormalizedCitation) => c.kind === "knowledge" ? "chip-kb" : c.kind === "unknown" ? "chip-warn" : "chip-web";
 
-export function Inspector({ citation, all, statements, onClose, onNavigate, onCompare }: {
-  citation: NormalizedCitation; all: NormalizedCitation[]; statements: string[];
+export function Inspector({ citation, all, statements, onClose, onNavigate, onCompare, demo }: {
+  citation: NormalizedCitation; all: NormalizedCitation[]; statements: string[]; demo: boolean;
   onClose: () => void; onNavigate: (number: number) => void; onCompare: (other: number) => void;
 }) {
   const narrow = useNarrow();
@@ -62,7 +62,7 @@ export function Inspector({ citation, all, statements, onClose, onNavigate, onCo
             <div className="flex flex-wrap items-center gap-2">
               <span className="num">来源{citation.number}</span>
               <span className={"chip " + chipFor(citation)}>{kindLabel(citation.kind)}</span>
-              <span className="chip chip-warn">示例数据</span>
+              {demo ? <span className="chip chip-warn">示例数据</span> : null}
             </div>
             <h2 id="inspector-title" ref={heading} tabIndex={-1} className="insp-title">
               {citation.url ? (

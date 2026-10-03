@@ -22,8 +22,8 @@ function Passage({ side, citation }: { side: "a" | "b"; citation: NormalizedCita
   );
 }
 
-export function CompareView({ statement, a, b, all, recorded, onChangeB, onBack }: {
-  statement: string | null; a: NormalizedCitation; b: NormalizedCitation; all: NormalizedCitation[];
+export function CompareView({ statement, a, b, all, recorded, onChangeB, onBack, demo }: {
+  statement: string | null; a: NormalizedCitation; b: NormalizedCitation; all: NormalizedCitation[]; demo: boolean;
   recorded: boolean; onChangeB: (n: number) => void; onBack: () => void;
 }) {
   const [pane, setPane] = useState<"a" | "b">("a");
@@ -54,7 +54,7 @@ export function CompareView({ statement, a, b, all, recorded, onChangeB, onBack 
           {recorded
             ? <span className="chip chip-future">后端记录的分歧 · 未来契约示例（当前接口未提供）</span>
             : <span className="chip chip-accent">你选择的比较 · 系统未对两者作出判定</span>}
-          <span className="chip chip-warn">示例数据</span>
+          {demo ? <span className="chip chip-warn">示例数据</span> : null}
         </div>
       </div>
 

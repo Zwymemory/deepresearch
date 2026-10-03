@@ -49,6 +49,13 @@ export interface FinalResponse {
   citationDetails?: CitationDetail[];
   report_status?: "complete" | "partial" | "insufficient" | (string & {});
   unfinished_goals?: Array<UnfinishedGoal | string>;
+  /** Workflow modes: true when the run ended as INSUFFICIENT_EVIDENCE. */
+  insufficientEvidence?: boolean;
+  /** Autonomous (candidate) runs: published claims. Shape not yet mapped in the UI. */
+  claims?: unknown;
+  semantic_truth_guaranteed?: boolean;
+  /** Dify engine: safe failure diagnostics ({ node, code }). */
+  diagnostics?: { node?: string; code?: string } | Record<string, never>;
 }
 
 export interface Usage {
@@ -59,6 +66,10 @@ export interface Usage {
   outputTokens?: number | null;
   durationMs?: number | null;
   estimatedCost?: number | null;
+  currency?: string;
+  costCurrency?: string;
+  /** Single Agent usage may be estimated; shown as such, never upgraded to measured. */
+  estimated?: boolean;
   costStatus?: "unknown" | (string & {});
   inputTokensStatus?: "unknown" | (string & {});
   outputTokensStatus?: "unknown" | (string & {});

@@ -1,6 +1,7 @@
 // Single authoritative run representation plus pure transitions. Event cursor and
 // duplicate handling follow the V1 page (eventKey / advanceEventCursor).
-import type { FinalResponse, RunEvent, RunStatus, ToolName, Usage, WorkflowView } from "./types";
+import type { LegacyResponse } from "../api/endpoints";
+import type { ExecutionMode, FinalResponse, RunEvent, RunStatus, ToolName, Usage, WorkflowView } from "./types";
 
 export const TERMINAL = new Set<string>([
   "SUCCEEDED", "INSUFFICIENT_EVIDENCE", "FAILED", "CANCELLED", "TIMED_OUT", "BUDGET_EXCEEDED",
@@ -13,6 +14,8 @@ export const STAGES = ["QUEUED", "PLANNING", "WORKING", "REVIEWING", "SYNTHESIZI
 
 export interface RunState {
   runId: string;
+  mode: ExecutionMode;
+  sessionId: string;
   question: string;
   status: RunStatus;
   stage: string;
@@ -24,11 +27,14 @@ export interface RunState {
   finalResponse: FinalResponse | null;
   usage: Usage | null;
   errorCode: string | null;
+  errorMessage: string | null;
+  /** Single Agent only: selected session context (selection is not proof of model use). */
+  memoryContext?: { summarySelected?: boolean; recentMessageCount?: number; selectedMemoryCount?: number; modelUseVerification?: string } | null;
 }
 
-export function emptyRun(question = "", tools: ToolName[] = []): RunState {
-  return { runId: "", question, status: "READY", stage: "READY", tools, events: [], seen: [],
-    lastEventId: "", finalResponse: null, usage: null, errorCode: null };
+export function emptyRun(question = "", tools: ToolName[] = [], mode: ExecutionMode = "workflow"): RunState {
+  return { runId: "", mode, sessionId: "", question, status: "READY", stage: "READY", tools, events: [], seen: [],
+    lastEventId: "", finalResponse: null, usage: null, errorCode: null, errorMessage: null };
 }
 
 export const isTerminal = (status: string) => TERMINAL.has(status);
@@ -77,6 +83,8 @@ export function applyView(run: RunState, view: WorkflowView): RunState {
     ...next,
     status: view.status ?? next.status,
     stage: view.stage ?? next.stage,
+    sessionId: view.sessionId ?? next.sessionId,
+    errorMessage: view.errorMessage ?? next.errorMessage,
     tools: view.requestedTools ?? next.tools,
     finalResponse: view.finalResponse ?? next.finalResponse,
     usage: view.usage ?? next.usage,
@@ -102,4 +110,37 @@ export function recordedEvidenceCount(run: RunState): number | null {
     if (typeof count === "number") total = (total ?? 0) + count;
   }
   return total;
+}
+
+/** Map the synchronous Single Agent response (AgentResearchResponse) to a run (V1 renderLegacy rules). */
+export function mapLegacy(question: string, data: LegacyResponse): RunState {
+  const runId = data.runId || "";
+  const native = String(data.status || "").trim().replace(/[\s-]+/g, "_").toUpperCase();
+  let status: string = data.finished === false ? native || "FAILED" : "SUCCEEDED";
+  if (!TERMINAL.has(status)) status = "FAILED";
+  let run: RunState = { ...emptyRun(question, [], "legacy"), runId, sessionId: data.sessionId || "", status: "WORKING", stage: "WORKING" };
+  for (const event of data.events ?? []) {
+    const id = `${runId}:native:${event.seq}`;
+    run = applyEvent(run, { id, type: event.type || "EVENT", role: event.action || "AGENT",
+      taskId: event.round == null ? null : `round-${event.round}`, payload: { summary: event.message || "" } }, id);
+  }
+  const u = data.usage;
+  const diagnostics = data.memoryContext?.diagnostics;
+  return {
+    ...run,
+    status, stage: "TERMINAL",
+    errorCode: data.finished === false ? native || "FAILED" : null,
+    finalResponse: {
+      answer: data.answer || "",
+      citations: Array.isArray(data.citations) ? data.citations : [],
+      citationContract: data.citationContract || "NONE",
+      citationDetails: Array.isArray(data.citationDetails) ? (data.citationDetails as FinalResponse["citationDetails"]) : undefined,
+    },
+    usage: u ? { modelCalls: u.modelCalls ?? data.rounds ?? null, toolCalls: u.toolCalls ?? null, totalTokens: u.totalTokens ?? null,
+      inputTokens: u.inputTokens ?? null, outputTokens: u.outputTokens ?? null, durationMs: u.durationMs ?? null,
+      estimatedCost: u.estimatedCost ?? null, costCurrency: u.costCurrency, estimated: !!u.estimated }
+      : { modelCalls: data.rounds ?? null, toolCalls: (data.steps ?? []).length },
+    memoryContext: diagnostics ? { summarySelected: diagnostics.summarySelected, recentMessageCount: diagnostics.recentMessageCount,
+      selectedMemoryCount: diagnostics.selectedMemoryCount, modelUseVerification: diagnostics.modelUseVerification ?? "unknown" } : null,
+  };
 }

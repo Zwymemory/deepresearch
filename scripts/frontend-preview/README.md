@@ -18,6 +18,9 @@ python3 scripts/frontend-preview/mock_server.py
 | `disconnect` | 第一条 SSE 连接在 4 条事件后断开，验证 `Last-Event-ID` 续传 |
 | `unknown` | 首次创建返回 502，验证“创建结果未知 → 原请求安全重试” |
 | `noweb` | 网页搜索未配置 |
+| `langgraph` | 与默认 LangGraph 路径相同：`finalResponse` 不含 `citationDetails` |
+
+运行归属于创建它的 Bearer Token，换一个 Token 读取会得到 404，用于验证前端的身份隔离；幂等键也按 Token 隔离。
 
 “自主研究（候选）”与“Single Agent”模式也有对应的合成响应。
 
@@ -34,15 +37,18 @@ node scripts/frontend-preview/capture.mjs   # 输出到被忽略的 output/playw
 
 预览通过只说明页面在这些合成响应下的呈现与交互正确，**不代表**真实后端、模型或检索质量。
 
-## React 预览（Milestone 1）
+## React 预览
 
-React 版本位于 `frontend/`，使用自带的示例数据，不依赖本预览服务器：
+React 版本位于 `frontend/`，入口为 `/app/`。经 Vite 同源代理连接本预览服务器，即可用真实适配器跑完整流程：
 
 ```bash
-npm --prefix frontend ci && npm --prefix frontend run dev   # http://127.0.0.1:5173/
-PLAYWRIGHT_CORE=/path/to/node_modules/playwright-core \
-CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-node scripts/frontend-preview/capture-react.mjs   # 输出到 output/playwright/react-preview/
+python3 scripts/frontend-preview/mock_server.py &
+DEEPRESEARCH_API_PROXY=http://127.0.0.1:8090 npm --prefix frontend run dev   # http://127.0.0.1:5173/app/?scenario=success
+
+export PLAYWRIGHT_CORE=/path/to/node_modules/playwright-core
+export CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+node scripts/frontend-preview/journey-react-live.mjs   # 真实适配器旅程 → output/playwright/react-live/
+node scripts/frontend-preview/capture-react.mjs        # 示例模式版式与截图 → output/playwright/react-preview/
 ```
 
-两个版本可以同时运行，分别在 8090（V1）与 5173（React）对比。
+两个版本可以同时对比：V1 在 `http://127.0.0.1:8090/demo.html`，React 在 `http://127.0.0.1:5173/app/`。
