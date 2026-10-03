@@ -95,7 +95,7 @@ class WorkflowMcpReceiptServiceTest {
         assertThat(service.complete(context, "kb_search", FINGERPRINT, response)).isFalse();
         verify(repository).completeMcpToolExecution(
                 context, CLAIM_UUID, "tool-call-0001", "kb_search", FINGERPRINT,
-                "{\"success\":true,\"code\":\"OK\",\"tool\":\"kb_search\",\"evidence\":[]}");
+                "{\"success\":true,\"code\":\"OK\",\"tool\":\"kb_search\",\"evidence\":[],\"sourceSnapshots\":[]}");
     }
 
     @Test void agentMcpRequiresTheUnifiedOperationReservationBeforeExecution() {

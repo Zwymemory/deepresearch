@@ -524,6 +524,24 @@ public class WorkflowRepository {
                 rs.getString("request_fingerprint"), rs.getString("safe_result")), runId);
     }
 
+    /** Trusted snapshots survive claim recovery; sidecar envelopes are deliberately excluded. */
+    public List<ToolReceiptRow> completedSourceReceipts(String runId, String owner) {
+        return jdbcTemplate.query("""
+                SELECT receipt.call_id, receipt.task_id, receipt.tool_name,
+                       receipt.request_fingerprint, receipt.mcp_safe_result
+                FROM agent_workflow_tool_receipt receipt
+                JOIN agent_workflow_run run ON run.run_id = receipt.run_id
+                WHERE receipt.run_id = ? AND run.user_id = ?
+                  AND receipt.mcp_execution_status = 'COMPLETED'
+                  AND receipt.mcp_safe_result IS NOT NULL AND receipt.mcp_claim_token IS NOT NULL
+                  AND receipt.tool_name IN ('kb_search', 'web_search')
+                ORDER BY receipt.created_at, receipt.call_id
+                LIMIT 257
+                """, (rs, rowNum) -> new ToolReceiptRow(
+                rs.getString("call_id"), rs.getString("task_id"), rs.getString("tool_name"),
+                rs.getString("request_fingerprint"), rs.getString("mcp_safe_result")), runId, owner);
+    }
+
     public Optional<GrantRow> activeGrant(String grantId, String runId, UUID claimToken) {
         return jdbcTemplate.query("""
                 SELECT g.grant_id, g.run_id, g.subject, g.scopes, g.expires_at,

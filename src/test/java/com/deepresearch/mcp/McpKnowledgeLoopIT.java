@@ -2,6 +2,8 @@ package com.deepresearch.mcp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.deepresearch.agent.KnowledgeBaseSearchTool;
+import com.deepresearch.agent.CitationAwareToolOutput;
+import com.deepresearch.agent.CitationDetail;
 import com.deepresearch.mcp.McpKnowledgeClientService.McpClientFailure;
 import com.deepresearch.security.AuthPrincipal;
 import com.deepresearch.workflow.WorkflowAccessService;
@@ -58,12 +60,13 @@ class McpKnowledgeLoopIT {
 
     @Test
     void negotiatesDiscoversSchemaAndCallsKnowledgeToolOverRealMcpTransport() throws Exception {
-        when(knowledgeBaseSearchTool.execute("MCP-7788"))
-                .thenReturn("""
+        when(knowledgeBaseSearchTool.executeWithCitations("MCP-7788"))
+                .thenReturn(new CitationAwareToolOutput("""
                         [来源1] MCP-7788
                         chunkKey: mcp-7788-chunk
                         证据: MCP-7788 是真实 MCP 闭环测试参数
-                        """);
+                        """, List.of("kb:mcp-7788-chunk"), List.of(CitationDetail.knowledge(
+                                "kb:mcp-7788-chunk", "MCP-7788", "MCP-7788 是真实 MCP 闭环测试参数"))));
         AuthPrincipal principal = new AuthPrincipal("tenant-a", "user-a", List.of("USER"));
         when(workflowAccessService.authenticateDelegation("delegation-token"))
                 .thenReturn(new WorkflowDelegationContext(
@@ -88,6 +91,8 @@ class McpKnowledgeLoopIT {
         McpKnowledgeTools.McpToolResponse response = new ObjectMapper().readValue(
                 result.content(), McpKnowledgeTools.McpToolResponse.class);
         assertThat(response.success()).isTrue();
+        assertThat(response.sourceSnapshots()).containsExactly(CitationDetail.knowledge(
+                "mcp-7788-chunk", "MCP-7788", "MCP-7788 是真实 MCP 闭环测试参数"));
         assertThat(response.evidence()).singleElement().satisfies(evidence -> {
             assertThat(evidence.evidenceId()).isEqualTo("mcp-7788-chunk");
             assertThat(evidence.uriOrChunkKey()).isEqualTo("mcp-7788-chunk");

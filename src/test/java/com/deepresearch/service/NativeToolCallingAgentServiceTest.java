@@ -3,6 +3,7 @@ package com.deepresearch.service;
 import com.deepresearch.agent.CalculatorTool;
 import com.deepresearch.agent.CalculatorTools;
 import com.deepresearch.agent.CitationAwareToolOutput;
+import com.deepresearch.agent.CitationDetail;
 import com.deepresearch.agent.FileReadTool;
 import com.deepresearch.agent.FileResourceTools;
 import com.deepresearch.agent.KnowledgeBaseSearchTool;
@@ -106,11 +107,13 @@ class NativeToolCallingAgentServiceTest {
         when(web.executeWithCitations("first")).thenReturn(new CitationAwareToolOutput(
                 "[UNTRUSTED_DATA_BEGIN source=web]\n[来源1] A\nURL: https://a.example/doc\n"
                         + "摘要: alpha\n[UNTRUSTED_DATA_END source=web]",
-                List.of("https://a.example/doc")));
+                List.of("https://a.example/doc"), List.of(CitationDetail.web(
+                        "https://a.example/doc", "A", "https://a.example/doc", "alpha"))));
         when(web.executeWithCitations("second")).thenReturn(new CitationAwareToolOutput(
                 "[UNTRUSTED_DATA_BEGIN source=web]\n[来源1] B\nURL: https://b.example/doc\n"
                         + "摘要: beta\n[UNTRUSTED_DATA_END source=web]",
-                List.of("https://b.example/doc")));
+                List.of("https://b.example/doc"), List.of(CitationDetail.web(
+                        "https://b.example/doc", "B", "https://b.example/doc", "beta"))));
         ScriptedToolCallingModel model = new ScriptedToolCallingModel(
                 toolCall("call-1", "searchWeb", "{\"request\":{\"query\":\"first\"}}"),
                 toolCall("call-2", "searchWeb", "{\"request\":{\"query\":\"second\"}}"),
@@ -136,6 +139,7 @@ class NativeToolCallingAgentServiceTest {
         assertThat(response.citations())
                 .containsExactly("https://b.example/doc", "https://a.example/doc");
         assertThat(response.citationContract()).isEqualTo("INDEXED_V1");
+        assertThat(response.citationDetails()).extracting(CitationDetail::title).containsExactly("B", "A");
         assertThat(model.prompts()).hasSize(3);
         assertThat(toolResponseData(model.prompts().get(1))).contains("[来源1]");
         assertThat(toolResponseData(model.prompts().get(2))).contains("[来源2]");

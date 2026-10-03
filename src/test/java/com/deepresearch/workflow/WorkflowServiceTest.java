@@ -220,7 +220,7 @@ class WorkflowServiceTest {
                 .contains("\"citationContract\":\"INDEXED_V1\"")
                 .contains("grounded answer [来源1]");
         WorkflowRepository.RunRow terminal = runRow(
-                "SUCCEEDED", fingerprint.getValue(), UUID.fromString(claim));
+                "SUCCEEDED", fingerprint.getValue(), UUID.fromString(claim), finalResponse.getValue());
         when(repository.find("wf-1")).thenReturn(Optional.of(terminal));
 
         assertThat(service.finalizeRun("wf-1", request).replayed()).isTrue();
@@ -318,13 +318,18 @@ class WorkflowServiceTest {
 
     private WorkflowRepository.RunRow runRow(String status, String finalizeFingerprint,
                                               UUID finalizedClaimToken) {
+        return runRow(status, finalizeFingerprint, finalizedClaimToken, "{}");
+    }
+
+    private WorkflowRepository.RunRow runRow(String status, String finalizeFingerprint,
+                                              UUID finalizedClaimToken, String finalResponse) {
         OffsetDateTime now = OffsetDateTime.now();
         return new WorkflowRepository.RunRow(
                 "wf-1", "sess-1", "tenant-a:user-a", "question", "{}",
                 "/api/research/workflows", "idem", "a".repeat(64), "wf-1",
                 status, status, now.plusMinutes(2), false, List.of("kb_search"), "grant-1",
                 UUID.fromString("7e65e2c8-4251-41ed-94aa-123147661234"), "runner",
-                now.plusSeconds(30), "{}", "{}", null, null,
+                now.plusSeconds(30), finalResponse, "{}", null, null,
                 finalizeFingerprint, finalizedClaimToken, 1, now, now);
     }
 

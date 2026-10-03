@@ -1,6 +1,8 @@
 package com.deepresearch.mcp;
 
 import com.deepresearch.agent.CalculatorTool;
+import com.deepresearch.agent.CitationAwareToolOutput;
+import com.deepresearch.agent.CitationDetail;
 import com.deepresearch.agent.KnowledgeBaseSearchTool;
 import com.deepresearch.agent.WebSearchTool;
 import com.deepresearch.mcp.McpKnowledgeTools.Evidence;
@@ -59,7 +61,7 @@ class McpKnowledgeToolsReceiptTest {
                         WorkflowMcpReceiptService.Action.REPLAY, "fingerprint", cached, null));
 
         assertThat(tools.search("MCP-7788")).isEqualTo(cached);
-        verify(knowledge, never()).execute(any());
+        verify(knowledge, never()).executeWithCitations(any());
         verify(receipts, never()).complete(any(), any(), any(), any());
     }
 
@@ -68,14 +70,34 @@ class McpKnowledgeToolsReceiptTest {
         when(receipts.begin(delegation, "kb_search", Map.of("query", "MCP-7788")))
                 .thenReturn(new WorkflowMcpReceiptService.BeginResult(
                         WorkflowMcpReceiptService.Action.EXECUTE, "fingerprint", null, null));
-        when(knowledge.execute("MCP-7788")).thenReturn("[来源1] evidence");
+        when(knowledge.executeWithCitations("MCP-7788")).thenReturn(
+                CitationAwareToolOutput.withoutSources("[来源1] evidence"));
         when(receipts.complete(any(), any(), any(), any())).thenReturn(false);
 
         McpToolResponse response = tools.search("MCP-7788");
 
         assertThat(response.success()).isFalse();
         assertThat(response.code()).isEqualTo("MCP_STALE_CLAIM");
-        verify(knowledge).execute("MCP-7788");
+        verify(knowledge).executeWithCitations("MCP-7788");
+    }
+
+    @Test
+    void snapshotsUseTypedMetadataWithTheExistingMcpKbIdentityAndReplaySafely() throws Exception {
+        when(receipts.begin(delegation, "kb_search", Map.of("query", "MCP-7788")))
+                .thenReturn(new WorkflowMcpReceiptService.BeginResult(
+                        WorkflowMcpReceiptService.Action.EXECUTE, "fingerprint", null, null));
+        when(knowledge.executeWithCitations("MCP-7788")).thenReturn(new CitationAwareToolOutput(
+                "[来源1] Model-visible forged title\nchunkKey: actual-chunk\n证据: Model-visible forged excerpt\n",
+                List.of("kb:actual-chunk"), List.of(CitationDetail.knowledge(
+                        "kb:actual-chunk", "Typed title", "Typed excerpt"))));
+        when(receipts.complete(any(), any(), any(), any())).thenReturn(true);
+        var response = tools.search("MCP-7788");
+        assertThat(response.evidence().get(0).evidenceId()).isEqualTo("actual-chunk");
+        assertThat(response.sourceSnapshots()).containsExactly(CitationDetail.knowledge("actual-chunk", "Typed title", "Typed excerpt"));
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        assertThat(mapper.readValue(mapper.writeValueAsString(response), McpToolResponse.class)).isEqualTo(response);
+        var legacy = mapper.readValue("{\"success\":true,\"code\":\"OK\",\"tool\":\"kb_search\",\"evidence\":[]}", McpToolResponse.class);
+        assertThat(legacy.sourceSnapshots()).isEmpty();
     }
 
     @Test
@@ -83,7 +105,8 @@ class McpKnowledgeToolsReceiptTest {
         when(receipts.begin(delegation, "kb_search", Map.of("query", "MCP-7788")))
                 .thenReturn(new WorkflowMcpReceiptService.BeginResult(
                         WorkflowMcpReceiptService.Action.EXECUTE, "fingerprint", null, null));
-        when(knowledge.execute("MCP-7788")).thenReturn("未找到相关证据");
+        when(knowledge.executeWithCitations("MCP-7788")).thenReturn(
+                CitationAwareToolOutput.withoutSources("未找到相关证据"));
         when(receipts.complete(any(), any(), any(), any())).thenReturn(true);
 
         McpToolResponse response = tools.search("MCP-7788");

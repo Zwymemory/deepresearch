@@ -66,15 +66,18 @@ public class KnowledgeBaseSearchTool implements Tool {
                 if (evidence.isEmpty()) return CitationAwareToolOutput.withoutSources("（知识库中没有检索到相关证据）");
                 StringBuilder text = new StringBuilder();
                 List<String> sourceIds = new ArrayList<>();
+                List<CitationDetail> snapshots = new ArrayList<>();
                 for (RetrievedEvidence item : evidence) {
                     sourceIds.add(item.persistentSourceId());
+                    if (snapshots.size() < 10) snapshots.add(CitationDetail.knowledge(
+                            item.persistentSourceId(), item.title(), item.content()));
                     text.append(item.citation()).append(' ').append(item.title()).append('\n')
                             .append("chunkKey: ").append(item.chunkKey()).append('\n')
                             .append("召回路径: ragflow; score: ").append(item.score()).append('\n')
                             .append(item.content()).append("\n\n");
                 }
                 return new CitationAwareToolOutput(
-                        ToolOutputSanitizer.markUntrusted("knowledge-base", text.toString().trim()), sourceIds);
+                        ToolOutputSanitizer.markUntrusted("knowledge-base", text.toString().trim()), sourceIds, snapshots);
             }
             HybridDebugResponse debug = hybridRagService.debug(input.trim(), topK, recallK, candidateK, List.of());
             List<HybridDebugResponse.Entry> evidences = debug.compressedContext();
@@ -84,6 +87,7 @@ public class KnowledgeBaseSearchTool implements Tool {
 
             StringBuilder sb = new StringBuilder();
             List<String> sourceIds = new ArrayList<>(evidences.size());
+            List<CitationDetail> snapshots = new ArrayList<>();
             sb.append("知识库检索 query: ")
                     .append(ToolOutputSanitizer.neutralizeCitationMarkers(debug.rewrittenQuestion()))
                     .append("\n")
@@ -95,6 +99,10 @@ public class KnowledgeBaseSearchTool implements Tool {
             for (int i = 0; i < evidences.size(); i++) {
                 HybridDebugResponse.Entry entry = evidences.get(i);
                 sourceIds.add(CitationSourceSupport.safeKnowledgeChunk(entry.chunkKey()));
+                String id = sourceIds.get(i);
+                if (!id.isBlank() && snapshots.size() < 10) {
+                    snapshots.add(CitationDetail.knowledge(id, entry.title(), truncate(entry.preview())));
+                }
                 sb.append("[来源").append(i + 1).append("] ")
                         .append(ToolOutputSanitizer.neutralizeCitationMarkers(entry.title())).append("\n");
                 if (entry.sectionPath() != null && !entry.sectionPath().isBlank()) {
@@ -113,7 +121,7 @@ public class KnowledgeBaseSearchTool implements Tool {
                         .append("\n\n");
             }
             return new CitationAwareToolOutput(
-                    ToolOutputSanitizer.markUntrusted("knowledge-base", sb.toString().trim()), sourceIds);
+                    ToolOutputSanitizer.markUntrusted("knowledge-base", sb.toString().trim()), sourceIds, snapshots);
         } catch (RuntimeException e) {
             return CitationAwareToolOutput.withoutSources("（知识库检索失败：服务暂时不可用）");
         }

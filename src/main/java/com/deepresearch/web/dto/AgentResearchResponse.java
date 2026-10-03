@@ -2,6 +2,7 @@ package com.deepresearch.web.dto;
 
 import java.util.List;
 import java.math.BigDecimal;
+import com.deepresearch.agent.CitationDetail;
 
 /**
  * ReAct Agent 研究响应（Week3）。
@@ -30,12 +31,23 @@ public record AgentResearchResponse(
         String status,
         Usage usage,
         List<String> citations,
-        String citationContract
+        String citationContract,
+        List<CitationDetail> citationDetails
 ) {
     public AgentResearchResponse {
         citations = citations == null ? List.of() : List.copyOf(citations);
         citationContract = citationContract == null || citationContract.isBlank()
                 ? "NONE" : citationContract;
+        citationDetails = citationDetails == null ? CitationDetail.project(citations, List.of()) : List.copyOf(citationDetails);
+    }
+
+    public AgentResearchResponse(String runId, String sessionId, String answer, int rounds,
+                                 boolean finished, MemoryContext memoryContext,
+                                 List<Step> steps, List<Event> events, String status, Usage usage,
+                                 List<String> citations, String citationContract) {
+        this(runId, sessionId, answer, rounds, finished, memoryContext, steps, events,
+                status, usage, citations, citationContract, CitationDetail.project(
+                        citations == null ? List.of() : citations, List.of()));
     }
 
     /** Source-compatible constructor for callers created before structured citations were added. */

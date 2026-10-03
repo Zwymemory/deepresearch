@@ -1,0 +1,15 @@
+{
+  "runId": "synthetic-manual-run",
+  "sessionId": null,
+  "answer": "Synthetic legacy answer",
+  "rounds": 1,
+  "finished": true,
+  "memoryContext": null,
+  "steps": [],
+  "events": [],
+  "status": "SUCCESS",
+  "usage": null,
+  "citations": [],
+  "citationContract": "NONE",
+  "citationDetails": []
+}

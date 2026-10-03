@@ -59,9 +59,14 @@ public class WebSearchTool implements Tool {
             }
             StringBuilder sb = new StringBuilder();
             List<String> sourceIds = new ArrayList<>(hits.size());
+            List<CitationDetail> snapshots = new ArrayList<>();
             for (int i = 0; i < hits.size(); i++) {
                 SearchHit h = hits.get(i);
                 sourceIds.add(CitationSourceSupport.safeWebUrl(h.url()));
+                String id = sourceIds.get(i);
+                if (!id.isBlank() && snapshots.size() < 10) {
+                    snapshots.add(CitationDetail.web(id, h.title(), id, truncate(h.content())));
+                }
                 sb.append("[来源").append(i + 1).append("] ")
                         .append(ToolOutputSanitizer.neutralizeCitationMarkers(h.title())).append("\n")
                         .append("URL: ")
@@ -71,7 +76,7 @@ public class WebSearchTool implements Tool {
                         .append("\n\n");
             }
             return new CitationAwareToolOutput(
-                    ToolOutputSanitizer.markUntrusted("web", sb.toString().trim()), sourceIds);
+                    ToolOutputSanitizer.markUntrusted("web", sb.toString().trim()), sourceIds, snapshots);
         } catch (RuntimeException exception) {
             return CitationAwareToolOutput.withoutSources("（搜索失败：服务暂时不可用）");
         }

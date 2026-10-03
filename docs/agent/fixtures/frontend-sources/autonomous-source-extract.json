@@ -1,0 +1,15 @@
+{
+  "citations": [
+    "kb:ragflow:fixture-dataset:fixture-document:fixture-chunk"
+  ],
+  "citationContract": "INDEXED_V1",
+  "citationDetails": [
+    {
+      "sourceId": "kb:ragflow:fixture-dataset:fixture-document:fixture-chunk",
+      "kind": "KNOWLEDGE_CHUNK",
+      "title": "Synthetic managed document",
+      "url": "",
+      "excerpt": "Synthetic verified quotation."
+    }
+  ]
+}

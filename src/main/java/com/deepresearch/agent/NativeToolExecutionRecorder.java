@@ -55,6 +55,12 @@ public class NativeToolExecutionRecorder {
                 }
             }
         }
+        for (var snapshot : output.sourceSnapshots()) {
+            if (output.sourceIds().contains(snapshot.sourceId())) {
+                if (state.snapshots.size() < 256) state.snapshots.add(snapshot);
+                else state.snapshotLimitExceeded = true;
+            }
+        }
 
         Matcher matcher = LOCAL_SOURCE_MARKER.matcher(output.content());
         StringBuffer rewritten = new StringBuffer();
@@ -79,20 +85,24 @@ public class NativeToolExecutionRecorder {
         RunState state = current.get();
         current.remove();
         if (state == null) {
-            return new Snapshot(List.of(), List.of());
+            return new Snapshot(List.of(), List.of(), List.of(), false);
         }
-        return new Snapshot(List.copyOf(state.invocations), List.copyOf(state.citations));
+        return new Snapshot(List.copyOf(state.invocations), List.copyOf(state.citations),
+                List.copyOf(state.snapshots), state.snapshotLimitExceeded);
     }
 
     public record Invocation(String toolName, boolean success, String code, String argumentFingerprint) {
     }
 
-    private record Snapshot(List<Invocation> invocations, List<String> citations) {
+    private record Snapshot(List<Invocation> invocations, List<String> citations,
+                            List<CitationDetail> snapshots, boolean snapshotLimitExceeded) {
     }
 
     private static final class RunState {
         private final List<Invocation> invocations = new ArrayList<>();
         private final List<String> citations = new ArrayList<>();
+        private final List<CitationDetail> snapshots = new ArrayList<>();
+        private boolean snapshotLimitExceeded;
     }
 
     public static final class Scope implements AutoCloseable {
@@ -100,6 +110,8 @@ public class NativeToolExecutionRecorder {
         private boolean closed;
         private List<Invocation> invocations = List.of();
         private List<String> citations = List.of();
+        private List<CitationDetail> snapshots = List.of();
+        private boolean snapshotLimitExceeded;
 
         private Scope(NativeToolExecutionRecorder recorder) {
             this.recorder = recorder;
@@ -113,12 +125,20 @@ public class NativeToolExecutionRecorder {
             return citations;
         }
 
+        public List<CitationDetail> citationDetails(List<String> selectedCitations) {
+            if (snapshotLimitExceeded) return selectedCitations.stream()
+                    .map(id -> CitationDetail.unavailable(id, "SNAPSHOT_LIMIT")).toList();
+            return CitationDetail.project(selectedCitations, snapshots);
+        }
+
         @Override
         public void close() {
             if (!closed) {
                 Snapshot snapshot = recorder.close();
                 invocations = snapshot.invocations();
                 citations = snapshot.citations();
+                snapshots = snapshot.snapshots();
+                snapshotLimitExceeded = snapshot.snapshotLimitExceeded();
                 closed = true;
             }
         }

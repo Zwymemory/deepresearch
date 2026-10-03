@@ -1,6 +1,8 @@
 package com.deepresearch.mcp;
 
 import com.deepresearch.agent.CalculatorTool;
+import com.deepresearch.agent.CitationAwareToolOutput;
+import com.deepresearch.agent.CitationDetail;
 import com.deepresearch.agent.KnowledgeBaseSearchTool;
 import com.deepresearch.agent.ToolArgumentFingerprint;
 import com.deepresearch.agent.ToolExecutionPolicy;
@@ -45,13 +47,13 @@ public class McpKnowledgeTools {
     @Tool(name = "kb_search", description = "Search the tenant-scoped DeepResearch knowledge base")
     public McpToolResponse search(
             @ToolParam(description = "Focused knowledge-base query", required = true) String query) {
-        return execute("kb_search", "query", query, () -> knowledgeBaseSearchTool.execute(query));
+        return execute("kb_search", "query", query, () -> knowledgeBaseSearchTool.executeWithCitations(query));
     }
 
     @Tool(name = "web_search", description = "Search public web sources for current factual evidence")
     public McpToolResponse webSearch(
             @ToolParam(description = "One focused public-web query", required = true) String query) {
-        return execute("web_search", "query", query, () -> webSearchTool.execute(query));
+        return execute("web_search", "query", query, () -> webSearchTool.executeWithCitations(query));
     }
 
     @Tool(name = "calculator", description = "Evaluate a bounded arithmetic expression")
@@ -60,11 +62,12 @@ public class McpKnowledgeTools {
         if (expression != null && expression.length() > 256) {
             return McpToolResponse.failure("calculator", "INVALID_ARGUMENT", "表达式最长 256 字符");
         }
-        return execute("calculator", "expression", expression, () -> calculatorTool.execute(expression));
+        return execute("calculator", "expression", expression,
+                () -> CitationAwareToolOutput.withoutSources(calculatorTool.execute(expression)));
     }
 
     private McpToolResponse execute(String toolName, String argumentName, String input,
-                                    java.util.function.Supplier<String> action) {
+                                    java.util.function.Supplier<CitationAwareToolOutput> action) {
         if (input == null || input.isBlank()) {
             return McpToolResponse.failure(toolName, "INVALID_ARGUMENT", "输入不能为空");
         }
@@ -90,9 +93,17 @@ public class McpKnowledgeTools {
         }
         McpToolResponse response;
         try {
-            String content = action.get();
-            List<Evidence> evidence = parseEvidence(toolName, fingerprint, content);
-            response = new McpToolResponse(true, "OK", toolName, evidence);
+            CitationAwareToolOutput output = action.get();
+            List<Evidence> evidence = parseEvidence(toolName, fingerprint, output.content());
+            // Keep legacy evidence IDs (KB chunk keys lack the native "kb:" prefix).
+            // Only a typed retrieval identity represented in this receipt gets metadata.
+            List<CitationDetail> snapshots = output.sourceSnapshots().stream().limit(10)
+                    .filter(detail -> output.sourceIds().contains(detail.sourceId()))
+                    .map(detail -> "kb_search".equals(toolName) && detail.sourceId().startsWith("kb:")
+                            ? detail.withSourceId(detail.sourceId().substring(3)) : detail)
+                    .filter(detail -> evidence.stream().anyMatch(item -> item.evidenceId().equals(detail.sourceId())))
+                    .toList();
+            response = new McpToolResponse(true, "OK", toolName, evidence, snapshots);
         } catch (RuntimeException failure) {
             response = McpToolResponse.failure(
                     toolName, "TOOL_UNAVAILABLE", "工具服务暂时不可用");
@@ -170,7 +181,15 @@ public class McpKnowledgeTools {
                 ? normalized : normalized.substring(0, MAX_SAFE_CONTENT) + "…";
     }
 
-    public record McpToolResponse(boolean success, String code, String tool, List<Evidence> evidence) {
+    public record McpToolResponse(boolean success, String code, String tool, List<Evidence> evidence,
+                                  List<CitationDetail> sourceSnapshots) {
+        public McpToolResponse {
+            sourceSnapshots = sourceSnapshots == null ? List.of() : List.copyOf(sourceSnapshots);
+        }
+
+        public McpToolResponse(boolean success, String code, String tool, List<Evidence> evidence) {
+            this(success, code, tool, evidence, List.of());
+        }
         static McpToolResponse failure(String tool, String code, String message) {
             Evidence evidence = new Evidence(tool + ":error", tool, "tool error", "", message,
                     ToolArgumentFingerprint.sha256(message));

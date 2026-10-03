@@ -1,0 +1,29 @@
+{
+  "answer": "Synthetic claim [来源1] Synthetic claim [来源2]",
+  "citations": [
+    "ragflow:fixture-dataset:fixture-document:fixture-chunk",
+    "https://example.org/limits"
+  ],
+  "citationContract": "INDEXED_V1",
+  "insufficientEvidence": false,
+  "citationDetails": [
+    {
+      "sourceId": "ragflow:fixture-dataset:fixture-document:fixture-chunk",
+      "kind": "KNOWLEDGE_CHUNK",
+      "title": "Synthetic managed document",
+      "url": null,
+      "excerpt": "Synthetic retrieved knowledge excerpt.",
+      "metadataStatus": "AVAILABLE",
+      "unavailableReason": null
+    },
+    {
+      "sourceId": "https://example.org/limits",
+      "kind": "WEB_SEARCH_SNAPSHOT",
+      "title": "Synthetic public source",
+      "url": "https://example.org/limits",
+      "excerpt": "Synthetic search excerpt.",
+      "metadataStatus": "AVAILABLE",
+      "unavailableReason": null
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "answer": "Synthetic claim [来源1]",
+  "citations": [
+    "web:tavily:90509117c65eb3520516861eca48cb1f7e0f441320d634802dc6b500062c4e0c"
+  ],
+  "citationContract": "INDEXED_V1",
+  "insufficientEvidence": false,
+  "citationDetails": [
+    {
+      "sourceId": "web:tavily:90509117c65eb3520516861eca48cb1f7e0f441320d634802dc6b500062c4e0c",
+      "kind": "WEB_SEARCH_SNAPSHOT",
+      "title": "Synthetic public source",
+      "url": "https://example.org/limits",
+      "excerpt": "Synthetic search excerpt.",
+      "retrievedAt": "2026-01-01T00:00:00Z"
+    }
+  ],
+  "diagnostics": {}
+}

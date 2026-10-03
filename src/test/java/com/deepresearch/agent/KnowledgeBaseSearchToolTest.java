@@ -31,6 +31,22 @@ class KnowledgeBaseSearchToolTest {
     }
 
     @Test
+    void capturesBothLegacyAndRagflowTypedSourcesWithoutInventingUrls() {
+        when(ragService.debug("query", 3, 20, 10, List.of())).thenReturn(response(List.of(entry("preview"))));
+        assertThat(tool.executeWithCitations("query").sourceSnapshots()).singleElement().satisfies(detail -> {
+            assertThat(detail.sourceId()).isEqualTo("kb:doc:1");
+            assertThat(detail.url()).isNull();
+            assertThat(detail.title()).isEqualTo("title");
+        });
+        when(gateway.ragflow()).thenReturn(true);
+        when(gateway.retrieve("query", 3)).thenReturn(List.of(new com.deepresearch.service.RetrievedEvidence(
+                "source1", "[来源1]", "ragflow:dataset:doc:chunk", "dataset", "doc", "chunk", "Managed title",
+                "Managed excerpt", 0.9, "ragflow", true, null, null)));
+        assertThat(tool.executeWithCitations("query").sourceSnapshots()).containsExactly(
+                CitationDetail.knowledge("kb:ragflow:dataset:doc:chunk", "Managed title", "Managed excerpt"));
+    }
+
+    @Test
     void handlesBlankNoEvidenceAndFailureWithoutLeakingDetails() {
         when(ragService.debug("empty", 3, 20, 10, List.of())).thenReturn(response(List.of()));
         when(ragService.debug("broken", 3, 20, 10, List.of()))

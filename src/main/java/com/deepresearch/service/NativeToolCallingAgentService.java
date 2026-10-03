@@ -204,7 +204,7 @@ public class NativeToolCallingAgentService {
         return new AgentResearchResponse(
                 runId, context.sessionId(), answer == null ? "" : answer.trim(), rounds, finished,
                 context.toResponseMemoryContext(), steps, events, status, budget.snapshot(), citations,
-                finished ? "INDEXED_V1" : "NONE");
+                finished ? "INDEXED_V1" : "NONE", scope.citationDetails(citations));
     }
 
     /**

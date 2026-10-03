@@ -1,6 +1,8 @@
 package com.deepresearch.workflow;
 
 import com.deepresearch.agent.ToolArgumentFingerprint;
+import com.deepresearch.agent.CitationDetail;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.deepresearch.service.AgentStateService;
 import com.deepresearch.service.UserContextService;
 import com.deepresearch.workflow.WorkflowDtos.Accepted;
@@ -247,6 +249,19 @@ public class WorkflowService {
                 requested == WorkflowStatus.SUCCEEDED ? CITATION_CONTRACT : "NONE");
         finalResponse.put("insufficientEvidence", requested == WorkflowStatus.INSUFFICIENT_EVIDENCE);
         WorkflowStatus current = status(row.status());
+        if (!agentRun) {
+            if (current.terminal()) {
+                JsonNode stored = json(row.finalResponseJson());
+                // Metadata is frozen at first finalization. Replays must also support
+                // pre-snapshot runs without changing their original fingerprint.
+                if (stored.has("citationDetails")) finalResponse.put("citationDetails",
+                        objectMapper.convertValue(stored.get("citationDetails"),
+                                new TypeReference<List<CitationDetail>>() {}));
+            } else {
+                finalResponse.put("citationDetails",
+                        WorkflowCitationDetails.capture(repository, objectMapper, row, citations));
+            }
+        }
         if (agentRun && (requested==WorkflowStatus.SUCCEEDED || requested==WorkflowStatus.INSUFFICIENT_EVIDENCE
                 || !answer.isBlank() || !citations.isEmpty())) {
             var report=repository.sealedAgentReport(runId,answer,citations,requested.name())
@@ -357,9 +372,17 @@ public class WorkflowService {
     }
 
     private View view(WorkflowRepository.RunRow row) {
+        JsonNode finalResponse = json(row.finalResponseJson());
+        if (finalResponse.isObject() && finalResponse.path("citations").isArray()
+                && !finalResponse.has("citationDetails")) {
+            List<String> citations = new ArrayList<>();
+            finalResponse.path("citations").forEach(id -> citations.add(id.asText()));
+            ((com.fasterxml.jackson.databind.node.ObjectNode) finalResponse).set("citationDetails",
+                    objectMapper.valueToTree(CitationDetail.project(citations, List.of())));
+        }
         return new View(row.runId(), row.sessionId(), row.status(), row.stage(), progress(row.stage()),
                 row.requestedScopes(), repository.eventsAfter(row.runId(), 0, 50),
-                json(row.usageJson()), json(row.finalResponseJson()), row.errorCode(), row.errorMessage(),
+                json(row.usageJson()), finalResponse, row.errorCode(), row.errorMessage(),
                 row.createdAt(), row.updatedAt(), repository.difyStopState(row.runId()).orElse(null));
     }
 

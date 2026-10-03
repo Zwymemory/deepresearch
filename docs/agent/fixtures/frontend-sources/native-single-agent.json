@@ -1,0 +1,27 @@
+{
+  "runId": "synthetic-native-run",
+  "sessionId": null,
+  "answer": "Synthetic claim [来源1]",
+  "rounds": 2,
+  "finished": true,
+  "memoryContext": null,
+  "steps": [],
+  "events": [],
+  "status": "SUCCESS",
+  "usage": null,
+  "citations": [
+    "kb:ragflow:fixture-dataset:fixture-document:fixture-chunk"
+  ],
+  "citationContract": "INDEXED_V1",
+  "citationDetails": [
+    {
+      "sourceId": "kb:ragflow:fixture-dataset:fixture-document:fixture-chunk",
+      "kind": "KNOWLEDGE_CHUNK",
+      "title": "Synthetic managed document",
+      "url": null,
+      "excerpt": "Synthetic retrieved knowledge excerpt.",
+      "metadataStatus": "AVAILABLE",
+      "unavailableReason": null
+    }
+  ]
+}

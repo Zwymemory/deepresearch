@@ -1,0 +1,19 @@
+{
+  "answer": "Synthetic claim [来源1]",
+  "citations": [
+    "historical-chunk"
+  ],
+  "citationContract": "INDEXED_V1",
+  "insufficientEvidence": false,
+  "citationDetails": [
+    {
+      "sourceId": "historical-chunk",
+      "kind": "UNKNOWN",
+      "title": null,
+      "url": null,
+      "excerpt": null,
+      "metadataStatus": "UNAVAILABLE",
+      "unavailableReason": "MISSING_SNAPSHOT"
+    }
+  ]
+}
