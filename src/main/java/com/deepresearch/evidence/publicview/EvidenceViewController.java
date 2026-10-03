@@ -1,11 +1,14 @@
 package com.deepresearch.evidence.publicview;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+
 import com.deepresearch.service.UserContextService;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
+@ConditionalOnProperty(name = {"deepresearch.workflow.enabled", "deepresearch.agent.evidence.enabled"}, havingValue = "true")
 @RestController
 public class EvidenceViewController {
     private final EvidenceViewService service;

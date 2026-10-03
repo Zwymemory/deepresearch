@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.clearInvocations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -123,6 +125,7 @@ class EvidenceViewHttpIT {
         for (int i = 0; i < relations.size(); i++) {
             var e = evidence(r, i, url);
             if (corruption.equals("version")) ((ObjectNode) e.path("applicability")).set("version", known("3.0"));
+            if (corruption.equals("oversized-condition")) ((ObjectNode) e.path("applicability")).set("conditions", JSON.valueToTree(List.of("😀".repeat(1001))));
             if (corruption.equals("large-quote")) {
                 String text = "Q".repeat(1200) + "\nUNRELATED_SNAPSHOT_SECRET";
                 ((ObjectNode) e.path("snapshot")).put("text", text).put("sha256", sha(text));
@@ -153,6 +156,96 @@ class EvidenceViewHttpIT {
         return new Fixture(r, check, request, originals, outcome);
     }
     Fixture fixture(Run r, List<String> relations) { return fixture(r, relations, null, "", false); }
+
+    String writerTool(Run r, String claim, String suffix) {
+        String call = "tool-" + sha(r.id + ":" + suffix).substring(0, 32);
+        db.update("""
+                INSERT INTO agent_research_operation(run_id,operation_key,attempt,kind,purpose,request_hash,status,input_reserved,output_reserved,claim_token)
+                VALUES (?,?,1,'TOOL','TOOL',?,'RESERVED',0,0,?::uuid)
+                """, r.id, call, sha(call), claim);
+        return call;
+    }
+    JsonNode writerIds(Run r, String claim, String call) {
+        return object("project_id", r.project, "run_id", r.id, "task_id", "task-main", "call_id", call, "claim_token", claim);
+    }
+    Reply writerPrepare(Run r, String condition, boolean complete) throws Exception {
+        String claim = UUID.randomUUID().toString();
+        db.update("UPDATE agent_workflow_run SET status='WORKING',stage='WORKING',claim_token=?::uuid,lease_until=now()+interval '5 minutes' WHERE run_id=?", claim, r.id);
+        db.update("""
+                INSERT INTO agent_research_task(run_id,task_id,objective,status,acceptance_criteria,plan_version,task_json,claim_token)
+                VALUES (?,'task-main','Verify synthetic API conditions','running',ARRAY['Bounded source condition'],1,'{}',?::uuid)
+                """, r.id, claim);
+        db.update("""
+                INSERT INTO kb_document(doc_id,title,source_type,filename,raw_content,content_hash,version,status)
+                VALUES ('writer-unicode-doc','Synthetic Unicode source','text','synthetic.md','fixture','synthetic',1,'DONE') ON CONFLICT DO NOTHING
+                """);
+        db.update("""
+                INSERT INTO kb_ragflow_document(legacy_doc_id,dataset_id,document_id,version,content_hash,sync_status)
+                VALUES ('writer-unicode-doc','writer-dataset','writer-document',1,'synthetic','DONE') ON CONFLICT DO NOTHING
+                """);
+        String text = "Document version: 2.0\nDocument conditions: " + condition + "\nThe API allows 100 requests.\n";
+        when(ragflow.datasets()).thenReturn(List.of("writer-dataset"));
+        when(ragflow.chunk("writer-dataset", "writer-document", "writer-chunk"))
+                .thenReturn(object("id", "writer-chunk", "doc_id", "writer-document", "content", text));
+        String search = writerTool(r, claim, "search");
+        db.update("UPDATE agent_research_operation SET status='SETTLED',safe_result='{}',actual_usage='{}',settled_at=now() WHERE run_id=? AND operation_key=?", r.id, search);
+        var searchResult = object("success", true, "tool", "kb_search", "evidence", List.of(object("evidenceId", "writer-source",
+                "uriOrChunkKey", "ragflow:writer-dataset:writer-document:writer-chunk", "title", "Synthetic Unicode source")));
+        db.update("""
+                INSERT INTO agent_workflow_tool_receipt(run_id,call_id,task_id,tool_name,request_fingerprint,status,safe_result,completed_at,claim_token,
+                    mcp_execution_status,mcp_safe_result,mcp_claim_token,mcp_started_at,mcp_completed_at)
+                VALUES (?,?,'task-main','kb_search',?,'COMPLETED','{}',now(),?::uuid,'COMPLETED',?::jsonb,?::uuid,now(),now())
+                """, r.id, search, sha(search), claim, canonical(searchResult), claim);
+        String service = "Bearer " + services.issueServiceToken("workflow-sidecar", 60).token();
+        String read = writerTool(r, claim, "read");
+        var source = http("POST", "/internal/agent/evidence/read", service,
+                object("identifiers", writerIds(r, claim, read), "source_id", "writer-source"));
+        assertThat(source.status).withFailMessage(source.raw).isEqualTo(200);
+        String checkCall = writerTool(r, claim, "check");
+        var scope = applicability(); ((ObjectNode) scope).set("conditions", JSON.valueToTree(List.of(condition)));
+        var prepared = http("POST", "/internal/agent/evidence/checks/prepare", service,
+                object("identifiers", writerIds(r, claim, checkCall), "claims", List.of(object("text", "The API allows 100 requests.", "kind", "factual", "applicability", scope)),
+                        "evidence_ids", List.of(source.body.path("evidence_id").asText()), "dispute_round", 0));
+        if (!complete) return prepared;
+        assertThat(prepared.status).withFailMessage(prepared.raw).isEqualTo(200);
+        String claimId = prepared.body.path("request").path("claims").get(0).path("claim_id").asText();
+        var response = object("claims", List.of(object("claim_id", claimId, "relations", List.of(object("evidence_id", source.body.path("evidence_id"),
+                        "relation", "supports", "quote", "The API allows 100 requests.", "reason", "Synthetic original paragraph")), "limitations", List.of())), "follow_up_actions", List.of());
+        var bound = object("value", response, "request_binding", object("check_id", prepared.body.path("check_id"), "request_sha256", prepared.body.path("request_sha256"), "response_sha256", sha(canonical(response))));
+        db.update("""
+                INSERT INTO agent_research_operation(run_id,operation_key,attempt,kind,purpose,request_hash,status,input_reserved,output_reserved,claim_token)
+                VALUES (?,'model:unicode-fixture',1,'MODEL','CHECK',?,'RESERVED',100,100,?::uuid)
+                """, r.id, sha("unicode-fixture"), claim);
+        db.update("UPDATE agent_research_operation SET status='SETTLED',safe_result=?::jsonb,actual_usage='{}',settled_at=now() WHERE run_id=? AND operation_key='model:unicode-fixture'", canonical(bound), r.id);
+        var completed = http("POST", "/internal/agent/evidence/checks/complete", service,
+                object("identifiers", writerIds(r, claim, checkCall), "check_id", prepared.body.path("check_id"), "model_call_id", "model:unicode-fixture", "response", response));
+        assertThat(completed.status).withFailMessage(completed.raw).isEqualTo(200);
+        return completed;
+    }
+    @ParameterizedTest @ValueSource(ints={600, 1000})
+    void productionWriterNonBmpConditionsRemainReadableAtCodepointBoundary(int codepoints) throws Exception {
+        var r = run(); String condition = "😀".repeat(codepoints);
+        assertThat(condition.codePointCount(0, condition.length())).isEqualTo(codepoints);
+        assertThat(condition.length()).isEqualTo(codepoints * 2);
+        writerPrepare(r, condition, true);
+        clearInvocations(ragflow, vectorStore);
+        var before = databaseState(r); var reply = get(r);
+        assertThat(reply.status).withFailMessage(reply.raw).isEqualTo(200);
+        assertThat(reply.body.path("availability").asText()).isEqualTo("AVAILABLE");
+        assertThat(reply.body.path("claims").get(0).path("applicability").path("conditions").get(0).asText()).isEqualTo(condition);
+        assertThat(reply.body.path("evidence").get(0).path("applicability").path("conditions").get(0).asText()).isEqualTo(condition);
+        assertThat(reply.body.path("claims").get(0).path("decisionStatus").asText()).isEqualTo("supported");
+        assertThat(databaseState(r)).isEqualTo(before); verifyNoInteractions(ragflow, vectorStore);
+    }
+    @Test void overLimitNonBmpConditionsAreRejectedByWriterAndByStoredReadValidation() throws Exception {
+        var writer = run(); var rejected = writerPrepare(writer, "😀".repeat(1001), false);
+        assertThat(rejected.status).isEqualTo(422);
+        assertThat(rejected.body).isEqualTo(object("errorCode", "EVIDENCE_TEXT_INVALID"));
+        assertThat(db.queryForObject("SELECT count(*) FROM agent_evidence_check WHERE run_id=?", Integer.class, writer.id)).isZero();
+        var invalid = run(); fixture(invalid, List.of("supports"), null, "oversized-condition", false);
+        assertThat(get(invalid).body).isEqualTo(object("errorCode", "EVIDENCE_VIEW_INTEGRITY_INVALID"));
+        assertThat(get(invalid).status).isEqualTo(409);
+    }
 
     @Test void publicAuthenticationRejectsAnonymousInternalDelegationAndSpoofedHeaders() throws Exception {
         var r = run();

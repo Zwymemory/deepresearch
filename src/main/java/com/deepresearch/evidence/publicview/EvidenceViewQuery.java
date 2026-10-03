@@ -1,11 +1,14 @@
 package com.deepresearch.evidence.publicview;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Map;
 
 /** All child reads use the server-derived four-part identity; never uses an execution grant. */
+@ConditionalOnProperty(name = {"deepresearch.workflow.enabled", "deepresearch.agent.evidence.enabled"}, havingValue = "true")
 @Repository
 public class EvidenceViewQuery {
     static final int RECORDS = 256, CHECKS = 128, READS = 128, BLOCKED = 128, RESPONSE_BYTES = 262144;
