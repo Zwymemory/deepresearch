@@ -217,6 +217,7 @@ class AgentHttpPostgresIT {
         Run run=create("criteria-owner-"+mode);
         String objective=mode.equals("refuted")?"Verify API document version":"Verify API document version and per-minute request rate";
         var criteria=mode.equals("refuted")?List.of("Verify the API document version"):List.of("Verify the API document version","Verify the per-minute request rate");
+        db.update("UPDATE agent_workflow_run SET question=? WHERE run_id=?",objective,run.id());
         db.update("UPDATE agent_research_task SET objective=?,acceptance_criteria=CAST(? AS text[]) WHERE run_id=? AND task_id='task-main'",objective,"{\""+String.join("\",\"",criteria)+"\"}",run.id());
         String original=mode.equals("complete")?"Document version: 2.0\nVersion 2.0 allows 100 requests per minute.\n":"Document version: 2.0\nThis source specifies version 2.0 only; the per-minute request rate is not stated.\n";
         when(ragflow.chunk("dataset-http","document-http","chunk-old")).thenReturn(object("id","chunk-old","doc_id","document-http","content",original));
@@ -238,6 +239,11 @@ class AgentHttpPostgresIT {
             var process=builder.start();assertThat(process.waitFor(50,java.util.concurrent.TimeUnit.SECONDS)).isTrue();
             assertThat(process.exitValue()).withFailMessage(java.nio.file.Files.readString(log)).isZero();
             var result=JSON.readTree(java.nio.file.Files.readString(output));var report=result.path("report");
+            boolean legacy=mode.equals("legacy");
+            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_requirements WHERE run_id=?",Integer.class,run.id())).isEqualTo(legacy?0:1);
+            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_requirement_binding WHERE run_id=?",Integer.class,run.id())).isEqualTo(legacy?0:criteria.size());
+            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL' AND purpose='DECISION' AND status='SETTLED'",Integer.class,run.id())).isEqualTo(legacy?0:1);
+            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL'",Integer.class,run.id())).isEqualTo(legacy?1:2);
             String status=mode.equals("complete")||mode.equals("refuted")?"SUCCEEDED":"INSUFFICIENT_EVIDENCE";
             assertThat(report.path("terminal_status").asText()).isEqualTo(status);
             if(status.equals("SUCCEEDED")) assertThat(report.path("unfinished_goals")).isEmpty();

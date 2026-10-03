@@ -9,7 +9,9 @@ from pathlib import Path
 import httpx
 
 from deepresearch_workflow.agent_budget import SqlAgentLedger
+from deepresearch_workflow.agent_completion import ensure_criteria
 from deepresearch_workflow.agent_protocol import AgentRunBudget, AgentTask, ModelResult
+from deepresearch_workflow.agent_requirements import bind_requirements, freeze_requirements
 from deepresearch_workflow.agent_runtime import AutonomousResearchGraph
 from deepresearch_workflow.evidence_client import HttpEvidenceBackend
 from deepresearch_workflow.ports import RepositoryEventSink
@@ -25,7 +27,39 @@ class Tokens:
 
 
 class ExactSourceVerifier:
+    def __init__(self, config):
+        self.config = config
+
     async def invoke(self, request):
+        if request.name == "AgentDecision":
+            return ModelResult(
+                value={
+                    "action": "read_source",
+                    "task_id": "task-main",
+                    "source_id": "source-managed",
+                    "reason": "Declare each original standard before reading its source",
+                    "requirements": [
+                        {
+                            "text": text,
+                            "question_spans": [{"start": 0, "end": len(self.config["objective"])}],
+                            "kind": "factual",
+                            "applicability": {
+                                "subject": "API limits",
+                                "version": {"status": "known", "value": "2.0"},
+                                "valid_at": {
+                                    "status": "unknown",
+                                    "value": None,
+                                    "reason": "Date not established",
+                                },
+                                "conditions": [],
+                            },
+                        }
+                        for text in self.config["criteria"]
+                    ],
+                },
+                input_tokens=30,
+                output_tokens=30,
+            )
         assert request.name == "EvidenceCheck"
         proposals = []
         for claim in request.payload["claims"]:
@@ -64,7 +98,7 @@ async def main():
     try:
         async with httpx.AsyncClient() as client:
             graph = AutonomousResearchGraph(
-                model=ExactSourceVerifier(),
+                model=ExactSourceVerifier(cfg),
                 tools=None,
                 repository=repository,
                 ledger=SqlAgentLedger(repository),
@@ -94,13 +128,45 @@ async def main():
                 ).model_dump(mode="json")
             ]
             state["candidates"] = [{"source_id": "source-managed"}]
-            state["decision_steps"] = 1
-            state["decision"] = {
-                "action": "read_source",
-                "task_id": "task-main",
-                "source_id": "source-managed",
-                "reason": "Read the exact managed source",
-            }
+            ensure_criteria(state["run_id"], state["tasks"])
+            if cfg["mode"] != "legacy":
+                state.update(await graph.decide(state))
+                manifest = freeze_requirements(
+                    state["run_id"], state["question"], state["decision"]["requirements"]
+                )
+                criteria = {
+                    row["text"]: row["criterion_id"] for row in state["tasks"][0]["criteria"]
+                }
+                bindings = bind_requirements(
+                    manifest,
+                    state["tasks"],
+                    [
+                        {
+                            "requirement_id": row["requirement_id"],
+                            "criterion_id": criteria[row["text"]],
+                        }
+                        for row in manifest["requirements"]
+                    ],
+                )
+                await graph.ledger.save_tasks(state["run_id"], cfg["claim"], state["tasks"])
+                await graph.ledger.save_requirements(
+                    state["run_id"],
+                    cfg["claim"],
+                    manifest,
+                    bindings,
+                    state["tasks"],
+                    "model:agent:decision-1",
+                )
+                state["original_requirements"] = manifest
+                state["requirement_bindings"] = bindings
+            else:
+                state["decision_steps"] = 1
+                state["decision"] = {
+                    "action": "read_source",
+                    "task_id": "task-main",
+                    "source_id": "source-managed",
+                    "reason": "Replay a legacy task without an original requirement manifest",
+                }
             state.update(await graph.act(state))
             assert state["evidence"]
             unknown = {"status": "unknown", "value": None, "reason": "Date not established"}
@@ -144,8 +210,11 @@ async def main():
             ]
             state["decision_steps"] = 3
             state["decision"] = {
-                "action": "finish",
+                "action": "finish" if expected == "SUCCEEDED" else "stop_with_gaps",
                 "reason": "Request the independently verified whole report",
+                "gaps": []
+                if expected == "SUCCEEDED"
+                else ["Original standards remain uncovered by current bound checks"],
             }
             result = await graph.act(state)
             assert result["final_status"] == expected, result
