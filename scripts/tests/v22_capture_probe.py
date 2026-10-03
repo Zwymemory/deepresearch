@@ -53,6 +53,30 @@ for mutation in ("request_check_id", "request_claim_text", "model_request_bindin
     assert rejected["status"] == "invalid", (mutation, rejected)
     assert not rejected["eligible_for_complete_review"], (mutation, rejected)
     negative_proofs[mutation] = rejected["issues"]
+for field in ("safe_result", "request_binding"):
+    for index, malformed in enumerate((None, [], 17)):
+        changed = copy.deepcopy(audit["database"])
+        operation = next(
+            o for o in changed["operations"] if o.get("purpose") == "CHECK"
+        )
+        if field == "safe_result":
+            operation[field] = malformed
+        else:
+            operation["safe_result"][field] = malformed
+        malformed_audit = finalize_audit({"database": changed})
+        malformed_path = Path(sys.argv[2]).with_name(
+            Path(sys.argv[2]).stem + f"-malformed-{field}-{index}.json"
+        )
+        if malformed_path.exists():
+            raise ValueError("Malformed probe evidence cannot be overwritten")
+        write_private(malformed_path, malformed_audit)
+        rejected = validate_saved_audit(json.loads(malformed_path.read_text()))
+        assert (
+            rejected["status"] == "invalid"
+            and not rejected["eligible_for_complete_review"]
+        ), rejected
+        assert rejected["issues"] == ["NATIVE_CHECK_MODEL_RECEIPT_MALFORMED"], rejected
+        negative_proofs[f"malformed_{field}_{index}"] = rejected["issues"]
 output = Path(sys.argv[2])
 if output.exists():
     raise ValueError("Probe evidence cannot be overwritten")

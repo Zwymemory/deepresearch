@@ -507,17 +507,21 @@ def native_requirements_validation(database):
                 ]
                 if len(checked_claims) != 1:
                     raise ValueError("NATIVE_CHECK_RESULT_CLAIM_MISMATCH")
-                receipts = [
-                    operation["safe_result"]
-                    for operation in database["operations"]
-                    if operation["kind"] == "MODEL"
-                    and operation.get("purpose") == "CHECK"
-                    and operation["status"] == "SETTLED"
-                    and operation.get("safe_result", {})
-                    .get("request_binding", {})
-                    .get("check_id")
-                    == checked["check_id"]
-                ]
+                receipts = []
+                for operation in database["operations"]:
+                    if (
+                        operation["kind"] != "MODEL"
+                        or operation.get("purpose") != "CHECK"
+                        or operation["status"] != "SETTLED"
+                    ):
+                        continue
+                    body = operation.get("safe_result")
+                    if not isinstance(body, dict) or not isinstance(
+                        body.get("request_binding"), dict
+                    ):
+                        raise ValueError("NATIVE_CHECK_MODEL_RECEIPT_MALFORMED")
+                    if body["request_binding"].get("check_id") == checked["check_id"]:
+                        receipts.append(body)
                 if len(receipts) != 1:
                     raise ValueError("NATIVE_CHECK_MODEL_RECEIPT_MISSING_OR_AMBIGUOUS")
                 receipt = receipts[0]

@@ -503,6 +503,45 @@ class NativeAuditTests(unittest.TestCase):
                 self.assertEqual(proof["status"], "invalid", proof)
                 self.assertFalse(proof["eligible_for_complete_review"], proof)
 
+    def test_malformed_settled_check_receipt_is_saved_invalid_and_review_rejected(self):
+        import agent_retest_batch
+
+        for field in ("safe_result", "request_binding"):
+            for malformed in (None, [], 17, "invalid", True):
+                db = native_fixture()
+                operation = next(
+                    o for o in db["operations"] if o.get("purpose") == "CHECK"
+                )
+                if field == "safe_result":
+                    operation[field] = malformed
+                else:
+                    operation["safe_result"][field] = malformed
+                with (
+                    self.subTest(field=field, malformed=malformed),
+                    tempfile.TemporaryDirectory() as directory,
+                ):
+                    audit = native.finalize_audit({"database": db})
+                    path = Path(directory) / "malformed-audit.json"
+                    write_private(path, audit)
+                    proof = native.validate_saved_audit(json.loads(path.read_text()))
+                    self.assertEqual(proof["status"], "invalid", proof)
+                    self.assertFalse(proof["eligible_for_complete_review"], proof)
+                    self.assertEqual(
+                        proof["issues"], ["NATIVE_CHECK_MODEL_RECEIPT_MALFORMED"]
+                    )
+                    with self.assertRaisesRegex(
+                        ValueError, "Native requirement audit incomplete"
+                    ):
+                        agent_retest_batch.matching_review(
+                            {},
+                            {
+                                "audit_path": str(path),
+                                "audit_sha256": file_sha(path),
+                                "status": "SUCCEEDED",
+                            },
+                            "source-digest",
+                        )
+
     def test_question_manifest_receipt_native_mapping_and_source_mismatches_fail_closed(
         self,
     ):
