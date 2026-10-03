@@ -316,7 +316,7 @@ class EvidenceViewHttpIT {
         assertThat(reply.status).withFailMessage(reply.raw).isEqualTo(409);
         assertThat(reply.body).isEqualTo(object("errorCode", "EVIDENCE_VIEW_INTEGRITY_INVALID"));
     }
-    @ParameterizedTest @ValueSource(strings={"https://user:password@example.org/page", "http://127.0.0.1/private", "https://service.internal/secret", "https://example.org/page?token=private", "file:///private/data", "https://example.org/page#secret"})
+    @ParameterizedTest @ValueSource(strings={"https://user:password@example.invalid/page", "http://127.0.0.1/private", "https://service.internal/secret", "https://example.org/page?token=private", "file:///private/data", "https://example.org/page#secret"})
     void unsafeOrCredentialBearingUrlsAreUnavailable(String url) throws Exception {
         var r = run(); fixture(r, List.of("supports"), url, "", false); var reply = get(r);
         assertThat(reply.status).withFailMessage(reply.raw).isEqualTo(200); assertThat(reply.body.path("evidence").get(0).path("url").isNull()).isTrue();
