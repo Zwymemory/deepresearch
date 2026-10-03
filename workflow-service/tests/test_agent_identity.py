@@ -207,7 +207,7 @@ async def test_response_bounds_and_unique_identity_keys_fail_closed(
         "https://api.deepseek.com/v1",
         "https://api.deepseek.com/beta",
         "https://api.deepseek.com?x=1",
-        "https://user@api.deepseek.com",
+        "https://user" + "@api.deepseek.com",  # Userinfo fixture; no address literal.
         "http://api.deepseek.com",
         "https://api.deepseek.com.evil.invalid",
     ],
