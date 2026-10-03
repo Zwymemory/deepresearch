@@ -291,8 +291,8 @@ class EvidenceViewHttpIT {
     @Test void terminalReadIsStableAndPublicationMembershipRequiresExactSealWithoutReturningAnswer() throws Exception {
         var r = run(); var f = fixture(r, List.of("supports"));
         var items = List.of(object("claim", f.outcome.path("records").get(0), "decision", f.outcome.path("records").get(1)));
-        var result = object("answer", "UNPUBLISHED_PROSE_SECRET", "terminal_status", "SUCCEEDED", "claims", items, "citations", List.of("source-0"));
-        var proof = object("approved", true, "answer_sha256", sha("UNPUBLISHED_PROSE_SECRET"), "claims", items);
+        var result = object("run_id", r.id, "approved", true, "answer_sha256", sha("UNPUBLISHED_PROSE_SECRET"), "answer", "UNPUBLISHED_PROSE_SECRET", "terminal_status", "SUCCEEDED", "claims", items, "citations", List.of("source-0"));
+        var proof = object("run_id", r.id, "terminal_status", "SUCCEEDED", "approved", true, "answer_sha256", sha("UNPUBLISHED_PROSE_SECRET"), "claims", items);
         db.update("INSERT INTO agent_research_publication(run_id,call_id,request_hash,status,answer_hash,citations,result,proof,completed_at) VALUES (?,'publish-fixture',?,'COMPLETED',?,?::jsonb,?::jsonb,?::jsonb,now())",
                 r.id, sha("fixture"), sha("UNPUBLISHED_PROSE_SECRET"), canonical(result.path("citations")), canonical(result), canonical(proof));
         db.update("UPDATE agent_workflow_run SET status='SUCCEEDED',stage='SUCCEEDED',claim_token=NULL,lease_until=NULL,final_response=?::jsonb WHERE run_id=?", canonical(result), r.id);
@@ -302,6 +302,18 @@ class EvidenceViewHttpIT {
         assertThat(first.body.path("claims").get(0).path("publicationState").asText()).isEqualTo("IN_FINALIZED_REPORT");
         assertThat(first.raw).doesNotContain("UNPUBLISHED_PROSE_SECRET", "answer\""); assertThat(databaseState(r)).isEqualTo(before);
         verifyNoInteractions(ragflow, vectorStore);
+    }
+    @Test void anEmptyFinalizedInsufficientReportHasPublicationStateButNeverClaimsOrProse() throws Exception {
+        var r = run();
+        var result = object("run_id", r.id, "approved", true, "answer", "PRIVATE_EMPTY_REPORT", "answer_sha256", sha("PRIVATE_EMPTY_REPORT"),
+                "terminal_status", "INSUFFICIENT_EVIDENCE", "claims", List.of(), "citations", List.of());
+        db.update("INSERT INTO agent_research_publication(run_id,call_id,request_hash,status,answer_hash,citations,result,proof,completed_at) VALUES (?,'publish-empty',?,'COMPLETED',?,'[]',?::jsonb,?::jsonb,now())",
+                r.id, sha("empty"), sha("PRIVATE_EMPTY_REPORT"), canonical(result), canonical(result));
+        var interim = get(r); assertThat(interim.body.path("publicationState").asText()).isEqualTo("RECORDED_ONLY");
+        db.update("UPDATE agent_workflow_run SET status='INSUFFICIENT_EVIDENCE',final_response=?::jsonb WHERE run_id=?", canonical(result), r.id);
+        var reply = get(r); assertThat(reply.status).withFailMessage(reply.raw).isEqualTo(200);
+        assertThat(reply.body.path("publicationState").asText()).isEqualTo("FINALIZED_REPORT");
+        assertThat(reply.body.path("claims")).isEmpty(); assertThat(reply.raw).doesNotContain("PRIVATE_EMPTY_REPORT");
     }
     Map<String, Object> databaseState(Run r) {
         return db.queryForMap("""

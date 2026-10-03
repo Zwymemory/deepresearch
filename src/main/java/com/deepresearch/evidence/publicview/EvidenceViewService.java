@@ -148,7 +148,7 @@ public class EvidenceViewService {
             checkDtos.add(new Check(checkId, investigation, round, parentId, status, string(check, "request_sha256"),
                     timestamp(check, "created_at"), timestamp(check, "completed_at"), round == latest.get(investigation), claimIds, evidenceIds));
         }
-        Set<String> published = publishedClaims(s, runStatus, finalResponse, records);
+        PublicationMembership publication = publishedClaims(s, runStatus, finalResponse, records);
         var claims = new ArrayList<Claim>(); var decisions = new ArrayList<Decision>(); var disagreements = new ArrayList<Disagreement>();
         for (var stored : records.values()) if (stored.identity.recordType().equals("Claim")) {
             var node = stored.node; String claimId = stored.identity.recordId(), checkId = claimChecks.get(claimId);
@@ -195,7 +195,7 @@ public class EvidenceViewService {
             if (status.equals("insufficient")) require(adopted.isEmpty());
             var check = checkMap.get(checkId); boolean current = ((Number) check.get("dispute_round")).intValue() == latest.get(string(check, "investigation"));
             claims.add(new Claim(stored.identity, required(node, "text", 4000), required(node, "kind", 64), applicability(node.path("applicability")),
-                    status, checkId, current, published.contains(claimId) ? "IN_FINALIZED_REPORT" : "RECORDED_ONLY", links));
+                    status, checkId, current, publication.claimIds().contains(claimId) ? "IN_FINALIZED_REPORT" : "RECORDED_ONLY", links));
             decisions.add(new Decision(decision.identity, claimId, status, required(decision.node, "policy_version", 64), adopted, unresolved, dismissed,
                     status.equals("contested") ? List.of("RECORDED_DISAGREEMENT") : status.equals("insufficient") ? List.of("INSUFFICIENT_EVIDENCE") : List.of()));
         }
@@ -220,26 +220,30 @@ public class EvidenceViewService {
         boolean incomplete = unresolvedBlock || reads.stream().anyMatch(r -> !"COMPLETED".equals(r.get("status")))
                 || checkDtos.stream().anyMatch(c -> !c.status().equals("COMPLETED")) || claims.isEmpty();
         var view = new View("evidence-view/1", s.run(), runStatus, empty ? "NO_RECORDS_YET" : incomplete ? "RECORDED_INCOMPLETE" : "AVAILABLE",
-                published.isEmpty() ? "RECORDED_ONLY" : "FINALIZED_REPORT", limits(true), LIMITATIONS, refs, claims, decisions, checkDtos, disagreements, blockedDtos);
+                publication.finalized() ? "FINALIZED_REPORT" : "RECORDED_ONLY", limits(true), LIMITATIONS, refs, claims, decisions, checkDtos, disagreements, blockedDtos);
         try {
             if (publicJson.writeValueAsBytes(view).length > RESPONSE_BYTES) throw new CapacityFailure();
         } catch (com.fasterxml.jackson.core.JsonProcessingException invalid) { throw new IntegrityFailure(); }
         return view;
     }
-    private Set<String> publishedClaims(Scope s, String status, String finalJson, Map<String, Stored> records) {
-        if (!Set.of("SUCCEEDED", "INSUFFICIENT_EVIDENCE").contains(status) || finalJson == null) return Set.of();
+    private PublicationMembership publishedClaims(Scope s, String status, String finalJson, Map<String, Stored> records) {
+        if (!Set.of("SUCCEEDED", "INSUFFICIENT_EVIDENCE").contains(status) || finalJson == null) return new PublicationMembership(false, Set.of());
         if (finalJson.getBytes(StandardCharsets.UTF_8).length > RESPONSE_BYTES) throw new CapacityFailure();
         var finalResult = parse(finalJson); var seals = query.publications(s);
         long bytes = 0; for (var seal : seals) for (var value : seal.values()) if (value instanceof String text) bytes += text.getBytes(StandardCharsets.UTF_8).length;
         if (bytes > 2097152) throw new CapacityFailure();
-        if (!finalResult.path("claims").isArray()) return Set.of();
+        if (!finalResult.path("claims").isArray()) return new PublicationMembership(false, Set.of());
         // A terminal response containing report claims must have an exact existing publication seal.
         for (var seal : seals) {
             var result = parse(seal, "result"); var proof = parse(seal, "proof");
             if (!Objects.equals(result.get("answer"), finalResult.get("answer")) || !status.equals(result.path("terminal_status").asText())
                     || !Objects.equals(result.get("claims"), finalResult.get("claims"))
                     || !Objects.equals(parse(seal, "citations"), finalResult.get("citations"))) continue;
-            require(sha(result.path("answer").asText()).equals(seal.get("answer_hash"))
+            require(s.run().equals(result.path("run_id").asText()) && s.run().equals(proof.path("run_id").asText())
+                    && result.path("approved").asBoolean(false) && status.equals(proof.path("terminal_status").asText())
+                    && Objects.equals(result.get("citations"), parse(seal, "citations"))
+                    && seal.get("answer_hash").equals(result.path("answer_sha256").asText())
+                    && sha(result.path("answer").asText()).equals(seal.get("answer_hash"))
                     && seal.get("answer_hash").equals(proof.path("answer_sha256").asText())
                     && Objects.equals(result.get("claims"), proof.get("claims")) && proof.path("approved").asBoolean(false));
             var ids = new HashSet<String>();
@@ -249,10 +253,11 @@ public class EvidenceViewService {
                         && canonical(get(records, "DecisionRecord", "decision-" + id, 1).node).equals(canonical(item.path("decision"))));
                 ids.add(id);
             }
-            return Set.copyOf(ids);
+            return new PublicationMembership(true, Set.copyOf(ids));
         }
         throw new IntegrityFailure();
     }
+    private record PublicationMembership(boolean finalized, Set<String> claimIds) { }
     private record Stored(JsonNode node, Identity identity, Map<String, Object> row) { }
     static final class IntegrityFailure extends RuntimeException { }
     private static void require(boolean valid) { if (!valid) throw new IntegrityFailure(); }
