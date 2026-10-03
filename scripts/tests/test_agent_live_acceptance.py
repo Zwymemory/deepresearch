@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+from types import ModuleType, SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -148,6 +149,108 @@ class AdmissionTests(unittest.TestCase):
         self.assertNotIn(private, json.dumps({
             "receipts": receipts, "database": live.audit_database(database)
         }))
+
+    def test_database_capture_reads_the_original_persisted_question(self):
+        saved = {"run_id": "wf-test", "question": "Actual saved question",
+                 "budget": {"maxDecisionSteps": 8, "maxModelCalls": 16,
+                            "maxToolCalls": 16, "maxInputTokens": 64000,
+                            "maxOutputTokens": 16384}}
+        queries = []
+
+        class Connection:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+            def execute(self, sql, parameters=None):
+                queries.append((sql, parameters))
+                self.rows = [saved] if "FROM agent_workflow_run" in sql else []
+                return self
+
+            def fetchall(self):
+                return self.rows
+
+        psycopg = ModuleType("psycopg")
+        rows = ModuleType("psycopg.rows")
+        rows.dict_row = object()
+        psycopg.connect = lambda **_: Connection()
+        with patch.dict(sys.modules, {"psycopg": psycopg, "psycopg.rows": rows}):
+            result = live.capture_database({"database_port": 15432},
+                                           {"POSTGRES_PASSWORD": "test"}, "wf-test")
+        self.assertEqual(result["run"][0]["question"], "Actual saved question")
+        self.assertIn("question", queries[1][0].split(" FROM ")[0])
+        self.assertEqual(queries[1][1], ("wf-test",))
+
+    def test_request_binding_requires_saved_question_and_matching_run_ids(self):
+        database = {"run": [{"run_id": "wf-test", "question": "Actual saved question"}]}
+        self.assertTrue(live.persisted_request_binding(
+            database, "wf-test", "Actual saved question", "wf-test")["matches"])
+        for run_id, question, view_run_id in [
+            ("wf-test", "Different fixture question", "wf-test"),
+            ("wf-other", "Actual saved question", "wf-other"),
+            ("wf-test", "Actual saved question", "wf-other"),
+        ]:
+            with self.subTest(run_id=run_id, question=question, view_run_id=view_run_id):
+                self.assertFalse(live.persisted_request_binding(
+                    database, run_id, question, view_run_id)["matches"])
+
+    def test_unready_or_unverified_candidate_cannot_authorize_batch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            ready = {"ready": False, "historical_state_dir": str(state),
+                     "build_sha": "a" * 40, "ci": None}
+            with self.assertRaisesRegex(ValueError, "runtime and source registry"):
+                live.batch_prerequisites(ready, state / "sources.json", state / "review.json", state)
+            ready.update(ready=True, registry_configured=True)
+            with self.assertRaisesRegex(ValueError, "remote CI prerequisites"):
+                live.batch_prerequisites(ready, state / "sources.json", state / "review.json", state)
+
+    def test_mismatched_saved_question_preserves_actual_audit_and_stops_batch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            args = SimpleNamespace(retry_of=None, fix_description=None,
+                                   review_state=state / "review.json",
+                                   sources_ready=state / "sources.json",
+                                   state_dir=state, scenario="web-only")
+            row = {"scenario": "web-only", "runId": None, "status": "REQUEST_RESERVED",
+                   "build_sha": "a" * 40, "idempotency_key": "request-key"}
+            database = {"run": [{"run_id": "wf-test", "question": "Actual saved question"}],
+                        "operations": [], "records": [], "tasks": [], "criteria": [],
+                        "checks": [], "read_receipts": [], "publications": [], "tool_receipts": []}
+            ready = {"credential_access": {"path": "credentials"},
+                     "token_access": {"path": "token"},
+                     "model_identity_receipts_path": "identities",
+                     "build_sha": "a" * 40, "app_base_url": "http://127.0.0.1:18080",
+                     "model_identity": {"name": "deepseek-v4-flash"},
+                     "model": {"name": "deepseek-v4-flash"}}
+            case = {"id": "web-only", "question": "Expected fixture question",
+                    "requested_tools": ["web_search"], "source_classification": "real-public"}
+            contents = {"credentials": {}, "token": {"token": "test-token"},
+                        "identities": {"receipts": [{"request_model_matches": True,
+                                                     "identity_matches": True}]}}
+            updates = []
+            with (patch.object(live, "batch_prerequisites", return_value={}),
+                  patch.object(live, "read_private", side_effect=lambda path: contents[str(path)]),
+                  patch.object(live, "verify_runtime", return_value={"model_identity": ready["model_identity"]}),
+                  patch.object(live, "http_json", side_effect=[
+                      {"runId": "wf-test", "status": "QUEUED"},
+                      {"runId": "wf-test", "status": "SUCCEEDED"}]),
+                  patch.object(live, "capture_database", return_value=database),
+                  patch.object(live.retest, "reserve", return_value=row),
+                  patch.object(live.retest, "update", side_effect=lambda _, value: updates.append(value.copy())),
+                  patch.object(live, "publish_batch_manifest")):
+                with self.assertRaisesRegex(ValueError, "Persisted research request differs"):
+                    live.execute_batch(args, ready, {"final_sha": "b" * 40}, {"web-only": case})
+            audit = json.loads((state / "wf-test.json").read_text())
+            self.assertEqual(audit["database"]["run"][0]["question"], "Actual saved question")
+            self.assertEqual(audit["persisted_request_binding"]["expected_question"],
+                             "Expected fixture question")
+            self.assertFalse(audit["persisted_request_binding"]["matches"])
+            self.assertEqual(audit["run"]["validation_error_type"], "PersistedRequestMismatch")
+            self.assertEqual(updates[-1]["validation_error_type"], "PersistedRequestMismatch")
+            self.assertEqual(updates[-1]["audit_path"], str((state / "wf-test.json").resolve()))
 
 
 if __name__ == "__main__":

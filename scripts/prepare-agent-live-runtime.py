@@ -15,6 +15,7 @@ import zipfile
 from urllib.request import urlopen
 
 from agent_live_common import file_sha, http_json, read_private, source_digest, verify_runtime, write_private
+from agent_retest_batch import BATCH
 
 ISOLATION = "agent-live-20260930"
 CONTAINER = "deepresearch-agent-live-20260930-pg"
@@ -199,6 +200,11 @@ def start(state, credentials, built, python, ready_path, sources):
     subprocess.run(command, check=True, capture_output=True)
     image_id = json.loads(subprocess.check_output(["docker", "image", "inspect", image]))[0]["Id"]
     ready = {**built, "phase": "starting", "ready": False, "isolation_id": ISOLATION,
+             "batch_id": BATCH, "historical_state_dir": str(state.resolve()),
+             "run_manifest_path": str((ready_path.parent / "agent-live-retest-runs-20261003.json").resolve()),
+             "scenario_manifest_path": str((source / "testdata/agent-live/sources/scenarios.json").resolve()),
+             "scenario_manifest_sha256": file_sha(source / "testdata/agent-live/sources/scenarios.json"),
+             "ci": None, "research_runs_submitted": 0,
              "app_container": APP_CONTAINER, "app_image_id": image_id, "base_image_id": base_image,
              "web_dns_mapping": {"host": "www.iana.org", "public_ipv4": addresses,
                                  "provider": "https://dns.google/resolve", "scope": "dedicated container only",

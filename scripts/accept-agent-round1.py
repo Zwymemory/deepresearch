@@ -95,7 +95,7 @@ def capture_database(ready, credentials, run):
     import psycopg
     from psycopg.rows import dict_row
     queries = {
-        "run": "SELECT run_id,status,stage,budget,usage,error_code,error_message,deadline_at,created_at,updated_at FROM agent_workflow_run WHERE run_id=%s",
+        "run": "SELECT run_id,question,status,stage,budget,usage,error_code,error_message,deadline_at,created_at,updated_at FROM agent_workflow_run WHERE run_id=%s",
         "operations": "SELECT operation_key,attempt,kind,purpose,status,input_reserved,output_reserved,actual_usage,safe_result,created_at,settled_at FROM agent_research_operation WHERE run_id=%s ORDER BY created_at,operation_key,attempt",
         "tasks": "SELECT task_id,objective,status,acceptance_criteria,dependencies,plan_version,task_json FROM agent_research_task WHERE run_id=%s ORDER BY task_id",
         "criteria": "SELECT task_id,criterion_id,criterion_text,expected_claim,expected_hash,investigation,last_call_id,dependency_snapshot FROM agent_research_criterion WHERE run_id=%s ORDER BY task_id,criterion_index",
@@ -119,6 +119,17 @@ def capture_database(ready, credentials, run):
     if any(budget.get(k) != v for k, v in expected.items()):
         raise ValueError("Actual persisted run budget differs from the authorized limits")
     return output
+
+
+def persisted_request_binding(database, run_id, question, view_run_id):
+    """Bind the submitted scenario to the original request saved by the service."""
+    run_rows = database.get("run", [])
+    actual = run_rows[0] if len(run_rows) == 1 else {}
+    return {"expected_run_id": run_id, "view_run_id": view_run_id,
+            "actual_run_id": actual.get("run_id"),
+            "expected_question": question, "actual_question": actual.get("question"),
+            "matches": actual.get("run_id") == run_id == view_run_id
+            and actual.get("question") == question}
 
 
 def measured_tokens(value):
@@ -228,9 +239,11 @@ def usage_summary(database):
 
 
 def batch_prerequisites(ready, source_path, review_path, state):
+    if not ready.get("ready") or not ready.get("registry_configured"):
+        raise ValueError("Exact isolated runtime and source registry must be ready")
     if Path(ready.get("historical_state_dir", "")).resolve() != state.resolve():
         raise ValueError("Use the original protected campaign state directory")
-    ci = ready.get("ci", {})
+    ci = ready.get("ci") or {}
     required_jobs = {"showcase-offline", "java-unit", "python-unit", "integration",
                      "workflow-postgres-integration", "secret-scan"}
     jobs = ci.get("jobs", [])
@@ -239,6 +252,10 @@ def batch_prerequisites(ready, source_path, review_path, state):
             or any(job.get("conclusion") != "success" for job in jobs)):
         raise ValueError("Exact-candidate remote CI prerequisites missing or failed")
     review = json.loads(review_path.read_text())
+    if (review.get("ready") is not True or
+            review.get("candidate_binding", {}).get("approved_for_live") is not True or
+            review.get("candidate_binding", {}).get("observed_candidate_sha") != ready["build_sha"]):
+        raise ValueError("B has not approved the exact candidate for live execution")
     manifest = Path(ready["scenario_manifest_path"])
     if review.get("source_manifest_sha256") != file_sha(manifest) or ready.get("scenario_manifest_sha256") != file_sha(manifest):
         raise ValueError("B did not approve this exact source manifest")
@@ -299,6 +316,7 @@ def execute_batch(args, ready, sources, cases):
                    ended_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
         retest.update(args.state_dir, row)
         database = capture_database(ready, credentials, row["runId"])
+        request_binding = persisted_request_binding(database, row["runId"], case["question"], view.get("runId"))
         usage = usage_summary(database)
         diagnostics = model_receipts(database)
         actual_model_identity = read_private(ready["model_identity_receipts_path"])["receipts"][before_model_calls:]
@@ -309,8 +327,11 @@ def execute_batch(args, ready, sources, cases):
         if not actual_model_identity or any(call["request_model_matches"] is not True or
                 call["identity_matches"] is not True for call in actual_model_identity):
             row["validation_error_type"] = "ActualModelIdentityUnavailableOrMismatch"
+        if not request_binding["matches"]:
+            row["validation_error_type"] = "PersistedRequestMismatch"
         audit = scrub({"batch_id": retest.BATCH, "case": case, "run": row, "build_verification": identity,
-                       "view": view, "database": audit_database(database), "usage": usage,
+                       "view": view, "database": audit_database(database),
+                       "persisted_request_binding": request_binding, "usage": usage,
                        "model_receipts": diagnostics, "model": ready["model"],
                        "actual_model_identity_receipts": actual_model_identity,
                        "source_classification": case["source_classification"],
@@ -324,11 +345,13 @@ def execute_batch(args, ready, sources, cases):
         row.update(audit_path=str(path.resolve()), audit_sha256=file_sha(path), usage=usage, source_hashes=hashes)
         retest.update(args.state_dir, row)
         publish_batch_manifest(args.state_dir, ready)
+        if not request_binding["matches"]:
+            raise ValueError("Persisted research request differs from the submitted scenario")
         print(json.dumps({"batch_id": retest.BATCH, "scenario": row["scenario"], "run_id": row["runId"],
                           "status": row["status"], "error_code": row.get("errorCode"),
                           "usage": usage, "model_receipts": diagnostics}, ensure_ascii=False), flush=True)
     except Exception as error:
-        row["validation_error_type"] = type(error).__name__
+        row.setdefault("validation_error_type", type(error).__name__)
         retest.update(args.state_dir, row)
         publish_batch_manifest(args.state_dir, ready)
         raise
