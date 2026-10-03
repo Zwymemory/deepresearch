@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
 from datetime import UTC, datetime, timedelta
@@ -31,6 +32,8 @@ from deepresearch_workflow.runner import WorkflowRunner
 from deepresearch_workflow.settings import Settings
 
 from .test_agent_identity import install_observer
+from .test_agent_json_transport import REQUEST as JSON_REQUEST
+from .test_agent_json_transport import envelope, fixture_model, json_settings, oracle_transport
 from .test_agent_runtime import (
     EvidenceSubstitute,
     Finalizer,
@@ -470,7 +473,10 @@ async def test_observer_identity_rejection_persists_usage_once_and_cannot_replay
         await repo.close()
 
 
-async def test_real_role_postgres_checkpoint_recovery_reuses_authorized_calls():
+@pytest.mark.parametrize("wire_transport", [False, True])
+async def test_real_role_postgres_checkpoint_recovery_reuses_authorized_calls(
+    tmp_path, monkeypatch, wire_transport,
+):
     budget = AgentRunBudget(runtime="agent")
     admin, _, run, claim = await seed(budget)
     await admin.close()
@@ -489,7 +495,14 @@ async def test_real_role_postgres_checkpoint_recovery_reuses_authorized_calls():
     await saver.setup()
     fixture = await asyncio.to_thread(_read_version_fixture)
     records = [r for r in fixture["records"] if r["record_type"] == "Evidence"]
-    model = ObservationDrivenModel()
+    oracle = ObservationDrivenModel()
+    calls = []
+    client = None
+    model = oracle
+    if wire_transport:
+        install_observer(tmp_path / "identity.json", monkeypatch, "deepseek-flash")
+        client = httpx.AsyncClient(transport=oracle_transport(oracle, calls))
+        model = fixture_model(client)
     tools = SourceTransport(records, repository)
     evidence = EvidenceSubstitute(records)
     finalizer = Finalizer()
@@ -582,6 +595,157 @@ async def test_real_role_postgres_checkpoint_recovery_reuses_authorized_calls():
             and len(evidence.publications) == 1
         )
         assert finalizer.requests[-1].usage["modelCalls"] == 6
+        if wire_transport:
+            assert len(calls) == len(oracle.requests) == 6
+            assert len(oracle.requests[1].payload["candidates"]) >= 2
     finally:
+        if client is not None:
+            await client.aclose()
         await repository.close()
         await connections.close()
+
+
+async def test_json_sql_replay_is_bound_to_actual_wire_and_contract(tmp_path, monkeypatch):
+    budget = AgentRunBudget(runtime="agent")
+    repo, ledger, run, claim = await seed(budget)
+    identity_path = tmp_path / "identity.json"
+    install_observer(identity_path, monkeypatch, "deepseek-flash")
+    calls = []
+
+    async def guard():
+        assert (await repo.assert_active_claim(run, claim))[0]
+
+    try:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(
+            lambda req: calls.append(req) or httpx.Response(200, json=envelope())
+        )) as client:
+            settings = json_settings()
+            model = OpenAIAgentModel(settings, client)
+            gateway = AgentBudgetGateway(run_id=run, claim_token=claim, budget=budget,
+                                         ledger=ledger, model=model, guard=guard)
+            result = await gateway.model_call("model:wire", "DECISION", JSON_REQUEST)
+            assert await gateway.model_call("model:wire", "DECISION", JSON_REQUEST) == result
+            assert len(calls) == 1
+            async with await psycopg.AsyncConnection.connect(URL) as conn:
+                row = await (await conn.execute(
+                    "SELECT status,input_reserved,request_hash,safe_result "
+                    "FROM agent_research_operation WHERE run_id=%s", (run,),
+                )).fetchone()
+            assert row[0] == "SETTLED" and row[1] == len(calls[0].content) + 1024
+            assert row[2] == hashlib.sha256(model.prepare(JSON_REQUEST).identity).hexdigest()
+            assert row[3]["value"] == result.value
+            changes = [
+                JSON_REQUEST.model_copy(update={"instruction": "New trusted instruction"}),
+                JSON_REQUEST.model_copy(update={"payload": {"candidates": []}}),
+                JSON_REQUEST.model_copy(update={"result_schema": {"type": "object"}}),
+                JSON_REQUEST.model_copy(update={"request_binding": {"run_scope": "other"}}),
+            ]
+            for changed in changes:
+                with pytest.raises(WorkflowExecutionError) as error:
+                    await gateway.model_call("model:wire", "DECISION", changed)
+                assert error.value.error_code == "AGENT_REPLAY_MISMATCH"
+            # Explicitly change transport: a previously settled decision must not be reused.
+            settings.agent_result_transport = "function_call"
+            with pytest.raises(WorkflowExecutionError) as error:
+                await gateway.model_call("model:wire", "DECISION", JSON_REQUEST)
+            assert error.value.error_code == "AGENT_REPLAY_MISMATCH"
+            assert len(calls) == 1
+        usage = await ledger.summary(run, claim)
+        assert usage["modelCalls"] == 1 and usage["toolCalls"] == 0
+        assert usage["inputTokens"] == 41 and usage["outputTokens"] == 7
+        assert len(json.loads(identity_path.read_text())["receipts"]) == 1
+    finally:
+        await repo.close()
+
+
+@pytest.mark.parametrize("content,measured", [
+    ('{"action":"read_source"}', {"prompt_tokens": 41, "completion_tokens": 7}),
+    ('{"action":"read_source","source_id":"primary-a","action":"finish"}',
+     {"prompt_tokens": 41, "completion_tokens": 7}),
+    ("", {"prompt_tokens": 0, "completion_tokens": -1}),
+    ("[]", {}),
+])
+async def test_json_sql_invalid_results_preserve_partial_usage_and_no_tools(
+    tmp_path, monkeypatch, content, measured,
+):
+    budget = AgentRunBudget(runtime="agent")
+    repo, ledger, run, claim = await seed(budget)
+    path = tmp_path / "identity.json"
+    install_observer(path, monkeypatch, "deepseek-flash")
+    calls = []
+
+    async def guard():
+        assert (await repo.assert_active_claim(run, claim))[0]
+
+    try:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(
+            lambda req: calls.append(req) or httpx.Response(
+                200, json=envelope(content, usage=measured),
+            )
+        )) as client:
+            gateway = AgentBudgetGateway(run_id=run, claim_token=claim, budget=budget,
+                                         ledger=ledger, model=fixture_model(client), guard=guard)
+            with pytest.raises(ModelCallError):
+                await gateway.model_call("model:invalid-json", "DECISION", JSON_REQUEST)
+            with pytest.raises(WorkflowExecutionError) as replay:
+                await gateway.model_call("model:invalid-json", "DECISION", JSON_REQUEST)
+            assert replay.value.error_code == "AGENT_MODEL_NOT_RETRYABLE"
+        assert len(calls) == 1
+        async with await psycopg.AsyncConnection.connect(URL) as conn:
+            rows = await (await conn.execute(
+                "SELECT kind,status,safe_result,actual_usage FROM agent_research_operation "
+                "WHERE run_id=%s", (run,),
+            )).fetchall()
+        assert len(rows) == 1 and rows[0][:3] == ("MODEL", "UNKNOWN", None)
+        receipt = rows[0][3]
+        assert receipt["model_failure"]["retryable"] is False
+        assert receipt.get("input_tokens") == measured.get("prompt_tokens")
+        assert receipt.get("output_tokens") == (measured.get("completion_tokens")
+                                                if measured.get("completion_tokens", -1) >= 0
+                                                else None)
+        assert "source_id" not in json.dumps(receipt)
+        assert (await ledger.summary(run, claim))["toolCalls"] == 0
+        assert json.loads(path.read_text())["receipts"][0]["identity_matches"] is True
+    finally:
+        await repo.close()
+
+
+async def test_json_sql_inflight_cancellation_leaves_reserved_not_reissued(tmp_path, monkeypatch):
+    budget = AgentRunBudget(runtime="agent")
+    repo, ledger, run, claim = await seed(budget)
+    install_observer(tmp_path / "identity.json", monkeypatch, "deepseek-flash")
+    entered = asyncio.Event()
+    calls = []
+
+    async def transport(wire):
+        calls.append(wire)
+        entered.set()
+        await asyncio.Event().wait()
+
+    async def guard():
+        assert (await repo.assert_active_claim(run, claim))[0]
+
+    try:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(transport)) as client:
+            gateway = AgentBudgetGateway(run_id=run, claim_token=claim, budget=budget,
+                                         ledger=ledger, model=fixture_model(client), guard=guard)
+            operation = asyncio.create_task(
+                gateway.model_call("model:cancel", "DECISION", JSON_REQUEST)
+            )
+            await asyncio.wait_for(entered.wait(), timeout=2)
+            operation.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await operation
+            with pytest.raises(WorkflowExecutionError) as error:
+                await gateway.model_call("model:cancel", "DECISION", JSON_REQUEST)
+            assert error.value.error_code == "AGENT_OPERATION_IN_PROGRESS"
+        async with await psycopg.AsyncConnection.connect(URL) as conn:
+            row = await (await conn.execute(
+                "SELECT status,safe_result,actual_usage FROM agent_research_operation "
+                "WHERE run_id=%s",
+                (run,),
+            )).fetchone()
+        assert row[0] == "RESERVED" and row[1] is None
+        assert len(calls) == 1 and (await ledger.summary(run, claim))["toolCalls"] == 0
+    finally:
+        await repo.close()

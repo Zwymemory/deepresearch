@@ -110,7 +110,7 @@ def main():
         raise SystemExit("Sidecar source archive differs from the verified build")
     sys.path.insert(0, str(source))
     from deepresearch_workflow import app as module
-    from deepresearch_workflow.agent_model import OpenAIAgentModel
+    from deepresearch_workflow.agent_model import OpenAIAgentModel, TRANSPORT_CONTRACT_VERSION
     from deepresearch_workflow.settings import Settings
     import uvicorn
 
@@ -120,6 +120,8 @@ def main():
     from deepresearch_workflow.agent_identity import POLICY_VERSION, REQUEST_MODELS
     if settings.model_provider != "openai" or settings.model_name not in REQUEST_MODELS or settings.openai_base_url != "https://api.deepseek.com":
         raise SystemExit("Runtime research model differs from the authorized configuration")
+    if not settings.agent_transport_supported():
+        raise SystemExit("Unsupported Agent result transport capability")
     import httpx
     model_audit = args.identity_output.with_name(args.identity_output.stem + "-model-calls.json")
     install_model_audit(httpx, model_audit, settings.model_name)
@@ -129,7 +131,9 @@ def main():
                 "model_identity_receipts_path": str(model_audit),
                 "model_identity": {"provider": "deepseek-openai-compatible", "name": settings.model_name,
                                    "adapter": OpenAIAgentModel.__name__, "endpoint": settings.openai_base_url,
-                                   "policy_version": POLICY_VERSION}}
+                                   "policy_version": POLICY_VERSION,
+                                   "result_transport": settings.agent_result_transport,
+                                   "transport_contract_version": TRANSPORT_CONTRACT_VERSION}}
     descriptor = os.open(args.identity_output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "w") as stream:
         json.dump(identity, stream, indent=2)

@@ -104,7 +104,10 @@ def wait_health(base, path, seconds=60):
     raise ValueError("Isolated service did not become healthy within the preparation window")
 
 
-def start(state, credentials, built, python, ready_path, sources, model_name, batch_id=BATCH):
+def start(state, credentials, built, python, ready_path, sources, model_name, batch_id=BATCH, agent_result_transport="function_call"):
+    if agent_result_transport not in {"function_call", "deepseek_json_object"} or (
+            agent_result_transport == "deepseek_json_object" and model_name != "deepseek-flash"):
+        raise ValueError("Unsupported Agent result transport capability")
     if model_name not in {"deepseek-flash", "deepseek-v4-flash"}:
         raise ValueError("Explicit supported request model required; retired aliases do not pin V4")
     if batch_id not in BATCHES or (batch_id == POST_IDENTITY_BATCH and model_name != "deepseek-flash"):
@@ -241,6 +244,7 @@ def start(state, credentials, built, python, ready_path, sources, model_name, ba
                      "JAVA_BASE_URL": ready["app_base_url"], "MCP_URL": ready["app_base_url"] + "/mcp/sse",
                      "DEEPRESEARCH_INTERNAL_JWT_SECRET": credentials["DEEPRESEARCH_INTERNAL_JWT_SECRET"],
                      "RUNNER_ENABLED": "true", "MODEL_PROVIDER": "openai", "MODEL_NAME": model_name,
+                     "AGENT_RESULT_TRANSPORT": agent_result_transport,
                      "OPENAI_API_KEY": credentials["DEEPSEEK_API_KEY"], "OPENAI_BASE_URL": "https://api.deepseek.com",
                      "LANGGRAPH_STRICT_MSGPACK": "true", "MAX_CONCURRENT_RUNS": "1", "WORKER_MAX_CONCURRENCY": "1",
                      "PYTHONDONTWRITEBYTECODE": "1"})
@@ -267,7 +271,8 @@ def start(state, credentials, built, python, ready_path, sources, model_name, ba
     sidecar_identity = read_private(identity_path)
     ready["model_identity_receipts_path"] = sidecar_identity["model_identity_receipts_path"]
     if (sidecar_identity["model_identity"]["name"] != model_name
-            or sidecar_identity["model_identity"]["endpoint"] != "https://api.deepseek.com"):
+            or sidecar_identity["model_identity"]["endpoint"] != "https://api.deepseek.com"
+            or sidecar_identity["model_identity"].get("result_transport") != agent_result_transport):
         raise ValueError("Actual sidecar request configuration differs")
     ready["model_identity"] = sidecar_identity["model_identity"]
     ready.update({"ready": True, "phase": "runtime_ready_sources_pending"})
@@ -308,6 +313,8 @@ def main():
     parser.add_argument("--batch", choices=BATCHES, default=BATCH)
     parser.add_argument("--model-name", choices=["deepseek-flash", "deepseek-v4-flash"],
                         help="Explicit request identity; legacy names route to V4.1 and do not pin retired V4")
+    parser.add_argument("--agent-result-transport", choices=["function_call", "deepseek_json_object"],
+                        default="function_call", help="Explicit internal Agent structured result transport")
     parser.add_argument("--python", type=Path)
     parser.add_argument("--sources-ready", type=Path)
     args = parser.parse_args()
@@ -325,7 +332,7 @@ def main():
     if args.start:
         if not args.python or not args.model_name:
             raise ValueError("--python and explicit --model-name are required to start the sidecar")
-        ready = start(state, credentials, built, args.python, args.runtime_ready, sources, args.model_name, args.batch)
+        ready = start(state, credentials, built, args.python, args.runtime_ready, sources, args.model_name, args.batch, args.agent_result_transport)
     else:
         ready = read_private(args.runtime_ready) if args.runtime_ready.exists() else None
     if sources and ready and sources.get("ready"):

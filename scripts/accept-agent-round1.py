@@ -21,6 +21,8 @@ MODEL_ERROR_CLASSES = {
     "http_rate_limit", "http_upstream", "http_other", "response_json",
     "response_shape", "output_truncated", "function_count", "function_name",
     "function_arguments", "function_oversized", "function_json", "function_shape",
+    "capability_config", "choice_count", "unexpected_tools", "result_content",
+    "result_oversized", "result_json", "result_shape",
     "schema_validation", "validator_rejected", "model_unclassified",
 }
 MODEL_ISSUE_FIELDS = {

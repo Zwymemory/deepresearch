@@ -13,7 +13,7 @@ from psycopg.types.json import Jsonb
 from pydantic import ValidationError as PydanticValidationError
 from referencing import Registry
 
-from .agent_model import MODEL_RULES, AgentModel, AgentModelFailure
+from .agent_model import MODEL_RULES, AgentModel, AgentModelFailure, OpenAIAgentModel
 from .agent_protocol import AgentRunBudget, ModelRequest, ModelResult
 from .graph import (
     ModelCallError,
@@ -426,22 +426,44 @@ class AgentBudgetGateway:
             usage["output_tokens"] = output_tokens
         return failure, usage
 
+    @staticmethod
+    def validate_result(request, result, validate):
+        # Remote refs cannot cause a network fetch or grant model-supplied authority.
+        schema_check = Draft202012Validator(
+            request.result_schema,
+            registry=Registry(
+                retrieve=lambda uri: (_ for _ in ()).throw(ValueError("remote schema forbidden"))
+            ),
+        )
+        schema_check.validate(result.value)
+        if validate is not None:
+            validate(result.value)
+
     async def model_call(
         self, key, purpose, request: ModelRequest, validate: Callable | None = None
     ):
-        # A byte ceiling includes visible messages, schema and framing allowance. It is
-        # conservative admission accounting, not a claim about provider-measured tokens.
+        # Freeze the exact provider bytes before admission; binding metadata is not sent.
+        prepared = None
         try:
-            request_data = {**request.model_dump(mode="json", by_alias=True), "rules": MODEL_RULES}
-            encoded_request = canonical(request_data).encode()
-        except Exception:
+            request = request.model_copy(deep=True)
+            if isinstance(self.model, OpenAIAgentModel):
+                prepared = self.model.prepare(request)
+                encoded_request = prepared.identity
+                input_reserved = len(prepared.wire) + 1024
+            else:
+                request_data = {**request.model_dump(mode="json", by_alias=True),
+                                "rules": MODEL_RULES, "transport": "fixture-invoke/1"}
+                encoded_request = canonical(request_data).encode()
+                input_reserved = len(encoded_request) + 1024
+        except Exception as error:
+            label = (
+                error.error_class if isinstance(error, AgentModelFailure) else "request_encoding"
+            )
             failure = ModelCallError(
-                key,
-                failure_kind="SCHEMA", attempt=0,
-                error_class="request_encoding", retryable=False,
+                key, attempt=0, failure_kind="SCHEMA",
+                error_class=label, retryable=False,
             )
             raise failure from None
-        input_reserved = len(encoded_request) + 1024
         request_hash = hashlib.sha256(encoded_request).hexdigest()
         for _ in range(2):
             await self.guard()
@@ -462,22 +484,21 @@ class AgentBudgetGateway:
             if reservation["replay"] is not None:
                 result = ModelResult.model_validate(reservation["replay"])
                 self.check_bounds(result, input_reserved, request.max_output_tokens)
+                try:
+                    self.validate_result(request, result, validate)
+                except Exception as error:
+                    failure, _ = self.classify_model_failure(
+                        key, reservation["attempt"], error, result, request.name,
+                    )
+                    raise failure from None
                 return result
             result = None
             try:
-                result = await self.model.invoke(request)
-                # Remote refs cannot cause a network fetch or grant model-supplied authority.
-                schema_check = Draft202012Validator(
-                    request.result_schema,
-                    registry=Registry(
-                        retrieve=lambda uri: (_ for _ in ()).throw(
-                            ValueError("remote schema forbidden")
-                        )
-                    ),
+                result = (
+                    await self.model.invoke_prepared(request, prepared) if prepared is not None
+                    else await self.model.invoke(request)
                 )
-                schema_check.validate(result.value)
-                if validate is not None:
-                    validate(result.value)
+                self.validate_result(request, result, validate)
                 result = result.model_copy(
                     update={
                         "request_binding": {

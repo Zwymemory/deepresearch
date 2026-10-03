@@ -305,14 +305,14 @@ class Finalizer:
         self.requests.append(request)
 
 
-def setup(case, *, budget=None, events=None):
+def setup(case, *, budget=None, events=None, model=None):
     fixture = json.loads(
         (ROOT / "testdata/agent-foundation/evidence" / (case + ".json")).read_text()
     )
     records = [r for r in fixture["records"] if r["record_type"] == "Evidence"]
     repository = FakeRepository()
     ledger = LedgerSubstitute()
-    model = ObservationDrivenModel()
+    model = model or ObservationDrivenModel()
     tools = SourceTransport(records, repository)
     evidence = EvidenceSubstitute(records)
     finalizer = Finalizer()

@@ -46,6 +46,7 @@ class Settings(BaseSettings):
 
     model_provider: Literal["openai", "disabled"] = "openai"
     model_name: str = "gpt-5-mini"
+    agent_result_transport: Literal["function_call", "deepseek_json_object"] = "function_call"
     openai_api_key: SecretStr = Field(
         default=SecretStr(""),
         validation_alias=AliasChoices("OPENAI_API_KEY", "WORKFLOW_OPENAI_API_KEY"),
@@ -79,8 +80,18 @@ class Settings(BaseSettings):
     def openai_key(self) -> str:
         return self.openai_api_key.get_secret_value()
 
+    def agent_transport_supported(self) -> bool:
+        return self.agent_result_transport == "function_call" or (
+            self.agent_result_transport == "deepseek_json_object"
+            and self.model_provider == "openai"
+            and self.model_name == "deepseek-flash"
+            and self.openai_base_url == "https://api.deepseek.com"
+        )
+
     def validate_runtime(self) -> list[str]:
         errors: list[str] = []
+        if not self.agent_transport_supported():
+            errors.append("Agent result transport capability configuration is unsupported")
         if self.heartbeat_seconds >= self.lease_seconds:
             errors.append("heartbeat_seconds must be lower than lease_seconds")
         if self.runner_enabled and len(self.internal_secret.encode("utf-8")) < 32:

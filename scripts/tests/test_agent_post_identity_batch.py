@@ -271,6 +271,17 @@ class PostIdentityTests(unittest.TestCase):
                 )
             command.assert_not_called()
 
+    def test_transport_capability_is_rejected_before_resource_operations(self):
+        module = self.preparation()
+        for mode in ["unsupported", "deepseek_json_object"]:
+            with self.subTest(mode=mode), patch.object(module.subprocess, "run") as command:
+                with self.assertRaises(ValueError):
+                    module.start(
+                        self.state, {}, {}, Path("python"), self.state / "ready.json",
+                        {}, "deepseek-v4-flash", batch.BATCH, mode,
+                    )
+                command.assert_not_called()
+
     def test_existing_new_runtime_or_build_metadata_is_preserved_before_side_effects(
         self,
     ):
