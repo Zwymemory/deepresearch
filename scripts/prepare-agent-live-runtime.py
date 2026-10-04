@@ -15,7 +15,7 @@ import zipfile
 from urllib.request import urlopen
 
 from agent_live_common import file_sha, http_json, read_private, source_digest, verify_runtime, write_private
-from agent_retest_batch import BATCH, BATCHES, JSON_WEB_BATCH, POST_IDENTITY_BATCH
+from agent_retest_batch import BATCH, BATCHES, JSON_WEB_BATCH, JSON_WEB_BATCHES, POST_IDENTITY_BATCH, V22_WEB_BATCH
 from agent_acceptance_v22 import candidate_schema_policy, verify_database_schema
 
 ISOLATION = "agent-live-20260930"
@@ -112,7 +112,7 @@ def start(state, credentials, built, python, ready_path, sources, model_name, ba
         raise ValueError("Unsupported Agent result transport capability")
     if model_name not in {"deepseek-flash", "deepseek-v4-flash"}:
         raise ValueError("Explicit supported request model required; retired aliases do not pin V4")
-    if batch_id == JSON_WEB_BATCH and agent_result_transport != "deepseek_json_object":
+    if batch_id in JSON_WEB_BATCHES and agent_result_transport != "deepseek_json_object":
         raise ValueError("JSON web batch requires explicit single-object transport")
     if batch_id not in BATCHES or (batch_id != BATCH and model_name != "deepseek-flash"):
         raise ValueError("New post-identity batch requires the explicit canonical request model")
@@ -220,7 +220,7 @@ def start(state, credentials, built, python, ready_path, sources, model_name, ba
     image_id = json.loads(subprocess.check_output(["docker", "image", "inspect", image]))[0]["Id"]
     ready = {**built, "phase": "starting", "ready": False, "isolation_id": ISOLATION,
              "batch_id": batch_id, "historical_state_dir": str(state.resolve()),
-             "run_manifest_path": str((ready_path.parent / ({JSON_WEB_BATCH: "agent-live-json-web-runs-20261003.json", POST_IDENTITY_BATCH: "agent-live-post-identity-runs-20261003.json"}.get(batch_id, "agent-live-retest-runs-20261003.json"))).resolve()),
+             "run_manifest_path": str((ready_path.parent / ({V22_WEB_BATCH: "agent-live-v22-web-runs-20261004.json", JSON_WEB_BATCH: "agent-live-json-web-runs-20261003.json", POST_IDENTITY_BATCH: "agent-live-post-identity-runs-20261003.json"}.get(batch_id, "agent-live-retest-runs-20261003.json"))).resolve()),
              "scenario_manifest_path": str((source / "testdata/agent-live/sources/scenarios.json").resolve()),
              "scenario_manifest_sha256": file_sha(source / "testdata/agent-live/sources/scenarios.json"),
              "ci": None, "research_runs_submitted": 0,
@@ -269,7 +269,7 @@ def start(state, credentials, built, python, ready_path, sources, model_name, ba
                   "model_identity": {"provider": "deepseek-openai-compatible", "name": model_name,
                                      "adapter": "OpenAIAgentModel", "endpoint": "https://api.deepseek.com"},
                   "ragflow_dataset_ids": datasets, "baseline_sha": "62e29a77130f727413558140a6c8872410a0b731",
-                  "migration_version": migrations, "max_research_runs": 1 if batch_id == JSON_WEB_BATCH else 5 if batch_id == POST_IDENTITY_BATCH else 8, "limits": {"decisions": 8, "models": 16, "tools": 16, "seconds": 180, "input_tokens": 64000, "output_tokens": 16384},
+                  "migration_version": migrations, "max_research_runs": 1 if batch_id in JSON_WEB_BATCHES else 5 if batch_id == POST_IDENTITY_BATCH else 8, "limits": {"decisions": 8, "models": 16, "tools": 16, "seconds": 180, "input_tokens": 64000, "output_tokens": 16384},
                   "registry_configured": False, "real_research_runs_started": 0})
     write_private(ready_path, ready)
     wait_health(ready["sidecar_base_url"], "/internal/health/ready")

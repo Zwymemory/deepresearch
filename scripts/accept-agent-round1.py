@@ -337,7 +337,7 @@ def batch_prerequisites(ready, source_path, review_path, state):
             or ready.get("batch_id") == retest.POST_IDENTITY_BATCH
             and ready.get("model_identity", {}).get("name") != "deepseek-flash"):
         raise ValueError("Exact selected batch and canonical model readiness required")
-    if ready.get("batch_id") == retest.JSON_WEB_BATCH:
+    if ready.get("batch_id") in retest.JSON_WEB_BATCHES:
         model = ready.get("model_identity", {})
         binding = review.get("candidate_binding", {})
         if (model.get("name") != "deepseek-flash"
@@ -418,7 +418,7 @@ def execute_batch(args, ready, sources, cases):
         if not actual_model_identity or any(call["request_model_matches"] is not True or
                 call["identity_matches"] is not True for call in actual_model_identity):
             row["validation_error_type"] = "ActualModelIdentityUnavailableOrMismatch"
-        if args.batch == retest.JSON_WEB_BATCH and any(
+        if args.batch in retest.JSON_WEB_BATCHES and any(
                 call.get("wire", {}).get("result_transport") != "deepseek_json_object"
                 or call.get("wire", {}).get("transport_matches") is not True
                 or call.get("wire", {}).get("configured_result_transport") != "deepseek_json_object"

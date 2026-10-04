@@ -15,7 +15,10 @@ from agent_live_common import TERMINAL, file_sha, read_private, write_private
 BATCH = "round1-retest-20261003"
 POST_IDENTITY_BATCH = "round1-post-identity-20261003"
 JSON_WEB_BATCH = "round1-json-web-20261003"
-BATCHES = (BATCH, POST_IDENTITY_BATCH, JSON_WEB_BATCH)
+V22_WEB_BATCH = "round1-v22-web-20261004"
+BATCHES = (BATCH, POST_IDENTITY_BATCH, JSON_WEB_BATCH, V22_WEB_BATCH)
+JSON_WEB_BATCHES = (JSON_WEB_BATCH, V22_WEB_BATCH)
+V22_WEB_HISTORY_SHA = "215e287377aeb7e148853cea831d9118e1501fd58dbc18bb375ba2ba2c3d0a14"
 JSON_WEB_HISTORY_SHA = "85466bf90171915ade72dcd58156804412cd9623ae8b42693a7063fc575551f6"
 POST_IDENTITY_HISTORY_SHA = (
     "de67f8017fa017f96e5e305ba9371673bfe3ca61b878ab3b544dd533eb53eea9"
@@ -30,11 +33,11 @@ ORDER = [
 
 
 def scenario_order(batch_id):
-    return ["web-only"] if batch_id == JSON_WEB_BATCH else ORDER
+    return ["web-only"] if batch_id in JSON_WEB_BATCHES else ORDER
 
 
 def maximum_runs(batch_id):
-    return 1 if batch_id == JSON_WEB_BATCH else 5
+    return 1 if batch_id in JSON_WEB_BATCHES else 5
 
 
 def digest(value):
@@ -75,7 +78,16 @@ def authorize(
                 "Batch authorization unknown or already exists; never replace it"
             )
         expected_count = 6
-        if batch_id == JSON_WEB_BATCH:
+        if batch_id == V22_WEB_BATCH:
+            prior, prior_rows = validate_history(journal, JSON_WEB_BATCH)
+            if (
+                prior["status"] != "STOPPED" or not prior["stop_reason"]
+                or len(prior_rows) != 1 or prior_rows[0].get("status") != "BUDGET_EXCEEDED"
+                or file_sha(state / "run-journal.json") != V22_WEB_HISTORY_SHA
+            ):
+                raise ValueError("Exact nine-row stopped predecessor required")
+            expected_count = 9
+        elif batch_id == JSON_WEB_BATCH:
             prior, prior_rows = validate_history(journal, POST_IDENTITY_BATCH)
             if (
                 prior["status"] != "STOPPED" or not prior["stop_reason"]
@@ -140,7 +152,7 @@ def authorize(
             "status": "AUTHORIZED",
             "stop_reason": None,
         }
-        if batch_id == JSON_WEB_BATCH:
+        if batch_id in JSON_WEB_BATCHES:
             batch.update(result_transport="deepseek_json_object",
                          transport_contract_version="agent-result-wire/1")
         journal.setdefault("authorized_batches", {})[batch_id] = batch
@@ -154,7 +166,7 @@ def validate_history(journal, batch_id=BATCH):
     if (
         batch_id not in BATCHES
         or batch_id not in batches
-        or set(batches) not in ({BATCH}, {BATCH, POST_IDENTITY_BATCH}, set(BATCHES))
+        or set(batches) not in [set(BATCHES[:count]) for count in range(1, len(BATCHES) + 1)]
         or not allowed <= set(batches)
     ):
         raise ValueError("Explicit authorized batch missing or unexpected batch")
@@ -181,7 +193,7 @@ def validate_history(journal, batch_id=BATCH):
     original = read_private(batch["history_snapshot_path"])
     count = batch["history_count"]
     if (
-        count != {BATCH: 6, POST_IDENTITY_BATCH: 7, JSON_WEB_BATCH: 8}[batch_id]
+        count != {BATCH: 6, POST_IDENTITY_BATCH: 7, JSON_WEB_BATCH: 8, V22_WEB_BATCH: 9}[batch_id]
         or len(original["runs"]) != count
         or journal.get("runs", [])[:count] != original["runs"]
     ):
@@ -217,10 +229,25 @@ def validate_history(journal, batch_id=BATCH):
         prior, prior_rows = validate_history(journal, POST_IDENTITY_BATCH)
         if prior["status"] != "STOPPED" or not prior["stop_reason"] or len(prior_rows) != 1:
             raise ValueError("Stopped post-identity predecessor changed")
+    if batch_id == V22_WEB_BATCH:
+        predecessors = set(BATCHES[:-1])
+        if (
+            set(original.get("authorized_batches", {})) != predecessors
+            or any(original["authorized_batches"][name] != batches[name] for name in predecessors)
+            or batch["original_journal_sha256"] != V22_WEB_HISTORY_SHA
+            or batch.get("result_transport") != "deepseek_json_object"
+            or batch.get("transport_contract_version") != "agent-result-wire/1"
+        ):
+            raise ValueError("Stopped V22 predecessor chain or selected transport changed")
+        prior, prior_rows = validate_history(journal, JSON_WEB_BATCH)
+        if (prior["status"] != "STOPPED" or not prior["stop_reason"]
+                or len(prior_rows) != 1 or prior_rows[0].get("status") != "BUDGET_EXCEEDED"):
+            raise ValueError("Stopped JSON predecessor changed")
     next_batch = (POST_IDENTITY_BATCH if batch_id == BATCH else
-                  JSON_WEB_BATCH if batch_id == POST_IDENTITY_BATCH else None)
+                  JSON_WEB_BATCH if batch_id == POST_IDENTITY_BATCH else
+                  V22_WEB_BATCH if batch_id == JSON_WEB_BATCH else None)
     end = batches[next_batch]["history_count"] if next_batch in batches else len(journal["runs"])
-    if next_batch in batches and end != (7 if batch_id == BATCH else 8):
+    if next_batch in batches and end != {BATCH: 7, POST_IDENTITY_BATCH: 8, JSON_WEB_BATCH: 9}[batch_id]:
         raise ValueError("Predecessor boundary changed")
     rows = journal["runs"][count:end]
     if len(rows) > maximum_runs(batch_id) or any(
@@ -285,7 +312,7 @@ def admit(journal, scenario, build_sha, review_state, batch_id=BATCH):
         or review_state.get("source_manifest_sha256") != batch["source_manifest_sha256"]
     ):
         raise ValueError("B signed-off source readiness required")
-    if batch_id == JSON_WEB_BATCH:
+    if batch_id in JSON_WEB_BATCHES:
         binding = review_state.get("candidate_binding", {})
         if (binding.get("approved_for_live") is not True
                 or binding.get("observed_candidate_sha") != build_sha
@@ -336,6 +363,7 @@ def reserve(state, scenario, build_sha, peer_sha, review_state, batch_id=BATCH):
             "retry_of": None,
             "fix_description": None,
             "idempotency_key": (
+                "live-v22-web-" if batch_id == V22_WEB_BATCH else
                 "live-json-web-" if batch_id == JSON_WEB_BATCH else "live-post-identity-"
                 if batch_id == POST_IDENTITY_BATCH
                 else "live-retest-"
