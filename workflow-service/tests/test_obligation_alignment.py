@@ -451,6 +451,7 @@ def test_unconstrained_genuine_recommendation_remains_an_obligation():
 @pytest.mark.parametrize("index", ["0", 0.0, False])
 def test_wire_constraint_indices_reject_coercion(index):
     from deepresearch_workflow.agent_obligations import ObligationDecision
+
     wire = initial_wire()
     wire["constraints"][0]["obligation_indices"] = [index]
     with pytest.raises(ValueError):
@@ -460,9 +461,54 @@ def test_wire_constraint_indices_reject_coercion(index):
 @pytest.mark.parametrize("invalid", [None, "invalid"])
 def test_optional_conditions_default_only_on_omission(invalid):
     from deepresearch_workflow.agent_obligations import ObligationDecision
+
     wire = initial_wire()
     wire["obligations"][0]["applicability"].pop("conditions")
     assert ObligationDecision.model_validate(wire).requirements[0].applicability.conditions == []
     wire["obligations"][0]["applicability"]["conditions"] = invalid
     with pytest.raises(ValueError):
         ObligationDecision.model_validate(wire)
+
+
+@pytest.mark.parametrize("tamper", ["claim", "source", "duplicate"])
+def test_capture_result_membership_is_explicit_and_safe(tamper):
+    request, response = check_fixture()
+    decision = {
+        "record_type": "DecisionRecord",
+        "decision_status": "supported",
+        "claim_id": "claim-controlled",
+        "adopted_evidence_ids": ["evidence-controlled"],
+    }
+    if tamper == "claim":
+        decision["claim_id"] = "claim-foreign"
+    elif tamper == "source":
+        decision["adopted_evidence_ids"] = ["evidence-foreign"]
+    else:
+        decision["adopted_evidence_ids"] *= 2
+    request_hash, response_hash = sha(canonical(request)), sha(canonical(response))
+    result = {
+        "records": [decision],
+        "verification": {
+            "protocol_version": "evidence-check/3",
+            "model_call_id": "model:check",
+            "request_sha256": request_hash,
+            "response_sha256": response_hash,
+            "response": response,
+        },
+    }
+    expected = (
+        "DECISION_CLAIM_BINDING_INVALID"
+        if tamper == "claim"
+        else "ADOPTED_SOURCE_MEMBERSHIP_INVALID"
+    )
+    with pytest.raises(ValueError, match=expected):
+        validate_check3_attestation(
+            request,
+            result,
+            {"value": response},
+            context=request["original_context"],
+            request_hash=request_hash,
+            response_hash=response_hash,
+        )
+    assert alignment_gap(request, response, "claim-foreign", "evidence-controlled")
+    assert alignment_gap(request, response, "claim-controlled", "evidence-foreign")

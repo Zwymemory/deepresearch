@@ -192,18 +192,27 @@ def alignment_gap(request, response, claim_id, evidence_id):
 
     if response["planning_alignment"]["status"] != "complete":
         return "partition_unverified"
-    proposal = next(c for c in response["claims"] if c["claim_id"] == claim_id)
+    proposal = next((c for c in response["claims"] if c["claim_id"] == claim_id), None)
+    if proposal is None:
+        return "verifier_claim_membership_invalid"
     if proposal["answer_alignment"] != "answers":
         return "not_answering_original_obligation"
-    relation = next(r for r in proposal["relations"] if r["evidence_id"] == evidence_id)
+    relation = next((r for r in proposal["relations"] if r["evidence_id"] == evidence_id), None)
+    if relation is None:
+        return "verifier_evidence_membership_invalid"
     if relation["source_alignment"] != "qualifies":
         return "required_source_unverified"
-    index = next(i for i, c in enumerate(request["claims"]) if c["claim_id"] == claim_id)
+    index = next((i for i, c in enumerate(request["claims"]) if c["claim_id"] == claim_id), None)
+    if index is None:
+        return "original_claim_membership_invalid"
     context = request["original_context"]
     requirement = next(
-        b["requirement_id"] for b in context["claim_bindings"] if b["claim_index"] == index
+        (b["requirement_id"] for b in context["claim_bindings"] if b["claim_index"] == index),
+        None,
     )
-    source = next(e for e in request["evidence"] if e["evidence_id"] == evidence_id)
+    source = next((e for e in request["evidence"] if e["evidence_id"] == evidence_id), None)
+    if requirement is None or source is None:
+        return "original_obligation_or_source_membership_invalid"
     uri = source["source"]["locator"].get("uri")
     for c in context["constraints"]:
         if c["role"] != "source" or requirement not in c["requirement_ids"]:
@@ -239,7 +248,20 @@ def validate_check3_attestation(request, result, receipt, *, context, request_ha
     if sha(canonical(verification["response"])) != response_hash:
         raise ValueError("NATIVE_CHECK_ALIGNMENT_ATTESTATION_INVALID")
     parse_verifier_response(canonical(receipt["value"]), request, request_hash)
+    requested_claims = {c["claim_id"] for c in request["claims"]}
+    requested_sources = {e["evidence_id"] for e in request["evidence"]}
     for decision in result["records"]:
+        if decision["record_type"] == "DecisionRecord":
+            claim_id = decision.get("claim_id")
+            adopted = decision.get("adopted_evidence_ids")
+            if not isinstance(claim_id, str) or claim_id not in requested_claims:
+                raise ValueError("NATIVE_CHECK_DECISION_CLAIM_BINDING_INVALID")
+            if (
+                not isinstance(adopted, list)
+                or any(not isinstance(e, str) or e not in requested_sources for e in adopted)
+                or len(set(adopted)) != len(adopted)
+            ):
+                raise ValueError("NATIVE_CHECK_ADOPTED_SOURCE_MEMBERSHIP_INVALID")
         if decision["record_type"] == "DecisionRecord" and decision["decision_status"] in {
             "supported",
             "refuted",

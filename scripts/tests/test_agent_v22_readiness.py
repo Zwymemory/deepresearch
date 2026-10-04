@@ -513,6 +513,25 @@ def obligation_native_fixture(crossed=False):
 
 
 class ObligationAuditTests(unittest.TestCase):
+    def test_adopted_source_must_belong_to_this_check_even_if_exported_in_run(self):
+        db = obligation_native_fixture()
+        extra = copy.deepcopy(db["records"][0])
+        extra["payload"]["evidence_id"] = "ev-other-exported-source"
+        extra["payload_sha256"] = native.digest(extra["payload"])
+        db["records"].append(extra)
+        decision = next(r for r in db["checks"][0]["result"]["records"]
+                        if r["record_type"] == "DecisionRecord")
+        decision["adopted_evidence_ids"] = ["ev-other-exported-source"]
+        for record in db["records"]:
+            if record["record_type"] == "DecisionRecord" and record["payload"]["decision_id"] == decision["decision_id"]:
+                record["payload"]["adopted_evidence_ids"] = decision["adopted_evidence_ids"]
+                record["payload_sha256"] = native.digest(record["payload"])
+        proof = native.native_requirements_validation(recount(db))
+        self.assertEqual(proof["status"], "invalid", proof)
+        self.assertFalse(proof["eligible_for_complete_review"], proof)
+        self.assertEqual(proof["issues"], ["NATIVE_CHECK_ADOPTED_SOURCE_MEMBERSHIP_INVALID"])
+
+
     def test_initial_native_selector_and_required_wire_fields_are_validated(self):
         for field, value in (("continuation_contract", "agent-frozen-requirements/1"),
                              ("claims_contract", None), ("claims_contract", "foreign"),
