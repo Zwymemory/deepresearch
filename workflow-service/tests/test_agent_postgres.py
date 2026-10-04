@@ -19,7 +19,6 @@ from psycopg.types.json import Jsonb
 from deepresearch_workflow.agent_budget import AgentBudgetGateway, SqlAgentLedger
 from deepresearch_workflow.agent_model import AgentModelFailure, OpenAIAgentModel
 from deepresearch_workflow.agent_protocol import AgentRunBudget, ModelRequest, ModelResult
-from deepresearch_workflow.agent_runtime import AutonomousResearchGraph
 from deepresearch_workflow.domain import ClaimedRun, WorkflowStatus
 from deepresearch_workflow.graph import (
     ModelCallError,
@@ -40,6 +39,7 @@ from .test_agent_runtime import (
     ObservationDrivenModel,
     SourceTransport,
 )
+from .test_agent_runtime import LegacyFixtureGraph as AutonomousResearchGraph
 
 URL = os.getenv("TEST_AGENT_DATABASE_URL", "")
 pytestmark = [

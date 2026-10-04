@@ -374,6 +374,8 @@ def native_requirements_validation(database):
             raise ValueError("NATIVE_DECLARATION_NOT_SETTLED_DECISION")
         from deepresearch_workflow.agent_question_segments import declaration_drafts
 
+        new_alignment = declaration["safe_result"].get("request_binding", {}).get("planner_contract") == "agent-planning-obligations/3"
+        alignment_complete = True
         freeze(
             run["run_id"],
             run["question"],
@@ -541,6 +543,28 @@ def native_requirements_validation(database):
                 ]
                 if len(response_claims) != 1:
                     raise ValueError("NATIVE_CHECK_MODEL_RESPONSE_CLAIM_MISMATCH")
+                if new_alignment:
+                    from deepresearch_workflow.agent_obligations import authoritative_context, validate_check3_attestation
+
+                    context_bindings = request.get("original_context", {}).get("claim_bindings", [])
+                    current_bindings = [b for b in context_bindings
+                        if b.get("requirement_id") == summary["requirement_id"]
+                        and b.get("criterion_id") == summary["criterion_id"]]
+                    if (len(current_bindings) != 1
+                            or type(current_bindings[0].get("claim_index")) is not int
+                            or not 0 <= current_bindings[0]["claim_index"] < len(request["claims"])
+                            or request["claims"][current_bindings[0]["claim_index"]] != requested_claim):
+                        raise ValueError("NATIVE_CHECK_OBLIGATION_CLAIM_MISMATCH")
+                    refs = sorted(context_bindings, key=lambda b: b["claim_index"])
+                    context = authoritative_context(run["question"], manifest, declaration["safe_result"],
+                        bindings, summary["task_id"], refs)
+                    complete = validate_check3_attestation(request, packet, receipt, context=context,
+                        request_hash=checked["request_sha256"], response_hash=checked["response_sha256"])
+                    if packet["verification"]["model_call_id"] not in {o["operation_key"] for o in database["operations"]
+                            if o["kind"] == "MODEL" and o["purpose"] == "CHECK" and o["status"] == "SETTLED"
+                            and o["safe_result"] == receipt}:
+                        raise ValueError("NATIVE_CHECK_ALIGNMENT_MODEL_ID_MISMATCH")
+                    alignment_complete = alignment_complete and complete
                 if packet.get("check_id", checked["check_id"]) != checked["check_id"]:
                     raise ValueError("NATIVE_CHECK_RESULT_IDENTITY_MISMATCH")
                 packet["check_id"] = checked["check_id"]
@@ -582,6 +606,7 @@ def native_requirements_validation(database):
             raise ValueError("NATIVE_ADOPTED_SOURCE_NOT_EXPORTED")
         result["eligible_for_complete_review"] = (
             result["mapping_complete"]
+            and alignment_complete
             and proof["complete"]
             and all(r["current_check_bound"] for r in result["requirements"])
         )

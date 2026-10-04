@@ -108,7 +108,7 @@ public class EvidenceViewService {
             int round = ((Number) check.get("dispute_round")).intValue();
             var request = parse(check, "request"); digest(request, string(check, "request_sha256"));
             require(checkId.equals(request.path("check_id").asText()) && investigation.equals(request.path("investigation_id").asText())
-                    && round == request.path("dispute_round").asInt(-1) && "evidence-check/2".equals(request.path("protocol_version").asText()));
+                    && round == request.path("dispute_round").asInt(-1) && Set.of("evidence-check/2","evidence-check/3").contains(request.path("protocol_version").asText()));
             String parentId = (String) check.get("parent_check_id");
             require(Objects.equals(parentId, request.path("parent_check_id").isNull() ? null : request.path("parent_check_id").asText()));
             if (round == 0) require(parentId == null);
@@ -128,6 +128,7 @@ public class EvidenceViewService {
             for (var claim : request.path("claims")) {
                 String id = required(claim, "claim_id", 128); require(requestedClaims.put(id, claim) == null); claimIds.add(id);
             }
+            require(query.obligationProof(s,check,request,check.get("result")==null?JSON.nullNode():parse(check,"result")));
             String status = string(check, "status"); require(Set.of("AWAITING_MODEL", "COMPLETED").contains(status));
             if (status.equals("COMPLETED")) {
                 var result = parse(check, "result"); require(result.path("records").isArray() && result.path("records").size() <= 12);

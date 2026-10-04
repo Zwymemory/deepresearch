@@ -36,6 +36,7 @@ MODEL_ISSUE_FIELDS = {
     "requirements", "requirement_bindings", "question_spans", "start", "end", "text",
     "requirement_id",
     "segment_ids", "planner_contract", "continuation_contract", "requirements_ref",
+    "obligations", "constraints", "claims_contract", "role", "obligation_indices",
 }
 # Keep offline receipts readable without importing the running workflow package.
 # A focused parity regression checks these fixed vocabularies against production.
@@ -43,6 +44,7 @@ MODEL_VALIDATION_STAGES = {
     "result_schema", "domain_validation", "planning_decision", "planning_requirements",
 }
 MODEL_REQUIREMENT_CODES = {
+    "REQUIREMENT_CLAIM_REFERENCE_INVALID", "REQUIREMENT_CONSTRAINT_INVALID",
     "REQUIREMENTS_CHANGED", "REQUIREMENTS_MISSING_OR_LIMIT", "REQUIREMENT_ANCHOR_INVALID",
     "REQUIREMENT_BINDING_CHANGED", "REQUIREMENT_BINDING_DUPLICATE", "REQUIREMENT_BINDING_INVALID",
     "REQUIREMENT_CHECK_BINDING_INVALID", "REQUIREMENT_CHECK_CLAIM_REUSED",
@@ -59,6 +61,7 @@ MODEL_REQUIREMENT_CODES = {
     "REQUIREMENT_DECLARATION_LIMIT",
 }
 MODEL_CHECK_CODES = {
+    "CHECK_ORIGINAL_CONTEXT_INVALID",
     "CHECK_TOO_LARGE", "CHECK_JSON_INVALID", "CHECK_RESPONSE_INVALID",
     "CHECK_REQUEST_BINDING_INVALID", "CHECK_REQUEST_INVALID", "CHECK_SNAPSHOT_CHANGED",
     "CHECK_QUOTE_BINDING_INVALID", "CHECK_QUOTE_INVALID", "CHECK_QUOTE_CONTEXT_INCOMPLETE",

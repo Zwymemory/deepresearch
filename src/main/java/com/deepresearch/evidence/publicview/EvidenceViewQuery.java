@@ -31,11 +31,19 @@ public class EvidenceViewQuery {
     }
     List<Map<String, Object>> checks(Scope s) {
         return rows(s, """
-                SELECT check_id,investigation,dispute_round,parent_check_id,status,request_sha256,
+                SELECT check_id,task_id,investigation,dispute_round,parent_check_id,status,request_sha256,response_sha256,
                     request::text AS request,result::text AS result,created_at,completed_at
                 FROM agent_evidence_check WHERE tenant_id=? AND owner_id=? AND project_id=? AND run_id=?
                 ORDER BY investigation,dispute_round,check_id LIMIT 129
                 """, CHECKS);
+    }
+    boolean obligationProof(Scope s,Map<String,Object> check,com.fasterxml.jackson.databind.JsonNode request,com.fasterxml.jackson.databind.JsonNode result) {
+        var alignment=new com.deepresearch.workflow.AgentObligationContext(db);
+        boolean current=com.deepresearch.evidence.ObligationVerification.current(request);
+        if(alignment.required(s.run()) && !current) return false;
+        if(!current) return true;
+        if(!"COMPLETED".equals(check.get("status"))) return true;
+        return alignment.attested(s.run(),(String)check.get("task_id"),request,result,(String)check.get("request_sha256"),(String)check.get("response_sha256"));
     }
     List<Map<String, Object>> reads(Scope s) {
         return rows(s, """

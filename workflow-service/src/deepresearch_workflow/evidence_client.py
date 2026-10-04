@@ -98,6 +98,11 @@ class HttpEvidenceBackend:
                 "dispute_round": round_number,
                 "parent_check_id": parent,
                 "investigation_id": investigation_id,
+                **({"claims_contract": state["claims_contract"],
+                    "requirements_ref": state["original_requirements"]["manifest_sha256"],
+                    "claim_references": [{k: r[k] for k in ("requirement_id", "criterion_id")}
+                                         for r in state["claim_references"]]}
+                   if state.get("claims_contract") == "agent-obligation-claims/1" else {}),
             },
         )
         if prepared.get("errorCode"):
@@ -105,16 +110,16 @@ class HttpEvidenceBackend:
         if prepared["requires_model"]:
             # B owns the request builder/parser. Absence is a visible integration error.
             from .evidence_check import (
-                SYSTEM,
                 checked_request,
                 parse_verifier_response,
                 response_schema,
+                verifier_instruction,
             )
 
             checked_request(prepared["request"], prepared["request_sha256"])
             request = ModelRequest(
                 name="EvidenceCheck",
-                instruction=SYSTEM,
+                instruction=verifier_instruction(prepared["request"]),
                 payload=prepared["request"],
                 schema=response_schema(prepared["request"]),
                 request_binding={

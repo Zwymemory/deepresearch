@@ -216,11 +216,12 @@ class AgentHttpPostgresIT {
     private JsonNode criterionHttpScenario(String mode) throws Exception {
         Run run=create("criteria-owner-"+mode);
         String objective=mode.equals("refuted")?"Verify API document version":"Verify API document version and per-minute request rate";
+        if(mode.startsWith("obligations-")) objective="Using the Original source policy; verify API document version; verify per-minute request rate; quote the policy.";
         if(mode.equals("segments-complete")) objective="Verify API document version; verify per-minute request rate";
         var criteria=mode.equals("refuted")?List.of("Verify the API document version"):List.of("Verify the API document version","Verify the per-minute request rate");
         db.update("UPDATE agent_workflow_run SET question=? WHERE run_id=?",objective,run.id());
         db.update("UPDATE agent_research_task SET objective=?,acceptance_criteria=CAST(? AS text[]) WHERE run_id=? AND task_id='task-main'",objective,"{\""+String.join("\",\"",criteria)+"\"}",run.id());
-        String original=mode.equals("complete")||mode.equals("segments-complete")?"Document version: 2.0\nVersion 2.0 allows 100 requests per minute.\n":"Document version: 2.0\nThis source specifies version 2.0 only; the per-minute request rate is not stated.\n";
+        String original=mode.startsWith("obligations-")||mode.equals("complete")||mode.equals("segments-complete")?"Document version: 2.0\nVersion 2.0 allows 100 requests per minute.\n":"Document version: 2.0\nThis source specifies version 2.0 only; the per-minute request rate is not stated.\n";
         when(ragflow.chunk("dataset-http","document-http","chunk-old")).thenReturn(object("id","chunk-old","doc_id","document-http","content",original));
         search(run,"search-criteria-"+mode,"chunk-old");
         db.update("UPDATE agent_workflow_run SET status='PLANNING',stage='PLANNING' WHERE run_id=?",run.id());
@@ -228,24 +229,34 @@ class AgentHttpPostgresIT {
         var output=java.nio.file.Path.of("target/criterion-http-"+mode+".json").toAbsolutePath();
         var log=java.nio.file.Path.of("target/criterion-http-"+mode+".log").toAbsolutePath();
         java.nio.file.Files.writeString(config,canonical(object("mode",mode,"run",run.id(),"claim",run.claim(),"url","http://127.0.0.1:"+port,
-            "token",service(),"objective",objective,"criteria",criteria,"output",output.toString(),
+            "token",service(),"viewer_token",user(run.user()),"objective",objective,"criteria",criteria,"output",output.toString(),
             "budget",JSON.readTree(db.queryForObject("SELECT budget::text FROM agent_workflow_run WHERE run_id=?",String.class,run.id())),
             "grant",db.queryForObject("SELECT grant_id FROM agent_workflow_run WHERE run_id=?",String.class,run.id()))));
+        if(mode.startsWith("obligations-auto")) db.update("DELETE FROM agent_research_task WHERE run_id=?",run.id());
         try {
-            var builder=new ProcessBuilder(System.getenv().getOrDefault("AGENT_PYTHON","python3"),"-B","tests/fixtures/completion_http_probe.py")
+            var builder=new ProcessBuilder(System.getenv().getOrDefault("AGENT_PYTHON","python3"),"-B",mode.startsWith("obligations-")?"tests/fixtures/obligation_http_probe.py":"tests/fixtures/completion_http_probe.py")
                 .directory(java.nio.file.Path.of("workflow-service").toFile()).redirectErrorStream(true).redirectOutput(log.toFile());
             builder.environment().put("PYTHONPATH",java.nio.file.Path.of("workflow-service/src").toAbsolutePath().toString());
             builder.environment().put("PYTHONDONTWRITEBYTECODE","1");builder.environment().put("COMPLETION_TEST_CONFIG",config.toString());
             builder.environment().put("TEST_AGENT_DATABASE_URL","postgresql://deepresearch_workflow:workflow-integration-test-password@"+PG.getHost()+":"+PG.getMappedPort(5432)+"/"+PG.getDatabaseName());
+            if(mode.startsWith("obligations-auto")) builder.environment().put("TEST_NATIVE_FIXTURE_DATABASE_URL","postgresql://"+PG.getUsername()+":"+PG.getPassword()+"@"+PG.getHost()+":"+PG.getMappedPort(5432)+"/"+PG.getDatabaseName());
             var process=builder.start();assertThat(process.waitFor(50,java.util.concurrent.TimeUnit.SECONDS)).isTrue();
             assertThat(process.exitValue()).withFailMessage(java.nio.file.Files.readString(log)).isZero();
             var result=JSON.readTree(java.nio.file.Files.readString(output));var report=result.path("report");
             boolean legacy=mode.equals("legacy");
             assertThat(db.queryForObject("SELECT count(*) FROM agent_research_requirements WHERE run_id=?",Integer.class,run.id())).isEqualTo(legacy?0:1);
             assertThat(db.queryForObject("SELECT count(*) FROM agent_research_requirement_binding WHERE run_id=?",Integer.class,run.id())).isEqualTo(legacy?0:criteria.size());
-            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL' AND purpose='DECISION' AND status='SETTLED'",Integer.class,run.id())).isEqualTo(legacy?0:1);
-            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL'",Integer.class,run.id())).isEqualTo(legacy?1:2);
-            String status=mode.equals("complete")||mode.equals("segments-complete")||mode.equals("refuted")?"SUCCEEDED":"INSUFFICIENT_EVIDENCE";
+            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL' AND purpose='DECISION' AND status='SETTLED'",Integer.class,run.id())).isEqualTo(legacy?0:mode.equals("obligations-auto-recovery")?6:mode.equals("obligations-auto")?3:1);
+            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL'",Integer.class,run.id())).isEqualTo(legacy?1:mode.equals("obligations-auto-recovery")?8:mode.equals("obligations-auto")?4:2);
+            String status=mode.startsWith("obligations-auto")||mode.equals("obligations-complete")||mode.equals("complete")||mode.equals("segments-complete")||mode.equals("refuted")?"SUCCEEDED":"INSUFFICIENT_EVIDENCE";
+            if(mode.startsWith("obligations-")) {
+                var declared=JSON.readTree(db.queryForObject("SELECT safe_result::text FROM agent_research_operation WHERE run_id=? AND purpose='DECISION' ORDER BY created_at LIMIT 1",String.class,run.id()));
+                assertThat(declared.path("request_binding").path("planner_contract").asText()).isEqualTo(AgentObligationContext.PLANNER);
+                var checked=JSON.readTree(db.queryForObject("SELECT request::text FROM agent_evidence_check WHERE run_id=? ORDER BY dispute_round DESC LIMIT 1",String.class,run.id()));
+                assertThat(checked.path("protocol_version").asText()).isEqualTo("evidence-check/3");
+                assertThat(checked.path("original_context").path("constraints").size()).isEqualTo(2);
+                assertThat(new AgentObligationContext(db).required(run.id())).isTrue();
+            }
             if(mode.equals("segments-complete")) {
                 var declared=JSON.readTree(db.queryForObject("SELECT safe_result::text FROM agent_research_operation WHERE run_id=? AND purpose='DECISION'",String.class,run.id()));
                 assertThat(declared.path("request_binding").path("planner_contract").asText()).isEqualTo(AgentQuestionSegments.PLANNER);
@@ -267,9 +278,19 @@ class AgentHttpPostgresIT {
             assertThat(request("POST",path,service(),finalizeBody(run,report,status)).status()).isEqualTo(200);
             assertThat(request("POST",path,service(),finalizeBody(run,report,status)).status()).isEqualTo(200);
             assertThat(request("GET","/api/research/workflows/"+run.id(),user(run.user()),null).body().path("status").asText()).isEqualTo(status);
+            var view=request("GET","/api/research/workflows/"+run.id()+"/evidence",user(run.user()),null);
+            assertThat(view.status()).withFailMessage(view.body().toString()).isEqualTo(200);
+            assertThat(view.body().path("claims")).isNotEmpty();
             return report;
         } finally {java.nio.file.Files.deleteIfExists(config);}
     }
+    @Test void freshDefaultGraphSearchReadCheckAndPublicationUseNewNativeContract() throws Exception {criterionHttpScenario("obligations-auto");}
+    @Test void freshDefaultGraphChangesSearchAfterWrongNamedSourceAndRecovers() throws Exception {criterionHttpScenario("obligations-auto-recovery");}
+    @Test void obligationReferencesAndNativeAlignmentCanCompleteThroughHttpSql() throws Exception {criterionHttpScenario("obligations-complete");}
+    @Test void truthfulIrrelevantClaimsDoNotCompleteOriginalObligations() throws Exception {criterionHttpScenario("obligations-irrelevant");}
+    @Test void absenceOfMentionDoesNotCompleteOriginalObligations() throws Exception {criterionHttpScenario("obligations-absence");}
+    @Test void wrongNamedSourceDoesNotCompleteOriginalObligations() throws Exception {criterionHttpScenario("obligations-source");}
+    @Test void classificationFailureBlocksEvenTruthfulSelectedSubset() throws Exception {criterionHttpScenario("obligations-partition");}
     @Test void uncoveredStoredRateCriterionStaysPartialThroughActualPythonJwtAndSql() throws Exception {criterionHttpScenario("partial");}
     @Test void allBoundCriteriaCanCompleteThroughActualPythonJwtAndSql() throws Exception {criterionHttpScenario("complete");}
     @Test void segmentPlannerCanPublishBothCriteriaThroughOfflineAdapterActualPythonJwtAndSql() throws Exception {criterionHttpScenario("segments-complete");}

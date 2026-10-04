@@ -57,6 +57,19 @@ public class AgentEvidenceAuthority implements EvidenceAuthority {
         return db.queryForObject("SELECT purpose FROM agent_research_operation WHERE run_id=? AND operation_key=? ORDER BY attempt DESC LIMIT 1",
                 String.class,g.runId(),g.callId());
     }
+    @Override public void assertCheckCallBinding(Grant g,String fingerprint) {
+        if(!active(g)) throw EvidenceException.denied();
+        var prior=db.queryForList("SELECT request_fingerprint FROM agent_evidence_check WHERE run_id=? AND call_id=?",g.runId(),g.callId());
+        if(prior.stream().anyMatch(r->!fingerprint.equals(r.get("request_fingerprint")))) throw new EvidenceException("CHECK_IDEMPOTENCY_CONFLICT");
+    }
+    @Override public boolean obligationChecksRequired(Grant g) {
+        if(!active(g)) throw EvidenceException.denied();
+        return new AgentObligationContext(db).required(g.runId());
+    }
+    @Override public JsonNode obligationContext(Grant g,String manifest,List<EvidenceDtos.ClaimReference> refs) {
+        if(!active(g)) throw EvidenceException.denied();
+        return new AgentObligationContext(db).context(g.runId(),g.taskId(),manifest,refs);
+    }
     @Override public Candidate candidate(Grant g,String sourceId) {
         return resolveCandidate(g,sourceId,null);
     }

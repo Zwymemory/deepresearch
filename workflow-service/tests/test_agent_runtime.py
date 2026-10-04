@@ -96,6 +96,16 @@ def continuation_fields(request):
             "requirements_ref": request.request_binding["requirements_manifest_sha256"]}
 
 
+class LegacyFixtureGraph(AutonomousResearchGraph):
+    """Existing scenarios deliberately replay the version-2/frozen-1 fixture contract."""
+    async def initialize(self, state):
+        result = await super().initialize(state)
+        if result:
+            result.update(planner_contract="agent-planning-segments/2",
+                          continuation_contract="agent-frozen-requirements/1")
+        return result
+
+
 class ObservationDrivenModel:
     """Small synthetic semantic oracle. Actions depend on input, never fixture IDs."""
 
@@ -395,7 +405,7 @@ def setup(case, *, budget=None, events=None, model=None):
     budget = budget or AgentRunBudget(runtime="agent")
 
     def factory(claim, effective):
-        return AutonomousResearchGraph(
+        return LegacyFixtureGraph(
             model=model,
             tools=tools,
             repository=repository,

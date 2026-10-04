@@ -441,6 +441,118 @@ class SchemaTests(unittest.TestCase):
                 native.verify_database_schema(conn, policy)
 
 
+def obligation_native_fixture(crossed=False):
+    """Two different obligations share a scope; their reference identities stay distinct."""
+    from deepresearch_workflow.agent_obligations import authoritative_context, obligation_drafts
+    from deepresearch_workflow.agent_question_segments import question_segments, planner_binding
+    from deepresearch_workflow.agent_requirements import canonical, freeze_requirements
+    from deepresearch_workflow.agent_completion import normalized_claim
+
+    db = native_fixture()
+    db['records'][0]['payload']['source'] = {'locator': {'uri': 'https://docs.example.test/security'}}
+    question = 'Verify encryption. Verify retention.'
+    run = db['run'][0]['run_id']
+    units = question_segments(question)['segments']
+    scope = copy.deepcopy(db['criteria'][0]['expected_claim']['applicability'])
+    scope['subject'] = 'Same product scope'
+    wire = {'planner_contract': 'agent-planning-obligations/3', 'claims_contract': 'agent-obligation-claims/1',
+            'action': 'finish', 'reason': 'Controlled two distinct research obligations', 'constraints': [],
+            'obligations': [{'text': text, 'kind': 'factual', 'applicability': scope,
+                             'segment_ids': [units[i]['segment_id']]}
+                            for i, text in enumerate(('Verify encryption', 'Verify retention'))]}
+    drafts = obligation_drafts(question, wire['obligations'], wire['constraints'])
+    value = {'planner_contract': wire['planner_contract'], 'claims_contract': wire['claims_contract'],
+             'requirements': drafts}
+    receipt = {'value': value, 'request_binding': {**planner_binding(question_segments(question)),
+               'planner_contract': wire['planner_contract'], 'claims_contract': wire['claims_contract'],
+               'continuation_contract': 'agent-frozen-requirements/2', 'planning_phase': 'initial',
+               'planner_declaration': canonical(wire), 'wire_response_sha256': native.digest(wire),
+               'response_sha256': native.digest(value)}}
+    manifest = freeze_requirements(run, question, drafts)
+    db['run'][0]['question'] = question
+    db['requirements'][0]['manifest'] = manifest
+    db['operations'][0]['safe_result'] = receipt
+    for i, c in enumerate(db['criteria']):
+        req = next(r for r in manifest['requirements'] if r['text'] == drafts[i]['text'])
+        db['requirement_bindings'][i]['requirement_id'] = req['requirement_id']
+        c['expected_claim'] = normalized_claim({'text': 'Resolved ' + drafts[i]['text'], 'kind': 'factual', 'applicability': scope})
+        c['expected_hash'] = native.digest(c['expected_claim'])
+        claim = db['checks'][i]['result']['records'][0]
+        claim.update(c['expected_claim'])
+        for record in db['records']:
+            if record['record_type'] == 'Claim' and record['payload']['claim_id'] == claim['claim_id']:
+                record['payload'].update(c['expected_claim'])
+
+    def build(crossed):
+        data = copy.deepcopy(db)
+        for i, check in enumerate(data['checks']):
+            other = 1 - i if crossed else i
+            ref = data['requirement_bindings'][other]
+            context = authoritative_context(question, manifest, receipt, data['requirement_bindings'], check['task_id'], [ref])
+            claim = check['result']['records'][0]
+            request = {'protocol_version': 'evidence-check/3', 'check_id': check['check_id'],
+                       'investigation_id': check['investigation'], 'dispute_round': 0, 'parent_check_id': None,
+                       'prior_relations': [], 'claims': [claim], 'original_context': context,
+                       'evidence': [data['records'][0]['payload']]}
+            response = {'planning_alignment': {'status': 'complete', 'reason': 'Controlled full partition proposal'},
+                        'claims': [{'claim_id': claim['claim_id'], 'answer_alignment': 'answers', 'limitations': [],
+                                    'relations': [{'evidence_id': 'ev-original', 'relation': 'supports',
+                                                   'quote': 'Synthetic original', 'reason': 'Controlled paragraph',
+                                                   'source_alignment': 'qualifies'}]}], 'follow_up_actions': []}
+            request_hash, response_hash = native.digest(request), native.digest(response)
+            check.update(request=request, request_sha256=request_hash, response_sha256=response_hash)
+            check['result']['verification'] = {'protocol_version': 'evidence-check/3', 'model_call_id': 'model-check-' + str(i),
+                                             'request_sha256': request_hash, 'response_sha256': response_hash, 'response': response}
+            operation = next(o for o in data['operations'] if o['operation_key'] == 'model-check-' + str(i))
+            operation['safe_result'] = {'value': response, 'request_binding': {'check_id': check['check_id'],
+                                        'request_sha256': request_hash, 'response_sha256': response_hash}}
+        for record in data['records']:
+            record['payload_sha256'] = native.digest(record['payload'])
+        return recount(data)
+    return build(crossed)
+
+
+class ObligationAuditTests(unittest.TestCase):
+    def test_initial_native_selector_and_required_wire_fields_are_validated(self):
+        for field, value in (("continuation_contract", "agent-frozen-requirements/1"),
+                             ("claims_contract", None), ("claims_contract", "foreign"),
+                             ("planning_phase", "continuation")):
+            with self.subTest(field=field, value=value):
+                db = obligation_native_fixture()
+                binding = db["operations"][0]["safe_result"]["request_binding"]
+                if value is None:
+                    binding.pop(field)
+                else:
+                    binding[field] = value
+                proof = native.native_requirements_validation(recount(db))
+                self.assertEqual(proof["status"], "invalid", proof)
+                self.assertFalse(proof["eligible_for_complete_review"], proof)
+        for invalid in ("missing", None, "invalid"):
+            with self.subTest(constraints=invalid):
+                db = obligation_native_fixture()
+                binding = db["operations"][0]["safe_result"]["request_binding"]
+                wire = json.loads(binding["planner_declaration"])
+                if invalid == "missing":
+                    wire.pop("constraints")
+                else:
+                    wire["constraints"] = invalid
+                binding["planner_declaration"] = json.dumps(wire, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+                binding["wire_response_sha256"] = native.digest(wire)
+                proof = native.native_requirements_validation(recount(db))
+                self.assertEqual(proof["status"], "invalid", proof)
+                self.assertFalse(proof["eligible_for_complete_review"], proof)
+
+
+    def test_reference_cannot_cross_distinct_obligations_with_identical_scope(self):
+        correct = native.native_requirements_validation(obligation_native_fixture())
+        self.assertEqual(correct["status"], "verified_mapping", correct)
+        self.assertTrue(correct["eligible_for_complete_review"], correct)
+        crossed = native.native_requirements_validation(obligation_native_fixture(crossed=True))
+        self.assertEqual(crossed["status"], "invalid", crossed)
+        self.assertFalse(crossed["eligible_for_complete_review"], crossed)
+        self.assertIn("NATIVE_CHECK_OBLIGATION_CLAIM_MISMATCH", str(crossed))
+
+
 class NativeAuditTests(unittest.TestCase):
     def test_two_persisted_requirements_and_current_checks_are_reviewable(self):
         result = native.native_requirements_validation(native_fixture())

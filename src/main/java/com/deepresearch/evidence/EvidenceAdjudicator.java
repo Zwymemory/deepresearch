@@ -10,7 +10,13 @@ public final class EvidenceAdjudicator {
     public static final Set<String> ACTIONS = Set.of("search", "read_source", "recheck_version", "seek_counterevidence", "stop_with_gaps");
     public EvidenceDtos.RecordResult adjudicate(EvidenceAuthority.Grant grant, JsonNode request, JsonNode response,
                                                 String assessment, Map<String, JsonNode> metadata) {
-        keys(response, "claims", "follow_up_actions");
+        boolean aligned=ObligationVerification.current(request);
+        if(aligned) {
+            keys(response,"claims","follow_up_actions","planning_alignment");
+            keys(response.path("planning_alignment"),"status","reason");
+            if(!Set.of("complete","incomplete","uncertain").contains(field(response.path("planning_alignment"),"status"))) throw new EvidenceException("CHECK_RESPONSE_INVALID");
+            text(field(response.path("planning_alignment"),"reason"),1000);
+        } else keys(response, "claims", "follow_up_actions");
         if (!response.path("claims").isArray() || response.path("claims").size() != request.path("claims").size()
                 || !response.path("follow_up_actions").isArray() || response.path("follow_up_actions").size() > 4)
             throw new EvidenceException("CHECK_RESPONSE_INVALID");
@@ -18,7 +24,10 @@ public final class EvidenceAdjudicator {
         request.path("evidence").forEach(e -> evidence.put(e.path("evidence_id").asText(), e));
         var proposals = new HashMap<String, JsonNode>();
         for (JsonNode proposal : response.path("claims")) {
-            keys(proposal, "claim_id", "relations", "limitations");
+            if(aligned) {
+                keys(proposal,"claim_id","relations","limitations","answer_alignment");
+                if(!Set.of("answers","irrelevant","absence_only","instruction_only","unresolved").contains(field(proposal,"answer_alignment"))) throw new EvidenceException("CHECK_RESPONSE_INVALID");
+            } else keys(proposal, "claim_id", "relations", "limitations");
             String identity = id(field(proposal, "claim_id"));
             if (proposals.put(identity, proposal) != null || !proposal.path("relations").isArray()
                     || proposal.path("relations").size() != evidence.size()) throw new EvidenceException("CHECK_RESPONSE_INVALID");
@@ -39,8 +48,12 @@ public final class EvidenceAdjudicator {
             var grouped = new HashMap<String, String>(); var seen = new HashSet<String>();
             var basis = new ArrayList<JsonNode>();
             var gaps = new ArrayList<String>();
+            boolean priorAlignmentUnresolved = false;
             for (JsonNode relation : proposal.path("relations")) {
-                keys(relation, "evidence_id", "relation", "quote", "reason");
+                if(aligned) {
+                    keys(relation,"evidence_id","relation","quote","reason","source_alignment");
+                    if(!Set.of("qualifies","wrong_source","unresolved").contains(field(relation,"source_alignment"))) throw new EvidenceException("CHECK_RESPONSE_INVALID");
+                } else keys(relation, "evidence_id", "relation", "quote", "reason");
                 String evidenceId = id(field(relation, "evidence_id"));
                 JsonNode source = evidence.get(evidenceId); String label = field(relation, "relation");
                 if (source == null || !seen.add(evidenceId) || !Set.of("supports", "refutes", "insufficient").contains(label))
@@ -60,6 +73,16 @@ public final class EvidenceAdjudicator {
                 }
                 links.add(object("evidence_id", evidenceId, "relation", label, "quote", boundQuote,
                         "assessment_method", "model_proposal", "assessment_ref", assessmentRef));
+                String alignmentGap=ObligationVerification.gap(request,response,claimId,evidenceId);
+                if(alignmentGap!=null) {
+                    gaps.add(alignmentGap);
+                    if(prior==null) {
+                        dismissed.add(object("evidence_id",evidenceId,"reason",alignmentGap));continue;
+                    }
+                    // A new semantic label cannot erase a previously applicable original.
+                    // Keep its direction and expose the unresolved qualification instead.
+                    priorAlignmentUnresolved = true;
+                }
                 JsonNode targetVersion = original.path("applicability").path("version"), sourceVersion = source.path("applicability").path("version");
                 boolean versionMatches = targetVersion.path("status").asText().equals(sourceVersion.path("status").asText())
                         && (!targetVersion.path("status").asText().equals("known") || targetVersion.path("value").asText().equals(sourceVersion.path("value").asText()));
@@ -87,7 +110,7 @@ public final class EvidenceAdjudicator {
             boolean verifiedSupport = verified.containsValue("supports"), verifiedRefute = verified.containsValue("refutes");
             String status = supports && refutes ? "contested" : supports ? "supported" : refutes ? "refuted" : "insufficient";
             var adopted = new ArrayList<String>(); var unresolved = new ArrayList<String>();
-            if (supports && refutes && verifiedSupport != verifiedRefute) {
+            if (supports && refutes && verifiedSupport != verifiedRefute && !priorAlignmentUnresolved) {
                 status = verifiedSupport ? "supported" : "refuted";
                 String direction = verifiedSupport ? "supports" : "refutes";
                 for (var entry : applicable.entrySet()) {
@@ -103,7 +126,11 @@ public final class EvidenceAdjudicator {
                     else dismissed.add(object("evidence_id", entry.getKey(), "reason", "Does not provide adequate support or counterevidence"));
                 }
             }
+            if(priorAlignmentUnresolved && !status.equals("contested")) {
+                status="insufficient";adopted.clear();unresolved.addAll(applicable.keySet());
+            }
             if (status.equals("contested")) gaps.add("Applicable sources disagree; no independently verified resolution is available");
+            if(aligned && !"complete".equals(response.path("planning_alignment").path("status").asText())) gaps.add("Original question partition is incomplete, misclassified or unverified");
             if (status.equals("insufficient")) gaps.add("No adequate original evidence establishes this claim in the requested scope");
             List<String> decisionGaps = status.equals("contested") || status.equals("insufficient") ? gaps.stream().distinct().toList() : List.of();
             var claim = scoped("Claim", grant, "claim_id", claimId, "run_id", grant.runId(), "text", original.path("text").asText(),

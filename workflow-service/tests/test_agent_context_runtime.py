@@ -9,10 +9,10 @@ import pytest
 
 from deepresearch_workflow.agent_protocol import ModelResult
 from deepresearch_workflow.agent_requirements import evaluate_coverage
-from deepresearch_workflow.agent_runtime import AutonomousResearchGraph
 from deepresearch_workflow.ports import RepositoryEventSink
 
 from .test_agent_json_transport import fixture_model, oracle_transport
+from .test_agent_runtime import LegacyFixtureGraph as AutonomousResearchGraph
 from .test_agent_runtime import ObservationDrivenModel, continuation_fields, setup
 
 

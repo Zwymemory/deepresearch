@@ -345,12 +345,13 @@ async def test_v2_settled_replay_recomputes_canonical_not_merely_hash_check():
 
 
 async def test_fresh_initialize_pins_version_before_admission_and_unknown_version_fails():
-    runtime = graph(None, PlanningLedger())
+    runtime = graph(None, PlanningLedger(), legacy_fixture=False)
     runtime.ledger.scope = lambda *_: _scope()
     initial = state()
     initial.pop("decision_steps")
     update = await runtime.initialize(initial)
-    assert update["planner_contract"] == PLANNER_VERSION and not runtime.ledger.rows
+    assert update["planner_contract"] == "agent-planning-obligations/3" and not runtime.ledger.rows
+    assert update["continuation_contract"] == "agent-frozen-requirements/2"
     with pytest.raises(WorkflowExecutionError, match="Unknown planning"):
         await runtime.decide({**state(), "planner_contract": "unknown/99"})
     assert not runtime.ledger.rows

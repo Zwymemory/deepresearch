@@ -81,6 +81,9 @@ async def action_context():
         "question": "Investigate both independent subjects",
     }
     state.update(await graph.initialize(state))
+    # This helper tests the unchanged v2 scope/counterevidence contract.
+    state.update(planner_contract=PLANNER_VERSION,
+                 continuation_contract="agent-frozen-requirements/1")
     state["tasks"] = [
         AgentTask(
             task_id=identity,

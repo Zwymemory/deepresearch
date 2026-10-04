@@ -127,15 +127,35 @@ public final class EvidenceService {
             text(spec.text(), 4000); if (!Set.of("factual", "inference", "recommendation").contains(spec.kind())) throw new EvidenceException("CHECK_REQUEST_INVALID");
             applicability(spec.applicability());
         }
+        boolean obligations=authority.obligationChecksRequired(g);
+        JsonNode originalContext=null;
+        if(obligations) {
+            if(!"agent-obligation-claims/1".equals(command.claims_contract())) throw new EvidenceException("CHECK_CONTRACT_REQUIRED");
+            originalContext=authority.obligationContext(g,command.requirements_ref(),command.claim_references());
+            if(command.claim_references().size()!=command.claims().size()) throw new EvidenceException("REQUIREMENT_CLAIM_REFERENCE_INVALID");
+            for(int i=0;i<command.claims().size();i++) {
+                var ref=command.claim_references().get(i);var requirement=ObligationVerification.find(originalContext.path("obligations"),"requirement_id",ref.requirement_id());
+                var actual=com.deepresearch.workflow.AgentCompletionService.normalize(JSON.valueToTree(command.claims().get(i)));
+                if(!requirement.path("kind").equals(actual.path("kind")) || !requirement.path("applicability").equals(actual.path("applicability"))) throw new EvidenceException("REQUIREMENT_CLAIM_SCOPE_CHANGED");
+            }
+        } else if(command.claims_contract()!=null || command.requirements_ref()!=null || command.claim_references()!=null) throw new EvidenceException("CHECK_CONTRACT_INVALID");
+        final JsonNode context=originalContext;
         var specs = command.claims().stream().map(s -> claimSpec(JSON.valueToTree(s))).sorted().toList();
         if (new HashSet<>(specs).size() != specs.size()) throw new EvidenceException("CHECK_REQUEST_INVALID");
         String investigation = sha(canonical(JSON.valueToTree(specs)));
         if (command.investigation_id() != null && !investigation.equals(command.investigation_id())) throw new EvidenceException("CLAIM_SCOPE_CHANGED");
         command.evidence_ids().forEach(EvidenceJson::id);
-        String fingerprint = sha(canonical(object("claims", specs, "evidence_ids", command.evidence_ids().stream().sorted().toList(), "dispute_round", command.dispute_round(), "parent_check_id", command.parent_check_id())));
+        var fingerprintInput=object("claims", specs, "evidence_ids", command.evidence_ids().stream().sorted().toList(), "dispute_round", command.dispute_round(), "parent_check_id", command.parent_check_id());
+        if(context!=null) fingerprintInput.set("original_context",context);
+        String fingerprint = sha(canonical(fingerprintInput));
         String checkId = "check-" + sha(g.runId() + ":" + g.projectId() + ":" + g.callId() + ":" + fingerprint).substring(0, 48);
         PrepareAttempt attempt = tx(g, () -> {
+            if(context!=null) authority.assertCheckCallBinding(g,fingerprint);
             var history = store.checks(g).stream().filter(e -> investigation.equals(e.investigation())).toList();
+            for(var entry:history) {
+                var old=entry.check().request().path("original_context");
+                if(context!=null && !canonical(context).equals(canonical(old))) throw new EvidenceException("CLAIM_OBLIGATION_CHANGED");
+            }
             for (var entry : history) if (checkId.equals(entry.check().checkId())) return new PrepareAttempt(prepared(entry.check(), investigation), null);
             // Validate supplied originals before reporting a conflicting root; never accept corrupt snapshots.
             for (String identity : command.evidence_ids()) verifiedEvidence(g, store.get(g, "Evidence", identity));
@@ -169,8 +189,9 @@ public final class EvidenceService {
                             "relation", link.path("relation").asText(), "quote", link.path("quote"), "decision_id", decision.path("decision_id").asText(), "assessment_ref", link.path("assessment_ref").asText()));
                 }
             }
-            var request = object("protocol_version", "evidence-check/2", "check_id", checkId, "claims", claims, "evidence", evidence,
+            var request = object("protocol_version", context==null?"evidence-check/2":"evidence-check/3", "check_id", checkId, "claims", claims, "evidence", evidence,
                     "dispute_round", command.dispute_round(), "parent_check_id", command.parent_check_id(), "investigation_id", investigation, "prior_relations", priors);
+            if(context!=null) request.set("original_context",context);
             if (canonical(request).getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 65536) return blockedAttempt(g, command, checkId, investigation, required, "CHECK_REQUEST_TOO_LARGE");
             return new PrepareAttempt(prepared(store.prepare(g, checkId, investigation, command.dispute_round(), command.parent_check_id(), fingerprint, sha(canonical(request)), request), investigation), null);
         });
@@ -251,7 +272,9 @@ public final class EvidenceService {
             if (!canonical(current).equals(canonical(evidence))) throw new EvidenceException("CHECK_SNAPSHOT_CHANGED");
             metadata.put(evidence.path("evidence_id").asText(), verifiedEvidence(g, current));
         }
-        var outcome = adjudicator.adjudicate(g, check.request(), command.response(), assessment, metadata);
+        var adjudicated = adjudicator.adjudicate(g, check.request(), command.response(), assessment, metadata);
+        var outcome = ObligationVerification.current(check.request()) ? new EvidenceDtos.RecordResult(adjudicated.records(),adjudicated.follow_up_actions(),false,
+            object("protocol_version","evidence-check/3","model_call_id",command.model_call_id(),"request_sha256",check.requestHash(),"response_sha256",responseHash,"response",command.response())) : adjudicated;
         return tx(g, () -> {
             outcome.records().forEach(row -> store.put(g, row));
             store.completeCheck(g, check.checkId(), responseHash, assessment, JSON.valueToTree(outcome)); return outcome;
@@ -492,7 +515,7 @@ public final class EvidenceService {
                 : locator.path("uri").asText();
     }
     private static EvidenceDtos.RecordResult result(JsonNode value) { return JSON.convertValue(value, EvidenceDtos.RecordResult.class); }
-    private static void applicability(JsonNode value) {
+    public static void applicability(JsonNode value) {
         keys(value, "subject", "version", "valid_at", "conditions"); text(field(value, "subject"), 4000);
         tagged(value.path("version"), false); tagged(value.path("valid_at"), true); EvidenceAdjudicator.strings(value.path("conditions"), 20, 1000);
     }

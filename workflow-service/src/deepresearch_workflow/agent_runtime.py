@@ -10,12 +10,32 @@ from typing import Any, Protocol
 from langgraph.graph import END, START, StateGraph
 
 from .agent_budget import AgentBudgetGateway, canonical
-from .agent_completion import begin_attempt, bind_criteria, ensure_criteria, recompute_tasks
+from .agent_completion import (
+    begin_attempt,
+    bind_criteria,
+    ensure_criteria,
+    normalized_claim,
+    recompute_tasks,
+)
 from .agent_context import CONTEXT_VERSION, decision_context
 from .agent_investigations import (
     InvestigationError,
     accept_check,
     select_investigation,
+)
+from .agent_obligations import (
+    CLAIMS_VERSION,
+    CanonicalObligationDecision,
+    ObligationContinuation,
+    ObligationDecision,
+    obligation_drafts,
+    resolve_claims,
+)
+from .agent_obligations import (
+    CONTINUATION_VERSION as OBLIGATION_CONTINUATION,
+)
+from .agent_obligations import (
+    PLANNER_VERSION as OBLIGATION_PLANNER,
 )
 from .agent_protocol import (
     CONTINUATION_VERSION,
@@ -152,8 +172,8 @@ class AutonomousResearchGraph:
             "plan_version": 1,
             "decision_steps": 0,
             "action_sequence": 0,
-            "planner_contract": PLANNER_VERSION,
-            "continuation_contract": CONTINUATION_VERSION,
+            "planner_contract": OBLIGATION_PLANNER,
+            "continuation_contract": OBLIGATION_CONTINUATION,
             "observations": [],
             "candidates": [],
             "evidence": [],
@@ -390,6 +410,52 @@ class AutonomousResearchGraph:
                 "candidate or issue a different targeted search. Never invent a source receipt."
             )})
 
+        if planner_version == OBLIGATION_PLANNER:
+            mapping = question_segments(state["question"])
+            payload = {k: v for k, v in payload.items() if k != "original_question"}
+            payload["question_segments"] = mapping
+            request = request.model_copy(update={
+                "payload": payload,
+                "result_schema": (ObligationContinuation.wire_schema() if continuation
+                                  else ObligationDecision.model_json_schema()),
+                "request_binding": {**request.request_binding, **planner_binding(mapping),
+                    "planner_contract": OBLIGATION_PLANNER,
+                    "continuation_contract": OBLIGATION_CONTINUATION,
+                    "claims_contract": CLAIMS_VERSION,
+                    "planning_phase": "continuation" if continuation else "initial",
+                    **({"requirements_manifest_sha256": continuation["manifest_sha256"]}
+                       if continuation else {})},
+                "instruction": (
+                    "Planner contract agent-planning-obligations/3; claims_contract "
+                    "agent-obligation-claims/1. Use the supplied exact question segments. "
+                    "Initial response: obligations are independent research questions, including "
+                    "genuinely requested recommendations, with segment_ids/kind/applicability. "
+                    "Separately list constraints {role: source|output, segment_ids, "
+                    "obligation_indices: zero-based indices}. Source restrictions and quote/output "
+                    "instructions constrain the relevant obligations; never manufacture a separate "
+                    "fact or recommendation for quoting. Preserve every substantive question and "
+                    "every nonblank segment. Exact original constraint text is server-derived. "
+                    "Classification is verified against the ENTIRE original question by CHECK. "
+                    "Before server freezing choose search/revise_plan/stop_with_gaps. "
+                    "Continuation: omit obligations and constraints entirely, return "
+                    "continuation_contract agent-frozen-requirements/2 and requirements_ref "
+                    "exactly equal to original_requirements.manifest_sha256. For check_claims "
+                    "each claim is {text, requirement_id, criterion_id} from the server's current "
+                    "task and bindings. Never provide kind/applicability overrides, "
+                    "criterion_bindings "
+                    "or requirement_bindings; the server derives immutable scope from references. "
+                    "Truthful irrelevant text or absence of mention does not answer the original "
+                    "question. A same-domain news page or similar title does not satisfy a named "
+                    "source restriction. Inspect actual read source identity and full text. "
+                    "Unverified/missing named source requires a changed targeted search or honest "
+                    "gap; read_source selects only an exact current candidate, "
+                    "never an invented URL.\n"
+                    + request.instruction[
+                        request.instruction.index("Resolve all canonical_objects"):
+                    ]
+                ),
+            })
+
         def validate_planning(value):
             from .agent_budget import ResultValidationError
 
@@ -426,9 +492,9 @@ class AutonomousResearchGraph:
             request,
             validate_planning,
             canonicalize=(lambda value: self.internal_decision(
-                self.planning_decision(value, state), PLANNER_VERSION
+                self.planning_decision(value, state), planner_version
             ))
-            if planner_version == PLANNER_VERSION else None,
+            if planner_version in {PLANNER_VERSION, OBLIGATION_PLANNER} else None,
         )
         decision = self.planning_decision(result.value, state)
         next_state = {**state, "decision_steps": state["decision_steps"] + 1,
@@ -446,8 +512,11 @@ class AutonomousResearchGraph:
         )
         return {
             # Checkpoint the raw versioned declaration, not a relabelled v1 response.
-            "decision": (copy.deepcopy(result.value) if planner_version == PLANNER_VERSION
-                         else decision.model_dump(mode="json")),
+            "decision": (
+                copy.deepcopy(result.value)
+                if planner_version in {PLANNER_VERSION, OBLIGATION_PLANNER}
+                else decision.model_dump(mode="json")
+            ),
             "decision_steps": next_state["decision_steps"],
             "action_sequence": action_sequence,
             "agent_usage": summary,
@@ -457,7 +526,7 @@ class AutonomousResearchGraph:
     @staticmethod
     def planner_version(state):
         version = state.get("planner_contract", LEGACY_PLANNER_VERSION)
-        if version not in {LEGACY_PLANNER_VERSION, PLANNER_VERSION}:
+        if version not in {LEGACY_PLANNER_VERSION, PLANNER_VERSION, OBLIGATION_PLANNER}:
             raise WorkflowExecutionError(
                 "Unknown planning protocol", error_code="REQUIREMENT_PLANNER_VERSION_INVALID"
             )
@@ -466,6 +535,20 @@ class AutonomousResearchGraph:
     @staticmethod
     def internal_decision(decision, version, *, state=None):
         value = decision.model_dump(mode="json")
+        if version == OBLIGATION_PLANNER:
+            value["planner_contract"] = OBLIGATION_PLANNER
+            value["claims_contract"] = CLAIMS_VERSION
+            if state:
+                manifest = AutonomousResearchGraph.continuation_manifest(state)
+                if manifest:
+                    value.pop("requirements", None)
+                    value.pop("constraints", None)
+                    value.update(continuation_contract=OBLIGATION_CONTINUATION,
+                                 requirements_ref=manifest["manifest_sha256"])
+                else:
+                    value["obligations"] = value.pop("requirements", [])
+                    value.setdefault("constraints", [])
+            return value
         if version == PLANNER_VERSION:
             value["planner_contract"] = PLANNER_VERSION
         if state and state.get("continuation_contract") == CONTINUATION_VERSION:
@@ -479,11 +562,12 @@ class AutonomousResearchGraph:
     @staticmethod
     def continuation_manifest(state):
         selector = state.get("continuation_contract")
-        if selector not in {None, CONTINUATION_VERSION}:
+        if selector not in {None, CONTINUATION_VERSION, OBLIGATION_CONTINUATION}:
             raise RequirementError("REQUIREMENT_PLANNER_VERSION_INVALID")
         if selector is None:
             return None
-        if AutonomousResearchGraph.planner_version(state) != PLANNER_VERSION:
+        if AutonomousResearchGraph.planner_version(state) != (
+                OBLIGATION_PLANNER if selector == OBLIGATION_CONTINUATION else PLANNER_VERSION):
             raise RequirementError("REQUIREMENT_PLANNER_VERSION_INVALID")
         if not state.get("original_requirements"):
             return None
@@ -493,6 +577,26 @@ class AutonomousResearchGraph:
     @classmethod
     def planning_decision(cls, value, state):
         manifest = cls.continuation_manifest(state)
+        if cls.planner_version(state) == OBLIGATION_PLANNER:
+            if manifest:
+                if "obligations" in value or "constraints" in value or "requirements" in value:
+                    raise RequirementError("REQUIREMENTS_CHANGED")
+                decision = ObligationContinuation.model_validate(value)
+                if decision.requirements_ref != manifest["manifest_sha256"]:
+                    raise RequirementError("REQUIREMENTS_CHANGED")
+            else:
+                decision = ObligationDecision.model_validate(value)
+                if decision.action == "check_claims":
+                    raise RequirementError("REQUIREMENT_CLAIM_REFERENCE_INVALID")
+            adapted = decision.model_dump(mode="json")
+            for k in (
+                "planner_contract", "claims_contract", "continuation_contract", "requirements_ref"
+            ):
+                adapted.pop(k, None)
+            if decision.requirements:
+                adapted["requirements"] = obligation_drafts(
+                    state["question"], adapted["requirements"], adapted["constraints"])
+            return CanonicalObligationDecision.model_validate(adapted)
         if cls.planner_version(state) == LEGACY_PLANNER_VERSION:
             return AgentDecision.model_validate(value)
         if manifest:
@@ -750,6 +854,22 @@ class AutonomousResearchGraph:
         gateway = self.gateway(state)
         update = {"tasks": tasks, **requirements_update}
         time_issue = None
+        if decision.action == "check_claims" and self.planner_version(state) == OBLIGATION_PLANNER:
+            references = [c.model_dump(mode="json") for c in decision.claims]
+            try:
+                claims, criterion_bindings = resolve_claims(state, task["task_id"], references)
+            except RequirementError as rejected:
+                return observe({"action": "check_claims", "errorCode": rejected.code,
+                    "allowed_references": associations[:8],
+                    "guidance": (
+                        "Use the current task's registered requirement/criterion references; "
+                        "do not override scope. Search changed source gaps or stop honestly."
+                    )})
+            derived = decision.model_dump(mode="json")
+            derived.pop("constraints", None)
+            derived.update(claims=claims, criterion_bindings=criterion_bindings)
+            decision = AgentDecision.model_validate(derived)
+            state = {**state, "claim_references": references, "claims_contract": CLAIMS_VERSION}
         if decision.action == "check_claims":
             selected_ids = (
                 decision.evidence_ids
@@ -861,6 +981,13 @@ class AutonomousResearchGraph:
             else:
                 update["investigations"], update["task_investigations"] = investigations, bindings
                 begin_attempt(task, selected, entry, key, investigation_id, tasks, investigations)
+                if state.get("claims_contract") == CLAIMS_VERSION:
+                    reference_by_claim = {
+                        canonical(normalized_claim(c.model_dump(mode="json"))): r
+                        for c, r in zip(decision.claims, state["claim_references"], strict=True)
+                    }
+                    state = {**state, "claim_references": [reference_by_claim[canonical(c)]
+                             for c in entry["claim_specs"]]}
                 scoped = {
                     **state,
                     "packet": entry["packet"],

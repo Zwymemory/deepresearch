@@ -60,7 +60,7 @@ public final class AgentCompletionService {
             if(!gaps.isEmpty() || !canonical(dependencies).equals(canonical(parse((String)row.get("dependency_snapshot"))))) {
                 standards.add(criterion(id,text,"stale",null,null,"Prerequisite proof changed or remains unfinished; criterion must be rechecked"));continue;
             }
-            standards.add(check(g,id,text,expected,(String)row.get("investigation")));
+            standards.add(check(g,task.id,id,text,expected,(String)row.get("investigation")));
         }
         if(rows.size()!=task.criteria.size() || task.criteria.isEmpty()) gaps.add("Stored standard coverage is missing or inconsistent");
         if(!task.status.equals("done")) gaps.add("Native task has not completed its active checks");
@@ -68,7 +68,7 @@ public final class AgentCompletionService {
         var goal=new EvidenceAuthority.ReportGoal(task.id,task.text,complete?"done":task.status.equals("cancelled")?"cancelled":"blocked",complete,standards,gaps);
         results.put(task.id,goal);return goal;
     }
-    private EvidenceAuthority.ReportCriterion check(EvidenceAuthority.Grant g,String id,String text,JsonNode expected,String investigation) {
+    private EvidenceAuthority.ReportCriterion check(EvidenceAuthority.Grant g,String task,String id,String text,JsonNode expected,String investigation) {
         var operations=db.queryForList("""
             SELECT o.status,o.safe_result::text AS body,p.current_call_id FROM agent_research_investigation_progress p
             JOIN agent_research_operation o ON o.run_id=p.run_id AND o.operation_key=p.current_call_id AND o.attempt=1
@@ -121,6 +121,9 @@ public final class AgentCompletionService {
             || !Set.of("supported","refuted").contains(status) || !decision.path("gaps").isEmpty()
             || !decision.path("unresolved_evidence_ids").isEmpty() || decision.path("adopted_evidence_ids").isEmpty())
             return criterion(id,text,"blocked",checkId,claimId,"Current scoped adjudication remains unresolved or its proof is invalid");
+        var alignment=new AgentObligationContext(db);
+        if(alignment.required(g.runId()) && !alignment.completedCriterion(g.runId(),task,id,expected,checkId))
+            return criterion(id,text,"blocked",checkId,claimId,"Original question, obligation or adopted source alignment lacks native CHECK3 attestation");
         return criterion(id,text,"resolved",checkId,claimId,null);
     }
     private static JsonNode findDecision(JsonNode outcome,String claimId) {

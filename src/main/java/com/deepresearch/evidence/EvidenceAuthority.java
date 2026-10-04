@@ -9,6 +9,9 @@ import java.util.List;
 public interface EvidenceAuthority {
     Grant authorize(String authorization, String operation, EvidenceDtos.Identifiers identifiers);
     boolean active(Grant grant);
+    default void assertCheckCallBinding(Grant grant,String fingerprint) { }
+    default boolean obligationChecksRequired(Grant grant) { return false; }
+    default JsonNode obligationContext(Grant grant,String manifest,List<EvidenceDtos.ClaimReference> refs) { throw EvidenceException.denied(); }
     Candidate candidate(Grant grant, String sourceId);
     /** Resolve the exact completed search receipt stored by read_source, never the newest hit. */
     default Candidate originalCandidate(Grant grant, String sourceId, String parentReceiptId) { throw EvidenceException.denied(); }

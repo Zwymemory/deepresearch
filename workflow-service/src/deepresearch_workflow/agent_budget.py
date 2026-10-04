@@ -47,6 +47,7 @@ SAFE_FIELDS = frozenset({
     "requirements", "requirement_bindings", "question_spans", "start", "end", "text",
     "requirement_id",
     "segment_ids", "planner_contract", "continuation_contract", "requirements_ref",
+    "obligations", "constraints", "role", "obligation_indices", "claims_contract",
 })
 
 
@@ -633,7 +634,8 @@ class AgentBudgetGateway:
                 result = ModelResult.model_validate(reservation["replay"])
                 self.check_bounds(result, input_reserved, request.max_output_tokens)
                 try:
-                    if request.request_binding.get("planner_contract") == PLANNER_VERSION:
+                    if request.request_binding.get("planner_contract") in {
+                            PLANNER_VERSION, "agent-planning-obligations/3"}:
                         if (any(result.request_binding.get(k) != v
                                 for k, v in request.request_binding.items())
                                 or result.request_binding.get("response_sha256")

@@ -50,6 +50,9 @@ final class AgentQuestionSegments {
     static JsonNode declarations(String question,JsonNode receipt) {
         try {
             var stored=receipt.path("value");var binding=receipt.path("request_binding");
+            if(AgentObligationContext.PLANNER.equals(stored.path("planner_contract").asText())
+                    || AgentObligationContext.PLANNER.equals(binding.path("planner_contract").asText()))
+                return AgentObligationContext.declarations(question,receipt);
             if(!stored.has("planner_contract") && !binding.has("planner_contract")) {
                 for(String key:new String[]{"planner_settlement_contract","planner_declaration","wire_response_sha256","question_mapping_version","question_mapping_sha256"})
                     if(binding.has(key)) return JSON.nullNode();

@@ -83,6 +83,14 @@ class ExactSourceVerifier:
                     draft["applicability"].pop("conditions")  # Legal optional-schema default.
             return result
         assert request.name == "EvidenceCheck"
+        async with httpx.AsyncClient() as viewer:
+            pending = await viewer.get(
+                self.config["url"] + "/api/research/workflows/" + self.config["run"] + "/evidence",
+                headers={"Authorization": self.config["viewer_token"]},
+            )
+        assert pending.status_code == 200, pending.text
+        assert pending.json()["availability"] == "RECORDED_INCOMPLETE"
+        assert any(c["status"] == "AWAITING_MODEL" for c in pending.json()["checks"])
         proposals = []
         for claim in request.payload["claims"]:
             text = claim["text"]
@@ -156,6 +164,10 @@ async def main():
                 "question": cfg["objective"],
             }
             state.update(await graph.initialize(state))
+            if cfg["mode"] == "segments-complete":
+                # Preserve the original v2/frozen1 fixture, independent of the new default.
+                state.update(planner_contract=PLANNER_VERSION,
+                             continuation_contract=CONTINUATION_VERSION)
             if cfg["mode"] != "segments-complete":
                 # Existing fixture cases continue exercising saved v1 declarations.
                 state["planner_contract"] = LEGACY_PLANNER_VERSION

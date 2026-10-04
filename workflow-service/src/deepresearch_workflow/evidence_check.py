@@ -53,6 +53,37 @@ After two supplement rounds request stop_with_gaps instead of additional investi
 """
 
 
+ALIGNMENT_SYSTEM = (
+    SYSTEM.replace(
+        "matching the supplied schema: claims and follow_up_actions.",
+        "matching the supplied schema: claims, follow_up_actions and planning_alignment.",
+    )
+    + """
+CHECK3 additionally receives authoritative original_context. Assess the ENTIRE original
+question and ALL obligations/source-output constraint roles, even when checking a subset.
+planning_alignment is complete only if every substantive question (including genuine
+recommendations) is an obligation and execution/quote instructions are constraints.
+A hidden fact classified as output, or a citation instruction manufactured as a fact or
+recommendation, requires incomplete/uncertain. Mechanical segment coverage proves no meaning.
+For each claim answer_alignment=answers only when its content directly answers its bound
+original obligation preserving all conditions. Truthful but irrelevant content, an absence
+of mention substituted for an eligibility answer, or an instruction-only claim cannot answer.
+For every source relation source_alignment=qualifies only when its actual final read locator
+and original snapshot satisfy the original source restrictions AND the claim's relevant scope.
+Search candidate titles/requested URLs are unverified leads. A same-domain news page,
+redirect to a sibling article, or overlapping title is not proof of the named original page.
+Use wrong_source/unresolved conservatively when identity or relevance is not established.
+A correct quote alone does not answer the question. Preserve contrary material and propose
+changed targeted search for the exact missing named source or stop with explicit gaps.
+These judgements remain budgeted semantic proposals, not universal truth guarantees.
+"""
+)
+
+
+def verifier_instruction(request):
+    return ALIGNMENT_SYSTEM if request.get("protocol_version") == "evidence-check/3" else SYSTEM
+
+
 class EvidenceCheckError(ValueError):
     """Safe code only: no model/source/provider text included."""
 
@@ -92,11 +123,14 @@ def checked_request(request: dict[str, Any], request_sha256: str) -> dict[str, A
         "dispute_round",
         "parent_check_id",
     }
-    if request.get("protocol_version") == "evidence-check/2":
+    if request.get("protocol_version") in {"evidence-check/2", "evidence-check/3"}:
         expected |= {"investigation_id", "prior_relations"}
+    if request.get("protocol_version") == "evidence-check/3":
+        expected.add("original_context")
     keys(request, expected)
     if (
-        request["protocol_version"] not in {"evidence-check/1", "evidence-check/2"}
+        request["protocol_version"]
+        not in {"evidence-check/1", "evidence-check/2", "evidence-check/3"}
         or sha(canonical(request)) != request_sha256
     ):
         raise EvidenceCheckError("CHECK_REQUEST_BINDING_INVALID")
@@ -116,7 +150,60 @@ def checked_request(request: dict[str, Any], request_sha256: str) -> dict[str, A
             "sha256"
         ):
             raise EvidenceCheckError("CHECK_SNAPSHOT_CHANGED")
-    if request["protocol_version"] == "evidence-check/2":
+    if request["protocol_version"] == "evidence-check/3":
+        context = request["original_context"]
+        keys(
+            context,
+            {
+                "contract_version",
+                "question",
+                "manifest_sha256",
+                "declaration_sha256",
+                "obligations",
+                "constraints",
+                "claim_bindings",
+            },
+        )
+        if (
+            context["contract_version"] != "agent-obligation-context/1"
+            or not isinstance(context["question"], str)
+            or not context["question"].strip()
+            or not isinstance(context["obligations"], list)
+            or not context["obligations"]
+            or len(context["obligations"]) > 32
+            or not isinstance(context["constraints"], list)
+            or len(context["constraints"]) > 16
+            or len(context["claim_bindings"]) != len(claims)
+        ):
+            raise EvidenceCheckError("CHECK_ORIGINAL_CONTEXT_INVALID")
+        for field in ("manifest_sha256", "declaration_sha256"):
+            value = context[field]
+            if (
+                not isinstance(value, str)
+                or len(value) != 64
+                or any(c not in "0123456789abcdef" for c in value)
+            ):
+                raise EvidenceCheckError("CHECK_ORIGINAL_CONTEXT_INVALID")
+        seen_r, seen_c, seen_i = set(), set(), set()
+        obligations = {r["requirement_id"] for r in context["obligations"]}
+        for binding in context["claim_bindings"]:
+            keys(binding, {"requirement_id", "criterion_id", "claim_index"})
+            r, c, i = binding["requirement_id"], binding["criterion_id"], binding["claim_index"]
+            if (
+                r not in obligations
+                or not isinstance(c, str)
+                or not c
+                or type(i) is not int
+                or not 0 <= i < len(claims)
+                or r in seen_r
+                or c in seen_c
+                or i in seen_i
+            ):
+                raise EvidenceCheckError("CHECK_ORIGINAL_CONTEXT_INVALID")
+            seen_r.add(r)
+            seen_c.add(c)
+            seen_i.add(i)
+    if request["protocol_version"] in {"evidence-check/2", "evidence-check/3"}:
         priors = request["prior_relations"]
         if not isinstance(priors, list) or len(priors) > 16:
             raise EvidenceCheckError("CHECK_REQUEST_INVALID")
@@ -161,6 +248,11 @@ def response_schema(request: dict[str, Any]) -> dict[str, Any]:
             "reason": string,
         }
     )
+    if request["protocol_version"] == "evidence-check/3":
+        relation["properties"]["source_alignment"] = {
+            "enum": ["qualifies", "wrong_source", "unresolved"]
+        }
+        relation["required"].append("source_alignment")
     proposal = obj(
         {
             "claim_id": {"enum": [c["claim_id"] for c in request["claims"]]},
@@ -173,8 +265,13 @@ def response_schema(request: dict[str, Any]) -> dict[str, Any]:
             "limitations": {"type": "array", "items": string, "maxItems": 8},
         }
     )
+    if request["protocol_version"] == "evidence-check/3":
+        proposal["properties"]["answer_alignment"] = {
+            "enum": ["answers", "irrelevant", "absence_only", "instruction_only", "unresolved"]
+        }
+        proposal["required"].append("answer_alignment")
     action = obj({"action": {"enum": sorted(ACTIONS)}, "query": string, "reason": string})
-    return obj(
+    schema = obj(
         {
             "claims": {
                 "type": "array",
@@ -186,12 +283,19 @@ def response_schema(request: dict[str, Any]) -> dict[str, Any]:
         }
     )
 
+    if request["protocol_version"] == "evidence-check/3":
+        schema["properties"]["planning_alignment"] = obj(
+            {"status": {"enum": ["complete", "incomplete", "uncertain"]}, "reason": string}
+        )
+        schema["required"].append("planning_alignment")
+    return schema
+
 
 def build_verifier_messages(request: dict[str, Any], request_sha256: str) -> list[dict[str, str]]:
     checked_request(request, request_sha256)
     # Do not append source text to the system message; tools/actor never come from it.
     return [
-        {"role": "system", "content": SYSTEM},
+        {"role": "system", "content": verifier_instruction(request)},
         {
             "role": "user",
             "content": canonical(
@@ -274,13 +378,38 @@ def parse_verifier_response(raw: str, request: dict[str, Any], request_sha256: s
         raise
     except (ValueError, TypeError, RecursionError):
         raise EvidenceCheckError("CHECK_JSON_INVALID") from None
-    keys(value, {"claims", "follow_up_actions"})
+    aligned = request["protocol_version"] == "evidence-check/3"
+    keys(
+        value,
+        {"claims", "follow_up_actions", "planning_alignment"}
+        if aligned
+        else {"claims", "follow_up_actions"},
+    )
+    if aligned:
+        plan = value["planning_alignment"]
+        keys(plan, {"status", "reason"})
+        if plan["status"] not in {"complete", "incomplete", "uncertain"}:
+            raise EvidenceCheckError("CHECK_RESPONSE_INVALID")
+        _text(plan["reason"], 1000)
     claims = {c["claim_id"] for c in request["claims"]}
     sources = {e["evidence_id"]: e for e in request["evidence"]}
     if not isinstance(value["claims"], list) or len(value["claims"]) != len(claims):
         raise EvidenceCheckError("CHECK_RESPONSE_INVALID")
     for proposal in value["claims"]:
-        keys(proposal, {"claim_id", "relations", "limitations"})
+        keys(
+            proposal,
+            {"claim_id", "relations", "limitations", "answer_alignment"}
+            if aligned
+            else {"claim_id", "relations", "limitations"},
+        )
+        if aligned and proposal["answer_alignment"] not in {
+            "answers",
+            "irrelevant",
+            "absence_only",
+            "instruction_only",
+            "unresolved",
+        }:
+            raise EvidenceCheckError("CHECK_RESPONSE_INVALID")
         identity = proposal["claim_id"]
         if not isinstance(identity, str) or identity not in claims:
             raise EvidenceCheckError("CHECK_CLAIM_BINDING_INVALID")
@@ -290,7 +419,18 @@ def parse_verifier_response(raw: str, request: dict[str, Any], request_sha256: s
             raise EvidenceCheckError("CHECK_EVIDENCE_BINDING_INVALID")
         seen: set[str] = set()
         for relation in relations:
-            keys(relation, {"evidence_id", "relation", "quote", "reason"})
+            keys(
+                relation,
+                {"evidence_id", "relation", "quote", "reason", "source_alignment"}
+                if aligned
+                else {"evidence_id", "relation", "quote", "reason"},
+            )
+            if aligned and relation["source_alignment"] not in {
+                "qualifies",
+                "wrong_source",
+                "unresolved",
+            }:
+                raise EvidenceCheckError("CHECK_RESPONSE_INVALID")
             evidence_id = relation["evidence_id"]
             if (
                 not isinstance(evidence_id, str)

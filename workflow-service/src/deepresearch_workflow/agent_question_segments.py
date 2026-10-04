@@ -141,6 +141,34 @@ def declaration_drafts(question, receipt):
             raise RequirementError("REQUIREMENT_PLANNER_VERSION_INVALID")
         return stored["requirements"]
     mapping = question_segments(question)
+    if bound_version == "agent-planning-obligations/3":
+        from .agent_obligations import (
+            CLAIMS_VERSION,
+            CONTINUATION_VERSION,
+            ObligationDecision,
+            obligation_drafts,
+        )
+
+        expected = {**planner_binding(mapping), "planner_contract": bound_version}
+        if (stored.get("planner_contract") != bound_version
+                or any(binding.get(k) != v for k, v in expected.items())
+                or binding.get("claims_contract") != CLAIMS_VERSION
+                or binding.get("continuation_contract") != CONTINUATION_VERSION
+                or binding.get("planning_phase") != "initial"
+                or binding.get("response_sha256")
+                != hashlib.sha256(canonical(stored).encode()).hexdigest()):
+            raise RequirementError("REQUIREMENT_SEGMENT_BINDING_INVALID")
+        wire = replay_declaration(receipt)
+        if wire.get("planner_contract") != bound_version:
+            raise RequirementError("REQUIREMENT_PLANNER_VERSION_INVALID")
+        try:
+            ObligationDecision.model_validate(wire)
+        except (ValueError, TypeError):
+            raise RequirementError("REQUIREMENT_SEGMENT_BINDING_INVALID") from None
+        drafts = obligation_drafts(question, wire.get("obligations"), wire.get("constraints", []))
+        if canonical(drafts) != canonical(stored.get("requirements")):
+            raise RequirementError("REQUIREMENT_SEGMENT_BINDING_INVALID")
+        return drafts
     if bound_version != PLANNER_VERSION:
         raise RequirementError("REQUIREMENT_PLANNER_VERSION_INVALID")
     if stored.get("planner_contract") != PLANNER_VERSION:

@@ -9,10 +9,15 @@ public final class EvidenceDtos {
     public record Identifiers(String project_id, String run_id, String task_id, String call_id, String claim_token) { }
     public record ReadRequest(Identifiers identifiers, String source_id) { }
     public record ClaimSpec(String text, String kind, JsonNode applicability) { }
+    public record ClaimReference(String requirement_id,String criterion_id) { }
     public record PrepareRequest(Identifiers identifiers, List<ClaimSpec> claims,
-                                 List<String> evidence_ids, int dispute_round, String parent_check_id, String investigation_id) {
+                                 List<String> evidence_ids, int dispute_round, String parent_check_id, String investigation_id,
+                                 String claims_contract,String requirements_ref,List<ClaimReference> claim_references) {
+        public PrepareRequest(Identifiers identifiers,List<ClaimSpec> claims,List<String> evidence_ids,int dispute_round,String parent_check_id,String investigation_id) {
+            this(identifiers,claims,evidence_ids,dispute_round,parent_check_id,investigation_id,null,null,null);
+        }
         public PrepareRequest(Identifiers identifiers, List<ClaimSpec> claims, List<String> evidence_ids, int dispute_round, String parent_check_id) {
-            this(identifiers, claims, evidence_ids, dispute_round, parent_check_id, null);
+            this(identifiers, claims, evidence_ids, dispute_round, parent_check_id, null,null,null,null);
         }
     }
     public record CompleteRequest(Identifiers identifiers, String check_id, String model_call_id,
@@ -27,6 +32,11 @@ public final class EvidenceDtos {
             this(check_id, request_sha256, request, requires_model, immediate_result, null, List.of());
         }
     }
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     public record RecordResult(List<JsonNode> records, List<JsonNode> follow_up_actions,
-                               boolean semantic_truth_guaranteed) { }
+                               boolean semantic_truth_guaranteed,JsonNode verification) {
+        public RecordResult(List<JsonNode> records,List<JsonNode> follow_up_actions,boolean semantic_truth_guaranteed) {
+            this(records,follow_up_actions,semantic_truth_guaranteed,null);
+        }
+    }
 }

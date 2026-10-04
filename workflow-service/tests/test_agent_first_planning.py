@@ -27,7 +27,7 @@ from deepresearch_workflow.runner import WorkflowRunner
 
 from .test_agent_identity import export
 from .test_agent_json_transport import envelope, json_settings
-from .test_agent_runtime import setup
+from .test_agent_runtime import LegacyFixtureGraph, setup
 
 ROOT = Path(__file__).resolve().parents[2]
 SCENARIOS = json.loads((ROOT / "testdata/agent-live/sources/scenarios.json").read_text())
@@ -135,8 +135,8 @@ def state(question=QUESTION):
     }
 
 
-def graph(model, ledger):
-    return AutonomousResearchGraph(
+def graph(model, ledger, *, legacy_fixture=True):
+    return (LegacyFixtureGraph if legacy_fixture else AutonomousResearchGraph)(
         model=model,
         ledger=ledger,
         tools=None,

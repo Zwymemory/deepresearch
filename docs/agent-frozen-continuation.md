@@ -1,6 +1,6 @@
 # Frozen requirements and bounded action recovery
 
-Fresh agent runs persist `continuation_contract=agent-frozen-requirements/1` alongside the segment planner version. Initial planning extracts independent factual obligations with server segment references. Source restrictions and citation/output instructions attach to the relevant obligations as shared segments and applicability conditions; they are not separate facts to certify.
+Segment-planner v2 runs persist `continuation_contract=agent-frozen-requirements/1`. Fresh obligation-planner v3 runs use `agent-frozen-requirements/2`; see [original-obligation verification](agent-obligation-alignment.md). Initial planning extracts independent factual obligations with server segment references. Source restrictions and citation/output instructions attach to the relevant obligations as shared segments and applicability conditions; they are not separate facts to certify.
 
 After the server freezes the original manifest, continuation responses must return its exact `requirements_ref` hash and the continuation version. The wire schema omits `requirements`; any declaration field, even empty or unchanged, is rejected. The server still validates canonical requirements, criterion bindings and native settlement. Existing checkpoints without the new selector retain their original v1/v2 request bytes and replay bindings; they are not migrated.
 
