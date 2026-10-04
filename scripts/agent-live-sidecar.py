@@ -151,6 +151,13 @@ def main():
                                    "policy_version": POLICY_VERSION,
                                    "result_transport": settings.agent_result_transport,
                                    "transport_contract_version": TRANSPORT_CONTRACT_VERSION}}
+    from deepresearch_workflow.agent_question_segments import (
+        PLANNER_VERSION, MAPPING_VERSION, SETTLEMENT_VERSION,
+    )
+    identity["planner_identity"] = {
+        "planner_contract": PLANNER_VERSION, "question_mapping_version": MAPPING_VERSION,
+        "planner_settlement_contract": SETTLEMENT_VERSION,
+    }
     descriptor = os.open(args.identity_output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "w") as stream:
         json.dump(identity, stream, indent=2)

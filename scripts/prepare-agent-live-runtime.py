@@ -15,7 +15,7 @@ import zipfile
 from urllib.request import urlopen
 
 from agent_live_common import file_sha, http_json, read_private, source_digest, verify_runtime, write_private
-from agent_retest_batch import BATCH, BATCHES, DIAGNOSTICS_WEB_BATCH, JSON_WEB_BATCH, JSON_WEB_BATCHES, POST_IDENTITY_BATCH, V22_WEB_BATCH
+from agent_retest_batch import BATCH, BATCHES, DIAGNOSTICS_WEB_BATCH, JSON_WEB_BATCH, JSON_WEB_BATCHES, POST_IDENTITY_BATCH, SEGMENTS_WEB_BATCH, V22_WEB_BATCH
 from agent_acceptance_v22 import candidate_schema_policy, verify_database_schema
 
 ISOLATION = "agent-live-20260930"
@@ -220,7 +220,7 @@ def start(state, credentials, built, python, ready_path, sources, model_name, ba
     image_id = json.loads(subprocess.check_output(["docker", "image", "inspect", image]))[0]["Id"]
     ready = {**built, "phase": "starting", "ready": False, "isolation_id": ISOLATION,
              "batch_id": batch_id, "historical_state_dir": str(state.resolve()),
-             "run_manifest_path": str((ready_path.parent / ({DIAGNOSTICS_WEB_BATCH: "agent-live-diagnostics-web-runs-20261004.json", V22_WEB_BATCH: "agent-live-v22-web-runs-20261004.json", JSON_WEB_BATCH: "agent-live-json-web-runs-20261003.json", POST_IDENTITY_BATCH: "agent-live-post-identity-runs-20261003.json"}.get(batch_id, "agent-live-retest-runs-20261003.json"))).resolve()),
+             "run_manifest_path": str((ready_path.parent / ({SEGMENTS_WEB_BATCH: "agent-live-segments-web-runs-20261004.json", DIAGNOSTICS_WEB_BATCH: "agent-live-diagnostics-web-runs-20261004.json", V22_WEB_BATCH: "agent-live-v22-web-runs-20261004.json", JSON_WEB_BATCH: "agent-live-json-web-runs-20261003.json", POST_IDENTITY_BATCH: "agent-live-post-identity-runs-20261003.json"}.get(batch_id, "agent-live-retest-runs-20261003.json"))).resolve()),
              "scenario_manifest_path": str((source / "testdata/agent-live/sources/scenarios.json").resolve()),
              "scenario_manifest_sha256": file_sha(source / "testdata/agent-live/sources/scenarios.json"),
              "ci": None, "research_runs_submitted": 0,
@@ -280,6 +280,8 @@ def start(state, credentials, built, python, ready_path, sources, model_name, ba
             or sidecar_identity["model_identity"].get("result_transport") != agent_result_transport):
         raise ValueError("Actual sidecar request configuration differs")
     ready["model_identity"] = sidecar_identity["model_identity"]
+    if batch_id == SEGMENTS_WEB_BATCH:
+        ready["planner_identity"] = sidecar_identity["planner_identity"]
     ready["build_verification"] = verify_runtime({**ready, "ready": True}, token)
     ready.update({"ready": True, "phase": "runtime_ready_sources_pending"})
     write_private(ready_path, ready)
