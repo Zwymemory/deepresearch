@@ -25,7 +25,7 @@ class FlywayMigrationIT {
             .withPassword("deepresearch");
 
     @Test
-    void appliesCompleteMigrationChainThroughV21OnCleanDatabase() {
+    void appliesCompleteMigrationChainThroughV22OnCleanDatabase() {
         Flyway flyway = Flyway.configure()
                 .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
                 .locations("classpath:db/migration")
@@ -40,7 +40,7 @@ class FlywayMigrationIT {
                 SELECT version FROM flyway_schema_history
                 WHERE success ORDER BY installed_rank
                 """, String.class)).containsExactlyElementsOf(
-                List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21"));
+                List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22"));
         assertThat(db.queryForList("""
                 SELECT table_name FROM information_schema.tables
                 WHERE table_schema='public' AND table_name IN (
@@ -50,13 +50,15 @@ class FlywayMigrationIT {
                     'agent_research_operation', 'agent_research_publication',
                     'agent_evidence_read_receipt', 'agent_evidence_record', 'agent_evidence_check',
                     'agent_research_source_validation', 'agent_evidence_blocked_attempt',
-                    'agent_research_criterion', 'agent_research_investigation_progress')
+                    'agent_research_criterion', 'agent_research_investigation_progress',
+                    'agent_research_requirements', 'agent_research_requirement_binding')
                 ORDER BY table_name
                 """, String.class)).containsExactly(
                 "agent_evidence_blocked_attempt", "agent_evidence_check",
                 "agent_evidence_read_receipt", "agent_evidence_record",
                 "agent_research_criterion", "agent_research_investigation_progress",
                 "agent_research_operation", "agent_research_publication",
+                "agent_research_requirement_binding", "agent_research_requirements",
                 "agent_research_run", "agent_research_source_validation", "agent_research_task",
                 "dify_workflow_run", "dify_workflow_source", "dify_workflow_tool_call",
                 "kb_ragflow_document", "kb_ragflow_sync_job", "research_project");

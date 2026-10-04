@@ -102,7 +102,7 @@ class DeepResearchApplicationIT {
                 LIMIT 1
                 """,
                 String.class);
-        assertThat(latestMigration).isEqualTo("21");
+        assertThat(latestMigration).isEqualTo("22");
 
         Integer coreTableCount = jdbcTemplate.queryForObject("""
                 SELECT count(*)
@@ -121,9 +121,10 @@ class DeepResearchApplicationIT {
                                      'agent_evidence_read_receipt', 'agent_evidence_record',
                                      'agent_evidence_check', 'agent_research_source_validation',
                                      'agent_evidence_blocked_attempt', 'agent_research_criterion',
-                                     'agent_research_investigation_progress')
+                                     'agent_research_investigation_progress',
+                                     'agent_research_requirements', 'agent_research_requirement_binding')
                 """, Integer.class);
-        assertThat(coreTableCount).isEqualTo(27);
+        assertThat(coreTableCount).isEqualTo(29);
 
         assertThat(elasticsearchClient.ping().value()).isTrue();
     }
