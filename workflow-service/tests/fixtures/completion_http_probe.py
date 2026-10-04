@@ -12,7 +12,12 @@ import httpx
 from deepresearch_workflow.agent_budget import SqlAgentLedger
 from deepresearch_workflow.agent_completion import ensure_criteria
 from deepresearch_workflow.agent_model import OpenAIAgentModel
-from deepresearch_workflow.agent_protocol import AgentRunBudget, AgentTask, ModelResult
+from deepresearch_workflow.agent_protocol import (
+    CONTINUATION_VERSION,
+    AgentRunBudget,
+    AgentTask,
+    ModelResult,
+)
 from deepresearch_workflow.agent_question_segments import LEGACY_PLANNER_VERSION, PLANNER_VERSION
 from deepresearch_workflow.agent_requirements import bind_requirements, freeze_requirements
 from deepresearch_workflow.agent_runtime import AutonomousResearchGraph
@@ -28,6 +33,11 @@ class Tokens:
 
     def authorization_header(self):
         return self.header
+
+
+def continuation_fields(state):
+    return {"continuation_contract": CONTINUATION_VERSION,
+            "requirements_ref": state["original_requirements"]["manifest_sha256"]}
 
 
 class ExactSourceVerifier:
@@ -149,6 +159,7 @@ async def main():
             if cfg["mode"] != "segments-complete":
                 # Existing fixture cases continue exercising saved v1 declarations.
                 state["planner_contract"] = LEGACY_PLANNER_VERSION
+                state.pop("continuation_contract")
             state["tasks"] = [
                 AgentTask(
                     task_id="task-main",
@@ -193,8 +204,14 @@ async def main():
                 )
                 state["original_requirements"] = manifest
                 state["requirement_bindings"] = bindings
+                if cfg["mode"] == "segments-complete":
+                    # This fixture has already persisted the initial declaration above.
+                    # Its MODEL receipt remains unchanged; execute the action by frozen ref.
+                    state["decision"].pop("requirements")
+                    state["decision"].update(continuation_fields(state))
             else:
                 state["decision_steps"] = 1
+                state["action_sequence"] = 1
                 state["decision"] = {
                     "action": "read_source",
                     "task_id": "task-main",
@@ -218,6 +235,7 @@ async def main():
             if cfg["mode"] in {"complete", "segments-complete"}:
                 texts.append("Version 2.0 allows 100 requests per minute.")
             state["decision_steps"] = 2
+            state["action_sequence"] = 2
             state["decision"] = {
                 "action": "check_claims",
                 "task_id": "task-main",
@@ -237,6 +255,7 @@ async def main():
             }
             if cfg["mode"] == "segments-complete":
                 state["decision"]["planner_contract"] = PLANNER_VERSION
+                state["decision"].update(continuation_fields(state))
             state.update(await graph.act(state))
             expected = (
                 "SUCCEEDED" if cfg["mode"] in {"complete", "segments-complete", "refuted"}
@@ -246,6 +265,7 @@ async def main():
                 "observations"
             ]
             state["decision_steps"] = 3
+            state["action_sequence"] = 3
             state["decision"] = {
                 "action": "finish" if expected == "SUCCEEDED" else "stop_with_gaps",
                 "reason": "Request the independently verified whole report",
@@ -255,6 +275,7 @@ async def main():
             }
             if cfg["mode"] == "segments-complete":
                 state["decision"]["planner_contract"] = PLANNER_VERSION
+                state["decision"].update(continuation_fields(state))
             result = await graph.act(state)
             assert result["final_status"] == expected, result
             await asyncio.to_thread(
