@@ -87,7 +87,11 @@ final class AgentQuestionSegments {
                     if(!spans.isEmpty() && spans.get(spans.size()-1).path("end").asInt()==lo) ((ObjectNode)spans.get(spans.size()-1)).put("end",hi);
                     else spans.add(object("start",lo,"end",hi));
                 }
-                ObjectNode draft=row.deepCopy();draft.remove("segment_ids");draft.set("question_spans",spans);drafts.add(draft);
+                ObjectNode draft=row.deepCopy();draft.remove("segment_ids");draft.set("question_spans",spans);
+                // Match the schema's optional default, without normalizing model text/scope.
+                ObjectNode applicability=draft.path("applicability").deepCopy();
+                if(!applicability.has("conditions")) applicability.set("conditions",JSON.createArrayNode());
+                draft.set("applicability",applicability);drafts.add(draft);
             }
             if(!all.equals(units.keySet()) || !drafts.equals(stored.path("requirements"))) return JSON.nullNode();
             return drafts;

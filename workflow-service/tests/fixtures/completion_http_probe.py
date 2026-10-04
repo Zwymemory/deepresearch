@@ -70,6 +70,7 @@ class ExactSourceVerifier:
                 for index, draft in enumerate(result.value["requirements"]):
                     draft.pop("question_spans")
                     draft["segment_ids"] = [units[index]["segment_id"]]
+                    draft["applicability"].pop("conditions")  # Legal optional-schema default.
             return result
         assert request.name == "EvidenceCheck"
         proposals = []

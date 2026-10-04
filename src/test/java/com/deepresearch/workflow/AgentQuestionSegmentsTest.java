@@ -22,7 +22,7 @@ class AgentQuestionSegmentsTest {
     }
     @Test void unknownNullForeignOrChangedProvenanceCannotDowngradeToLegacy() throws Exception {
         var fixture=corpus().get(0);String q=fixture.path("question").asText();
-        for(String change:new String[]{"value-null","binding-null","version","mapping-version","question-hash","mapping-hash","response-hash","unknown-id","duplicate-id","omitted-ids","coordinates"}) {
+        for(String change:new String[]{"value-null","binding-null","version","mapping-version","question-hash","mapping-hash","response-hash","unknown-id","duplicate-id","omitted-ids","coordinates","null-conditions"}) {
             ObjectNode receipt=fixture.path("receipt").deepCopy();var binding=(ObjectNode)receipt.path("request_binding");
             var value=(ObjectNode)JSON.readTree(binding.path("planner_declaration").asText());
             switch(change) {
@@ -37,6 +37,7 @@ class AgentQuestionSegmentsTest {
                 case "duplicate-id" -> {var ids=(com.fasterxml.jackson.databind.node.ArrayNode)value.path("requirements").get(0).path("segment_ids");ids.add(ids.get(0));}
                 case "omitted-ids" -> ((com.fasterxml.jackson.databind.node.ArrayNode)value.path("requirements")).remove(1);
                 case "coordinates" -> ((ObjectNode)value.path("requirements").get(0)).set("question_spans",JSON.valueToTree(java.util.List.of(object("start",0,"end",1))));
+                case "null-conditions" -> ((ObjectNode)value.path("requirements").get(0).path("applicability")).putNull("conditions");
             }
             binding.put("planner_declaration",canonical(value));binding.put("wire_response_sha256",sha(canonical(value)));
             assertThat(AgentQuestionSegments.declarations(q,receipt).isNull()).as(change).isTrue();

@@ -673,6 +673,11 @@ class AgentBudgetGateway:
                 extra_binding = {}
                 if canonicalize is not None:
                     declaration = canonical(result.value)
+                    if len(declaration.encode("utf-8")) > 65536:
+                        raise ResultValidationError(
+                            RequirementError("REQUIREMENT_DECLARATION_LIMIT"),
+                            "planning_requirements",
+                        )
                     try:
                         value = canonicalize(result.value)
                     except Exception as error:

@@ -99,8 +99,8 @@
         "planner_settlement_contract": "agent-planner-settlement/1",
         "question_sha256": "b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b",
         "question_mapping_sha256": "5929adedecc201d5756909eb08bb0f1fa6d7fece0db38e4ee1216293fe4de4d3",
-        "planner_declaration": "{\"planner_contract\":\"agent-planning-segments/2\",\"requirements\":[{\"applicability\":{\"conditions\":[],\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-00\",\"qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-01\"],\"text\":\"Fixture obligation 0\"},{\"applicability\":{\"conditions\":[],\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-02\",\"qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-03\",\"qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-04\"],\"text\":\"Fixture obligation 1\"}]}",
-        "wire_response_sha256": "808bd395c3cd2c3a7d56d33c1a23b71f46f974dd4a3ba0f36babac5e227046f3",
+        "planner_declaration": "{\"planner_contract\":\"agent-planning-segments/2\",\"requirements\":[{\"applicability\":{\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-00\",\"qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-01\"],\"text\":\"Fixture obligation 0\"},{\"applicability\":{\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-02\",\"qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-03\",\"qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-04\"],\"text\":\"Fixture obligation 1\"}]}",
+        "wire_response_sha256": "70a7442d9e01b053d2aae45b20d700df5ff71e5bc5e614e05d8cb2d290007c2d",
         "response_sha256": "090190d2b89003874791c635a4d4124cdd03038d08343f20489c48193cbc5b86"
       }
     },
@@ -212,7 +212,8 @@
         }
       ],
       "manifest_sha256": "efaa38ac6d82bef0275e04142855fa5dd1a1b5904f59bc1c31bb6648c384d989"
-    }
+    },
+    "optional_conditions_omitted": true
   },
   {
     "question": "Compare example.com and example.org; HTTP guarantees? Cite https://iana.org/x?a=1.5.",

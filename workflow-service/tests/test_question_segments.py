@@ -130,6 +130,7 @@ async def test_actual_json_adapter_gateway_freezes_server_spans_replay_and_crite
     ("coordinates", None, "result_schema"),
     ("hash", None, "result_schema"),
     ("map", None, "result_schema"),
+    ("null_conditions", None, "result_schema"),
     ("null_version", None, "result_schema"),
     ("wrong_version", None, "result_schema"),
     ("missing_requirements", "REQUIREMENTS_MISSING_OR_LIMIT", "planning_requirements"),
@@ -157,6 +158,8 @@ async def test_rejected_ids_never_settle_usable_or_retry_and_export_only_safe_ra
         declaration["question_sha256"] = "a" * 64
     elif mutation == "map":
         declaration["question_segments"] = question_segments(QUESTION)
+    elif mutation == "null_conditions":
+        row["applicability"]["conditions"] = None
     elif mutation in {"null_version", "wrong_version"}:
         declaration["planner_contract"] = None if mutation == "null_version" else "unknown/99"
     else:
@@ -416,6 +419,52 @@ async def test_normalizer_internal_error_keeps_usage_and_unusable_receipt(monkey
     assert (saved["usage"]["input_tokens"], saved["usage"]["output_tokens"]) == (9, 4)
     assert "PRIVATE_CANARY" not in json.dumps(saved["usage"])
     assert len(ledger.settlements) == model.invoke.await_count == 1
+
+
+async def test_custom_adapter_cannot_settle_a_declaration_that_replay_cannot_read():
+    from unittest.mock import AsyncMock
+
+    question = "x;" * 16
+    declaration = value(question)
+    base = copy.deepcopy(declaration["requirements"][0])
+    base["segment_ids"] = [s["segment_id"] for s in question_segments(question)["segments"]]
+    base["applicability"]["subject"] = "s" * 450
+    declaration["requirements"] = [
+        {**copy.deepcopy(base), "text": str(i) + "t" * 398} for i in range(32)
+    ]
+    encoded = canonical(declaration)
+    assert len(encoded.encode()) > 65536
+    canonical_value = {"planner_contract": PLANNER_VERSION,
+                       "requirements": segment_drafts(question, declaration["requirements"])}
+    assert len(canonical({"value": canonical_value,
+                          "planner_declaration": encoded}).encode()) < 120000
+    model = type("Model", (), {"invoke": AsyncMock(return_value=ModelResult(
+        value=declaration, input_tokens=9, output_tokens=4
+    ))})()
+    ledger = PlanningLedger()
+    with pytest.raises(ModelCallError) as caught:
+        await graph(model, ledger).decide({**state(question), "planner_contract": PLANNER_VERSION})
+    assert caught.value.domain_error_code == "REQUIREMENT_DECLARATION_LIMIT"
+    assert ledger.rows["model:agent:decision-1"]["status"] == "UNKNOWN"
+    assert ledger.rows["model:agent:decision-1"]["usage"]["input_tokens"] == 9
+    assert len(ledger.settlements) == model.invoke.await_count == 1
+
+
+async def test_optional_scope_conditions_default_in_settled_canonical_and_native_reconstruction():
+    declaration = value()
+    for row in declaration["requirements"]:
+        row["applicability"].pop("conditions")
+    ledger = PlanningLedger()
+    async with httpx.AsyncClient(transport=httpx.MockTransport(
+        lambda _: httpx.Response(200, json=envelope(json.dumps(declaration)))
+    )) as client:
+        runtime = graph(OpenAIAgentModel(json_settings(), client), ledger)
+        await runtime.decide({**state(), "planner_contract": PLANNER_VERSION})
+    saved = ledger.rows["model:agent:decision-1"]["result"]
+    raw = json.loads(saved["request_binding"]["planner_declaration"])
+    assert all("conditions" not in row["applicability"] for row in raw["requirements"])
+    assert all(row["applicability"]["conditions"] == [] for row in saved["value"]["requirements"])
+    assert declaration_drafts(QUESTION, saved) == saved["value"]["requirements"]
 
 
 @pytest.mark.parametrize("mutate", ["extra", "huge", "bool", "count", "text", "unordered"])
