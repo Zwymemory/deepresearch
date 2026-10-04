@@ -78,6 +78,7 @@ class ModelCallError(WorkflowExecutionError):
         retryable: bool | None = None,
         validation_stage: str | None = None,
         domain_error_code: str | None = None,
+        json_diagnostic: dict | None = None,
     ) -> None:
         from .agent_diagnostics import safe_domain_code, safe_validation_stage
 
@@ -88,6 +89,9 @@ class ModelCallError(WorkflowExecutionError):
         self.retryable = retryable
         self.validation_stage = safe_validation_stage(validation_stage)
         self.domain_error_code = safe_domain_code(domain_error_code)
+        from .agent_json import safe_json_diagnostic
+
+        self.json_diagnostic = safe_json_diagnostic(json_diagnostic)
         if failure_kind is not None:
             self.error_code = _MODEL_FAILURE_CODES.get(failure_kind, "MODEL_CALL_FAILED")
         if error_class == "identity_validation":
@@ -97,6 +101,10 @@ class ModelCallError(WorkflowExecutionError):
             message += f"; validation_stage={self.validation_stage}"
         if self.domain_error_code is not None:
             message += f"; domain_error_code={self.domain_error_code}"
+        if self.json_diagnostic is not None:
+            message += f"; json_category={self.json_diagnostic['category']}"
+            if "decoder_code" in self.json_diagnostic:
+                message += f"; json_decoder={self.json_diagnostic['decoder_code']}"
         super().__init__(message)
 
 

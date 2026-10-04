@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import json
 import logging
 import time
 import traceback
@@ -443,7 +444,11 @@ class WorkflowRunner:
             retryable = cls._exception_attribute(chain, "retryable")
             schema_name = cls._exception_attribute(chain, "schema_name")
             parser_error_type = cls._exception_attribute(chain, "parser_error_type")
-            finish_reason = cls._exception_attribute(chain, "finish_reason")
+            from .agent_json import FINISH_REASONS
+
+            observed_finish = cls._exception_attribute(chain, "finish_reason")
+            finish_reason = (observed_finish if type(observed_finish) is str
+                             and observed_finish in FINISH_REASONS else None)
             content_state = cls._exception_attribute(chain, "content_state")
             tool_call_count = cls._exception_attribute(chain, "tool_call_count")
             validation_issue_codes = cls._exception_attribute(
@@ -457,6 +462,11 @@ class WorkflowRunner:
             domain_error_code = safe_domain_code(
                 cls._exception_attribute(chain, "domain_error_code")
             )
+            from .agent_json import safe_json_diagnostic
+
+            json_metadata = safe_json_diagnostic(
+                cls._exception_attribute(chain, "json_diagnostic")
+            )
             cause_chain = ">".join(cls._safe_log_scalar(type(item).__name__) for item in chain)
             logger.error(
                 "workflow execution failed run_id=%s error_code=%s operation=%s "
@@ -464,7 +474,7 @@ class WorkflowRunner:
                 "failure_type=%s cause_chain=%s provider_status=%s provider_code=%s "
                 "request_id=%s schema=%s parser_error_type=%s finish_reason=%s "
                 "content_state=%s tool_call_count=%s validation_issues=%s location=%s "
-                "validation_stage=%s domain_error_code=%s",
+                "validation_stage=%s domain_error_code=%s json_diagnostic=%s",
                 safe_run_id,
                 cls._safe_log_scalar(error_code),
                 cls._safe_log_scalar(operation),
@@ -486,6 +496,8 @@ class WorkflowRunner:
                 cls._safe_log_scalar(cls._failure_location(failure)),
                 cls._safe_log_scalar(validation_stage),
                 cls._safe_log_scalar(domain_error_code),
+                json.dumps(json_metadata, sort_keys=True, separators=(",", ":"))
+                if json_metadata is not None else "none",
             )
         except Exception:
             # Diagnostic extraction must never prevent durable failure finalization.

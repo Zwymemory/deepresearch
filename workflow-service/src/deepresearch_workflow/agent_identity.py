@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 
 POLICY_VERSION = "deepseek-flash-2026-09-10/1"
 ENDPOINT = "https://api.deepseek.com/chat/completions"
@@ -58,25 +57,10 @@ def measured_usage(data):
 
 
 def decode_object(raw, maximum):
-    """Reject oversized, duplicate-key and nonfinite JSON before policy evaluation."""
-    if type(raw) is not bytes or len(raw) > maximum:
-        raise ValueError("oversized")
+    """Preserve the shared identity decoding policy, with non-content diagnostics."""
+    from .agent_json import decode_json
 
-    def unique(pairs):
-        value = {}
-        for key, item in pairs:
-            if key in value:
-                raise ValueError("duplicate key")
-            value[key] = item
-        return value
-
-    def nonfinite(_):
-        raise ValueError("nonfinite")
-
-    try:
-        return json.loads(raw, object_pairs_hook=unique, parse_constant=nonfinite)
-    except Exception:
-        raise ValueError("invalid") from None
+    return decode_json(raw, maximum)
 
 
 def describe(value):
@@ -197,9 +181,13 @@ def safe_identity_diagnostic(value):
 class ModelIdentityRejected(RuntimeError):
     """Contains only bounded safe policy metadata and measured usage, never body text."""
 
-    def __init__(self, diagnostic, *, status_code=None, input_tokens=None, output_tokens=None):
+    def __init__(self, diagnostic, *, status_code=None, input_tokens=None, output_tokens=None,
+                 json_diagnostic=None):
         super().__init__("MODEL_IDENTITY_INVALID")
+        from .agent_json import safe_json_diagnostic
+
         self.diagnostic = safe_identity_diagnostic(diagnostic)
+        self.json_diagnostic = safe_json_diagnostic(json_diagnostic)
         self.status_code = status_code
         self.input_tokens = measured_token(input_tokens)
         self.output_tokens = measured_token(output_tokens)

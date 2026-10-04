@@ -11,6 +11,7 @@ import time
 from uuid import uuid4
 
 from agent_live_common import LIMITS, TERMINAL, file_sha, http_json, read_private, verify_runtime, write_private
+from agent_json_diagnostics import FINISH_REASONS, safe_json_diagnostic
 import agent_retest_batch as retest
 from agent_acceptance_v22 import CAPTURE_LIMITS, CAPTURE_VERSION, finalize_audit, validate_saved_audit
 
@@ -225,6 +226,12 @@ def safe_model_failure(value):
         diagnostic = safe_segment_diagnostic(value.get("question_segments"))
         if diagnostic is not None:
             safe["question_segments"] = diagnostic
+    diagnostic = safe_json_diagnostic(value.get("json_diagnostic"))
+    if diagnostic is not None:
+        safe["json_diagnostic"] = diagnostic
+    finish = value.get("finish_reason")
+    if type(finish) is str and finish in FINISH_REASONS:
+        safe["finish_reason"] = finish
     status = value.get("status_code")
     if type(status) is int and 100 <= status <= 599:
         safe["status_code"] = status

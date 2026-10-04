@@ -14,6 +14,7 @@ from pydantic import ValidationError as PydanticValidationError
 from referencing import Registry
 
 from .agent_diagnostics import safe_check_code, safe_requirement_code, safe_segment_diagnostic
+from .agent_json import FINISH_REASONS
 from .agent_model import MODEL_RULES, AgentModel, AgentModelFailure, OpenAIAgentModel
 from .agent_protocol import AgentRunBudget, ModelRequest, ModelResult
 from .agent_question_segments import PLANNER_VERSION, replay_declaration
@@ -522,6 +523,7 @@ class AgentBudgetGateway:
             key, failure_kind=failure_kind, attempt=attempt,
             error_class=error_class, retryable=retryable,
             validation_stage=stage, domain_error_code=domain_code,
+            json_diagnostic=error.json_diagnostic if isinstance(error, AgentModelFailure) else None,
         )
         failure.status_code = status_code
         failure.validation_issue_codes = paths
@@ -542,6 +544,12 @@ class AgentBudgetGateway:
                 metadata["question_segments"] = diagnostic
         if isinstance(error, AgentModelFailure) and error.identity_diagnostic is not None:
             metadata["identity"] = error.identity_diagnostic
+        if failure.json_diagnostic is not None:
+            metadata["json_diagnostic"] = failure.json_diagnostic
+        if (isinstance(error, AgentModelFailure) and type(error.finish_reason) is str
+                and error.finish_reason in FINISH_REASONS):
+            metadata["finish_reason"] = error.finish_reason
+            failure.finish_reason = error.finish_reason
         if status_code is not None:
             metadata["status_code"] = status_code
         if paths:

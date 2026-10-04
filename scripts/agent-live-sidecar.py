@@ -18,6 +18,7 @@ def install_model_audit(httpx_module, path, expected, expected_result_transport=
         REQUEST_MODELS, ModelIdentityRejected, decode_object, identity_diagnostic,
         measured_usage,
     )
+    from deepresearch_workflow.agent_json import JsonDecodeFailure, at_stage
     if type(expected) is not str or expected not in REQUEST_MODELS:
         raise ValueError("Unsupported configured research request model")
     if expected_result_transport not in {None, "function_call", "deepseek_json_object"}:
@@ -32,10 +33,13 @@ def install_model_audit(httpx_module, path, expected, expected_result_transport=
             return await original(client, request, **kwargs)
         started = time.time()
         requested, request_reason, request_data = MISSING, None, None
+        json_metadata = None
         try:
             request_data = decode_object(request.content, MAX_REQUEST_BYTES)
             requested = request_data.get("model", MISSING) if type(request_data) is dict else MISSING
         except ValueError as error:
+            if isinstance(error, JsonDecodeFailure):
+                json_metadata = at_stage(error.diagnostic, "identity_request")
             request_reason = "request_oversized" if str(error) == "oversized" else "request_json_invalid"
         if endpoint != ENDPOINT:
             request_reason = "endpoint_mismatch"
@@ -69,16 +73,22 @@ def install_model_audit(httpx_module, path, expected, expected_result_transport=
             if request_reason:
                 diagnostic = identity_diagnostic(endpoint, requested, expected, {}, forced_reason=request_reason)
                 receipt.update(identity=diagnostic, identity_matches=False, policy_evidence=list(EVIDENCE_SOURCES))
-                raise ModelIdentityRejected(diagnostic)
+                if json_metadata is not None:
+                    receipt["json_diagnostic"] = json_metadata
+                raise ModelIdentityRejected(diagnostic, json_diagnostic=json_metadata)
             response = await original(client, request, **kwargs)
             receipt["http_status"] = response.status_code
             data, response_reason = None, None
             try:
                 data = decode_object(response.content, MAX_RESPONSE_BYTES)
             except ValueError as error:
+                if isinstance(error, JsonDecodeFailure):
+                    json_metadata = at_stage(error.diagnostic, "identity_response")
                 response_reason = "response_oversized" if str(error) == "oversized" else "response_json_invalid"
             except Exception:
                 response_reason = "response_json_invalid"
+            if json_metadata is not None:
+                receipt["json_diagnostic"] = json_metadata
             effective_matches = str(response.url) == ENDPOINT
             if not effective_matches:
                 response_reason = "endpoint_mismatch"
@@ -98,7 +108,8 @@ def install_model_audit(httpx_module, path, expected, expected_result_transport=
                 receipt["identity_matches"] = diagnostic["decision"] == "accept"
                 if not receipt["identity_matches"]:
                     raise ModelIdentityRejected(diagnostic, status_code=response.status_code,
-                                                input_tokens=input_tokens, output_tokens=output_tokens)
+                                                input_tokens=input_tokens, output_tokens=output_tokens,
+                                                json_diagnostic=json_metadata)
             return response
         finally:
             audit = read_private(path)

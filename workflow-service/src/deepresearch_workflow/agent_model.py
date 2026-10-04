@@ -17,6 +17,13 @@ from .agent_identity import (
     measured_usage,
     safe_identity_diagnostic,
 )
+from .agent_json import (
+    FINISH_REASONS,
+    JsonDecodeFailure,
+    at_stage,
+    diagnostic,
+    safe_json_diagnostic,
+)
 from .agent_protocol import ModelRequest, ModelResult
 from .graph import WorkflowExecutionError
 from .settings import Settings
@@ -49,7 +56,7 @@ def strict_result(raw):
         if type(item) is str:
             item.encode("utf-8", errors="strict")
         elif type(item) is float and not math.isfinite(item):
-            raise ValueError("nonfinite")
+            raise JsonDecodeFailure(diagnostic(raw, "nonfinite_float"))
         elif type(item) is dict:
             for key, child in item.items():
                 check(key)
@@ -58,7 +65,12 @@ def strict_result(raw):
             for child in item:
                 check(child)
 
-    check(value)
+    try:
+        check(value)
+    except UnicodeError:
+        raise JsonDecodeFailure(diagnostic(raw, "decoded_unicode")) from None
+    except RecursionError:
+        raise JsonDecodeFailure(diagnostic(raw, "depth_limit")) from None
     return value
 
 
@@ -79,7 +91,8 @@ class AgentModelFailure(WorkflowExecutionError):
         self, error_class: str, failure_kind: str, *, retryable: bool = False,
         status_code: int | None = None, input_tokens: int | None = None,
         output_tokens: int | None = None, tool_call_count: int | None = None,
-        identity_diagnostic: dict | None = None,
+        identity_diagnostic: dict | None = None, json_diagnostic: dict | None = None,
+        finish_reason: str | None = None,
     ):
         if error_class not in FAILURE_CLASSES or failure_kind not in {
             "TIMEOUT", "RATE_LIMIT", "SCHEMA", "PROVIDER"
@@ -98,6 +111,9 @@ class AgentModelFailure(WorkflowExecutionError):
         self.input_tokens = input_tokens
         self.output_tokens = output_tokens
         self.identity_diagnostic = safe_identity_diagnostic(identity_diagnostic)
+        self.json_diagnostic = safe_json_diagnostic(json_diagnostic)
+        self.finish_reason = (finish_reason if type(finish_reason) is str
+                              and finish_reason in FINISH_REASONS else None)
         self.tool_call_count = (
             tool_call_count
             if type(tool_call_count) is int and 0 <= tool_call_count <= 100
@@ -183,7 +199,7 @@ class OpenAIAgentModel:
             raise AgentModelFailure(
                 "identity_validation", "PROVIDER", status_code=error.status_code,
                 input_tokens=error.input_tokens, output_tokens=error.output_tokens,
-                identity_diagnostic=error.diagnostic,
+                identity_diagnostic=error.diagnostic, json_diagnostic=error.json_diagnostic,
             ) from None
         except httpx.TimeoutException:
             # A timed-out request may have reached the provider; never blindly replay it.
@@ -214,15 +230,22 @@ class OpenAIAgentModel:
 
         try:
             data = decode_object(response.content, MAX_RESPONSE_BYTES)
+        except JsonDecodeFailure as error:
+            raise AgentModelFailure("response_json", "SCHEMA", json_diagnostic=at_stage(
+                error.diagnostic, "response_envelope"
+            )) from None
         except Exception:
             raise AgentModelFailure("response_json", "SCHEMA") from None
 
         input_tokens, output_tokens = measured_usage(data)
 
-        def invalid(label, *, count=None):
+        finish_reason = None
+
+        def invalid(label, *, count=None, json_diagnostic=None):
             raise AgentModelFailure(
                 label, "SCHEMA", input_tokens=input_tokens,
                 output_tokens=output_tokens, tool_call_count=count,
+                json_diagnostic=json_diagnostic, finish_reason=finish_reason,
             )
 
         if type(data) is not dict or type(data.get("choices")) is not list:
@@ -232,7 +255,8 @@ class OpenAIAgentModel:
         choice = data["choices"][0]
         if type(choice) is not dict or type(choice.get("message")) is not dict:
             invalid("response_shape")
-        if choice.get("finish_reason") == "length":
+        finish_reason = choice.get("finish_reason")
+        if finish_reason == "length":
             invalid("output_truncated")
         message = choice["message"]
         calls = message.get("tool_calls")
@@ -242,19 +266,33 @@ class OpenAIAgentModel:
                 invalid("unexpected_tools", count=len(calls) if type(calls) is list else None)
             content = message.get("content")
             if type(content) is not str or not content.strip():
-                invalid("result_content")
+                invalid("result_content", json_diagnostic=at_stage(diagnostic(
+                    content if type(content) is str else None,
+                    "empty_content" if type(content) is str else "input_type"
+                ), "result_content", finish_reason))
             try:
                 raw = content.encode("utf-8", errors="strict")
-            except UnicodeError:
-                invalid("result_json")
+            except UnicodeError as error:
+                invalid("result_json", json_diagnostic=at_stage(diagnostic(
+                    content, "content_encoding", offset=error.start, offset_unit="codepoint"
+                ), "result_content", finish_reason))
             if len(raw) > 65536:
-                invalid("result_oversized")
+                invalid("result_oversized", json_diagnostic=at_stage(
+                    diagnostic(raw, "byte_limit"), "result_content", finish_reason))
             try:
                 value = strict_result(raw)
+            except JsonDecodeFailure as error:
+                invalid("result_json", json_diagnostic=at_stage(
+                    error.diagnostic, "result_content", finish_reason))
             except Exception:
                 invalid("result_json")
             if type(value) is not dict:
-                invalid("result_shape")
+                kind = ("array" if type(value) is list else "string" if type(value) is str
+                        else "boolean" if type(value) is bool else "null" if value is None
+                        else "number")
+                invalid("result_shape", json_diagnostic=at_stage(diagnostic(
+                    raw, "top_level_shape", top_level_type=kind
+                ), "result_content", finish_reason))
             return ModelResult(value=value, input_tokens=input_tokens, output_tokens=output_tokens)
 
         if choice.get("finish_reason") not in {"tool_calls", "stop"}:
@@ -269,18 +307,31 @@ class OpenAIAgentModel:
             invalid("function_name")
         arguments = function.get("arguments")
         if type(arguments) is not str:
-            invalid("function_arguments")
+            invalid("function_arguments", json_diagnostic=at_stage(
+                diagnostic(None, "input_type"), "function_arguments", finish_reason))
         try:
             argument_bytes = arguments.encode()
-        except UnicodeError:
-            invalid("function_arguments")
+        except UnicodeError as error:
+            invalid("function_arguments", json_diagnostic=at_stage(diagnostic(
+                arguments, "content_encoding", offset=error.start, offset_unit="codepoint"
+            ), "function_arguments", finish_reason))
         if len(argument_bytes) > 65536:
-            invalid("function_oversized")
+            invalid("function_oversized", json_diagnostic=at_stage(diagnostic(
+                argument_bytes, "byte_limit"
+            ), "function_arguments", finish_reason))
 
         try:
             value = strict_result(argument_bytes)
+        except JsonDecodeFailure as error:
+            invalid("function_json", json_diagnostic=at_stage(
+                error.diagnostic, "function_arguments", finish_reason))
         except Exception:
             invalid("function_json")
         if type(value) is not dict:
-            invalid("function_shape")
+            kind = ("array" if type(value) is list else "string" if type(value) is str
+                    else "boolean" if type(value) is bool else "null" if value is None
+                    else "number")
+            invalid("function_shape", json_diagnostic=at_stage(diagnostic(
+                argument_bytes, "top_level_shape", top_level_type=kind
+            ), "function_arguments", finish_reason))
         return ModelResult(value=value, input_tokens=input_tokens, output_tokens=output_tokens)
