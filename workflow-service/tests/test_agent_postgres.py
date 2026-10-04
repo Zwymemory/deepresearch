@@ -394,6 +394,67 @@ async def test_invalid_model_result_is_unknown_with_known_usage_and_never_reissu
         await repo.close()
 
 
+@pytest.mark.parametrize("internal", [False, True])
+async def test_domain_failure_sql_accounting_and_recovery_are_fail_closed(internal):
+    from deepresearch_workflow.agent_requirements import RequirementError
+
+    budget = AgentRunBudget(runtime="agent")
+    repo, ledger, run, claim = await seed(budget)
+
+    class Model:
+        calls = 0
+
+        async def invoke(self, _):
+            self.calls += 1
+            return ModelResult(value={}, input_tokens=23, output_tokens=8)
+
+    def reject(_):
+        if internal:
+            raise RuntimeError("PRIVATE-SOURCE-EXCEPTION")
+        raise RequirementError("REQUIREMENTS_MISSING_OR_LIMIT")
+
+    async def guard():
+        assert (await repo.assert_active_claim(run, claim))[0]
+
+    model = Model()
+    gateway = AgentBudgetGateway(
+        run_id=run, claim_token=claim, budget=budget, ledger=ledger, model=model, guard=guard,
+    )
+    request = ModelRequest(name="AgentDecision", instruction="offline", payload={},
+                           schema={"type": "object"})
+    try:
+        with pytest.raises(ModelCallError) as rejected:
+            await gateway.model_call("model:domain", "DECISION", request, reject)
+        assert rejected.value.error_class == (
+            "application_internal" if internal else "requirement_validation"
+        )
+        # A new gateway models process reconstruction; SQL denies reissue before invoke.
+        recovered = AgentBudgetGateway(
+            run_id=run, claim_token=claim, budget=budget, ledger=SqlAgentLedger(repo),
+            model=model, guard=guard,
+        )
+        with pytest.raises(WorkflowExecutionError) as blocked:
+            await recovered.model_call("model:domain", "DECISION", request, reject)
+        assert blocked.value.error_code == "AGENT_MODEL_NOT_RETRYABLE" and model.calls == 1
+        totals = await ledger.summary(run, claim)
+        assert totals["modelCalls"] == 1 and totals["inputTokens"] == 23
+        assert totals["outputTokens"] == 8
+        async with await psycopg.AsyncConnection.connect(URL) as conn:
+            rows = await (await conn.execute(
+                "SELECT status,safe_result,actual_usage FROM agent_research_operation "
+                "WHERE run_id=%s AND operation_key='model:domain'", (run,),
+            )).fetchall()
+        assert len(rows) == 1 and rows[0][0] == "UNKNOWN" and rows[0][1] is None
+        metadata = rows[0][2]["model_failure"]
+        assert metadata["validation_stage"] == "domain_validation"
+        assert metadata.get("domain_error_code") == (
+            None if internal else "REQUIREMENTS_MISSING_OR_LIMIT"
+        )
+        assert "PRIVATE" not in json.dumps(rows[0][2])
+    finally:
+        await repo.close()
+
+
 async def test_observer_identity_rejection_persists_usage_once_and_cannot_replay(
     tmp_path, monkeypatch
 ):

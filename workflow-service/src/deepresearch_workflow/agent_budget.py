@@ -13,8 +13,10 @@ from psycopg.types.json import Jsonb
 from pydantic import ValidationError as PydanticValidationError
 from referencing import Registry
 
+from .agent_diagnostics import safe_requirement_code
 from .agent_model import MODEL_RULES, AgentModel, AgentModelFailure, OpenAIAgentModel
 from .agent_protocol import AgentRunBudget, ModelRequest, ModelResult
+from .agent_requirements import RequirementError
 from .graph import (
     ModelCallError,
     RunBudgetExceededError,
@@ -39,12 +41,23 @@ SAFE_FIELDS = frozenset({
     "criterion_id", "evidence_ids", "gaps", "investigation_id", "kind", "query",
     "reason", "source_id", "status", "subject", "task_id", "tool", "valid_at",
     "value", "version",
+    "requirements", "requirement_bindings", "question_spans", "start", "end", "text",
+    "requirement_id",
 })
 
 
 def safe_issue_path(parts):
     names = [part for part in parts if type(part) is str and part in SAFE_FIELDS]
     return ".".join(names[:4]) or "unknown_field"
+
+
+class ResultValidationError(Exception):
+    """Internal stage marker. The original exception is never serialized or chained."""
+
+    def __init__(self, error, stage):
+        super().__init__("Agent result validation failed")
+        self.error = error
+        self.stage = stage
 
 
 class SqlAgentLedger:
@@ -459,6 +472,9 @@ class AgentBudgetGateway:
             "SCHEMA", "validator_rejected", False, None, [],
         )
         tool_call_count = None
+        stage, domain_code = None, None
+        if isinstance(error, ResultValidationError):
+            stage, error = error.stage, error.error
         if isinstance(error, AgentModelFailure):
             failure_kind, error_class, retryable = (
                 error.failure_kind, error.error_class, error.retryable,
@@ -474,11 +490,18 @@ class AgentBudgetGateway:
             elif isinstance(error, PydanticValidationError):
                 error_class = "schema_validation"
                 paths = sorted({safe_issue_path(item["loc"]) for item in error.errors()})[:4]
+            elif isinstance(error, RequirementError):
+                domain_code = safe_requirement_code(error.code)
+                error_class = "requirement_validation"
+                # Unknown codes remain opaque application defects, not domain rejections.
+                if domain_code is None:
+                    failure_kind, error_class = "INTERNAL", "application_internal"
             elif not isinstance(error, WorkflowExecutionError):
-                error_class = "model_unclassified"
+                failure_kind, error_class = "INTERNAL", "application_internal"
         failure = ModelCallError(
             key, failure_kind=failure_kind, attempt=attempt,
             error_class=error_class, retryable=retryable,
+            validation_stage=stage, domain_error_code=domain_code,
         )
         failure.status_code = status_code
         failure.validation_issue_codes = paths
@@ -489,6 +512,10 @@ class AgentBudgetGateway:
             "error_class": error_class,
             "retryable": retryable,
         }
+        if failure.validation_stage is not None:
+            metadata["validation_stage"] = failure.validation_stage
+        if failure.domain_error_code is not None:
+            metadata["domain_error_code"] = failure.domain_error_code
         if isinstance(error, AgentModelFailure) and error.identity_diagnostic is not None:
             metadata["identity"] = error.identity_diagnostic
         if status_code is not None:
@@ -513,9 +540,19 @@ class AgentBudgetGateway:
                 retrieve=lambda uri: (_ for _ in ()).throw(ValueError("remote schema forbidden"))
             ),
         )
-        schema_check.validate(result.value)
+        try:
+            schema_check.validate(result.value)
+        except Exception as error:
+            raise ResultValidationError(error, "result_schema") from None
         if validate is not None:
-            validate(result.value)
+            try:
+                validate(result.value)
+            except (RunBudgetExceededError, RunCancelledError, RunTimedOutError, StaleClaimError):
+                raise
+            except ResultValidationError:
+                raise
+            except Exception as error:
+                raise ResultValidationError(error, "domain_validation") from None
 
     async def model_call(
         self, key, purpose, request: ModelRequest, validate: Callable | None = None
@@ -564,6 +601,10 @@ class AgentBudgetGateway:
                 self.check_bounds(result, input_reserved, request.max_output_tokens)
                 try:
                     self.validate_result(request, result, validate)
+                except (
+                    RunBudgetExceededError, RunCancelledError, RunTimedOutError, StaleClaimError,
+                ):
+                    raise
                 except Exception as error:
                     failure, _ = self.classify_model_failure(
                         key, reservation["attempt"], error, result, request.name,

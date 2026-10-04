@@ -449,13 +449,22 @@ class WorkflowRunner:
             validation_issue_codes = cls._exception_attribute(
                 chain, "validation_issue_codes"
             )
+            from .agent_diagnostics import safe_requirement_code, safe_validation_stage
+
+            validation_stage = safe_validation_stage(
+                cls._exception_attribute(chain, "validation_stage")
+            )
+            domain_error_code = safe_requirement_code(
+                cls._exception_attribute(chain, "domain_error_code")
+            )
             cause_chain = ">".join(cls._safe_log_scalar(type(item).__name__) for item in chain)
             logger.error(
                 "workflow execution failed run_id=%s error_code=%s operation=%s "
                 "attempt=%s model_failure_kind=%s model_error_class=%s retryable=%s "
                 "failure_type=%s cause_chain=%s provider_status=%s provider_code=%s "
                 "request_id=%s schema=%s parser_error_type=%s finish_reason=%s "
-                "content_state=%s tool_call_count=%s validation_issues=%s location=%s",
+                "content_state=%s tool_call_count=%s validation_issues=%s location=%s "
+                "validation_stage=%s domain_error_code=%s",
                 safe_run_id,
                 cls._safe_log_scalar(error_code),
                 cls._safe_log_scalar(operation),
@@ -475,6 +484,8 @@ class WorkflowRunner:
                 cls._safe_log_scalar(tool_call_count),
                 cls._safe_log_scalar(validation_issue_codes),
                 cls._safe_log_scalar(cls._failure_location(failure)),
+                cls._safe_log_scalar(validation_stage),
+                cls._safe_log_scalar(domain_error_code),
             )
         except Exception:
             # Diagnostic extraction must never prevent durable failure finalization.

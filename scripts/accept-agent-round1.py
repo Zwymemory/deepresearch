@@ -16,7 +16,7 @@ from agent_acceptance_v22 import CAPTURE_LIMITS, CAPTURE_VERSION, finalize_audit
 
 CASES = {"knowledge-only", "web-only", "mixed", "version-conditions",
          "contradictory-material", "insufficient-evidence"}
-MODEL_FAILURE_KINDS = {"TIMEOUT", "RATE_LIMIT", "SCHEMA", "PROVIDER"}
+MODEL_FAILURE_KINDS = {"TIMEOUT", "RATE_LIMIT", "SCHEMA", "PROVIDER", "INTERNAL"}
 MODEL_ERROR_CLASSES = {
     "request_encoding", "transport_timeout", "transport_error", "identity_validation", "http_auth",
     "http_rate_limit", "http_upstream", "http_other", "response_json",
@@ -25,12 +25,32 @@ MODEL_ERROR_CLASSES = {
     "capability_config", "choice_count", "unexpected_tools", "result_content",
     "result_oversized", "result_json", "result_shape",
     "schema_validation", "validator_rejected", "model_unclassified",
+    "requirement_validation", "application_internal",
 }
 MODEL_ISSUE_FIELDS = {
     "action", "answer", "applicability", "claims", "conditions", "criterion_bindings",
     "criterion_id", "evidence_ids", "gaps", "investigation_id", "kind", "query",
     "reason", "source_id", "status", "subject", "task_id", "tool", "valid_at",
     "value", "version",
+    "requirements", "requirement_bindings", "question_spans", "start", "end", "text",
+    "requirement_id",
+}
+# Keep offline receipts readable without importing the running workflow package.
+# A focused parity regression checks these fixed vocabularies against production.
+MODEL_VALIDATION_STAGES = {
+    "result_schema", "domain_validation", "planning_decision", "planning_requirements",
+}
+MODEL_REQUIREMENT_CODES = {
+    "REQUIREMENTS_CHANGED", "REQUIREMENTS_MISSING_OR_LIMIT", "REQUIREMENT_ANCHOR_INVALID",
+    "REQUIREMENT_BINDING_CHANGED", "REQUIREMENT_BINDING_DUPLICATE", "REQUIREMENT_BINDING_INVALID",
+    "REQUIREMENT_CHECK_BINDING_INVALID", "REQUIREMENT_CHECK_CLAIM_REUSED",
+    "REQUIREMENT_CHECK_STATE_INVALID", "REQUIREMENT_CLAIM_SCOPE_CHANGED",
+    "REQUIREMENT_CRITERION_DUPLICATE", "REQUIREMENT_CRITERION_INVALID",
+    "REQUIREMENT_CRITERION_MISSING", "REQUIREMENT_CRITERION_REUSED", "REQUIREMENT_DUPLICATE",
+    "REQUIREMENT_DUPLICATE_SPAN", "REQUIREMENT_EXPECTED_CLAIM_INVALID", "REQUIREMENT_IDENTITY_CHANGED",
+    "REQUIREMENT_INVALID", "REQUIREMENT_MANIFEST_INVALID", "REQUIREMENT_ORIGINAL_BINDING_CHANGED",
+    "REQUIREMENT_QUESTION_INVALID", "REQUIREMENT_QUESTION_REGION_UNASSIGNED", "REQUIREMENT_RUN_INVALID",
+    "REQUIREMENT_TASK_INVALID", "REQUIREMENT_TASK_LIMIT", "REQUIREMENT_UNKNOWN",
 }
 
 
@@ -184,6 +204,11 @@ def safe_model_failure(value):
             or type(retryable) is not bool):
         return None
     safe = {"failure_kind": kind, "error_class": error_class, "retryable": retryable}
+    stage, domain_code = value.get("validation_stage"), value.get("domain_error_code")
+    if type(stage) is str and stage in MODEL_VALIDATION_STAGES:
+        safe["validation_stage"] = stage
+    if type(domain_code) is str and domain_code in MODEL_REQUIREMENT_CODES:
+        safe["domain_error_code"] = domain_code
     status = value.get("status_code")
     if type(status) is int and 100 <= status <= 599:
         safe["status_code"] = status

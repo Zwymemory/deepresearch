@@ -52,6 +52,7 @@ _MODEL_FAILURE_CODES = {
     "RATE_LIMIT": "MODEL_RATE_LIMITED",
     "SCHEMA": "MODEL_SCHEMA_INVALID",
     "PROVIDER": "MODEL_PROVIDER_FAILED",
+    "INTERNAL": "AGENT_MODEL_INTERNAL_ERROR",
 }
 
 
@@ -75,17 +76,28 @@ class ModelCallError(WorkflowExecutionError):
         attempt: int | None = None,
         error_class: str | None = None,
         retryable: bool | None = None,
+        validation_stage: str | None = None,
+        domain_error_code: str | None = None,
     ) -> None:
+        from .agent_diagnostics import safe_requirement_code, safe_validation_stage
+
         self.operation_key = operation_key
         self.failure_kind = failure_kind
         self.attempt = attempt
         self.error_class = error_class
         self.retryable = retryable
+        self.validation_stage = safe_validation_stage(validation_stage)
+        self.domain_error_code = safe_requirement_code(domain_error_code)
         if failure_kind is not None:
             self.error_code = _MODEL_FAILURE_CODES.get(failure_kind, "MODEL_CALL_FAILED")
         if error_class == "identity_validation":
             self.error_code = "MODEL_IDENTITY_INVALID"
-        super().__init__(f"model call failed during {operation_key}")
+        message = f"model call failed during {operation_key}"
+        if self.validation_stage is not None:
+            message += f"; validation_stage={self.validation_stage}"
+        if self.domain_error_code is not None:
+            message += f"; domain_error_code={self.domain_error_code}"
+        super().__init__(message)
 
 
 class StaleClaimError(WorkflowExecutionError):

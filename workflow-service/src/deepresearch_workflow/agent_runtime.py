@@ -294,24 +294,32 @@ class AutonomousResearchGraph:
         )
 
         def validate_planning(value):
-            decision = AgentDecision.model_validate(value)
-            if (
-                not state.get("original_requirements")
-                and not state["tasks"]
-                and decision.action != "stop_with_gaps"
-            ):
-                freeze_requirements(
-                    state["run_id"],
-                    state["question"],
-                    [row.model_dump(mode="json") for row in decision.requirements],
-                )
-            elif decision.requirements:
-                freeze_requirements(
-                    state["run_id"],
-                    state["question"],
-                    [row.model_dump(mode="json") for row in decision.requirements],
-                    existing=state.get("original_requirements"),
-                )
+            from .agent_budget import ResultValidationError
+
+            try:
+                decision = AgentDecision.model_validate(value)
+            except Exception as rejected:
+                raise ResultValidationError(rejected, "planning_decision") from None
+            try:
+                if (
+                    not state.get("original_requirements")
+                    and not state["tasks"]
+                    and decision.action != "stop_with_gaps"
+                ):
+                    freeze_requirements(
+                        state["run_id"],
+                        state["question"],
+                        [row.model_dump(mode="json") for row in decision.requirements],
+                    )
+                elif decision.requirements:
+                    freeze_requirements(
+                        state["run_id"],
+                        state["question"],
+                        [row.model_dump(mode="json") for row in decision.requirements],
+                        existing=state.get("original_requirements"),
+                    )
+            except Exception as rejected:
+                raise ResultValidationError(rejected, "planning_requirements") from None
 
         result = await self.gateway(state).model_call(
             f"model:agent:decision-{state['decision_steps'] + 1}",
