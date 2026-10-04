@@ -35,7 +35,7 @@ MODEL_ISSUE_FIELDS = {
     "value", "version",
     "requirements", "requirement_bindings", "question_spans", "start", "end", "text",
     "requirement_id",
-    "segment_ids", "planner_contract",
+    "segment_ids", "planner_contract", "continuation_contract", "requirements_ref",
 }
 # Keep offline receipts readable without importing the running workflow package.
 # A focused parity regression checks these fixed vocabularies against production.
@@ -112,19 +112,48 @@ def admit(journal, scenario, build_sha, retry_of, fix_description):
         raise ValueError("All six initial runs are already reserved")
 
 
-def scrub(value, secrets):
+SERVER_IDENTIFIER = re.compile(
+    r"(?:task-req-[a-f0-9]{40}|task-[1-9][0-9]*-[1-9][0-9]*|"
+    r"criterion-[a-f0-9]{48}|source-[a-f0-9]{64}|requirement-[a-f0-9]{48})"
+)
+
+
+def audit_identifiers(database):
+    """Narrow tokens from authoritative capture, never arbitrary model string fields."""
+    candidates = [row.get("task_id") for row in database.get("tasks", [])]
+    candidates += [row.get("criterion_id") for row in database.get("criteria", [])]
+    candidates += [row.get("source_id") for row in database.get("read_receipts", [])]
+    return frozenset(value for value in candidates if type(value) is str
+                     and SERVER_IDENTIFIER.fullmatch(value))
+
+
+def scrub(value, secrets, *, identifiers=frozenset()):
     if isinstance(value, dict):
-        return {k: scrub(v, secrets) for k, v in value.items()
+        return {k: scrub(v, secrets, identifiers=identifiers) for k, v in value.items()
                 if k.lower().replace("_", "") not in {
                     "token", "accesstoken", "authorization", "apikey", "password", "claimtoken"}}
     if isinstance(value, list):
-        return [scrub(v, secrets) for v in value]
+        return [scrub(v, secrets, identifiers=identifiers) for v in value]
     if isinstance(value, str):
-        for secret in secrets:
-            if secret and len(secret) >= 12:
-                value = value.replace(secret, "[redacted]")
-        value = re.sub(r"(?:sk|tvly)-[A-Za-z0-9_-]{20,}", "[redacted]", value)
-        value = re.sub(r"eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}", "[redacted]", value)
+        # Explicit secrets always win, even when short or equal to a genuine identity.
+        explicit = sorted({x for x in secrets if type(x) is str and x}, key=len, reverse=True)
+        if explicit:
+            value = re.sub("|".join(re.escape(x) for x in explicit), "[redacted]", value)
+
+        def redact_key(match):
+            start, end = match.span()
+            while start and (value[start - 1].isalnum() or value[start - 1] in "_-"):
+                start -= 1
+            while end < len(value) and (value[end].isalnum() or value[end] in "_-"):
+                end += 1
+            token = value[start:end]
+            if token in identifiers and SERVER_IDENTIFIER.fullmatch(token):
+                return match.group(0)
+            return "[redacted]"
+
+        value = re.sub(r"(?:sk|tvly)-[A-Za-z0-9_-]{20,}", redact_key, value)
+        value = re.sub(r"eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}",
+                       "[redacted]", value)
         value = re.sub(r"/(?:Users|home)/[^\s\"'<>]+", "[local-path]", value)
     return value
 
@@ -493,6 +522,7 @@ def execute_batch(args, ready, sources, cases):
                    ended_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
         retest.update(args.state_dir, row, args.batch)
         database = capture_database(ready, credentials, row["runId"])
+        identifiers = audit_identifiers(database)
         request_binding = persisted_request_binding(database, row["runId"], case["question"], view.get("runId"))
         usage = usage_summary(database)
         diagnostics = model_receipts(database)
@@ -518,7 +548,8 @@ def execute_batch(args, ready, sources, cases):
                        "model_receipts": diagnostics, "model": ready["model"],
                        "actual_model_identity_receipts": actual_model_identity,
                        "source_classification": case["source_classification"],
-                       "manual_review_status": "pending", "fixtures": False}, secrets))
+                       "manual_review_status": "pending", "fixtures": False}, secrets,
+                                           identifiers=identifiers))
         native = validate_saved_audit(audit)
         if (native["status"] == "invalid" or row["status"] == "SUCCEEDED"
                 and not native["eligible_for_complete_review"]):
@@ -635,6 +666,7 @@ def main():
                         "ended_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
             write_private(journal_path, journal)
             database = capture_database(ready, credentials, row["runId"])
+            identifiers = audit_identifiers(database)
             usage = usage_summary(database)
             diagnostics = model_receipts(database)
             if usage["decision_admissions"] > 8 or usage["model_admissions"] > 16 or usage["tool_admissions"] > 16:
@@ -643,7 +675,8 @@ def main():
                            "view": view, "database": audit_database(database), "usage": usage,
                            "model_receipts": diagnostics,
                            "model": ready["model"], "source_classification": case["source_classification"],
-                           "manual_review_status": "pending", "fixtures": False}, secrets))
+                           "manual_review_status": "pending", "fixtures": False}, secrets,
+                                           identifiers=identifiers))
             native = validate_saved_audit(audit)
             if (native["status"] == "invalid" or row["status"] == "SUCCEEDED"
                     and not native["eligible_for_complete_review"]):

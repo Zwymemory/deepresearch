@@ -18,10 +18,12 @@ from .agent_investigations import (
     select_investigation,
 )
 from .agent_protocol import (
+    CONTINUATION_VERSION,
     AgentDecision,
     AgentRunBudget,
     AgentState,
     AgentTask,
+    ContinuationAgentDecision,
     ModelRequest,
     SegmentAgentDecision,
     valid_at_instant,
@@ -41,6 +43,7 @@ from .agent_requirements import (
     bind_requirements,
     evaluate_coverage,
     freeze_requirements,
+    validate_manifest,
     validate_requirement_claims,
 )
 from .domain import EventRecord, ToolExecutionRequest, ToolName, UsageDelta, WorkItem
@@ -117,6 +120,9 @@ class AutonomousResearchGraph:
         )
 
     async def emit(self, state, event_type, payload, suffix):
+        sequence = state.get("action_sequence", state.get("decision_steps", 0))
+        if sequence != state.get("decision_steps", 0):
+            suffix = f"action-{sequence}:{suffix}"
         await self.events.emit(
             EventRecord(
                 run_id=state["run_id"],
@@ -145,7 +151,9 @@ class AutonomousResearchGraph:
             "context_snapshot": {**state.get("context_snapshot", {}), "agent_scope": scope},
             "plan_version": 1,
             "decision_steps": 0,
+            "action_sequence": 0,
             "planner_contract": PLANNER_VERSION,
+            "continuation_contract": CONTINUATION_VERSION,
             "observations": [],
             "candidates": [],
             "evidence": [],
@@ -159,6 +167,7 @@ class AutonomousResearchGraph:
 
     async def decide(self, state):
         await self.guard(state)
+        action_sequence = state.get("action_sequence", state["decision_steps"]) + 1
         planner_version = self.planner_version(state)
         summary = await self.ledger.summary(state["run_id"], self.claim_token)
         usage = UsageDelta(
@@ -192,7 +201,7 @@ class AutonomousResearchGraph:
                 action="finish", reason="All original obligations have current verified coverage"
             )
             await self.emit(
-                state,
+                {**state, "action_sequence": action_sequence},
                 "AGENT_ACTION_SELECTED",
                 {
                     "action": "finish",
@@ -204,7 +213,8 @@ class AutonomousResearchGraph:
                 "closure-selected",
             )
             return {
-                "decision": self.internal_decision(decision, planner_version),
+                "decision": self.internal_decision(decision, planner_version, state=state),
+                "action_sequence": action_sequence,
                 "agent_usage": summary,
                 "usage": usage.model_dump(),
                 "requirement_coverage": coverage,
@@ -224,7 +234,8 @@ class AutonomousResearchGraph:
                 ],
             )
             return {
-                "decision": self.internal_decision(decision, planner_version),
+                "decision": self.internal_decision(decision, planner_version, state=state),
+                "action_sequence": action_sequence,
                 "agent_usage": summary,
                 "usage": usage.model_dump(),
             }
@@ -333,6 +344,52 @@ class AutonomousResearchGraph:
                 ),
             })
 
+        continuation = self.continuation_manifest(state)
+        if state.get("continuation_contract") == CONTINUATION_VERSION:
+            request = request.model_copy(update={
+                "request_binding": {**request.request_binding,
+                                    "continuation_contract": CONTINUATION_VERSION,
+                                    "planning_phase": "continuation" if continuation else "initial",
+                                    **({"requirements_manifest_sha256":
+                                           continuation["manifest_sha256"]}
+                                       if continuation else {})},
+            })
+            if continuation:
+                request = request.model_copy(update={
+                    "result_schema": ContinuationAgentDecision.wire_schema(),
+                    "instruction": (
+                        "Planner contract agent-planning-segments/2; continuation contract "
+                        "agent-frozen-requirements/1. Requirements are immutable server-owned "
+                        "objects in original_requirements. Return requirements_ref exactly equal "
+                        "to its manifest_sha256 and continuation_contract exactly as above. "
+                        "Omit requirements entirely; any declaration, even unchanged or empty, "
+                        "is forbidden. Use existing requirement/criterion references for actions "
+                        "and bindings. Never recompute question mappings or redefine scope.\n"
+                        + request.instruction[
+                            request.instruction.index("Resolve all canonical_objects"):
+                        ]
+                    ),
+                })
+            else:
+                request = request.model_copy(update={"instruction": (
+                    request.instruction.replace(
+                        "independent subquestions and substantive shared constraints into separate "
+                        "requirements when original_requirements is absent.",
+                        "independent substantive questions into distinct requirements when "
+                        "original_requirements is absent. Source restrictions and citation/output "
+                        "instructions are shared execution constraints, not independent factual "
+                        "questions or factually verified criteria. Attach each such constraint "
+                        "to the relevant requirements through segment_ids and "
+                        "applicability.conditions; "
+                        "retain all substantive scope and all nonblank segments."
+                    )
+                )})
+            request = request.model_copy(update={"instruction": request.instruction + (
+                "\nFor read_source select a source_id supplied in current candidates exactly. "
+                "A desired URL absent from candidates is not authorized; choose an existing "
+                "candidate or issue a different targeted search. Never invent a source receipt."
+            )})
+
         def validate_planning(value):
             from .agent_budget import ResultValidationError
 
@@ -374,7 +431,8 @@ class AutonomousResearchGraph:
             if planner_version == PLANNER_VERSION else None,
         )
         decision = self.planning_decision(result.value, state)
-        next_state = {**state, "decision_steps": state["decision_steps"] + 1}
+        next_state = {**state, "decision_steps": state["decision_steps"] + 1,
+                      "action_sequence": action_sequence}
         await self.emit(
             next_state,
             "AGENT_ACTION_SELECTED",
@@ -391,6 +449,7 @@ class AutonomousResearchGraph:
             "decision": (copy.deepcopy(result.value) if planner_version == PLANNER_VERSION
                          else decision.model_dump(mode="json")),
             "decision_steps": next_state["decision_steps"],
+            "action_sequence": action_sequence,
             "agent_usage": summary,
             "usage": usage.model_dump(),
         }
@@ -405,19 +464,49 @@ class AutonomousResearchGraph:
         return version
 
     @staticmethod
-    def internal_decision(decision, version):
+    def internal_decision(decision, version, *, state=None):
         value = decision.model_dump(mode="json")
         if version == PLANNER_VERSION:
             value["planner_contract"] = PLANNER_VERSION
+        if state and state.get("continuation_contract") == CONTINUATION_VERSION:
+            manifest = AutonomousResearchGraph.continuation_manifest(state)
+            if manifest:
+                value.pop("requirements")
+                value.update(continuation_contract=CONTINUATION_VERSION,
+                             requirements_ref=manifest["manifest_sha256"])
         return value
+
+    @staticmethod
+    def continuation_manifest(state):
+        selector = state.get("continuation_contract")
+        if selector not in {None, CONTINUATION_VERSION}:
+            raise RequirementError("REQUIREMENT_PLANNER_VERSION_INVALID")
+        if selector is None:
+            return None
+        if AutonomousResearchGraph.planner_version(state) != PLANNER_VERSION:
+            raise RequirementError("REQUIREMENT_PLANNER_VERSION_INVALID")
+        if not state.get("original_requirements"):
+            return None
+        return validate_manifest(state["original_requirements"], run_id=state["run_id"],
+                                 question=state["question"])
 
     @classmethod
     def planning_decision(cls, value, state):
+        manifest = cls.continuation_manifest(state)
         if cls.planner_version(state) == LEGACY_PLANNER_VERSION:
             return AgentDecision.model_validate(value)
-        decision = SegmentAgentDecision.model_validate(value)
+        if manifest:
+            if "requirements" in value:
+                raise RequirementError("REQUIREMENTS_CHANGED")
+            decision = ContinuationAgentDecision.model_validate(value)
+            if decision.requirements_ref != manifest["manifest_sha256"]:
+                raise RequirementError("REQUIREMENTS_CHANGED")
+        else:
+            decision = SegmentAgentDecision.model_validate(value)
         canonical_value = decision.model_dump(mode="json")
         canonical_value.pop("planner_contract")
+        canonical_value.pop("continuation_contract", None)
+        canonical_value.pop("requirements_ref", None)
         if decision.requirements:
             canonical_value["requirements"] = segment_drafts(
                 state["question"], canonical_value["requirements"]
@@ -466,6 +555,27 @@ class AutonomousResearchGraph:
         return None
 
     async def act(self, state):
+        await self.guard(state)
+        step = state.get("action_sequence", state["decision_steps"])
+        if state.get("action_progress_step") == step:
+            return {}  # An already checkpointed attempt must not emit/count/execute twice.
+        before = self.progress_marker(state)  # Immutable snapshot before task mutations.
+        update = await self._act(state)
+        progress = self.progress_marker({**state, **update}) != before
+        update["no_progress"] = 0 if progress else state.get("no_progress", 0) + 1
+        update["action_progress_step"] = step
+        update["agent_usage"] = await self.ledger.summary(state["run_id"], self.claim_token)
+        observations = update.get("observations", [])
+        observed = observations[-1] if observations else {}
+        await self.emit(state, "AGENT_OBSERVATION", {
+            "action": state["decision"].get("action"),
+            "taskId": state["decision"].get("task_id"),
+            "newEvidence": progress, "errorCode": observed.get("errorCode"),
+            "planVersion": update.get("plan_version", state["plan_version"]),
+        }, "observation")
+        return update
+
+    async def _act(self, state):
         await self.guard(state)
         # The lease changes on recovery; never replay a checkpoint's old claim into Java.
         state = {**state, "claim_token": self.claim_token}
@@ -545,6 +655,13 @@ class AutonomousResearchGraph:
             return {**self.observation(state, value), "tasks": tasks, **requirements_update}
 
         publishing = decision.action in {"finish", "stop_with_gaps"}
+        previous = state["observations"][-1] if state["observations"] else {}
+        if (publishing and state.get("no_progress", 0) >= 2
+                and previous.get("action") == decision.action and previous.get("errorCode")):
+            raise WorkflowExecutionError(
+                "Publication could not preserve the required evidence gates",
+                error_code="AGENT_PUBLICATION_REJECTED",
+            )
         coverage = evaluate_coverage(manifest, tasks, state.get("investigations", {}), associations)
         if decision.action == "finish" and not coverage["complete"]:
             return observe(
@@ -690,7 +807,12 @@ class AutonomousResearchGraph:
         elif decision.action == "read_source":
             if not any(row["source_id"] == decision.source_id for row in state["candidates"]):
                 return observe(
-                    {"action": "read_source", "errorCode": "SOURCE_NOT_IN_CURRENT_SEARCH"}
+                    {"action": "read_source", "errorCode": "SOURCE_NOT_IN_CURRENT_SEARCH",
+                     "rejected_source_id": decision.source_id,
+                     "authorized_source_ids": [row["source_id"]
+                                               for row in state["candidates"][-8:]],
+                     "correction": "Select an authorized candidate source_id exactly, or issue "
+                                   "a different targeted search. Do not retry the absent URL."}
                 )
             result = await gateway.tool_call(
                 key,
@@ -850,22 +972,7 @@ class AutonomousResearchGraph:
             update.get("investigations", state.get("investigations", {})),
             associations,
         )
-        progress = self.progress_marker({**state, **update}) != self.progress_marker(state)
         update.update(observe(observation))
-        update["no_progress"] = 0 if progress else state.get("no_progress", 0) + 1
-        update["agent_usage"] = await self.ledger.summary(state["run_id"], self.claim_token)
-        await self.emit(
-            state,
-            "AGENT_OBSERVATION",
-            {
-                "action": decision.action,
-                "taskId": task["task_id"],
-                "newEvidence": progress,
-                "errorCode": observation.get("errorCode"),
-                "planVersion": state["plan_version"],
-            },
-            "observation",
-        )
         return update
 
     @staticmethod
@@ -940,8 +1047,6 @@ class AutonomousResearchGraph:
                 ),
                 "packet": {
                     "records": records,
-                    "status": [packet.get("status") for packet in packets],
-                    "gaps": [gap for packet in packets for gap in packet.get("gaps", [])],
                 },
             }
         )

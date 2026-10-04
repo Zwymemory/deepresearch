@@ -165,6 +165,21 @@ class SegmentAgentDecision(AgentDecision):
     requirements: list[SegmentRequirementDraft] = Field(default_factory=list, max_length=32)
 
 
+CONTINUATION_VERSION = "agent-frozen-requirements/1"
+
+
+class ContinuationAgentDecision(SegmentAgentDecision):
+    continuation_contract: Literal[CONTINUATION_VERSION]
+    requirements_ref: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+    @classmethod
+    def wire_schema(cls):
+        schema = cls.model_json_schema()
+        # No declaration field in continuation, even an empty or unchanged one.
+        schema["properties"].pop("requirements")
+        return schema
+
+
 class ModelRequest(StrictModel):
     name: str = Field(pattern=r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
     instruction: str = Field(min_length=1, max_length=12000)
@@ -198,6 +213,9 @@ class AgentState(TypedDict, total=False):
     plan_version: int
     decision_steps: int
     planner_contract: str
+    continuation_contract: str
+    action_progress_step: int
+    action_sequence: int
     decision: dict[str, Any]
     observations: list[dict[str, Any]]
     candidates: list[dict[str, Any]]

@@ -46,7 +46,7 @@ SAFE_FIELDS = frozenset({
     "value", "version",
     "requirements", "requirement_bindings", "question_spans", "start", "end", "text",
     "requirement_id",
-    "segment_ids", "planner_contract",
+    "segment_ids", "planner_contract", "continuation_contract", "requirements_ref",
 })
 
 

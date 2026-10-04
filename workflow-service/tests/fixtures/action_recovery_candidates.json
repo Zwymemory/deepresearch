@@ -1,0 +1,26 @@
+{
+  "fixture_only": true,
+  "observed_shape": "One actual search returned five source_id/content leads without the desired canonical source. Text and read/check results below are synthetic, not IANA evidence.",
+  "candidates": [
+    {
+      "source_id": "https://www.iana.org/news/2024/example-domain-http-methods",
+      "content": "Controlled synthetic lead preview; not source evidence."
+    },
+    {
+      "source_id": "https://www.youtube.com/watch?v=3HCYXlhaH_I",
+      "content": "Controlled synthetic lead preview; not source evidence."
+    },
+    {
+      "source_id": "https://domaindetails.com/registrars/address-creation-llc",
+      "content": "Controlled synthetic lead preview; not source evidence."
+    },
+    {
+      "source_id": "https://www.rfc-editor.org/info/rfc6761",
+      "content": "Controlled synthetic lead preview; not source evidence."
+    },
+    {
+      "source_id": "https://www.iana.org/help",
+      "content": "Controlled synthetic lead preview; not source evidence."
+    }
+  ]
+}

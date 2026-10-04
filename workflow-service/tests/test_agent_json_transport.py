@@ -205,6 +205,12 @@ def oracle_transport(oracle, calls):
         payload = json.loads(body["messages"][1]["content"])
         binding = ({"planner_contract": schema["properties"]["planner_contract"]["const"]}
                    if "planner_contract" in schema.get("properties", {}) else {})
+        if "continuation_contract" in schema.get("properties", {}):
+            binding.update(
+                continuation_contract=schema["properties"]["continuation_contract"]["const"],
+                planning_phase="continuation",
+                requirements_manifest_sha256=payload["original_requirements"]["manifest_sha256"],
+            )
         result = await oracle.invoke(ModelRequest(
             name=name, instruction="Synthetic oracle using actual transmitted payload",
             payload=payload, schema=schema, request_binding=binding,

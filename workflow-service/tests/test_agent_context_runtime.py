@@ -13,7 +13,7 @@ from deepresearch_workflow.agent_runtime import AutonomousResearchGraph
 from deepresearch_workflow.ports import RepositoryEventSink
 
 from .test_agent_json_transport import fixture_model, oracle_transport
-from .test_agent_runtime import ObservationDrivenModel, setup
+from .test_agent_runtime import ObservationDrivenModel, continuation_fields, setup
 
 
 class DualObligationModel(ObservationDrivenModel):
@@ -70,6 +70,7 @@ class DualObligationModel(ObservationDrivenModel):
             return ModelResult(
                 value={
                     "planner_contract": request.request_binding["planner_contract"],
+                    **continuation_fields(request),
                     "action": "finish", "reason": "Test proposed closure",
                 },
                 input_tokens=120,
@@ -95,6 +96,7 @@ class DualObligationModel(ObservationDrivenModel):
         return ModelResult(
             value={
                 "planner_contract": request.request_binding["planner_contract"],
+                **continuation_fields(request),
                 "action": "check_claims",
                 "claims": claims,
                 "criterion_bindings": links,

@@ -88,7 +88,7 @@ def built_fixture(
     }
 
 
-def native_fixture():
+def native_fixture(task_id="task-main"):
     criterion_id, normalize, freeze, _, _ = native.workflow_helpers()
     question, run = "Verify encryption and retention.", "wf-export-unit"
     drafts = [
@@ -132,7 +132,7 @@ def native_fixture():
     ]
     database["tasks"] = [
         {
-            "task_id": "task-main",
+            "task_id": task_id,
             "acceptance_criteria": [d["text"] for d in drafts],
             "dependencies": [],
             "status": "done",
@@ -156,7 +156,7 @@ def native_fixture():
                 "applicability": draft["applicability"],
             }
         )
-        identity = criterion_id(run, "task-main", index, draft["text"])
+        identity = criterion_id(run, task_id, index, draft["text"])
         requirement = next(
             r for r in manifest["requirements"] if r["text"] == draft["text"]
         )
@@ -169,13 +169,13 @@ def native_fixture():
             {
                 "run_id": run,
                 "requirement_id": requirement["requirement_id"],
-                "task_id": "task-main",
+                "task_id": task_id,
                 "criterion_id": identity,
             }
         )
         database["criteria"].append(
             {
-                "task_id": "task-main",
+                "task_id": task_id,
                 "criterion_id": identity,
                 "criterion_index": index,
                 "criterion_text": draft["text"],
@@ -232,7 +232,7 @@ def native_fixture():
             {
                 "check_id": check,
                 "call_id": call,
-                "task_id": "task-main",
+                "task_id": task_id,
                 "investigation": investigation,
                 "status": "COMPLETED",
                 "request": request,

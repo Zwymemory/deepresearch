@@ -88,6 +88,14 @@ class LedgerSubstitute:
         self.tasks = copy.deepcopy(tasks)
 
 
+def continuation_fields(request):
+    """Controlled oracle implements only the advertised new continuation schema."""
+    if request.request_binding.get("planning_phase") != "continuation":
+        return {}
+    return {"continuation_contract": request.request_binding["continuation_contract"],
+            "requirements_ref": request.request_binding["requirements_manifest_sha256"]}
+
+
 class ObservationDrivenModel:
     """Small synthetic semantic oracle. Actions depend on input, never fixture IDs."""
 
@@ -235,6 +243,10 @@ class ObservationDrivenModel:
                 requirement["segment_ids"] = [
                     row["segment_id"] for row in payload["question_segments"]["segments"]
                 ]
+        fields = continuation_fields(request)
+        if fields:
+            value.pop("requirements", None)
+            value.update(fields)
         return ModelResult(value=value, input_tokens=120, output_tokens=100)
 
 
@@ -484,6 +496,7 @@ async def test_empty_web_search_can_switch_to_kb_without_rebinding_task_scope():
                         row["text"] for row in request.payload["question_segments"]["segments"]
                     ),
                     "planner_contract": request.request_binding["planner_contract"],
+                    **continuation_fields(request),
                     "tool": "kb_search",
                     "reason": "网页检索为空\uff0c改查获准的知识库",
                 },
