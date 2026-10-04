@@ -115,6 +115,25 @@ def verify_runtime(ready, token):
     if ("json_diagnostic_identity" in ready and ready["json_diagnostic_identity"]
             != identity.get("json_diagnostic_identity")):
         raise ValueError("Actual parser diagnostic identity differs from readiness")
+    if "obligation_identity" in ready:
+        obligation = ready["obligation_identity"]
+        if obligation != identity.get("obligation_identity"):
+            raise ValueError("Actual obligation implementation differs from readiness")
+        if any(obligation.get(k) != v for k, v in {
+            "planner_contract": "agent-planning-obligations/3",
+            "continuation_contract": "agent-frozen-requirements/2",
+            "claims_contract": "agent-obligation-claims/1",
+            "verifier_protocol": "evidence-check/3",
+            "original_context_contract": "agent-obligation-context/1",
+        }.items()):
+            raise ValueError("Actual obligation protocol differs")
+        modules = obligation.get("modules", {})
+        if set(modules) != {"agent_obligations", "agent_runtime", "evidence_check", "evidence_client"}:
+            raise ValueError("Loaded obligation implementation proof incomplete")
+        for row in modules.values():
+            path = Path(row["path"]).resolve()
+            if not path.is_relative_to(source.resolve()) or file_sha(path) != row["sha256"]:
+                raise ValueError("Loaded obligation module changed or is foreign")
     sidecar = http_json(ready["sidecar_base_url"], "/internal/health/ready")
     if sidecar.get("status") != "UP" or sidecar.get("runner") != "enabled":
         raise ValueError("Real sidecar is not ready")
@@ -127,6 +146,9 @@ def verify_runtime(ready, token):
         raise ValueError("Database is not isolated on its declared loopback port")
     if ready["database_volume"] not in [m.get("Name") for m in container["Mounts"]]:
         raise ValueError("Database volume does not match the environment")
-    return {"embedded_build": build, "jar_sha256": ready["jar_sha256"], "model_identity": identity.get("model_identity"),
+    verified = {"embedded_build": build, "jar_sha256": ready["jar_sha256"], "model_identity": identity.get("model_identity"),
             "sidecar_source_sha256": ready["sidecar_source_sha256"],
             "json_diagnostic_identity": identity.get("json_diagnostic_identity"), "verified": True}
+    if "obligation_identity" in ready:
+        verified["obligation_identity"] = identity["obligation_identity"]
+    return verified

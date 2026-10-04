@@ -126,6 +126,38 @@ def source_digest(source):
     return hashlib.sha256(json.dumps(rows, separators=(",", ":")).encode()).hexdigest()
 
 
+def loaded_obligation_identity(source):
+    """Hash the loaded fresh selector, reference adapter and actual CHECK3 schemas."""
+    import inspect
+    from deepresearch_workflow import agent_obligations, agent_runtime, evidence_check, evidence_client
+    from agent_retest_batch import digest
+
+    if (agent_runtime.OBLIGATION_PLANNER != agent_obligations.PLANNER_VERSION
+            or agent_runtime.OBLIGATION_CONTINUATION != agent_obligations.CONTINUATION_VERSION):
+        raise ValueError("Loaded fresh selector differs from obligation contract")
+    modules = {}
+    for name, module in {"agent_obligations": agent_obligations, "agent_runtime": agent_runtime,
+                         "evidence_check": evidence_check, "evidence_client": evidence_client}.items():
+        path = Path(module.__file__).resolve()
+        if not path.is_relative_to(source):
+            raise ValueError("Loaded obligation implementation belongs to another source archive")
+        modules[name] = {"path": str(path), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+    initial = agent_obligations.ObligationDecision.model_json_schema()
+    continuation = agent_obligations.ObligationContinuation.wire_schema()
+    check3 = evidence_check.response_schema({"protocol_version": "evidence-check/3", "claims": [], "evidence": []})
+    return {
+        "planner_contract": initial["properties"]["planner_contract"]["const"],
+        "continuation_contract": continuation["properties"]["continuation_contract"]["const"],
+        "claims_contract": initial["properties"]["claims_contract"]["const"],
+        "verifier_protocol": "evidence-check/3", "original_context_contract": "agent-obligation-context/1",
+        "modules": modules,
+        "initializer_sha256": hashlib.sha256(inspect.getsource(agent_runtime.AutonomousResearchGraph.initialize).encode()).hexdigest(),
+        "initial_wire_schema_sha256": digest(initial),
+        "continuation_wire_schema_sha256": digest(continuation),
+        "check3_wire_schema_sha256": digest(check3),
+    }
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--source-dir", type=Path, required=True)
@@ -185,6 +217,10 @@ def main():
         "runtime_module_path": str(runtime_path),
         "runtime_module_sha256": hashlib.sha256(runtime_path.read_bytes()).hexdigest(),
     }
+    obligation = loaded_obligation_identity(source)
+    identity["obligation_identity"] = obligation
+    identity["planner_identity"]["planner_contract"] = obligation["planner_contract"]
+    identity["continuation_identity"]["version"] = obligation["continuation_contract"]
     descriptor = os.open(args.identity_output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "w") as stream:
         json.dump(identity, stream, indent=2)

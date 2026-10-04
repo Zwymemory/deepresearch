@@ -470,6 +470,8 @@ def batch_prerequisites(ready, source_path, review_path, state):
             or review.get("candidate_binding", {}).get("continuation_contract")
             != "agent-frozen-requirements/1"):
         raise ValueError("Actual frozen requirements implementation approval required")
+    if ready.get("batch_id") == retest.OBLIGATION_ALIGNMENT_WEB_BATCH:
+        validate_obligation_readiness(ready, review)
     manifest = Path(ready["scenario_manifest_path"])
     if review.get("source_manifest_sha256") != file_sha(manifest) or ready.get("scenario_manifest_sha256") != file_sha(manifest):
         raise ValueError("B did not approve this exact source manifest")
@@ -478,6 +480,34 @@ def batch_prerequisites(ready, source_path, review_path, state):
     if source["cases"] != scenario_manifest["cases"]:
         raise ValueError("Runtime scenario questions differ from the reviewed manifest")
     return review
+
+
+def validate_obligation_readiness(ready, review):
+    binding = review.get("candidate_binding", {})
+    proof = ready.get("obligation_identity")
+    if not isinstance(proof, dict) or proof != binding.get("obligation_identity"):
+        raise ValueError("Actual loaded obligation proof and independent approval required")
+    expected = {
+        "planner_contract": "agent-planning-obligations/3",
+        "continuation_contract": "agent-frozen-requirements/2",
+        "claims_contract": "agent-obligation-claims/1",
+        "verifier_protocol": "evidence-check/3",
+        "original_context_contract": "agent-obligation-context/1",
+    }
+    if any(proof.get(k) != v or binding.get(k) != v for k, v in expected.items()):
+        raise ValueError("Loaded obligation protocol differs from independent approval")
+    if (ready.get("planner_identity") != {
+            "planner_contract": expected["planner_contract"],
+            "question_mapping_version": "agent-question-segments/1",
+            "planner_settlement_contract": "agent-planner-settlement/1"}
+            or ready.get("continuation_identity", {}).get("version") != expected["continuation_contract"]
+            or ready.get("json_diagnostic_identity", {}).get("version") != "agent-json-diagnostic/1"):
+        raise ValueError("Actual planner/continuation/parser identity incomplete")
+    if set(proof.get("modules", {})) != {"agent_obligations", "agent_runtime", "evidence_check", "evidence_client"}:
+        raise ValueError("Loaded obligation module proof incomplete")
+    for name in ("initializer_sha256", "initial_wire_schema_sha256", "continuation_wire_schema_sha256", "check3_wire_schema_sha256"):
+        if not re.fullmatch(r"[a-f0-9]{64}", proof.get(name, "")):
+            raise ValueError("Loaded obligation initializer/schema proof incomplete")
 
 
 def publish_batch_manifest(state, ready, batch_id=retest.BATCH):
