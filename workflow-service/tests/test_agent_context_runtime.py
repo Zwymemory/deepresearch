@@ -31,7 +31,9 @@ class DualObligationModel(ObservationDrivenModel):
             result.value["requirements"] = [
                 {
                     "text": text,
-                    "question_spans": [{"start": 0, "end": len(payload["original_question"])}],
+                    "segment_ids": [
+                        row["segment_id"] for row in payload["question_segments"]["segments"]
+                    ],
                     "kind": "factual",
                     "applicability": {
                         "subject": subject,
@@ -66,7 +68,10 @@ class DualObligationModel(ObservationDrivenModel):
             missing = [r for r in missing if r["text"] == "Verify document version"]
         if not missing:
             return ModelResult(
-                value={"action": "finish", "reason": "Test proposed closure"},
+                value={
+                    "planner_contract": request.request_binding["planner_contract"],
+                    "action": "finish", "reason": "Test proposed closure",
+                },
                 input_tokens=120,
                 output_tokens=100,
             )
@@ -89,6 +94,7 @@ class DualObligationModel(ObservationDrivenModel):
             )
         return ModelResult(
             value={
+                "planner_contract": request.request_binding["planner_contract"],
                 "action": "check_claims",
                 "claims": claims,
                 "criterion_bindings": links,

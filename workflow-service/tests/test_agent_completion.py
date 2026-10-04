@@ -6,6 +6,7 @@ import pytest
 
 from deepresearch_workflow.agent_completion import criterion_id, ensure_criteria
 from deepresearch_workflow.agent_protocol import AgentTask
+from deepresearch_workflow.agent_question_segments import PLANNER_VERSION
 
 from .test_agent_investigations import action_context, check, claim
 
@@ -15,6 +16,7 @@ async def bound_check(context, task_id, claims, indices=None, *, bind=True):
     ensure_criteria(context.state["run_id"], context.state["tasks"])
     context.state["decision_steps"] += 1
     context.state["decision"] = {
+        "planner_contract": PLANNER_VERSION,
         "action": "check_claims",
         "task_id": task_id,
         "claims": claims,
@@ -168,6 +170,7 @@ async def test_coverage_forgery_and_scope_mutation_are_rejected(bad):
             {"criterion_id": ids[0] if bad == "duplicate" else ids[1], "claim_index": 1},
         ]
     context.state["decision"] = {
+        "planner_contract": PLANNER_VERSION,
         "action": "check_claims",
         "task_id": "task-a",
         "claims": claims,

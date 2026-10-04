@@ -202,9 +202,12 @@ def oracle_transport(oracle, calls):
         body = json.loads(wire.content)
         schema = json.loads(body["messages"][0]["content"].split("Result JSON Schema:\n")[1])
         name = "AgentDecision" if "action" in schema.get("properties", {}) else "SyntheticCheck"
+        payload = json.loads(body["messages"][1]["content"])
+        binding = ({"planner_contract": schema["properties"]["planner_contract"]["const"]}
+                   if "planner_contract" in schema.get("properties", {}) else {})
         result = await oracle.invoke(ModelRequest(
             name=name, instruction="Synthetic oracle using actual transmitted payload",
-            payload=json.loads(body["messages"][1]["content"]), schema=schema,
+            payload=payload, schema=schema, request_binding=binding,
         ))
         return httpx.Response(200, json=envelope(json.dumps(result.value, ensure_ascii=False),
                                                usage={"prompt_tokens": 120,

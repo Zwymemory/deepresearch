@@ -8,6 +8,7 @@ import pytest
 from deepresearch_workflow.agent_completion import ensure_criteria
 from deepresearch_workflow.agent_investigations import scope_key
 from deepresearch_workflow.agent_protocol import AgentTask
+from deepresearch_workflow.agent_question_segments import PLANNER_VERSION
 from deepresearch_workflow.agent_runtime import AutonomousResearchGraph
 from deepresearch_workflow.graph import WorkflowExecutionError
 from deepresearch_workflow.ports import RepositoryEventSink
@@ -96,6 +97,7 @@ async def action_context():
 async def check(context, task_id, claims, *, investigation_id=None):
     context.state["decision_steps"] += 1
     context.state["decision"] = {
+        "planner_contract": PLANNER_VERSION,
         "action": "check_claims",
         "task_id": task_id,
         "claims": claims,
@@ -246,6 +248,7 @@ async def test_actual_langgraph_checkpointer_restores_multiple_investigations_an
             task, text = decisions[step]
             return ModelResult(
                 value={
+                    "planner_contract": request.request_binding["planner_contract"],
                     "action": "check_claims",
                     "task_id": task,
                     "claims": [claim(text)],
@@ -307,6 +310,7 @@ async def test_final_actions_use_whole_report_status_and_preserve_reliable_parts
     context.state["tasks"][0]["status"] = "done"
     context.state["tasks"][1]["dependencies"] = ["task-a"]
     context.state["decision"] = {
+        "planner_contract": PLANNER_VERSION,
         "action": action,
         "reason": "Finalize the server report",
         "gaps": ["Remaining scoped issue"] if action == "stop_with_gaps" else [],
@@ -330,7 +334,10 @@ async def test_subset_approved_without_report_completeness_cannot_finish_run():
         return {"approved": True, "answer": "Subset", "citations": ["source"]}
 
     context.backend.publish = publish
-    context.state["decision"] = {"action": "finish", "reason": "Request whole report"}
+    context.state["decision"] = {
+        "planner_contract": PLANNER_VERSION,
+        "action": "finish", "reason": "Request whole report",
+    }
     result = await context.graph.act(context.state)
     assert "final_status" not in result
     assert result["observations"][-1]["errorCode"] == "ORIGINAL_REQUIREMENTS_INCOMPLETE"
