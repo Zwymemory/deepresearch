@@ -96,6 +96,7 @@ async def action_context():
 
 async def check(context, task_id, claims, *, investigation_id=None):
     context.state["decision_steps"] += 1
+    context.state["action_sequence"] += 1
     context.state["decision"] = {
         "planner_contract": PLANNER_VERSION,
         "action": "check_claims",

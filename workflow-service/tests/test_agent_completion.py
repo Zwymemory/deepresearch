@@ -15,6 +15,7 @@ async def bound_check(context, task_id, claims, indices=None, *, bind=True):
     task = next(t for t in context.state["tasks"] if t["task_id"] == task_id)
     ensure_criteria(context.state["run_id"], context.state["tasks"])
     context.state["decision_steps"] += 1
+    context.state["action_sequence"] += 1
     context.state["decision"] = {
         "planner_contract": PLANNER_VERSION,
         "action": "check_claims",
@@ -109,9 +110,11 @@ async def test_already_used_prerequisite_is_stale_even_after_parent_resolves_aga
     latest_step = context.state["decision_steps"]
     context.state["decision"] = old_decision
     context.state["decision_steps"] = old_step
+    context.state["action_sequence"] = old_step
     context.state.update(await context.graph.act(context.state))
     assert context.state["tasks"][1]["criteria"][0]["status"] == "stale"
     context.state["decision_steps"] = latest_step
+    context.state["action_sequence"] = latest_step
     await check(context, "task-b", [claim("Dependent claim")])
     assert context.state["tasks"][1]["status"] == "done"
 
@@ -148,6 +151,7 @@ async def test_coverage_forgery_and_scope_mutation_are_rejected(bad):
     if bad in {"scope", "group_scope"}:
         await bound_check(context, "task-a", [claim("First pinned scope")])
     context.state["decision_steps"] += 1
+    context.state["action_sequence"] += 1
     claims = [claim("Altered scope")]
     bindings = [{"criterion_id": ids[0], "claim_index": 0}]
     if bad == "unknown":
