@@ -449,7 +449,7 @@ def batch_prerequisites(ready, source_path, review_path, state):
                 or binding.get("result_transport") != model.get("result_transport")
                 or binding.get("transport_contract_version") != model.get("transport_contract_version")):
             raise ValueError("Actual runtime and B-approved JSON transport binding required")
-    if ready.get("batch_id") in {retest.SEGMENTS_WEB_BATCH, retest.JSON_DIAGNOSTICS_WEB_BATCH}:
+    if ready.get("batch_id") in {retest.SEGMENTS_WEB_BATCH, retest.JSON_DIAGNOSTICS_WEB_BATCH, retest.ACTION_RECOVERY_WEB_BATCH}:
         expected = {"planner_contract": "agent-planning-segments/2",
                     "question_mapping_version": "agent-question-segments/1",
                     "planner_settlement_contract": "agent-planner-settlement/1"}
@@ -457,11 +457,16 @@ def batch_prerequisites(ready, source_path, review_path, state):
         if ready.get("planner_identity") != expected or any(
                 binding.get(key) != value for key, value in expected.items()):
             raise ValueError("Actual runtime and independent v2 planner approval required")
-    if ready.get("batch_id") == retest.JSON_DIAGNOSTICS_WEB_BATCH and (
+    if ready.get("batch_id") in {retest.JSON_DIAGNOSTICS_WEB_BATCH, retest.ACTION_RECOVERY_WEB_BATCH} and (
             ready.get("json_diagnostic_identity", {}).get("version") != "agent-json-diagnostic/1"
             or review.get("candidate_binding", {}).get("json_diagnostic_version")
             != "agent-json-diagnostic/1"):
         raise ValueError("Actual strict JSON diagnostic implementation approval required")
+    if ready.get("batch_id") == retest.ACTION_RECOVERY_WEB_BATCH and (
+            ready.get("continuation_identity", {}).get("version") != "agent-frozen-requirements/1"
+            or review.get("candidate_binding", {}).get("continuation_contract")
+            != "agent-frozen-requirements/1"):
+        raise ValueError("Actual frozen requirements implementation approval required")
     manifest = Path(ready["scenario_manifest_path"])
     if review.get("source_manifest_sha256") != file_sha(manifest) or ready.get("scenario_manifest_sha256") != file_sha(manifest):
         raise ValueError("B did not approve this exact source manifest")

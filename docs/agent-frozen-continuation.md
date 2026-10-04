@@ -1,0 +1,13 @@
+# Frozen requirements and bounded action recovery
+
+Fresh agent runs persist `continuation_contract=agent-frozen-requirements/1` alongside the segment planner version. Initial planning extracts independent factual obligations with server segment references. Source restrictions and citation/output instructions attach to the relevant obligations as shared segments and applicability conditions; they are not separate facts to certify.
+
+After the server freezes the original manifest, continuation responses must return its exact `requirements_ref` hash and the continuation version. The wire schema omits `requirements`; any declaration field, even empty or unchanged, is rejected. The server still validates canonical requirements, criterion bindings and native settlement. Existing checkpoints without the new selector retain their original v1/v2 request bytes and replay bindings; they are not migrated.
+
+Each selected action has a persistent sequence, including mechanical finish/stop. Every returning action path accounts for progress once, records its sequence and emits an observation. Two attempts without substantive progress trigger the existing stop gate. Plan changes, receipt IDs and bare packet status/gap changes do not reset this count. Applied checkpoints cannot execute or count the same action twice; mechanical events have distinct stable identities. Model/tool limits and native publication gates are unchanged. Repeated publication rejection terminates with `AGENT_PUBLICATION_REJECTED`.
+
+A rejected source selection reports bounded current candidate references and guidance to select an authorized source or change the search. It never authorizes an invented URL. A candidate also needs to satisfy the question's semantic source restriction; successful search or native ID mapping alone does not prove this.
+
+Acceptance exports preserve complete server identifiers only when present in authoritative capture fields and matching the strict identifier grammar. Explicit supplied secret values always take precedence, including short values or collisions with real identifiers. Credential fields, keys, JWTs and local paths remain scrubbed. A collision can make an export unverifiable and must be reported as invalid. Historical audits are never rewritten to repair their verdicts.
+
+Offline adapter, replay, recovery, event and export checks establish these mechanisms. Actual model extraction of shared constraints, source recovery and complete original-question evidence remain subject to independently reviewed real acceptance. No synthetic fixture is evidence of real autonomy.

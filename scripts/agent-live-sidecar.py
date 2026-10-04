@@ -175,6 +175,16 @@ def main():
         "version": agent_json.VERSION, "module_path": str(parser_path),
         "module_sha256": hashlib.sha256(parser_path.read_bytes()).hexdigest(),
     }
+    from deepresearch_workflow import agent_protocol, agent_runtime
+    protocol_path = Path(agent_protocol.__file__).resolve()
+    runtime_path = Path(agent_runtime.__file__).resolve()
+    identity["continuation_identity"] = {
+        "version": agent_protocol.CONTINUATION_VERSION,
+        "protocol_module_path": str(protocol_path),
+        "protocol_module_sha256": hashlib.sha256(protocol_path.read_bytes()).hexdigest(),
+        "runtime_module_path": str(runtime_path),
+        "runtime_module_sha256": hashlib.sha256(runtime_path.read_bytes()).hexdigest(),
+    }
     descriptor = os.open(args.identity_output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "w") as stream:
         json.dump(identity, stream, indent=2)
