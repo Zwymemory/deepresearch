@@ -55,7 +55,7 @@ class V22WebTests(unittest.TestCase):
     def assert_history(self):
         journal = read_private(self.state / "run-journal.json")
         self.assertEqual(journal["runs"][:9], self.original["runs"])
-        for name in batch.BATCHES[:-1]:
+        for name in batch.BATCHES[:batch.BATCHES.index(batch.V22_WEB_BATCH)]:
             self.assertEqual(
                 journal["authorized_batches"][name],
                 self.original["authorized_batches"][name],
