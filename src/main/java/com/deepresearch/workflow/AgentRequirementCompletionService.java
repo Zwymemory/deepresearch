@@ -23,8 +23,8 @@ public final class AgentRequirementCompletionService {
             """,run);
         if(stored.size()!=1) return List.of(gap("original-requirements","Original question coverage","Original requirements have not been explicitly extracted"));
         var row=stored.get(0);JsonNode manifest=parse((String)row.get("manifest"));
-        JsonNode declaration=parse((String)row.get("declaration")).path("value").path("requirements");
         String question=(String)row.get("question");
+        JsonNode declaration=AgentQuestionSegments.declarations(question,parse((String)row.get("declaration")));
         if(!"SETTLED".equals(row.get("status")) || !"MODEL".equals(row.get("kind")) || !"DECISION".equals(row.get("purpose"))
                 || !validManifest(manifest,run,question,declaration))
             return List.of(gap("original-requirements","Original question coverage","Original requirement binding or settled declaration is invalid"));

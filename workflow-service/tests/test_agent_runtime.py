@@ -96,7 +96,11 @@ class ObservationDrivenModel:
 
     async def invoke(self, request):
         self.requests.append(request)
-        payload = request.payload
+        payload = dict(request.payload)
+        if "question_segments" in payload:
+            payload["original_question"] = "".join(
+                row["text"] for row in payload["question_segments"]["segments"]
+            )
         if request.name == "SyntheticCheck":
             texts = payload["texts"]
             pairs = [
@@ -224,6 +228,13 @@ class ObservationDrivenModel:
             value["criterion_bindings"] = [
                 {"criterion_id": task["criteria"][0]["criterion_id"], "claim_index": 0}
             ]
+        if request.request_binding.get("planner_contract"):
+            value["planner_contract"] = request.request_binding["planner_contract"]
+            for requirement in value.get("requirements", []):
+                requirement.pop("question_spans")
+                requirement["segment_ids"] = [
+                    row["segment_id"] for row in payload["question_segments"]["segments"]
+                ]
         return ModelResult(value=value, input_tokens=120, output_tokens=100)
 
 
@@ -469,7 +480,10 @@ async def test_empty_web_search_can_switch_to_kb_without_rebinding_task_scope():
             return ModelResult(
                 value={
                     "action": "search",
-                    "query": request.payload["original_question"],
+                    "query": "".join(
+                        row["text"] for row in request.payload["question_segments"]["segments"]
+                    ),
+                    "planner_contract": request.request_binding["planner_contract"],
                     "tool": "kb_search",
                     "reason": "网页检索为空\uff0c改查获准的知识库",
                 },

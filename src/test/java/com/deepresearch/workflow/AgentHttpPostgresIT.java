@@ -216,10 +216,11 @@ class AgentHttpPostgresIT {
     private JsonNode criterionHttpScenario(String mode) throws Exception {
         Run run=create("criteria-owner-"+mode);
         String objective=mode.equals("refuted")?"Verify API document version":"Verify API document version and per-minute request rate";
+        if(mode.equals("segments-complete")) objective="Verify API document version; verify per-minute request rate";
         var criteria=mode.equals("refuted")?List.of("Verify the API document version"):List.of("Verify the API document version","Verify the per-minute request rate");
         db.update("UPDATE agent_workflow_run SET question=? WHERE run_id=?",objective,run.id());
         db.update("UPDATE agent_research_task SET objective=?,acceptance_criteria=CAST(? AS text[]) WHERE run_id=? AND task_id='task-main'",objective,"{\""+String.join("\",\"",criteria)+"\"}",run.id());
-        String original=mode.equals("complete")?"Document version: 2.0\nVersion 2.0 allows 100 requests per minute.\n":"Document version: 2.0\nThis source specifies version 2.0 only; the per-minute request rate is not stated.\n";
+        String original=mode.equals("complete")||mode.equals("segments-complete")?"Document version: 2.0\nVersion 2.0 allows 100 requests per minute.\n":"Document version: 2.0\nThis source specifies version 2.0 only; the per-minute request rate is not stated.\n";
         when(ragflow.chunk("dataset-http","document-http","chunk-old")).thenReturn(object("id","chunk-old","doc_id","document-http","content",original));
         search(run,"search-criteria-"+mode,"chunk-old");
         db.update("UPDATE agent_workflow_run SET status='PLANNING',stage='PLANNING' WHERE run_id=?",run.id());
@@ -244,7 +245,17 @@ class AgentHttpPostgresIT {
             assertThat(db.queryForObject("SELECT count(*) FROM agent_research_requirement_binding WHERE run_id=?",Integer.class,run.id())).isEqualTo(legacy?0:criteria.size());
             assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL' AND purpose='DECISION' AND status='SETTLED'",Integer.class,run.id())).isEqualTo(legacy?0:1);
             assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL'",Integer.class,run.id())).isEqualTo(legacy?1:2);
-            String status=mode.equals("complete")||mode.equals("refuted")?"SUCCEEDED":"INSUFFICIENT_EVIDENCE";
+            String status=mode.equals("complete")||mode.equals("segments-complete")||mode.equals("refuted")?"SUCCEEDED":"INSUFFICIENT_EVIDENCE";
+            if(mode.equals("segments-complete")) {
+                var declared=JSON.readTree(db.queryForObject("SELECT safe_result::text FROM agent_research_operation WHERE run_id=? AND purpose='DECISION'",String.class,run.id()));
+                assertThat(declared.path("request_binding").path("planner_contract").asText()).isEqualTo(AgentQuestionSegments.PLANNER);
+                var wire=JSON.readTree(declared.path("request_binding").path("planner_declaration").asText());
+                assertThat(wire.path("planner_contract").asText()).isEqualTo(AgentQuestionSegments.PLANNER);
+                String mappingHash=AgentQuestionSegments.mapping(objective).path("mapping_sha256").asText();
+                assertThat(declared.path("request_binding").path("question_mapping_sha256").asText()).isEqualTo(mappingHash);
+                var stored=JSON.readTree(db.queryForObject("SELECT manifest::text FROM agent_research_requirements WHERE run_id=?",String.class,run.id()));
+                assertThat(AgentRequirementCompletionService.validManifest(stored,run.id(),objective,AgentQuestionSegments.declarations(objective,declared))).isTrue();
+            }
             assertThat(report.path("terminal_status").asText()).isEqualTo(status);
             if(status.equals("SUCCEEDED")) assertThat(report.path("unfinished_goals")).isEmpty();
             else {assertThat(report.path("unfinished_goals")).isNotEmpty();assertThat(report.path("answer").asText()).contains("Verify the per-minute request rate");}
@@ -261,6 +272,7 @@ class AgentHttpPostgresIT {
     }
     @Test void uncoveredStoredRateCriterionStaysPartialThroughActualPythonJwtAndSql() throws Exception {criterionHttpScenario("partial");}
     @Test void allBoundCriteriaCanCompleteThroughActualPythonJwtAndSql() throws Exception {criterionHttpScenario("complete");}
+    @Test void segmentPlannerCanPublishBothCriteriaThroughOfflineAdapterActualPythonJwtAndSql() throws Exception {criterionHttpScenario("segments-complete");}
     @Test void legacyUnboundChecksDoNotCompleteNativeStandardsThroughActualHttp() throws Exception {criterionHttpScenario("legacy");}
     @Test void validRefutationCanSatisfyVerificationCriterionThroughActualHttp() throws Exception {
         var report=criterionHttpScenario("refuted");assertThat(report.path("claims").get(0).path("claim").path("decision_status").asText()).isEqualTo("refuted");

@@ -22,6 +22,12 @@ from deepresearch_workflow.agent_protocol import (
     ModelRequest,
     ModelResult,
 )
+from deepresearch_workflow.agent_question_segments import (
+    PLANNER_VERSION,
+    planner_binding,
+    question_segments,
+    segment_drafts,
+)
 from deepresearch_workflow.agent_requirements import bind_requirements, freeze_requirements
 
 from .test_agent_postgres import seed
@@ -55,7 +61,7 @@ def capture(run):
     )
 
 
-async def native_seed(*, manifest=True):
+async def native_seed(*, manifest=True, segments=False):
     budget = AgentRunBudget(runtime="agent")
     repository, ledger, run, claim = await seed(budget)
     question = "Verify encryption and retention."
@@ -86,10 +92,19 @@ async def native_seed(*, manifest=True):
     ensure_criteria(run, tasks)
     await ledger.save_tasks(run, claim, tasks)
     if manifest:
+        wire_drafts = copy.deepcopy(drafts)
+        mapping = question_segments(question) if segments else None
+        if segments:
+            for draft in wire_drafts:
+                draft.pop("question_spans")
+                draft["segment_ids"] = [s["segment_id"] for s in mapping["segments"]]
 
         class DeclaringModel:
             async def invoke(self, _):
-                return ModelResult(value={"requirements": drafts}, input_tokens=7, output_tokens=9)
+                value = {"requirements": wire_drafts}
+                if segments:
+                    value["planner_contract"] = PLANNER_VERSION
+                return ModelResult(value=value, input_tokens=7, output_tokens=9)
 
         async def guard():
             pass
@@ -110,8 +125,17 @@ async def native_seed(*, manifest=True):
                 payload={"original_question": question},
                 schema={"type": "object"},
                 instruction="Declare all original standards",
+                request_binding=planner_binding(mapping) if segments else {},
             ),
-            lambda value: freeze_requirements(run, question, value["requirements"]),
+            lambda value: freeze_requirements(
+                run, question, segment_drafts(question, value["requirements"])
+                if segments else value["requirements"]
+            ),
+            canonicalize=(lambda value: {
+                "planner_contract": PLANNER_VERSION,
+                "requirements": segment_drafts(question, value["requirements"])
+            })
+            if segments else None,
         )
         frozen = freeze_requirements(run, question, drafts)
         by_text = {c["text"]: c["criterion_id"] for c in tasks[0]["criteria"]}
@@ -173,6 +197,28 @@ async def test_actual_run_scoped_native_export_preserves_two_persisted_declarati
     wire = json.dumps(exported, default=str)
     assert other not in wire and other_claim not in wire and claim not in wire
     assert all(b["run_id"] == run for b in exported["requirement_bindings"])
+    audit = native.finalize_audit(live.scrub({"database": live.audit_database(exported)}, []))
+    assert native.validate_saved_audit(json.loads(json.dumps(audit, default=str)))[
+        "mapping_complete"
+    ]
+
+
+async def test_actual_segment_receipt_persistence_and_safe_audit_reconstruction():
+    run, _ = await native_seed(segments=True)
+    exported = capture(run)
+    proof = native.native_requirements_validation(exported)
+    assert proof["status"] == "verified_mapping" and proof["mapping_complete"], proof
+    assert not proof["eligible_for_complete_review"]
+    declared = next(o for o in exported["operations"] if o["purpose"] == "DECISION")
+    assert declared["safe_result"]["request_binding"]["planner_contract"] == PLANNER_VERSION
+    wire = json.loads(declared["safe_result"]["request_binding"]["planner_declaration"])
+    assert "segment_ids" in wire["requirements"][0]
+    assert "question_spans" in declared["safe_result"]["value"]["requirements"][0]
+    assert (exported["requirements"][0]["manifest"]["contract_version"]
+            == "agent-original-requirements/1")
+    altered = copy.deepcopy(exported)
+    altered["operations"][0]["safe_result"]["request_binding"]["question_mapping_sha256"] = "a" * 64
+    assert native.native_requirements_validation(altered)["status"] == "invalid"
     audit = native.finalize_audit(live.scrub({"database": live.audit_database(exported)}, []))
     assert native.validate_saved_audit(json.loads(json.dumps(audit, default=str)))[
         "mapping_complete"

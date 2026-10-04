@@ -34,6 +34,7 @@ MODEL_ISSUE_FIELDS = {
     "value", "version",
     "requirements", "requirement_bindings", "question_spans", "start", "end", "text",
     "requirement_id",
+    "segment_ids", "planner_contract",
 }
 # Keep offline receipts readable without importing the running workflow package.
 # A focused parity regression checks these fixed vocabularies against production.
@@ -51,6 +52,10 @@ MODEL_REQUIREMENT_CODES = {
     "REQUIREMENT_INVALID", "REQUIREMENT_MANIFEST_INVALID", "REQUIREMENT_ORIGINAL_BINDING_CHANGED",
     "REQUIREMENT_QUESTION_INVALID", "REQUIREMENT_QUESTION_REGION_UNASSIGNED", "REQUIREMENT_RUN_INVALID",
     "REQUIREMENT_TASK_INVALID", "REQUIREMENT_TASK_LIMIT", "REQUIREMENT_UNKNOWN",
+    "REQUIREMENT_QUESTION_LIMIT", "REQUIREMENT_PLANNER_VERSION_INVALID",
+    "REQUIREMENT_SEGMENT_INVALID", "REQUIREMENT_SEGMENT_DUPLICATE",
+    "REQUIREMENT_SEGMENT_UNKNOWN", "REQUIREMENT_SEGMENT_BINDING_INVALID",
+    "REQUIREMENT_DECLARATION_LIMIT",
 }
 MODEL_CHECK_CODES = {
     "CHECK_TOO_LARGE", "CHECK_JSON_INVALID", "CHECK_RESPONSE_INVALID",
@@ -216,6 +221,10 @@ def safe_model_failure(value):
         safe["validation_stage"] = stage
     if type(domain_code) is str and domain_code in MODEL_REQUIREMENT_CODES | MODEL_CHECK_CODES:
         safe["domain_error_code"] = domain_code
+    if type(domain_code) is str and domain_code in MODEL_REQUIREMENT_CODES:
+        diagnostic = safe_segment_diagnostic(value.get("question_segments"))
+        if diagnostic is not None:
+            safe["question_segments"] = diagnostic
     status = value.get("status_code")
     if type(status) is int and 100 <= status <= 599:
         safe["status_code"] = status
@@ -237,6 +246,31 @@ def safe_model_failure(value):
     if identity is not None:
         safe["identity"] = identity
     return safe
+
+
+def safe_segment_diagnostic(value):
+    # Standalone exporter: fixed parity-tested vocabulary, no workflow runtime import.
+    if type(value) is not dict or set(value) != {
+        "mapping_version", "mapping_sha256", "missing_count", "missing_ranges"
+    }:
+        return None
+    digest, count, ranges = value["mapping_sha256"], value["missing_count"], value["missing_ranges"]
+    if (value["mapping_version"] != "agent-question-segments/1"
+            or type(digest) is not str or len(digest) != 64
+            or any(c not in "0123456789abcdef" for c in digest)
+            or type(count) is not int or not 1 <= count <= 16
+            or type(ranges) is not list or len(ranges) != count):
+        return None
+    previous = -1
+    for span in ranges:
+        if (type(span) is not dict or set(span) != {"start", "end"}
+                or type(span["start"]) is not int or type(span["end"]) is not int
+                or not 0 <= span["start"] < span["end"] <= 4000
+                or span["start"] < previous):
+            return None
+        previous = span["end"]
+    return {"mapping_version": value["mapping_version"], "mapping_sha256": digest,
+            "missing_count": count, "missing_ranges": [dict(span) for span in ranges]}
 
 
 def safe_identity_failure(value):

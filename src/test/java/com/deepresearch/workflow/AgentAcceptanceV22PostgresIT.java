@@ -19,10 +19,18 @@ class AgentAcceptanceV22PostgresIT {
         .withInitScript("init-workflow-role.sql");
 
     @Test void pinnedSchemaAndNativeRunExportAreCheckedThroughActualPythonHarness() throws Exception {
+        pythonHarness("tests/test_agent_v22_acceptance_postgres.py");
+    }
+    @Test void segmentAndLegacySettlementsKeepNativeAuditBindingsWithoutSchemaChanges() throws Exception {
+        pythonHarness("tests/test_agent_v22_acceptance_postgres.py::test_actual_segment_receipt_persistence_and_safe_audit_reconstruction",
+            "tests/test_agent_v22_acceptance_postgres.py::test_actual_run_scoped_native_export_preserves_two_persisted_declarations");
+    }
+    private void pythonHarness(String... tests) throws Exception {
         Flyway.configure().dataSource(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword()).load().migrate();
-        var log = Path.of("target/v22-acceptance-postgres-python.log").toAbsolutePath();
-        var builder = new ProcessBuilder(System.getenv().getOrDefault("AGENT_PYTHON", "python3"), "-B", "-m", "pytest",
-                "tests/test_agent_v22_acceptance_postgres.py", "-q", "-p", "no:cacheprovider")
+        var log = Path.of(tests.length>1?"target/segments-acceptance-postgres-python.log":"target/v22-acceptance-postgres-python.log").toAbsolutePath();
+        var command=new java.util.ArrayList<String>(java.util.List.of(System.getenv().getOrDefault("AGENT_PYTHON", "python3"), "-B", "-m", "pytest"));
+        command.addAll(java.util.List.of(tests));command.addAll(java.util.List.of("-q","-p","no:cacheprovider"));
+        var builder = new ProcessBuilder(command)
             .directory(Path.of("workflow-service").toFile()).redirectErrorStream(true).redirectOutput(log.toFile());
         builder.environment().put("PYTHONPATH", Path.of("workflow-service/src").toAbsolutePath().toString());
         builder.environment().put("PYTHONDONTWRITEBYTECODE", "1");

@@ -372,10 +372,12 @@ def native_requirements_validation(database):
             or declaration["status"] != "SETTLED"
         ):
             raise ValueError("NATIVE_DECLARATION_NOT_SETTLED_DECISION")
+        from deepresearch_workflow.agent_question_segments import declaration_drafts
+
         freeze(
             run["run_id"],
             run["question"],
-            declaration["safe_result"]["value"]["requirements"],
+            declaration_drafts(run["question"], declaration["safe_result"]),
             existing=manifest,
         )
         tasks = {t["task_id"]: t for t in database["tasks"]}

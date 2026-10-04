@@ -5,17 +5,21 @@ import json
 import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 import httpx
 
 from deepresearch_workflow.agent_budget import SqlAgentLedger
 from deepresearch_workflow.agent_completion import ensure_criteria
+from deepresearch_workflow.agent_model import OpenAIAgentModel
 from deepresearch_workflow.agent_protocol import AgentRunBudget, AgentTask, ModelResult
+from deepresearch_workflow.agent_question_segments import LEGACY_PLANNER_VERSION, PLANNER_VERSION
 from deepresearch_workflow.agent_requirements import bind_requirements, freeze_requirements
 from deepresearch_workflow.agent_runtime import AutonomousResearchGraph
 from deepresearch_workflow.evidence_client import HttpEvidenceBackend
 from deepresearch_workflow.ports import RepositoryEventSink
 from deepresearch_workflow.repository import PostgresWorkflowRepository
+from deepresearch_workflow.settings import Settings
 
 
 class Tokens:
@@ -32,7 +36,7 @@ class ExactSourceVerifier:
 
     async def invoke(self, request):
         if request.name == "AgentDecision":
-            return ModelResult(
+            result = ModelResult(
                 value={
                     "action": "read_source",
                     "task_id": "task-main",
@@ -60,6 +64,13 @@ class ExactSourceVerifier:
                 input_tokens=30,
                 output_tokens=30,
             )
+            if "question_segments" in request.payload:
+                result.value["planner_contract"] = PLANNER_VERSION
+                units = request.payload["question_segments"]["segments"]
+                for index, draft in enumerate(result.value["requirements"]):
+                    draft.pop("question_spans")
+                    draft["segment_ids"] = [units[index]["segment_id"]]
+            return result
         assert request.name == "EvidenceCheck"
         proposals = []
         for claim in request.payload["claims"]:
@@ -97,8 +108,24 @@ async def main():
     await repository.open()
     try:
         async with httpx.AsyncClient() as client:
+            verifier = ExactSourceVerifier(cfg)
+
+            async def offline_model_transport(request):
+                body = json.loads(request.content)
+                payload = json.loads(body["messages"][-1]["content"])
+                name = "AgentDecision" if "question_segments" in payload else "EvidenceCheck"
+                result = await verifier.invoke(SimpleNamespace(name=name, payload=payload))
+                return httpx.Response(200, json={"model": "deepseek-flash", "choices": [{
+                    "finish_reason": "stop", "message": {"content": json.dumps(result.value)}
+                }], "usage": {"prompt_tokens": 30, "completion_tokens": 30}})
+
+            model_client = httpx.AsyncClient(transport=httpx.MockTransport(offline_model_transport))
             graph = AutonomousResearchGraph(
-                model=ExactSourceVerifier(cfg),
+                model=OpenAIAgentModel(Settings(
+                    _env_file=None, openai_api_key="offline-fixture", model_name="deepseek-flash",
+                    openai_base_url="https://api.deepseek.com",
+                    agent_result_transport="deepseek_json_object",
+                ), model_client) if cfg["mode"] == "segments-complete" else verifier,
                 tools=None,
                 repository=repository,
                 ledger=SqlAgentLedger(repository),
@@ -118,6 +145,9 @@ async def main():
                 "question": cfg["objective"],
             }
             state.update(await graph.initialize(state))
+            if cfg["mode"] != "segments-complete":
+                # Existing fixture cases continue exercising saved v1 declarations.
+                state["planner_contract"] = LEGACY_PLANNER_VERSION
             state["tasks"] = [
                 AgentTask(
                     task_id="task-main",
@@ -132,7 +162,10 @@ async def main():
             if cfg["mode"] != "legacy":
                 state.update(await graph.decide(state))
                 manifest = freeze_requirements(
-                    state["run_id"], state["question"], state["decision"]["requirements"]
+                    state["run_id"], state["question"],
+                    [r.model_dump(mode="json") for r in graph.planning_decision(
+                        state["decision"], state
+                    ).requirements],
                 )
                 criteria = {
                     row["text"]: row["criterion_id"] for row in state["tasks"][0]["criteria"]
@@ -181,7 +214,7 @@ async def main():
                 if cfg["mode"] == "refuted"
                 else ["Document version is 2.0."]
             )
-            if cfg["mode"] == "complete":
+            if cfg["mode"] in {"complete", "segments-complete"}:
                 texts.append("Version 2.0 allows 100 requests per minute.")
             state["decision_steps"] = 2
             state["decision"] = {
@@ -201,9 +234,12 @@ async def main():
                 ],
                 "reason": "Check only the explicitly bound standards",
             }
+            if cfg["mode"] == "segments-complete":
+                state["decision"]["planner_contract"] = PLANNER_VERSION
             state.update(await graph.act(state))
             expected = (
-                "SUCCEEDED" if cfg["mode"] in {"complete", "refuted"} else "INSUFFICIENT_EVIDENCE"
+                "SUCCEEDED" if cfg["mode"] in {"complete", "segments-complete", "refuted"}
+                else "INSUFFICIENT_EVIDENCE"
             )
             assert (state["tasks"][0]["status"] == "done") == (expected == "SUCCEEDED"), state[
                 "observations"
@@ -216,6 +252,8 @@ async def main():
                 if expected == "SUCCEEDED"
                 else ["Original standards remain uncovered by current bound checks"],
             }
+            if cfg["mode"] == "segments-complete":
+                state["decision"]["planner_contract"] = PLANNER_VERSION
             result = await graph.act(state)
             assert result["final_status"] == expected, result
             await asyncio.to_thread(
@@ -237,6 +275,7 @@ async def main():
                     ensure_ascii=False,
                 )
             )
+            await model_client.aclose()
     finally:
         await repository.close()
 

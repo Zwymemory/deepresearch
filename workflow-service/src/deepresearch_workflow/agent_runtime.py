@@ -23,7 +23,15 @@ from .agent_protocol import (
     AgentState,
     AgentTask,
     ModelRequest,
+    SegmentAgentDecision,
     valid_at_instant,
+)
+from .agent_question_segments import (
+    LEGACY_PLANNER_VERSION,
+    PLANNER_VERSION,
+    planner_binding,
+    question_segments,
+    segment_drafts,
 )
 from .agent_requirements import (
     CONTRACT_VERSION as REQUIREMENTS_VERSION,
@@ -137,6 +145,7 @@ class AutonomousResearchGraph:
             "context_snapshot": {**state.get("context_snapshot", {}), "agent_scope": scope},
             "plan_version": 1,
             "decision_steps": 0,
+            "planner_contract": PLANNER_VERSION,
             "observations": [],
             "candidates": [],
             "evidence": [],
@@ -150,6 +159,7 @@ class AutonomousResearchGraph:
 
     async def decide(self, state):
         await self.guard(state)
+        planner_version = self.planner_version(state)
         summary = await self.ledger.summary(state["run_id"], self.claim_token)
         usage = UsageDelta(
             model_calls=summary["modelCalls"],
@@ -194,7 +204,7 @@ class AutonomousResearchGraph:
                 "closure-selected",
             )
             return {
-                "decision": decision.model_dump(mode="json"),
+                "decision": self.internal_decision(decision, planner_version),
                 "agent_usage": summary,
                 "usage": usage.model_dump(),
                 "requirement_coverage": coverage,
@@ -214,7 +224,7 @@ class AutonomousResearchGraph:
                 ],
             )
             return {
-                "decision": decision.model_dump(mode="json"),
+                "decision": self.internal_decision(decision, planner_version),
                 "agent_usage": summary,
                 "usage": usage.model_dump(),
             }
@@ -292,12 +302,44 @@ class AutonomousResearchGraph:
                 "identifiers from the original question."
             ),
         )
+        # Keep the entire legacy construction above byte-identical for old checkpoints,
+        # including pending/settled calls before their first manifest is persisted.
+        if planner_version == PLANNER_VERSION:
+            mapping = question_segments(state["question"])
+            payload = {k: v for k, v in payload.items() if k != "original_question"}
+            payload["question_segments"] = mapping
+            request = request.model_copy(update={
+                "payload": payload,
+                "result_schema": SegmentAgentDecision.model_json_schema(),
+                "request_binding": {**request.request_binding, **planner_binding(mapping)},
+                "instruction": (
+                    "Planner contract agent-planning-segments/2. Return planner_contract with "
+                    "that exact value. The original question is the ordered concatenation of "
+                    "question_segments.segments[].text, without any edits. Server-issued "
+                    "segments are reference units, NOT extracted obligations. Extract ALL "
+                    "independent subquestions and substantive shared constraints into separate "
+                    "requirements when original_requirements is absent. Each requirement has "
+                    "text (max400), segment_ids (only supplied IDs, no duplicates within a "
+                    "requirement), kind and applicability. Select all relevant units; shared "
+                    "qualifiers may be referenced by multiple requirements. Every nonblank "
+                    "unit must be selected. NEVER calculate or supply question_spans, numeric "
+                    "coordinates, question hashes or mappings. Server derives exact spans. "
+                    "Selecting all IDs is mechanical coverage only; a generic obligation "
+                    "cannot replace independent subquestions. Never change frozen requirements. "
+                    "Server creates a distinct criterion per obligation.\n"
+                    + request.instruction[
+                        request.instruction.index("Resolve all canonical_objects"):
+                    ]
+                ),
+            })
 
         def validate_planning(value):
             from .agent_budget import ResultValidationError
 
             try:
-                decision = AgentDecision.model_validate(value)
+                decision = self.planning_decision(value, state)
+            except RequirementError as rejected:
+                raise ResultValidationError(rejected, "planning_requirements") from None
             except Exception as rejected:
                 raise ResultValidationError(rejected, "planning_decision") from None
             try:
@@ -326,8 +368,12 @@ class AutonomousResearchGraph:
             "DECISION",
             request,
             validate_planning,
+            canonicalize=(lambda value: self.internal_decision(
+                self.planning_decision(value, state), PLANNER_VERSION
+            ))
+            if planner_version == PLANNER_VERSION else None,
         )
-        decision = AgentDecision.model_validate(result.value)
+        decision = self.planning_decision(result.value, state)
         next_state = {**state, "decision_steps": state["decision_steps"] + 1}
         await self.emit(
             next_state,
@@ -341,11 +387,42 @@ class AutonomousResearchGraph:
             "selected",
         )
         return {
-            "decision": decision.model_dump(mode="json"),
+            # Checkpoint the raw versioned declaration, not a relabelled v1 response.
+            "decision": (copy.deepcopy(result.value) if planner_version == PLANNER_VERSION
+                         else decision.model_dump(mode="json")),
             "decision_steps": next_state["decision_steps"],
             "agent_usage": summary,
             "usage": usage.model_dump(),
         }
+
+    @staticmethod
+    def planner_version(state):
+        version = state.get("planner_contract", LEGACY_PLANNER_VERSION)
+        if version not in {LEGACY_PLANNER_VERSION, PLANNER_VERSION}:
+            raise WorkflowExecutionError(
+                "Unknown planning protocol", error_code="REQUIREMENT_PLANNER_VERSION_INVALID"
+            )
+        return version
+
+    @staticmethod
+    def internal_decision(decision, version):
+        value = decision.model_dump(mode="json")
+        if version == PLANNER_VERSION:
+            value["planner_contract"] = PLANNER_VERSION
+        return value
+
+    @classmethod
+    def planning_decision(cls, value, state):
+        if cls.planner_version(state) == LEGACY_PLANNER_VERSION:
+            return AgentDecision.model_validate(value)
+        decision = SegmentAgentDecision.model_validate(value)
+        canonical_value = decision.model_dump(mode="json")
+        canonical_value.pop("planner_contract")
+        if decision.requirements:
+            canonical_value["requirements"] = segment_drafts(
+                state["question"], canonical_value["requirements"]
+            )
+        return AgentDecision.model_validate(canonical_value)
 
     @staticmethod
     def model_evidence(records):
@@ -392,7 +469,7 @@ class AutonomousResearchGraph:
         await self.guard(state)
         # The lease changes on recovery; never replay a checkpoint's old claim into Java.
         state = {**state, "claim_token": self.claim_token}
-        decision = AgentDecision.model_validate(state["decision"])
+        decision = self.planning_decision(state["decision"], state)
         tasks = copy.deepcopy(state["tasks"])
         manifest = state.get("original_requirements")
         associations = state.get("requirement_bindings", [])

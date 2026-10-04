@@ -1,0 +1,1501 @@
+[
+  {
+    "question": "请仅依据 IANA 官网的 Example Domains 页面核实：example.com 和 example.org 是否可以注册或转让？它们的 HTTP 服务是否提供适合生产应用的保障？请引用网页原文，并说明保障范围。",
+    "mapping": {
+      "mapping_version": "agent-question-segments/1",
+      "question_sha256": "b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b",
+      "question_length": 112,
+      "segments": [
+        {
+          "segment_id": "qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-00",
+          "start": 0,
+          "end": 35,
+          "text": "请仅依据 IANA 官网的 Example Domains 页面核实："
+        },
+        {
+          "segment_id": "qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-01",
+          "start": 35,
+          "end": 71,
+          "text": "example.com 和 example.org 是否可以注册或转让？"
+        },
+        {
+          "segment_id": "qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-02",
+          "start": 71,
+          "end": 96,
+          "text": "它们的 HTTP 服务是否提供适合生产应用的保障？"
+        },
+        {
+          "segment_id": "qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-03",
+          "start": 96,
+          "end": 104,
+          "text": "请引用网页原文，"
+        },
+        {
+          "segment_id": "qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-04",
+          "start": 104,
+          "end": 112,
+          "text": "并说明保障范围。"
+        }
+      ],
+      "mapping_sha256": "5929adedecc201d5756909eb08bb0f1fa6d7fece0db38e4ee1216293fe4de4d3"
+    },
+    "receipt": {
+      "value": {
+        "requirements": [
+          {
+            "text": "Fixture obligation 0",
+            "kind": "factual",
+            "applicability": {
+              "subject": "Controlled fixture",
+              "version": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "valid_at": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "conditions": []
+            },
+            "question_spans": [
+              {
+                "start": 0,
+                "end": 71
+              }
+            ]
+          },
+          {
+            "text": "Fixture obligation 1",
+            "kind": "factual",
+            "applicability": {
+              "subject": "Controlled fixture",
+              "version": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "valid_at": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "conditions": []
+            },
+            "question_spans": [
+              {
+                "start": 71,
+                "end": 112
+              }
+            ]
+          }
+        ],
+        "planner_contract": "agent-planning-segments/2"
+      },
+      "request_binding": {
+        "planner_contract": "agent-planning-segments/2",
+        "question_mapping_version": "agent-question-segments/1",
+        "planner_settlement_contract": "agent-planner-settlement/1",
+        "question_sha256": "b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b",
+        "question_mapping_sha256": "5929adedecc201d5756909eb08bb0f1fa6d7fece0db38e4ee1216293fe4de4d3",
+        "planner_declaration": "{\"planner_contract\":\"agent-planning-segments/2\",\"requirements\":[{\"applicability\":{\"conditions\":[],\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-00\",\"qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-01\"],\"text\":\"Fixture obligation 0\"},{\"applicability\":{\"conditions\":[],\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-02\",\"qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-03\",\"qs1-b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b-04\"],\"text\":\"Fixture obligation 1\"}]}",
+        "wire_response_sha256": "808bd395c3cd2c3a7d56d33c1a23b71f46f974dd4a3ba0f36babac5e227046f3",
+        "response_sha256": "090190d2b89003874791c635a4d4124cdd03038d08343f20489c48193cbc5b86"
+      }
+    },
+    "canonical_drafts": [
+      {
+        "text": "Fixture obligation 0",
+        "kind": "factual",
+        "applicability": {
+          "subject": "Controlled fixture",
+          "version": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "valid_at": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "conditions": []
+        },
+        "question_spans": [
+          {
+            "start": 0,
+            "end": 71
+          }
+        ]
+      },
+      {
+        "text": "Fixture obligation 1",
+        "kind": "factual",
+        "applicability": {
+          "subject": "Controlled fixture",
+          "version": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "valid_at": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "conditions": []
+        },
+        "question_spans": [
+          {
+            "start": 71,
+            "end": 112
+          }
+        ]
+      }
+    ],
+    "manifest": {
+      "contract_version": "agent-original-requirements/1",
+      "run_id": "segment-fixture",
+      "question_sha256": "b57e05f910167545a79d4bbfeb6e5d7623b9734be3dee851db3913e85150d95b",
+      "question_length": 112,
+      "requirements": [
+        {
+          "requirement_id": "requirement-f691666df1737d6b821521d98d2761d32b5c5a2b03a68a3d",
+          "text": "Fixture obligation 1",
+          "question_spans": [
+            {
+              "start": 71,
+              "end": 112
+            }
+          ],
+          "kind": "factual",
+          "applicability": {
+            "subject": "Controlled fixture",
+            "version": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "valid_at": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "conditions": []
+          }
+        },
+        {
+          "requirement_id": "requirement-fe626b19c504d310ff677b33472718197055349432f6b0e8",
+          "text": "Fixture obligation 0",
+          "question_spans": [
+            {
+              "start": 0,
+              "end": 71
+            }
+          ],
+          "kind": "factual",
+          "applicability": {
+            "subject": "Controlled fixture",
+            "version": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "valid_at": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "conditions": []
+          }
+        }
+      ],
+      "manifest_sha256": "efaa38ac6d82bef0275e04142855fa5dd1a1b5904f59bc1c31bb6648c384d989"
+    }
+  },
+  {
+    "question": "Compare example.com and example.org; HTTP guarantees? Cite https://iana.org/x?a=1.5.",
+    "mapping": {
+      "mapping_version": "agent-question-segments/1",
+      "question_sha256": "cc86711bde45cb03ca2031422851e4c5a3511c2d3e798f6f5487f408dc5b4464",
+      "question_length": 84,
+      "segments": [
+        {
+          "segment_id": "qs1-cc86711bde45cb03ca2031422851e4c5a3511c2d3e798f6f5487f408dc5b4464-00",
+          "start": 0,
+          "end": 36,
+          "text": "Compare example.com and example.org;"
+        },
+        {
+          "segment_id": "qs1-cc86711bde45cb03ca2031422851e4c5a3511c2d3e798f6f5487f408dc5b4464-01",
+          "start": 36,
+          "end": 53,
+          "text": " HTTP guarantees?"
+        },
+        {
+          "segment_id": "qs1-cc86711bde45cb03ca2031422851e4c5a3511c2d3e798f6f5487f408dc5b4464-02",
+          "start": 53,
+          "end": 84,
+          "text": " Cite https://iana.org/x?a=1.5."
+        }
+      ],
+      "mapping_sha256": "f7a7fa2bc72f373ec78e109b916953e417f5b46e2a8d44df490fc649e1f0408c"
+    },
+    "receipt": {
+      "value": {
+        "requirements": [
+          {
+            "text": "Fixture obligation 0",
+            "kind": "factual",
+            "applicability": {
+              "subject": "Controlled fixture",
+              "version": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "valid_at": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "conditions": []
+            },
+            "question_spans": [
+              {
+                "start": 0,
+                "end": 36
+              }
+            ]
+          },
+          {
+            "text": "Fixture obligation 1",
+            "kind": "factual",
+            "applicability": {
+              "subject": "Controlled fixture",
+              "version": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "valid_at": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "conditions": []
+            },
+            "question_spans": [
+              {
+                "start": 36,
+                "end": 84
+              }
+            ]
+          }
+        ],
+        "planner_contract": "agent-planning-segments/2"
+      },
+      "request_binding": {
+        "planner_contract": "agent-planning-segments/2",
+        "question_mapping_version": "agent-question-segments/1",
+        "planner_settlement_contract": "agent-planner-settlement/1",
+        "question_sha256": "cc86711bde45cb03ca2031422851e4c5a3511c2d3e798f6f5487f408dc5b4464",
+        "question_mapping_sha256": "f7a7fa2bc72f373ec78e109b916953e417f5b46e2a8d44df490fc649e1f0408c",
+        "planner_declaration": "{\"planner_contract\":\"agent-planning-segments/2\",\"requirements\":[{\"applicability\":{\"conditions\":[],\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-cc86711bde45cb03ca2031422851e4c5a3511c2d3e798f6f5487f408dc5b4464-00\"],\"text\":\"Fixture obligation 0\"},{\"applicability\":{\"conditions\":[],\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-cc86711bde45cb03ca2031422851e4c5a3511c2d3e798f6f5487f408dc5b4464-01\",\"qs1-cc86711bde45cb03ca2031422851e4c5a3511c2d3e798f6f5487f408dc5b4464-02\"],\"text\":\"Fixture obligation 1\"}]}",
+        "wire_response_sha256": "e039685427604abb269f0f3c71ecefd0f02512b087fda819c3efe3eb5ccee128",
+        "response_sha256": "84648ffb4445a703fb79d3e614283a0a93073e83bc2b3edd43b7a0e5210e16a6"
+      }
+    },
+    "canonical_drafts": [
+      {
+        "text": "Fixture obligation 0",
+        "kind": "factual",
+        "applicability": {
+          "subject": "Controlled fixture",
+          "version": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "valid_at": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "conditions": []
+        },
+        "question_spans": [
+          {
+            "start": 0,
+            "end": 36
+          }
+        ]
+      },
+      {
+        "text": "Fixture obligation 1",
+        "kind": "factual",
+        "applicability": {
+          "subject": "Controlled fixture",
+          "version": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "valid_at": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "conditions": []
+        },
+        "question_spans": [
+          {
+            "start": 36,
+            "end": 84
+          }
+        ]
+      }
+    ],
+    "manifest": {
+      "contract_version": "agent-original-requirements/1",
+      "run_id": "segment-fixture",
+      "question_sha256": "cc86711bde45cb03ca2031422851e4c5a3511c2d3e798f6f5487f408dc5b4464",
+      "question_length": 84,
+      "requirements": [
+        {
+          "requirement_id": "requirement-c3554b47cf8966573e22dea800ac51bb712e61311dfd94c5",
+          "text": "Fixture obligation 0",
+          "question_spans": [
+            {
+              "start": 0,
+              "end": 36
+            }
+          ],
+          "kind": "factual",
+          "applicability": {
+            "subject": "Controlled fixture",
+            "version": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "valid_at": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "conditions": []
+          }
+        },
+        {
+          "requirement_id": "requirement-c76c64d2b04e5388bea4d9cb502b16d55ed34e6d7b94d14f",
+          "text": "Fixture obligation 1",
+          "question_spans": [
+            {
+              "start": 36,
+              "end": 84
+            }
+          ],
+          "kind": "factual",
+          "applicability": {
+            "subject": "Controlled fixture",
+            "version": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "valid_at": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "conditions": []
+          }
+        }
+      ],
+      "manifest_sha256": "cf58eaf49feac89ef6baa0cee00c7d48039a1657c1b2080204e00541a01ce399"
+    }
+  },
+  {
+    "question": "核查😀é注册；\r\n核查😀é转让？",
+    "mapping": {
+      "mapping_version": "agent-question-segments/1",
+      "question_sha256": "3776e86b4417f216f2a2efe85ff353a3dfd4992fd40b8dcdbdde344d34377cf6",
+      "question_length": 18,
+      "segments": [
+        {
+          "segment_id": "qs1-3776e86b4417f216f2a2efe85ff353a3dfd4992fd40b8dcdbdde344d34377cf6-00",
+          "start": 0,
+          "end": 10,
+          "text": "核查😀é注册；\r\n"
+        },
+        {
+          "segment_id": "qs1-3776e86b4417f216f2a2efe85ff353a3dfd4992fd40b8dcdbdde344d34377cf6-01",
+          "start": 10,
+          "end": 18,
+          "text": "核查😀é转让？"
+        }
+      ],
+      "mapping_sha256": "31863cdc7951bdcf39a00eb4d113b74fe6c933407f79ffcf808d6143e7b78945"
+    },
+    "receipt": {
+      "value": {
+        "requirements": [
+          {
+            "text": "Fixture obligation 0",
+            "kind": "factual",
+            "applicability": {
+              "subject": "Controlled fixture",
+              "version": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "valid_at": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "conditions": []
+            },
+            "question_spans": [
+              {
+                "start": 0,
+                "end": 10
+              }
+            ]
+          },
+          {
+            "text": "Fixture obligation 1",
+            "kind": "factual",
+            "applicability": {
+              "subject": "Controlled fixture",
+              "version": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "valid_at": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "conditions": []
+            },
+            "question_spans": [
+              {
+                "start": 10,
+                "end": 18
+              }
+            ]
+          }
+        ],
+        "planner_contract": "agent-planning-segments/2"
+      },
+      "request_binding": {
+        "planner_contract": "agent-planning-segments/2",
+        "question_mapping_version": "agent-question-segments/1",
+        "planner_settlement_contract": "agent-planner-settlement/1",
+        "question_sha256": "3776e86b4417f216f2a2efe85ff353a3dfd4992fd40b8dcdbdde344d34377cf6",
+        "question_mapping_sha256": "31863cdc7951bdcf39a00eb4d113b74fe6c933407f79ffcf808d6143e7b78945",
+        "planner_declaration": "{\"planner_contract\":\"agent-planning-segments/2\",\"requirements\":[{\"applicability\":{\"conditions\":[],\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-3776e86b4417f216f2a2efe85ff353a3dfd4992fd40b8dcdbdde344d34377cf6-00\"],\"text\":\"Fixture obligation 0\"},{\"applicability\":{\"conditions\":[],\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-3776e86b4417f216f2a2efe85ff353a3dfd4992fd40b8dcdbdde344d34377cf6-01\"],\"text\":\"Fixture obligation 1\"}]}",
+        "wire_response_sha256": "d944ea73834a27b0914efb0233616563466cbde07ba485c55f810d2c69772b3b",
+        "response_sha256": "c74f1dbc45b482f4d061f406f035153864590cd0b585926bfe1ab8e9f45cfdac"
+      }
+    },
+    "canonical_drafts": [
+      {
+        "text": "Fixture obligation 0",
+        "kind": "factual",
+        "applicability": {
+          "subject": "Controlled fixture",
+          "version": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "valid_at": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "conditions": []
+        },
+        "question_spans": [
+          {
+            "start": 0,
+            "end": 10
+          }
+        ]
+      },
+      {
+        "text": "Fixture obligation 1",
+        "kind": "factual",
+        "applicability": {
+          "subject": "Controlled fixture",
+          "version": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "valid_at": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "conditions": []
+        },
+        "question_spans": [
+          {
+            "start": 10,
+            "end": 18
+          }
+        ]
+      }
+    ],
+    "manifest": {
+      "contract_version": "agent-original-requirements/1",
+      "run_id": "segment-fixture",
+      "question_sha256": "3776e86b4417f216f2a2efe85ff353a3dfd4992fd40b8dcdbdde344d34377cf6",
+      "question_length": 18,
+      "requirements": [
+        {
+          "requirement_id": "requirement-e6519256dbcc0c60586904b561772962422ce859ad6f9690",
+          "text": "Fixture obligation 0",
+          "question_spans": [
+            {
+              "start": 0,
+              "end": 10
+            }
+          ],
+          "kind": "factual",
+          "applicability": {
+            "subject": "Controlled fixture",
+            "version": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "valid_at": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "conditions": []
+          }
+        },
+        {
+          "requirement_id": "requirement-fadcf588296c0cf912c856faefbc5b35c63abb092079af9a",
+          "text": "Fixture obligation 1",
+          "question_spans": [
+            {
+              "start": 10,
+              "end": 18
+            }
+          ],
+          "kind": "factual",
+          "applicability": {
+            "subject": "Controlled fixture",
+            "version": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "valid_at": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "conditions": []
+          }
+        }
+      ],
+      "manifest_sha256": "6c778b21827de33ff06e57983b66d5d0f0e45e1257f001541718ca6369495735"
+    }
+  },
+  {
+    "question": "重复；重复；same; same?",
+    "mapping": {
+      "mapping_version": "agent-question-segments/1",
+      "question_sha256": "21c5e822755bb87e2ac6c325b9a7a2fb1834b2c0c352c683e074690da2254fef",
+      "question_length": 17,
+      "segments": [
+        {
+          "segment_id": "qs1-21c5e822755bb87e2ac6c325b9a7a2fb1834b2c0c352c683e074690da2254fef-00",
+          "start": 0,
+          "end": 3,
+          "text": "重复；"
+        },
+        {
+          "segment_id": "qs1-21c5e822755bb87e2ac6c325b9a7a2fb1834b2c0c352c683e074690da2254fef-01",
+          "start": 3,
+          "end": 6,
+          "text": "重复；"
+        },
+        {
+          "segment_id": "qs1-21c5e822755bb87e2ac6c325b9a7a2fb1834b2c0c352c683e074690da2254fef-02",
+          "start": 6,
+          "end": 11,
+          "text": "same;"
+        },
+        {
+          "segment_id": "qs1-21c5e822755bb87e2ac6c325b9a7a2fb1834b2c0c352c683e074690da2254fef-03",
+          "start": 11,
+          "end": 17,
+          "text": " same?"
+        }
+      ],
+      "mapping_sha256": "21ebc36325c3eb0946aa430222a87be7983d55886e1f6106c1022d072d9add8d"
+    },
+    "receipt": {
+      "value": {
+        "requirements": [
+          {
+            "text": "Fixture obligation 0",
+            "kind": "factual",
+            "applicability": {
+              "subject": "Controlled fixture",
+              "version": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "valid_at": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "conditions": []
+            },
+            "question_spans": [
+              {
+                "start": 0,
+                "end": 6
+              }
+            ]
+          },
+          {
+            "text": "Fixture obligation 1",
+            "kind": "factual",
+            "applicability": {
+              "subject": "Controlled fixture",
+              "version": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "valid_at": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "conditions": []
+            },
+            "question_spans": [
+              {
+                "start": 6,
+                "end": 17
+              }
+            ]
+          }
+        ],
+        "planner_contract": "agent-planning-segments/2"
+      },
+      "request_binding": {
+        "planner_contract": "agent-planning-segments/2",
+        "question_mapping_version": "agent-question-segments/1",
+        "planner_settlement_contract": "agent-planner-settlement/1",
+        "question_sha256": "21c5e822755bb87e2ac6c325b9a7a2fb1834b2c0c352c683e074690da2254fef",
+        "question_mapping_sha256": "21ebc36325c3eb0946aa430222a87be7983d55886e1f6106c1022d072d9add8d",
+        "planner_declaration": "{\"planner_contract\":\"agent-planning-segments/2\",\"requirements\":[{\"applicability\":{\"conditions\":[],\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-21c5e822755bb87e2ac6c325b9a7a2fb1834b2c0c352c683e074690da2254fef-00\",\"qs1-21c5e822755bb87e2ac6c325b9a7a2fb1834b2c0c352c683e074690da2254fef-01\"],\"text\":\"Fixture obligation 0\"},{\"applicability\":{\"conditions\":[],\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-21c5e822755bb87e2ac6c325b9a7a2fb1834b2c0c352c683e074690da2254fef-02\",\"qs1-21c5e822755bb87e2ac6c325b9a7a2fb1834b2c0c352c683e074690da2254fef-03\"],\"text\":\"Fixture obligation 1\"}]}",
+        "wire_response_sha256": "249c4a7bee01eb099c39258f67bcf5caf77d5b59f4bad59b42621185fc1fbebb",
+        "response_sha256": "4e76fb81a23e18cccd0cc79d6a2dbdf47580959658bca628dd2aed26edb681be"
+      }
+    },
+    "canonical_drafts": [
+      {
+        "text": "Fixture obligation 0",
+        "kind": "factual",
+        "applicability": {
+          "subject": "Controlled fixture",
+          "version": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "valid_at": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "conditions": []
+        },
+        "question_spans": [
+          {
+            "start": 0,
+            "end": 6
+          }
+        ]
+      },
+      {
+        "text": "Fixture obligation 1",
+        "kind": "factual",
+        "applicability": {
+          "subject": "Controlled fixture",
+          "version": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "valid_at": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "conditions": []
+        },
+        "question_spans": [
+          {
+            "start": 6,
+            "end": 17
+          }
+        ]
+      }
+    ],
+    "manifest": {
+      "contract_version": "agent-original-requirements/1",
+      "run_id": "segment-fixture",
+      "question_sha256": "21c5e822755bb87e2ac6c325b9a7a2fb1834b2c0c352c683e074690da2254fef",
+      "question_length": 17,
+      "requirements": [
+        {
+          "requirement_id": "requirement-0eca52162cf518acaba4b73c8d0b383582f8eec5dde1d119",
+          "text": "Fixture obligation 1",
+          "question_spans": [
+            {
+              "start": 6,
+              "end": 17
+            }
+          ],
+          "kind": "factual",
+          "applicability": {
+            "subject": "Controlled fixture",
+            "version": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "valid_at": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "conditions": []
+          }
+        },
+        {
+          "requirement_id": "requirement-7e04386bcd3814ad8c9bbc3b873836d6e89d842eb21f63e3",
+          "text": "Fixture obligation 0",
+          "question_spans": [
+            {
+              "start": 0,
+              "end": 6
+            }
+          ],
+          "kind": "factual",
+          "applicability": {
+            "subject": "Controlled fixture",
+            "version": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "valid_at": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "conditions": []
+          }
+        }
+      ],
+      "manifest_sha256": "80309477f1cd467ad40b0792ad01c2e355779f138e31c76ce3b0ec2388540a43"
+    }
+  },
+  {
+    "question": ";\r\n😀。；next？",
+    "mapping": {
+      "mapping_version": "agent-question-segments/1",
+      "question_sha256": "4bfc0458cd655c63bef7b462c45247a4a4b941123b8973544173e3eb054f5139",
+      "question_length": 12,
+      "segments": [
+        {
+          "segment_id": "qs1-4bfc0458cd655c63bef7b462c45247a4a4b941123b8973544173e3eb054f5139-00",
+          "start": 0,
+          "end": 7,
+          "text": ";\r\n😀。；"
+        },
+        {
+          "segment_id": "qs1-4bfc0458cd655c63bef7b462c45247a4a4b941123b8973544173e3eb054f5139-01",
+          "start": 7,
+          "end": 12,
+          "text": "next？"
+        }
+      ],
+      "mapping_sha256": "e493937c996ca070f8df2bde9eef55980a1d44525c4f43bb729f4b4c6e36e959"
+    },
+    "receipt": {
+      "value": {
+        "requirements": [
+          {
+            "text": "Fixture obligation 0",
+            "kind": "factual",
+            "applicability": {
+              "subject": "Controlled fixture",
+              "version": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "valid_at": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "conditions": []
+            },
+            "question_spans": [
+              {
+                "start": 0,
+                "end": 7
+              }
+            ]
+          },
+          {
+            "text": "Fixture obligation 1",
+            "kind": "factual",
+            "applicability": {
+              "subject": "Controlled fixture",
+              "version": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "valid_at": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "conditions": []
+            },
+            "question_spans": [
+              {
+                "start": 7,
+                "end": 12
+              }
+            ]
+          }
+        ],
+        "planner_contract": "agent-planning-segments/2"
+      },
+      "request_binding": {
+        "planner_contract": "agent-planning-segments/2",
+        "question_mapping_version": "agent-question-segments/1",
+        "planner_settlement_contract": "agent-planner-settlement/1",
+        "question_sha256": "4bfc0458cd655c63bef7b462c45247a4a4b941123b8973544173e3eb054f5139",
+        "question_mapping_sha256": "e493937c996ca070f8df2bde9eef55980a1d44525c4f43bb729f4b4c6e36e959",
+        "planner_declaration": "{\"planner_contract\":\"agent-planning-segments/2\",\"requirements\":[{\"applicability\":{\"conditions\":[],\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-4bfc0458cd655c63bef7b462c45247a4a4b941123b8973544173e3eb054f5139-00\"],\"text\":\"Fixture obligation 0\"},{\"applicability\":{\"conditions\":[],\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-4bfc0458cd655c63bef7b462c45247a4a4b941123b8973544173e3eb054f5139-01\"],\"text\":\"Fixture obligation 1\"}]}",
+        "wire_response_sha256": "483880f66fed319efe2e448b1532b86c98ee7002288cdbbad66a621c878ce906",
+        "response_sha256": "7d09f0acd8abc1c0c51911b7df04331ee356b1b1ca020ceac6c5820f0328d806"
+      }
+    },
+    "canonical_drafts": [
+      {
+        "text": "Fixture obligation 0",
+        "kind": "factual",
+        "applicability": {
+          "subject": "Controlled fixture",
+          "version": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "valid_at": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "conditions": []
+        },
+        "question_spans": [
+          {
+            "start": 0,
+            "end": 7
+          }
+        ]
+      },
+      {
+        "text": "Fixture obligation 1",
+        "kind": "factual",
+        "applicability": {
+          "subject": "Controlled fixture",
+          "version": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "valid_at": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "conditions": []
+        },
+        "question_spans": [
+          {
+            "start": 7,
+            "end": 12
+          }
+        ]
+      }
+    ],
+    "manifest": {
+      "contract_version": "agent-original-requirements/1",
+      "run_id": "segment-fixture",
+      "question_sha256": "4bfc0458cd655c63bef7b462c45247a4a4b941123b8973544173e3eb054f5139",
+      "question_length": 12,
+      "requirements": [
+        {
+          "requirement_id": "requirement-91a9ba300ca4e9cf511e0b6cb5c7105befe54e81d6d65eb2",
+          "text": "Fixture obligation 1",
+          "question_spans": [
+            {
+              "start": 7,
+              "end": 12
+            }
+          ],
+          "kind": "factual",
+          "applicability": {
+            "subject": "Controlled fixture",
+            "version": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "valid_at": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "conditions": []
+          }
+        },
+        {
+          "requirement_id": "requirement-ffdd03514bf08b491f96bf4121a5cf5316bee2b0fbb24071",
+          "text": "Fixture obligation 0",
+          "question_spans": [
+            {
+              "start": 0,
+              "end": 7
+            }
+          ],
+          "kind": "factual",
+          "applicability": {
+            "subject": "Controlled fixture",
+            "version": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "valid_at": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "conditions": []
+          }
+        }
+      ],
+      "manifest_sha256": "bcbe5fbc7724db6d8329ec7042cb65270aa3876d91946823f0d0122c9b0704f4"
+    }
+  },
+  {
+    "question": "x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;x;",
+    "mapping": {
+      "mapping_version": "agent-question-segments/1",
+      "question_sha256": "56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4",
+      "question_length": 80,
+      "segments": [
+        {
+          "segment_id": "qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-00",
+          "start": 0,
+          "end": 6,
+          "text": "x;x;x;"
+        },
+        {
+          "segment_id": "qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-01",
+          "start": 6,
+          "end": 12,
+          "text": "x;x;x;"
+        },
+        {
+          "segment_id": "qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-02",
+          "start": 12,
+          "end": 18,
+          "text": "x;x;x;"
+        },
+        {
+          "segment_id": "qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-03",
+          "start": 18,
+          "end": 24,
+          "text": "x;x;x;"
+        },
+        {
+          "segment_id": "qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-04",
+          "start": 24,
+          "end": 30,
+          "text": "x;x;x;"
+        },
+        {
+          "segment_id": "qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-05",
+          "start": 30,
+          "end": 36,
+          "text": "x;x;x;"
+        },
+        {
+          "segment_id": "qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-06",
+          "start": 36,
+          "end": 42,
+          "text": "x;x;x;"
+        },
+        {
+          "segment_id": "qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-07",
+          "start": 42,
+          "end": 48,
+          "text": "x;x;x;"
+        },
+        {
+          "segment_id": "qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-08",
+          "start": 48,
+          "end": 54,
+          "text": "x;x;x;"
+        },
+        {
+          "segment_id": "qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-09",
+          "start": 54,
+          "end": 60,
+          "text": "x;x;x;"
+        },
+        {
+          "segment_id": "qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-10",
+          "start": 60,
+          "end": 66,
+          "text": "x;x;x;"
+        },
+        {
+          "segment_id": "qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-11",
+          "start": 66,
+          "end": 72,
+          "text": "x;x;x;"
+        },
+        {
+          "segment_id": "qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-12",
+          "start": 72,
+          "end": 78,
+          "text": "x;x;x;"
+        },
+        {
+          "segment_id": "qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-13",
+          "start": 78,
+          "end": 80,
+          "text": "x;"
+        }
+      ],
+      "mapping_sha256": "9f765a90cf68a68721198633958c078d58f465acf8b99f6fb3b2ce8f957323a4"
+    },
+    "receipt": {
+      "value": {
+        "requirements": [
+          {
+            "text": "Fixture obligation 0",
+            "kind": "factual",
+            "applicability": {
+              "subject": "Controlled fixture",
+              "version": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "valid_at": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "conditions": []
+            },
+            "question_spans": [
+              {
+                "start": 0,
+                "end": 42
+              }
+            ]
+          },
+          {
+            "text": "Fixture obligation 1",
+            "kind": "factual",
+            "applicability": {
+              "subject": "Controlled fixture",
+              "version": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "valid_at": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "conditions": []
+            },
+            "question_spans": [
+              {
+                "start": 42,
+                "end": 80
+              }
+            ]
+          }
+        ],
+        "planner_contract": "agent-planning-segments/2"
+      },
+      "request_binding": {
+        "planner_contract": "agent-planning-segments/2",
+        "question_mapping_version": "agent-question-segments/1",
+        "planner_settlement_contract": "agent-planner-settlement/1",
+        "question_sha256": "56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4",
+        "question_mapping_sha256": "9f765a90cf68a68721198633958c078d58f465acf8b99f6fb3b2ce8f957323a4",
+        "planner_declaration": "{\"planner_contract\":\"agent-planning-segments/2\",\"requirements\":[{\"applicability\":{\"conditions\":[],\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-00\",\"qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-01\",\"qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-02\",\"qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-03\",\"qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-04\",\"qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-05\",\"qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-06\"],\"text\":\"Fixture obligation 0\"},{\"applicability\":{\"conditions\":[],\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-07\",\"qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-08\",\"qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-09\",\"qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-10\",\"qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-11\",\"qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-12\",\"qs1-56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4-13\"],\"text\":\"Fixture obligation 1\"}]}",
+        "wire_response_sha256": "fd9b7745a139c3c703fd079561347f860eda4ecae3ae49d091147be5e0bfcc9b",
+        "response_sha256": "1705ce6c87775d8d96b011ba85eb38d8d48623e6044a5277497f328384a6ba04"
+      }
+    },
+    "canonical_drafts": [
+      {
+        "text": "Fixture obligation 0",
+        "kind": "factual",
+        "applicability": {
+          "subject": "Controlled fixture",
+          "version": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "valid_at": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "conditions": []
+        },
+        "question_spans": [
+          {
+            "start": 0,
+            "end": 42
+          }
+        ]
+      },
+      {
+        "text": "Fixture obligation 1",
+        "kind": "factual",
+        "applicability": {
+          "subject": "Controlled fixture",
+          "version": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "valid_at": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "conditions": []
+        },
+        "question_spans": [
+          {
+            "start": 42,
+            "end": 80
+          }
+        ]
+      }
+    ],
+    "manifest": {
+      "contract_version": "agent-original-requirements/1",
+      "run_id": "segment-fixture",
+      "question_sha256": "56a69c9828b01b308da8be4813ab4d2e08aeef30e922a1fb30e3145fdfb148a4",
+      "question_length": 80,
+      "requirements": [
+        {
+          "requirement_id": "requirement-97d78049c66df098a21da7c1a64a552dd90ebb2c035b97d4",
+          "text": "Fixture obligation 0",
+          "question_spans": [
+            {
+              "start": 0,
+              "end": 42
+            }
+          ],
+          "kind": "factual",
+          "applicability": {
+            "subject": "Controlled fixture",
+            "version": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "valid_at": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "conditions": []
+          }
+        },
+        {
+          "requirement_id": "requirement-b73b61fe1d83cc5c9feef9c67add0baca09ab3d77f986b29",
+          "text": "Fixture obligation 1",
+          "question_spans": [
+            {
+              "start": 42,
+              "end": 80
+            }
+          ],
+          "kind": "factual",
+          "applicability": {
+            "subject": "Controlled fixture",
+            "version": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "valid_at": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "conditions": []
+          }
+        }
+      ],
+      "manifest_sha256": "df17f7b74a6486c39dfa5406f8aeb613aac52c1f7b9579e90bf1bb1ffa3088e2"
+    }
+  },
+  {
+    "question": "共同限定：version 2.0; encrypt? retain?",
+    "mapping": {
+      "mapping_version": "agent-question-segments/1",
+      "question_sha256": "f7d37bd5d0a3441a5b58276368c3e4368f82da38174ba43103ce6a6941e920dd",
+      "question_length": 34,
+      "segments": [
+        {
+          "segment_id": "qs1-f7d37bd5d0a3441a5b58276368c3e4368f82da38174ba43103ce6a6941e920dd-00",
+          "start": 0,
+          "end": 5,
+          "text": "共同限定："
+        },
+        {
+          "segment_id": "qs1-f7d37bd5d0a3441a5b58276368c3e4368f82da38174ba43103ce6a6941e920dd-01",
+          "start": 5,
+          "end": 17,
+          "text": "version 2.0;"
+        },
+        {
+          "segment_id": "qs1-f7d37bd5d0a3441a5b58276368c3e4368f82da38174ba43103ce6a6941e920dd-02",
+          "start": 17,
+          "end": 26,
+          "text": " encrypt?"
+        },
+        {
+          "segment_id": "qs1-f7d37bd5d0a3441a5b58276368c3e4368f82da38174ba43103ce6a6941e920dd-03",
+          "start": 26,
+          "end": 34,
+          "text": " retain?"
+        }
+      ],
+      "mapping_sha256": "636ef0f48f4d516541e82d058d81c2e373e134c49708921eb0bdb3c00aab4077"
+    },
+    "receipt": {
+      "value": {
+        "requirements": [
+          {
+            "text": "Fixture obligation 0",
+            "kind": "factual",
+            "applicability": {
+              "subject": "Controlled fixture",
+              "version": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "valid_at": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "conditions": []
+            },
+            "question_spans": [
+              {
+                "start": 0,
+                "end": 17
+              }
+            ]
+          },
+          {
+            "text": "Fixture obligation 1",
+            "kind": "factual",
+            "applicability": {
+              "subject": "Controlled fixture",
+              "version": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "valid_at": {
+                "status": "unknown",
+                "value": null,
+                "reason": "Fixture scope"
+              },
+              "conditions": []
+            },
+            "question_spans": [
+              {
+                "start": 17,
+                "end": 34
+              }
+            ]
+          }
+        ],
+        "planner_contract": "agent-planning-segments/2"
+      },
+      "request_binding": {
+        "planner_contract": "agent-planning-segments/2",
+        "question_mapping_version": "agent-question-segments/1",
+        "planner_settlement_contract": "agent-planner-settlement/1",
+        "question_sha256": "f7d37bd5d0a3441a5b58276368c3e4368f82da38174ba43103ce6a6941e920dd",
+        "question_mapping_sha256": "636ef0f48f4d516541e82d058d81c2e373e134c49708921eb0bdb3c00aab4077",
+        "planner_declaration": "{\"planner_contract\":\"agent-planning-segments/2\",\"requirements\":[{\"applicability\":{\"conditions\":[],\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-f7d37bd5d0a3441a5b58276368c3e4368f82da38174ba43103ce6a6941e920dd-00\",\"qs1-f7d37bd5d0a3441a5b58276368c3e4368f82da38174ba43103ce6a6941e920dd-01\"],\"text\":\"Fixture obligation 0\"},{\"applicability\":{\"conditions\":[],\"subject\":\"Controlled fixture\",\"valid_at\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null},\"version\":{\"reason\":\"Fixture scope\",\"status\":\"unknown\",\"value\":null}},\"kind\":\"factual\",\"segment_ids\":[\"qs1-f7d37bd5d0a3441a5b58276368c3e4368f82da38174ba43103ce6a6941e920dd-02\",\"qs1-f7d37bd5d0a3441a5b58276368c3e4368f82da38174ba43103ce6a6941e920dd-03\"],\"text\":\"Fixture obligation 1\"}]}",
+        "wire_response_sha256": "02973d7a1b63ab834246b41b14341067a586e66f2b52153e6e753c78aaf99b38",
+        "response_sha256": "c3929de734d3e295593f5b857d9712047df9761c400fb8b3b82c64b6cfc33538"
+      }
+    },
+    "canonical_drafts": [
+      {
+        "text": "Fixture obligation 0",
+        "kind": "factual",
+        "applicability": {
+          "subject": "Controlled fixture",
+          "version": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "valid_at": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "conditions": []
+        },
+        "question_spans": [
+          {
+            "start": 0,
+            "end": 17
+          }
+        ]
+      },
+      {
+        "text": "Fixture obligation 1",
+        "kind": "factual",
+        "applicability": {
+          "subject": "Controlled fixture",
+          "version": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "valid_at": {
+            "status": "unknown",
+            "value": null,
+            "reason": "Fixture scope"
+          },
+          "conditions": []
+        },
+        "question_spans": [
+          {
+            "start": 17,
+            "end": 34
+          }
+        ]
+      }
+    ],
+    "manifest": {
+      "contract_version": "agent-original-requirements/1",
+      "run_id": "segment-fixture",
+      "question_sha256": "f7d37bd5d0a3441a5b58276368c3e4368f82da38174ba43103ce6a6941e920dd",
+      "question_length": 34,
+      "requirements": [
+        {
+          "requirement_id": "requirement-49e75ca1ae88b635495d57753efba970e5043f0d684e9bec",
+          "text": "Fixture obligation 0",
+          "question_spans": [
+            {
+              "start": 0,
+              "end": 17
+            }
+          ],
+          "kind": "factual",
+          "applicability": {
+            "subject": "Controlled fixture",
+            "version": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "valid_at": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "conditions": []
+          }
+        },
+        {
+          "requirement_id": "requirement-f9126680004cd2c1a5e865574fbed3044664f9af98a7c9ee",
+          "text": "Fixture obligation 1",
+          "question_spans": [
+            {
+              "start": 17,
+              "end": 34
+            }
+          ],
+          "kind": "factual",
+          "applicability": {
+            "subject": "Controlled fixture",
+            "version": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "valid_at": {
+              "status": "unknown",
+              "value": null,
+              "reason": "Not independently established"
+            },
+            "conditions": []
+          }
+        }
+      ],
+      "manifest_sha256": "f1cefbda57448c52925326692d550dfde2df9b1a06b8e4dd59232d0542b0a032"
+    }
+  }
+]

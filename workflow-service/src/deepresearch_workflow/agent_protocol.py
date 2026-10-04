@@ -9,6 +9,7 @@ from typing import Annotated, Any, Literal
 from pydantic import Field, field_validator, model_validator
 from typing_extensions import TypedDict
 
+from .agent_question_segments import PLANNER_VERSION, SegmentRequirementDraft
 from .agent_requirements import RequirementBinding, RequirementDraft
 from .domain import AgentRunBudget as AgentRunBudget
 from .domain import StrictModel
@@ -159,6 +160,11 @@ class AgentDecision(StrictModel):
         return self
 
 
+class SegmentAgentDecision(AgentDecision):
+    planner_contract: Literal[PLANNER_VERSION]
+    requirements: list[SegmentRequirementDraft] = Field(default_factory=list, max_length=32)
+
+
 class ModelRequest(StrictModel):
     name: str = Field(pattern=r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
     instruction: str = Field(min_length=1, max_length=12000)
@@ -191,6 +197,7 @@ class AgentState(TypedDict, total=False):
     tasks: list[dict[str, Any]]
     plan_version: int
     decision_steps: int
+    planner_contract: str
     decision: dict[str, Any]
     observations: list[dict[str, Any]]
     candidates: list[dict[str, Any]]

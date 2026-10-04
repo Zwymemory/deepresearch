@@ -408,6 +408,7 @@ async def test_actual_runner_finalizes_safe_planning_code_and_known_usage(caplog
                     {
                         "action": "finish",
                         "reason": "Offline empty declaration probe",
+                        "planner_contract": "agent-planning-segments/2",
                     }
                 )
             ),

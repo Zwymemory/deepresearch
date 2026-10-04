@@ -1,0 +1,24 @@
+{
+  "baseline": "d343e5dbc964b85d0fb4b255f75aca98b3006a6a",
+  "request_sha256": "2fe6f885f569fbc0725c2faf978c07e9dccd70f3e397359d1f13fd889e7a267a",
+  "wire_sha256": "ba3608a387c4f57731ab36ff855e03fb9d2172069f0f7c2b5e77def7e6821c79",
+  "wire_bytes": 16142,
+  "state": {
+    "run_id": "v1-replay-witness",
+    "question": "请仅依据 IANA 官网的 Example Domains 页面核实：example.com 和 example.org 是否可以注册或转让？它们的 HTTP 服务是否提供适合生产应用的保障？请引用网页原文，并说明保障范围。",
+    "plan_version": 1,
+    "decision_steps": 0,
+    "tasks": [],
+    "requested_scopes": [
+      "web_search"
+    ],
+    "observations": [],
+    "candidates": [],
+    "evidence": [],
+    "packet": {},
+    "investigations": {},
+    "task_investigations": {},
+    "no_progress": 0,
+    "context_snapshot": {}
+  }
+}

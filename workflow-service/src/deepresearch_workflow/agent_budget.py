@@ -13,9 +13,10 @@ from psycopg.types.json import Jsonb
 from pydantic import ValidationError as PydanticValidationError
 from referencing import Registry
 
-from .agent_diagnostics import safe_check_code, safe_requirement_code
+from .agent_diagnostics import safe_check_code, safe_requirement_code, safe_segment_diagnostic
 from .agent_model import MODEL_RULES, AgentModel, AgentModelFailure, OpenAIAgentModel
 from .agent_protocol import AgentRunBudget, ModelRequest, ModelResult
+from .agent_question_segments import PLANNER_VERSION, replay_declaration
 from .agent_requirements import RequirementError
 from .evidence_check import EvidenceCheckError
 from .graph import (
@@ -44,6 +45,7 @@ SAFE_FIELDS = frozenset({
     "value", "version",
     "requirements", "requirement_bindings", "question_spans", "start", "end", "text",
     "requirement_id",
+    "segment_ids", "planner_contract",
 })
 
 
@@ -349,7 +351,7 @@ class SqlAgentLedger:
                 saved = await cursor.fetchone()
                 if saved is None:
                     cursor = await conn.execute(
-                        "SELECT attempt FROM agent_research_operation WHERE run_id=%s "
+                        "SELECT attempt,safe_result FROM agent_research_operation WHERE run_id=%s "
                         "AND operation_key=%s "
                         "AND status='SETTLED' AND kind='MODEL' AND purpose='DECISION' "
                         "ORDER BY attempt DESC LIMIT 1",
@@ -361,6 +363,18 @@ class SqlAgentLedger:
                             "Original requirements lack a settled planning receipt",
                             error_code="REQUIREMENT_DECLARATION_MISSING",
                         )
+                    from .agent_question_segments import declaration_drafts
+                    from .agent_requirements import freeze_requirements
+
+                    # Bind canonical storage to the actual settled declaration, including
+                    # v2 server mapping provenance. Legacy declarations keep their meaning.
+                    cursor = await conn.execute(
+                        "SELECT question FROM agent_workflow_run WHERE run_id=%s", (run_id,)
+                    )
+                    question = (await cursor.fetchone())["question"]
+                    freeze_requirements(run_id, question,
+                                        declaration_drafts(question, receipt["safe_result"]),
+                                        existing=manifest)
                     await conn.execute(
                         "INSERT INTO "
                         "agent_research_requirements(run_id,manifest,declaration_key,"
@@ -522,6 +536,10 @@ class AgentBudgetGateway:
             metadata["validation_stage"] = failure.validation_stage
         if failure.domain_error_code is not None:
             metadata["domain_error_code"] = failure.domain_error_code
+        if isinstance(error, RequirementError) and domain_code is not None:
+            diagnostic = safe_segment_diagnostic(error.segment_diagnostic)
+            if diagnostic is not None:
+                metadata["question_segments"] = diagnostic
         if isinstance(error, AgentModelFailure) and error.identity_diagnostic is not None:
             metadata["identity"] = error.identity_diagnostic
         if status_code is not None:
@@ -561,7 +579,8 @@ class AgentBudgetGateway:
                 raise ResultValidationError(error, "domain_validation") from None
 
     async def model_call(
-        self, key, purpose, request: ModelRequest, validate: Callable | None = None
+        self, key, purpose, request: ModelRequest, validate: Callable | None = None,
+        *, canonicalize: Callable | None = None,
     ):
         # Freeze the exact provider bytes before admission; binding metadata is not sent.
         prepared = None
@@ -606,6 +625,32 @@ class AgentBudgetGateway:
                 result = ModelResult.model_validate(reservation["replay"])
                 self.check_bounds(result, input_reserved, request.max_output_tokens)
                 try:
+                    if request.request_binding.get("planner_contract") == PLANNER_VERSION:
+                        if (any(result.request_binding.get(k) != v
+                                for k, v in request.request_binding.items())
+                                or result.request_binding.get("response_sha256")
+                                != hashlib.sha256(canonical(result.value).encode()).hexdigest()):
+                            raise ResultValidationError(
+                                RequirementError("REQUIREMENT_SEGMENT_BINDING_INVALID"),
+                                "planning_requirements",
+                            )
+                        try:
+                            wire_value = replay_declaration(result.model_dump(mode="json"))
+                        except Exception as error:
+                            raise ResultValidationError(error, "planning_requirements") from None
+                        wire_result = result.model_copy(update={"value": wire_value})
+                        self.validate_result(request, wire_result, validate)
+                        try:
+                            reconstructed = canonicalize(wire_value) if canonicalize else None
+                        except Exception as error:
+                            raise ResultValidationError(error, "planning_requirements") from None
+                        if (canonicalize is None
+                                or canonical(reconstructed) != canonical(result.value)):
+                            raise ResultValidationError(
+                                RequirementError("REQUIREMENT_SEGMENT_BINDING_INVALID"),
+                                "planning_requirements",
+                            )
+                        return wire_result
                     self.validate_result(request, result, validate)
                 except (
                     RunBudgetExceededError, RunCancelledError, RunTimedOutError, StaleClaimError,
@@ -624,16 +669,38 @@ class AgentBudgetGateway:
                     else await self.model.invoke(request)
                 )
                 self.validate_result(request, result, validate)
+                stored_result = result
+                extra_binding = {}
+                if canonicalize is not None:
+                    declaration = canonical(result.value)
+                    try:
+                        value = canonicalize(result.value)
+                    except Exception as error:
+                        raise ResultValidationError(error, "planning_requirements") from None
+                    stored_result = result.model_copy(update={"value": value})
+                    extra_binding = {
+                        "planner_declaration": declaration,
+                        "wire_response_sha256": hashlib.sha256(declaration.encode()).hexdigest(),
+                    }
                 result = result.model_copy(
                     update={
                         "request_binding": {
                             **request.request_binding,
+                            **extra_binding,
                             "response_sha256": hashlib.sha256(
-                                canonical(result.value).encode()
+                                canonical(stored_result.value).encode()
                             ).hexdigest(),
                         }
                     }
                 )
+                stored_result = stored_result.model_copy(
+                    update={"request_binding": result.request_binding}
+                )
+                envelope_bytes = len(canonical(stored_result.model_dump(mode="json")).encode())
+                if canonicalize is not None and envelope_bytes > 120000:
+                    raise ResultValidationError(
+                        RequirementError("REQUIREMENT_DECLARATION_LIMIT"), "planning_requirements"
+                    )
             except (RunBudgetExceededError, RunCancelledError, RunTimedOutError, StaleClaimError):
                 raise
             except Exception as error:
@@ -658,8 +725,11 @@ class AgentBudgetGateway:
             try:
                 await self.ledger.settle(
                     self.run_id, self.claim_token, key, reservation["attempt"],
-                    result.model_dump(mode="json"),
-                    result.model_dump(mode="json", exclude={"value"}),
+                    stored_result.model_dump(mode="json"),
+                    (result.model_dump(mode="json", exclude={"value"}) if canonicalize is None
+                     else {**result.model_dump(mode="json", exclude={"value", "request_binding"}),
+                           "request_binding": {k: v for k, v in result.request_binding.items()
+                                               if k != "planner_declaration"}}),
                 )
             except StaleClaimError:
                 raise

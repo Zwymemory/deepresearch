@@ -23,8 +23,9 @@ MAX_REQUIREMENTS = 32
 class RequirementError(ValueError):
     """Safe machine-readable failure; no raw question or source text in errors."""
 
-    def __init__(self, code):
+    def __init__(self, code, segment_diagnostic=None):
         self.code = code
+        self.segment_diagnostic = segment_diagnostic
         super().__init__(code)
 
 
