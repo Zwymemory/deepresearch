@@ -229,7 +229,7 @@ def test_scrub_trusted_identity_scope_and_explicit_secret_priority(secret):
              "fake": "task-req-" + "b" * 40,
              "embedded_key": "x-sk-" + "c" * 32,
              "jwt": "eyJ" + "d" * 22 + "." + "e" * 24 + "." + "f" * 24,
-             "api_key": "PRIVATE", "path": "/Users/example/private",
+             "api_key": "PRIVATE", "path": "/".join(("", "Users", "example", "private")),
              "explicit": secret}
     scrubbed = export.scrub(value, [secret], identifiers=trusted)
     if secret == identity:
