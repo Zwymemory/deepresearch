@@ -169,6 +169,12 @@ def main():
         "planner_contract": PLANNER_VERSION, "question_mapping_version": MAPPING_VERSION,
         "planner_settlement_contract": SETTLEMENT_VERSION,
     }
+    from deepresearch_workflow import agent_json
+    parser_path = Path(agent_json.__file__).resolve()
+    identity["json_diagnostic_identity"] = {
+        "version": agent_json.VERSION, "module_path": str(parser_path),
+        "module_sha256": hashlib.sha256(parser_path.read_bytes()).hexdigest(),
+    }
     descriptor = os.open(args.identity_output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "w") as stream:
         json.dump(identity, stream, indent=2)

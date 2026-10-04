@@ -112,6 +112,9 @@ def verify_runtime(ready, token):
     assert_process(ready["sidecar_pid"], ["agent-live-sidecar.py", identity["source_dir"]])
     if identity["pid"] != ready["sidecar_pid"] or source_digest(identity["source_dir"]) != ready["sidecar_source_sha256"]:
         raise ValueError("Sidecar process or source does not match the build")
+    if ("json_diagnostic_identity" in ready and ready["json_diagnostic_identity"]
+            != identity.get("json_diagnostic_identity")):
+        raise ValueError("Actual parser diagnostic identity differs from readiness")
     sidecar = http_json(ready["sidecar_base_url"], "/internal/health/ready")
     if sidecar.get("status") != "UP" or sidecar.get("runner") != "enabled":
         raise ValueError("Real sidecar is not ready")
@@ -125,4 +128,5 @@ def verify_runtime(ready, token):
     if ready["database_volume"] not in [m.get("Name") for m in container["Mounts"]]:
         raise ValueError("Database volume does not match the environment")
     return {"embedded_build": build, "jar_sha256": ready["jar_sha256"], "model_identity": identity.get("model_identity"),
-            "sidecar_source_sha256": ready["sidecar_source_sha256"], "verified": True}
+            "sidecar_source_sha256": ready["sidecar_source_sha256"],
+            "json_diagnostic_identity": identity.get("json_diagnostic_identity"), "verified": True}
