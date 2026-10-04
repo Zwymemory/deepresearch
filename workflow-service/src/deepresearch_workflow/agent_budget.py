@@ -13,10 +13,11 @@ from psycopg.types.json import Jsonb
 from pydantic import ValidationError as PydanticValidationError
 from referencing import Registry
 
-from .agent_diagnostics import safe_requirement_code
+from .agent_diagnostics import safe_check_code, safe_requirement_code
 from .agent_model import MODEL_RULES, AgentModel, AgentModelFailure, OpenAIAgentModel
 from .agent_protocol import AgentRunBudget, ModelRequest, ModelResult
 from .agent_requirements import RequirementError
+from .evidence_check import EvidenceCheckError
 from .graph import (
     ModelCallError,
     RunBudgetExceededError,
@@ -494,6 +495,11 @@ class AgentBudgetGateway:
                 domain_code = safe_requirement_code(error.code)
                 error_class = "requirement_validation"
                 # Unknown codes remain opaque application defects, not domain rejections.
+                if domain_code is None:
+                    failure_kind, error_class = "INTERNAL", "application_internal"
+            elif isinstance(error, EvidenceCheckError):
+                code = error.args[0] if len(error.args) == 1 else None
+                domain_code = safe_check_code(code)
                 if domain_code is None:
                     failure_kind, error_class = "INTERNAL", "application_internal"
             elif not isinstance(error, WorkflowExecutionError):

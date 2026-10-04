@@ -449,12 +449,12 @@ class WorkflowRunner:
             validation_issue_codes = cls._exception_attribute(
                 chain, "validation_issue_codes"
             )
-            from .agent_diagnostics import safe_requirement_code, safe_validation_stage
+            from .agent_diagnostics import safe_domain_code, safe_validation_stage
 
             validation_stage = safe_validation_stage(
                 cls._exception_attribute(chain, "validation_stage")
             )
-            domain_error_code = safe_requirement_code(
+            domain_error_code = safe_domain_code(
                 cls._exception_attribute(chain, "domain_error_code")
             )
             cause_chain = ">".join(cls._safe_log_scalar(type(item).__name__) for item in chain)

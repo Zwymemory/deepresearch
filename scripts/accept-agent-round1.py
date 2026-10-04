@@ -52,6 +52,13 @@ MODEL_REQUIREMENT_CODES = {
     "REQUIREMENT_QUESTION_INVALID", "REQUIREMENT_QUESTION_REGION_UNASSIGNED", "REQUIREMENT_RUN_INVALID",
     "REQUIREMENT_TASK_INVALID", "REQUIREMENT_TASK_LIMIT", "REQUIREMENT_UNKNOWN",
 }
+MODEL_CHECK_CODES = {
+    "CHECK_TOO_LARGE", "CHECK_JSON_INVALID", "CHECK_RESPONSE_INVALID",
+    "CHECK_REQUEST_BINDING_INVALID", "CHECK_REQUEST_INVALID", "CHECK_SNAPSHOT_CHANGED",
+    "CHECK_QUOTE_BINDING_INVALID", "CHECK_QUOTE_INVALID", "CHECK_QUOTE_CONTEXT_INCOMPLETE",
+    "CHECK_DUPLICATE_JSON_KEY", "CHECK_NONFINITE_JSON", "CHECK_CLAIM_BINDING_INVALID",
+    "CHECK_EVIDENCE_BINDING_INVALID", "CHECK_ACTION_INVALID",
+}
 
 
 def validate_sources(sources):
@@ -207,7 +214,7 @@ def safe_model_failure(value):
     stage, domain_code = value.get("validation_stage"), value.get("domain_error_code")
     if type(stage) is str and stage in MODEL_VALIDATION_STAGES:
         safe["validation_stage"] = stage
-    if type(domain_code) is str and domain_code in MODEL_REQUIREMENT_CODES:
+    if type(domain_code) is str and domain_code in MODEL_REQUIREMENT_CODES | MODEL_CHECK_CODES:
         safe["domain_error_code"] = domain_code
     status = value.get("status_code")
     if type(status) is int and 100 <= status <= 599:

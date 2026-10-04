@@ -13,7 +13,11 @@ import httpx
 import pytest
 
 from deepresearch_workflow.agent_budget import SAFE_FIELDS, AgentBudgetGateway
-from deepresearch_workflow.agent_diagnostics import REQUIREMENT_ERROR_CODES, VALIDATION_STAGES
+from deepresearch_workflow.agent_diagnostics import (
+    CHECK_ERROR_CODES,
+    REQUIREMENT_ERROR_CODES,
+    VALIDATION_STAGES,
+)
 from deepresearch_workflow.agent_model import OpenAIAgentModel
 from deepresearch_workflow.agent_protocol import AgentRunBudget, ModelRequest, ModelResult
 from deepresearch_workflow.agent_requirements import RequirementError
@@ -372,6 +376,7 @@ async def test_domain_codes_are_allowlisted_and_unknown_codes_never_escape(code)
 
 def test_export_metadata_vocabularies_and_redaction_match_production():
     assert export.MODEL_REQUIREMENT_CODES == REQUIREMENT_ERROR_CODES
+    assert export.MODEL_CHECK_CODES == CHECK_ERROR_CODES
     assert export.MODEL_VALIDATION_STAGES == VALIDATION_STAGES
     assert export.MODEL_ISSUE_FIELDS == SAFE_FIELDS
     unsafe = {

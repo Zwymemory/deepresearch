@@ -39,6 +39,24 @@ VALIDATION_STAGES = frozenset(
         "planning_requirements",
     }
 )
+CHECK_ERROR_CODES = frozenset(
+    {
+        "CHECK_TOO_LARGE",
+        "CHECK_JSON_INVALID",
+        "CHECK_RESPONSE_INVALID",
+        "CHECK_REQUEST_BINDING_INVALID",
+        "CHECK_REQUEST_INVALID",
+        "CHECK_SNAPSHOT_CHANGED",
+        "CHECK_QUOTE_BINDING_INVALID",
+        "CHECK_QUOTE_INVALID",
+        "CHECK_QUOTE_CONTEXT_INCOMPLETE",
+        "CHECK_DUPLICATE_JSON_KEY",
+        "CHECK_NONFINITE_JSON",
+        "CHECK_CLAIM_BINDING_INVALID",
+        "CHECK_EVIDENCE_BINDING_INVALID",
+        "CHECK_ACTION_INVALID",
+    }
+)
 
 
 def safe_requirement_code(value):
@@ -47,3 +65,15 @@ def safe_requirement_code(value):
 
 def safe_validation_stage(value):
     return value if type(value) is str and value in VALIDATION_STAGES else None
+
+
+def safe_domain_code(value):
+    return (
+        value
+        if type(value) is str and value in REQUIREMENT_ERROR_CODES | CHECK_ERROR_CODES
+        else None
+    )
+
+
+def safe_check_code(value):
+    return value if type(value) is str and value in CHECK_ERROR_CODES else None
