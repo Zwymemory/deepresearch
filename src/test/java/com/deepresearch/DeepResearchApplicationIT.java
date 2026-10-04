@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -18,6 +19,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import com.deepresearch.workflow.WorkflowRepository;
 import com.deepresearch.workflow.WorkflowDelegationContext;
+import com.deepresearch.workflow.DifyWorkflowAdapter;
 import com.deepresearch.security.AuthPrincipal;
 
 import java.time.OffsetDateTime;
@@ -88,6 +90,11 @@ class DeepResearchApplicationIT {
 
     @Autowired
     private PlatformTransactionManager transactionManager;
+
+    // Repository fencing assertions must own their fixture rows and stop leases.
+    // The background reconciler otherwise races the explicit timeout/claim calls.
+    @MockitoBean
+    private DifyWorkflowAdapter difyWorkflowAdapter;
 
     @Test
     void loadsContextAndMigratesRealInfrastructure() throws Exception {
