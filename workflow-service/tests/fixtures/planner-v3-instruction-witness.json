@@ -1,0 +1,19 @@
+{
+  "baseline_sha": "1f1b21786539940560b9f5cb9f7dc5bbc51df2ef",
+  "fixtures": true,
+  "source": "independent immutable candidate archive, controlled models, no calls",
+  "requests": [
+    {
+      "phase": "initial",
+      "request_sha256": "ae9700865897e2ad8bb8bb8b4f9a4666fd28725679e4ac4d7634689ad7602e3d",
+      "wire_sha256": "a70073e838070ef138715e9510d23a88bd7af1fa34eb4f8498de868853d90851",
+      "wire_bytes": 15484
+    },
+    {
+      "phase": "continuation",
+      "request_sha256": "4a8a5dcc5cde3b49ffb89761f0aefe98558c174cc5621d9241f3f786ea234405",
+      "wire_sha256": "f15ec61392ae1792cb2a07938f18e5e50d367c262ba166b0e37828fa7b5178cb",
+      "wire_bytes": 20400
+    }
+  ]
+}

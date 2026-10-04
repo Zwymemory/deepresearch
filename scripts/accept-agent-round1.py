@@ -12,6 +12,7 @@ from uuid import uuid4
 
 from agent_live_common import LIMITS, TERMINAL, file_sha, http_json, read_private, verify_runtime, write_private
 from agent_json_diagnostics import FINISH_REASONS, safe_json_diagnostic
+from agent_schema_diagnostics import safe_schema_diagnostic
 import agent_retest_batch as retest
 from agent_acceptance_v22 import CAPTURE_LIMITS, CAPTURE_VERSION, finalize_audit, validate_saved_audit
 
@@ -166,7 +167,7 @@ def capture_database(ready, credentials, run):
     from psycopg.rows import dict_row
     queries = {
         "run": "SELECT run_id,question,status,stage,budget,usage,error_code,error_message,deadline_at,created_at,updated_at FROM agent_workflow_run WHERE run_id=%s",
-        "operations": "SELECT operation_key,attempt,kind,purpose,status,input_reserved,output_reserved,actual_usage,safe_result,created_at,settled_at FROM agent_research_operation WHERE run_id=%s ORDER BY created_at,operation_key,attempt",
+        "operations": "SELECT operation_key,attempt,kind,purpose,status,CASE WHEN request_hash ~ '^[a-f0-9]{64}$' THEN request_hash ELSE NULL END AS request_hash,input_reserved,output_reserved,actual_usage,safe_result,created_at,settled_at FROM agent_research_operation WHERE run_id=%s ORDER BY created_at,operation_key,attempt",
         "tasks": "SELECT task_id,objective,status,acceptance_criteria,dependencies,plan_version,task_json FROM agent_research_task WHERE run_id=%s ORDER BY task_id",
         "criteria": "SELECT task_id,criterion_id,criterion_index,criterion_text,expected_claim,expected_hash,investigation,last_call_id,dependency_snapshot FROM agent_research_criterion WHERE run_id=%s ORDER BY task_id,criterion_index",
         "checks": "SELECT check_id,task_id,call_id,investigation,dispute_round,parent_check_id,request_sha256,response_sha256,status,request,result FROM agent_evidence_check WHERE run_id=%s ORDER BY created_at,check_id",
@@ -281,6 +282,9 @@ def safe_model_failure(value):
                 safe_paths.append(path)
         if safe_paths:
             safe["validation_issue_codes"] = safe_paths
+    schema = safe_schema_diagnostic(value.get("schema_diagnostic"), MODEL_ISSUE_FIELDS)
+    if schema is not None:
+        safe["schema_diagnostic"] = schema
     identity = safe_identity_failure(value.get("identity"))
     if identity is not None:
         safe["identity"] = identity
@@ -383,6 +387,15 @@ def model_receipts(database):
         }
         if "model_failure" in usage:
             receipt["failure"] = usage["model_failure"]
+            diagnostic = usage["model_failure"].get("schema_diagnostic")
+            request_hash = row.get("request_hash")
+            if diagnostic is not None:
+                bound = type(request_hash) is str and re.fullmatch(r"[a-f0-9]{64}", request_hash)
+                receipt["schema_diagnostic_request_matches"] = bool(
+                    bound and diagnostic["request_sha256"] == request_hash
+                )
+                if bound:
+                    receipt["request_sha256"] = request_hash
         receipts.append(receipt)
     return receipts
 

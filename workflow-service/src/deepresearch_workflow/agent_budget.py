@@ -19,6 +19,7 @@ from .agent_model import MODEL_RULES, AgentModel, AgentModelFailure, OpenAIAgent
 from .agent_protocol import AgentRunBudget, ModelRequest, ModelResult
 from .agent_question_segments import PLANNER_VERSION, replay_declaration
 from .agent_requirements import RequirementError
+from .agent_schema_diagnostics import diagnostic as schema_failure_diagnostic
 from .evidence_check import EvidenceCheckError
 from .graph import (
     ModelCallError,
@@ -484,11 +485,14 @@ class AgentBudgetGateway:
         self.ledger, self.model, self.guard = ledger, model, guard
 
     @staticmethod
-    def classify_model_failure(key, attempt, error, result, schema_name):
+    def classify_model_failure(
+        key, attempt, error, result, schema_name, *, request=None, request_hash=None,
+    ):
         failure_kind, error_class, retryable, status_code, paths = (
             "SCHEMA", "validator_rejected", False, None, [],
         )
         tool_call_count = None
+        schema_diagnostic = None
         stage, domain_code = None, None
         if isinstance(error, ResultValidationError):
             stage, error = error.stage, error.error
@@ -504,9 +508,18 @@ class AgentBudgetGateway:
             if isinstance(error, JsonSchemaValidationError):
                 error_class = "schema_validation"
                 paths = [safe_issue_path(error.absolute_path)]
+                if request is not None and request_hash is not None:
+                    schema_diagnostic = schema_failure_diagnostic(
+                        error, request, request_hash, SAFE_FIELDS,
+                    )
             elif isinstance(error, PydanticValidationError):
                 error_class = "schema_validation"
-                paths = sorted({safe_issue_path(item["loc"]) for item in error.errors()})[:4]
+                paths = sorted({safe_issue_path(item["loc"]) for item in error.errors(
+                    include_input=False, include_context=False, include_url=False)})[:4]
+                if request is not None and request_hash is not None:
+                    schema_diagnostic = schema_failure_diagnostic(
+                        error, request, request_hash, SAFE_FIELDS, pydantic=True,
+                    )
             elif isinstance(error, RequirementError):
                 domain_code = safe_requirement_code(error.code)
                 error_class = "requirement_validation"
@@ -555,6 +568,8 @@ class AgentBudgetGateway:
             metadata["status_code"] = status_code
         if paths:
             metadata["validation_issue_codes"] = paths
+        if schema_diagnostic is not None:
+            metadata["schema_diagnostic"] = schema_diagnostic
         if tool_call_count is not None:
             metadata["tool_call_count"] = tool_call_count
         usage = {"model_failure": metadata}
@@ -669,6 +684,7 @@ class AgentBudgetGateway:
                 except Exception as error:
                     failure, _ = self.classify_model_failure(
                         key, reservation["attempt"], error, result, request.name,
+                        request=request, request_hash=request_hash,
                     )
                     raise failure from None
                 return result
@@ -721,6 +737,7 @@ class AgentBudgetGateway:
             except Exception as error:
                 failure, usage = self.classify_model_failure(
                     key, reservation["attempt"], error, result, request.name,
+                    request=request, request_hash=request_hash,
                 )
                 try:
                     await self.ledger.settle(

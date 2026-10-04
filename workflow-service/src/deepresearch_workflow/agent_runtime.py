@@ -18,6 +18,7 @@ from .agent_completion import (
     recompute_tasks,
 )
 from .agent_context import CONTEXT_VERSION, decision_context
+from .agent_decision_instruction import POLICY_VERSION, obligation_instruction
 from .agent_investigations import (
     InvestigationError,
     accept_check,
@@ -174,6 +175,7 @@ class AutonomousResearchGraph:
             "action_sequence": 0,
             "planner_contract": OBLIGATION_PLANNER,
             "continuation_contract": OBLIGATION_CONTINUATION,
+            "instruction_policy": POLICY_VERSION,
             "observations": [],
             "candidates": [],
             "evidence": [],
@@ -189,6 +191,14 @@ class AutonomousResearchGraph:
         await self.guard(state)
         action_sequence = state.get("action_sequence", state["decision_steps"]) + 1
         planner_version = self.planner_version(state)
+        policy = state.get("instruction_policy")
+        if (
+            planner_version == OBLIGATION_PLANNER
+            and policy is not None and policy != POLICY_VERSION
+        ):
+            raise WorkflowExecutionError(
+                "Agent instruction policy unknown", error_code="AGENT_INSTRUCTION_POLICY_INVALID",
+            )
         summary = await self.ledger.summary(state["run_id"], self.claim_token)
         usage = UsageDelta(
             model_calls=summary["modelCalls"],
@@ -455,6 +465,17 @@ class AutonomousResearchGraph:
                     ]
                 ),
             })
+
+        if planner_version == OBLIGATION_PLANNER:
+            if policy == POLICY_VERSION:
+                request = request.model_copy(update={
+                    "instruction": obligation_instruction(
+                        request.result_schema, continuation=bool(continuation),
+                    ),
+                    "request_binding": {
+                        **request.request_binding, "instruction_policy": POLICY_VERSION,
+                    },
+                })
 
         def validate_planning(value):
             from .agent_budget import ResultValidationError

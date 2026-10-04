@@ -213,6 +213,7 @@ class AgentState(TypedDict, total=False):
     plan_version: int
     decision_steps: int
     planner_contract: str
+    instruction_policy: str
     continuation_contract: str
     action_progress_step: int
     action_sequence: int
