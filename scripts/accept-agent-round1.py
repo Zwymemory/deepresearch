@@ -483,14 +483,19 @@ def batch_prerequisites(ready, source_path, review_path, state):
             or review.get("candidate_binding", {}).get("continuation_contract")
             != "agent-frozen-requirements/1"):
         raise ValueError("Actual frozen requirements implementation approval required")
-    if ready.get("batch_id") in {retest.OBLIGATION_ALIGNMENT_WEB_BATCH, retest.DECISION_CONTRACT_WEB_BATCH, retest.REMAINING_FOUR_BATCH, retest.MIXED_CAPACITY_BATCH}:
+    if ready.get("batch_id") in {retest.OBLIGATION_ALIGNMENT_WEB_BATCH, retest.DECISION_CONTRACT_WEB_BATCH, retest.REMAINING_FOUR_BATCH, retest.MIXED_CAPACITY_BATCH, retest.PLANNER_APPLICABILITY_BATCH}:
         validate_obligation_readiness(ready, review)
-    if ready.get("batch_id") in {retest.DECISION_CONTRACT_WEB_BATCH, retest.REMAINING_FOUR_BATCH, retest.MIXED_CAPACITY_BATCH}:
+    if ready.get("batch_id") in {retest.DECISION_CONTRACT_WEB_BATCH, retest.REMAINING_FOUR_BATCH, retest.MIXED_CAPACITY_BATCH, retest.PLANNER_APPLICABILITY_BATCH}:
         validate_decision_readiness(ready, review)
     if ready.get("batch_id") == retest.MIXED_CAPACITY_BATCH and ready.get(
             "decision_identity", {}).get("instruction_policy") != "agent-obligation-instruction/2":
         raise ValueError("Mixed capacity requires actual fresh policy2")
-    if ready.get("batch_id") in {retest.REMAINING_FOUR_BATCH, retest.MIXED_CAPACITY_BATCH}:
+    if ready.get("batch_id") == retest.PLANNER_APPLICABILITY_BATCH:
+        if ready.get("decision_identity", {}).get("instruction_policy") != "agent-obligation-instruction/3":
+            raise ValueError("Planner applicability requires actual fresh policy3")
+        retest.validate_accepted_mixed(read_private(Path(state) / "run-journal.json"),
+                                       review.get("candidate_binding", {}).get("accepted_mixed"))
+    if ready.get("batch_id") in {retest.REMAINING_FOUR_BATCH, retest.MIXED_CAPACITY_BATCH, retest.PLANNER_APPLICABILITY_BATCH}:
         retest.validate_accepted_web(read_private(Path(state) / "run-journal.json"),
                                      review.get("candidate_binding", {}).get("accepted_web"))
     manifest = Path(ready["scenario_manifest_path"])
@@ -681,7 +686,8 @@ def main():
             raise ValueError("Explicit authority, immutable stop history and B readiness required")
         review = batch_prerequisites(ready, args.sources_ready, args.review_state, args.state_dir)
         retest.authorize(args.state_dir, ready["build_sha"], ready["scenario_manifest_sha256"], args.authority, args.historical_ready, args.batch,
-                         accepted_web=review.get("candidate_binding", {}).get("accepted_web"))
+                         accepted_web=review.get("candidate_binding", {}).get("accepted_web"),
+                         accepted_mixed=review.get("candidate_binding", {}).get("accepted_mixed"))
         publish_batch_manifest(args.state_dir, ready, args.batch)
         print(json.dumps({"batch_id": args.batch, "authorization_registered": True, "new_runs": 0}))
         return
