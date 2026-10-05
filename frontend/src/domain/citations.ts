@@ -22,6 +22,35 @@ export interface NormalizedCitation {
   preview: string;
   /** Why title/excerpt/link could not be shown, or null when complete. */
   missingReason: string | null;
+  /**
+   * Provenance of the metadata itself: "available" = trusted retrieval provenance (never a claim
+   * of factual accuracy); "unavailable" = explicitly not supplied; "unspecified" = the engine's
+   * established shape has no availability field (Dify / autonomous).
+   */
+  metadataStatus: "available" | "unavailable" | "unspecified";
+  unavailableReason: string | null;
+  /** Retrieval completion time when recorded (Dify). Not a publication or applicability date. */
+  retrievedAt: string | null;
+}
+
+const UNAVAILABLE_REASONS: Record<string, string> = {
+  MISSING_SNAPSHOT: "本次运行没有可用的检索快照（旧运行、计算器结果或未匹配的来源），无法显示标题、摘录或网页地址。",
+  AMBIGUOUS_SNAPSHOT: "同一来源在本次运行中记录了不一致的快照；系统没有自动选择其中一个。",
+  SNAPSHOT_LIMIT: "本次运行的检索快照超过上限，来源元数据未投影。",
+};
+
+export function unavailableReasonText(reason: string | null | undefined): string {
+  return (reason && UNAVAILABLE_REASONS[reason]) || "此结果缺少唯一的来源详情，无法确认标题、摘录或网页地址。";
+}
+
+/** How the excerpt was obtained; a search snippet is never presented as an original-page read. */
+export function readModeLabel(kind: SourceKind): string {
+  switch (kind) {
+    case "web-snapshot": return "搜索摘要（非原页阅读）";
+    case "web-original": return "原页引文（受发布证明约束）";
+    case "knowledge": return "知识库检索片段";
+    default: return "未记录";
+  }
 }
 
 export const INDEXED_CONTRACT = "INDEXED_V1";
@@ -73,7 +102,9 @@ export function normalizeCitations(
     const sourceId = String(raw == null ? "" : raw);
     const matches = pool.filter((item) => item && item.sourceId === sourceId);
     // Duplicate metadata for one ID is ambiguous and must not create a link.
-    let source: CitationDetail | null = indexed && matches.length === 1 ? matches[0] : null;
+    const matched: CitationDetail | null = indexed && matches.length === 1 ? matches[0] : null;
+    const explicitlyUnavailable = matched?.metadataStatus === "UNAVAILABLE";
+    let source: CitationDetail | null = explicitlyUnavailable ? null : matched;
     const web = !!source && (source.kind === "WEB_SEARCH_SNAPSHOT" || source.kind === "WEB_ORIGINAL");
     const knowledge = !!source && source.kind === "KNOWLEDGE_CHUNK";
     if (!web && !knowledge) source = null;
@@ -84,7 +115,7 @@ export function normalizeCitations(
     const excerpt = source && typeof source.excerpt === "string" ? source.excerpt : "";
     const displayTitle = title || (url ? url.hostname : knowledge ? "知识库文档（标题未记录）"
       : web ? "网页来源（标题未记录）" : "来源信息不足");
-    const missingReason = !source ? "此结果缺少唯一的来源详情，无法确认标题、摘录或网页地址。"
+    const missingReason = !source ? unavailableReasonText(explicitlyUnavailable ? matched?.unavailableReason : matches.length > 1 ? "AMBIGUOUS_SNAPSHOT" : null)
       : web && !url ? "网页地址未记录或无法安全打开。"
       : !excerpt.trim() ? "此来源未保存摘录。" : null;
     return {
@@ -99,6 +130,9 @@ export function normalizeCitations(
       excerpt,
       preview: excerpt.trim() ? citationPreview(excerpt) : "",
       missingReason,
+      metadataStatus: explicitlyUnavailable || !source ? "unavailable" : matched?.metadataStatus === "AVAILABLE" ? "available" : "unspecified",
+      unavailableReason: explicitlyUnavailable ? matched?.unavailableReason ?? null : null,
+      retrievedAt: source && typeof source.retrievedAt === "string" && !Number.isNaN(Date.parse(source.retrievedAt)) ? source.retrievedAt : null,
     };
   });
 }

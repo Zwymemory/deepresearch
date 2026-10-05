@@ -3,15 +3,18 @@ import type { NormalizedCitation } from "../../domain/citations";
 import { STAGE_LABELS, toolLabel } from "../../domain/eventText";
 import { explainFailure } from "../../domain/failures";
 import type { Block } from "../../domain/markdown";
-import { lastReachedStage, type RunState } from "../../domain/runState";
+import { lastReachedStage, recordedGaps, type RunState } from "../../domain/runState";
 import type { UnfinishedGoal, Usage } from "../../domain/types";
 import { Icon } from "../../ui/Icon";
 import { Markdown, type CiteHandlers } from "./Markdown";
+import { EvidenceRecord } from "../evidence/EvidenceRecord";
+import type { EvidenceViewResult } from "../../domain/evidenceView";
 
 function outcomeOf(run: RunState): { tone: "ok" | "warn" | "neutral" | "error"; icon: "check" | "flag" | "pause" | "alert"; label: string } {
   if (run.status === "SUCCEEDED") return { tone: "ok", icon: "check", label: "研究完成" };
   if (run.status === "INSUFFICIENT_EVIDENCE") return { tone: "warn", icon: "flag", label: run.finalResponse?.report_status === "partial" ? "部分成果 · 仍有待核查事项" : "证据不足" };
   if (run.status === "CANCELLED") return { tone: "neutral", icon: "pause", label: "已取消" };
+  if (run.status === "BUDGET_EXCEEDED" || run.errorCode === "BUDGET_EXCEEDED") return { tone: "warn", icon: "pause", label: "因预算上限终止" };
   return { tone: "error", icon: "alert", label: explainFailure(run.status, run.errorCode).label };
 }
 
@@ -45,7 +48,7 @@ function RunInfo({ run }: { run: RunState }) {
   );
 }
 
-export function ReportView({ run, blocks, citations, modeLabel, active, onCite, onOpenSources, onNew, onFollowUp, onReady, demo, onRetryQuestion, lastEventId }: {
+export function ReportView({ run, blocks, citations, modeLabel, active, onCite, onOpenSources, onNew, onFollowUp, onReady, demo, onRetryQuestion, lastEventId, evidence, onCompareDisagreement, save }: {
   run: RunState; blocks: Block[]; citations: NormalizedCitation[]; modeLabel: string; active: number | null;
   onCite: CiteHandlers["onCite"]; onOpenSources: () => void; onNew: () => void; onFollowUp: (question: string) => void;
   demo: boolean;
@@ -54,6 +57,11 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
   lastEventId?: string;
   /** Called once the report is in the DOM, so scroll/focus restoration has a target. */
   onReady: (ready: boolean) => void;
+  /** Autonomous runs (or demo): the public evidence record. null for modes without a projection. */
+  evidence?: { result: EvidenceViewResult | null; loading: boolean } | null;
+  onCompareDisagreement?: (index: number) => void;
+  /** Save-progress affordance; `available=false` explains the missing backend contract. */
+  save?: { available: boolean; state: "idle" | "saving" | "saved" | "failed"; onSave: () => void; onOpenNotebook: () => void };
 }) {
   useLayoutEffect(() => { onReady(true); return () => onReady(false); }, [onReady]);
   const outcome = outcomeOf(run);
@@ -61,6 +69,8 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
   const [currentSection, setCurrentSection] = useState<string | null>(headings[0]?.id ?? null);
   const [followUp, setFollowUp] = useState("");
   const goals = run.finalResponse?.unfinished_goals ?? [];
+  const stopGaps = goals.length ? [] : recordedGaps(run);
+  const budgetStop = run.status === "BUDGET_EXCEEDED" || run.errorCode === "BUDGET_EXCEEDED";
   const stoppedAt = lastReachedStage(run);
   const kb = citations.filter((c) => c.kind === "knowledge").length;
   const web = citations.filter((c) => c.kind === "web-snapshot" || c.kind === "web-original").length;
@@ -97,9 +107,23 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
           <span className="eyebrow">研究报告{demo ? " · 示例数据" : ""}</span>
           <div className="flex flex-wrap gap-2">
             {citations.length ? <button type="button" className="btn btn-quiet btn-sm" onClick={onOpenSources}><Icon name="book" size={16} />全部来源（{citations.length}）</button> : null}
+            {save ? (
+              <button type="button" className="btn btn-quiet btn-sm" onClick={save.onSave} aria-describedby="save-status"
+                disabled={!save.available || save.state === "saving" || save.state === "saved"}>
+                <Icon name="flag" size={16} />{save.state === "saving" ? "正在保存…" : save.state === "saved" ? "已保存" : "保存研究进度"}
+              </button>
+            ) : null}
             <button type="button" className="btn btn-quiet btn-sm" onClick={onNew}><Icon name="spark" size={16} />新研究</button>
           </div>
         </div>
+        {save ? (
+          <p id="save-status" className="note" role="status" style={{ marginTop: -14, marginBottom: 18 }}>
+            {!save.available ? <>保存研究进度暂不可用：后端接口尚未交付。<button type="button" className="link-btn" onClick={save.onOpenNotebook}>了解原因</button></>
+              : save.state === "saved" ? <>已保存到研究笔记（示例数据，服务端未参与）。<button type="button" className="link-btn" onClick={save.onOpenNotebook}>查看</button></>
+              : save.state === "failed" ? <span style={{ color: "var(--error-ink)" }}>保存失败（示例）：没有任何内容被保存。可以重试。</span>
+              : save.state === "saving" ? "正在保存，等待确认…" : null}
+          </p>
+        ) : null}
 
         <h1 id="report-question" className="report-q" tabIndex={-1}>{run.question}</h1>
         <div className="outcome">
@@ -113,6 +137,12 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
           <p className="limits"><strong>限制：</strong>只发布有证据支持的部分；{goals.length} 项目标仍未完成，见文末“尚未解决的问题”。</p>
         ) : run.status === "CANCELLED" ? (
           <p className="limits"><strong>已取消：</strong>研究在“{STAGE_LABELS[stoppedAt ?? ""] ?? "早期"}”阶段被取消，没有可发布的答案。已记录的过程仍可查看。</p>
+        ) : budgetStop ? (
+          <div className="limits" role="status">
+            <p><strong>因预算上限终止</strong>（结果码 <code>BUDGET_EXCEEDED</code>）：运行触达了模型、工具、Token 或成本上限{stoppedAt ? `，停在“${STAGE_LABELS[stoppedAt]}”阶段` : ""}。这是执行限制，不是证据结论。</p>
+            <p className="note" style={{ marginTop: 6 }}>可以缩小问题范围后重新研究。</p>
+            <button type="button" className="btn btn-quiet btn-sm" style={{ marginTop: 10 }} onClick={onRetryQuestion}>用同一问题重新研究</button>
+          </div>
         ) : failed ? (
           <div className="limits" role="status">
             <p><strong>{failure.label}</strong>（结果码 <code>{failure.code}</code>）：{failure.description}{stoppedAt ? ` 运行停在“${STAGE_LABELS[stoppedAt]}”阶段。` : ""}</p>
@@ -132,7 +162,15 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
         ) : null}
 
         {blocks.length ? <><hr className="report-rule" /><Markdown blocks={blocks} ctx={ctx} /></>
-          : run.status === "INSUFFICIENT_EVIDENCE" && !goals.length ? <p className="note" style={{ marginTop: 22 }}>没有找到足够可信的证据，系统不会自行补全答案。</p> : null}
+          : run.status === "INSUFFICIENT_EVIDENCE" && !goals.length ? <p className="note" style={{ marginTop: 22 }}>没有找到足够可信的证据，系统不会自行补全答案。</p>
+          : run.status !== "SUCCEEDED" && run.status !== "INSUFFICIENT_EVIDENCE" ? <p className="note" style={{ marginTop: 22 }}>该运行没有公开任何部分结果；页面不会根据过程事件重建中途内容。已记录的过程可在“技术详情”与运行信息中查看。</p> : null}
+
+        {stopGaps.length ? (
+          <section className="unresolved" aria-labelledby="gaps-title">
+            <h2 id="gaps-title"><Icon name="flag" />停止时记录的待查事项</h2>
+            <ol>{stopGaps.map((gap, i) => <li key={i}>{gap}</li>)}</ol>
+          </section>
+        ) : null}
 
         {goals.length ? (
           <section className="unresolved" aria-labelledby="unresolved-title">
@@ -144,6 +182,8 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
             </ol>
           </section>
         ) : null}
+
+        {evidence ? <EvidenceRecord result={evidence.result} loading={evidence.loading} demo={demo} onCompare={(i) => onCompareDisagreement?.(i)} /> : null}
 
         <RunInfo run={run} />
         {!demo && run.runId ? (

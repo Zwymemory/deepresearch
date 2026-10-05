@@ -23,13 +23,22 @@ export interface RunEvent {
   createdAt?: string | null;
 }
 
-/** One entry of finalResponse.citationDetails (matched only by exact sourceId). */
+/**
+ * One entry of finalResponse.citationDetails (matched only by exact sourceId).
+ * See docs/agent/FRONTEND_SOURCE_CONTRACT_2026-10-03.md (backend): LangGraph and native
+ * Single Agent items carry metadataStatus/unavailableReason; Dify and autonomous items
+ * keep their established shape without those fields (absence is not "AVAILABLE").
+ */
 export interface CitationDetail {
   sourceId: string;
-  kind: "WEB_SEARCH_SNAPSHOT" | "WEB_ORIGINAL" | "KNOWLEDGE_CHUNK" | (string & {});
+  kind: "WEB_SEARCH_SNAPSHOT" | "WEB_ORIGINAL" | "KNOWLEDGE_CHUNK" | "UNKNOWN" | (string & {});
   title?: string | null;
   url?: string | null;
   excerpt?: string | null;
+  metadataStatus?: "AVAILABLE" | "UNAVAILABLE" | (string & {}) | null;
+  unavailableReason?: "MISSING_SNAPSHOT" | "AMBIGUOUS_SNAPSHOT" | "SNAPSHOT_LIMIT" | (string & {}) | null;
+  /** Dify web snapshots only: retrieval completion time — not a publication date. */
+  retrievedAt?: string | null;
 }
 
 /** Items in finalResponse.unfinished_goals (shape read from EvidenceService). */

@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { kindLabel, type NormalizedCitation } from "../../domain/citations";
+import { kindLabel, readModeLabel, type NormalizedCitation } from "../../domain/citations";
 import { Icon } from "../../ui/Icon";
 
 function useNarrow(query = "(max-width: 760px)") {
@@ -16,8 +16,10 @@ function useNarrow(query = "(max-width: 760px)") {
 
 const chipFor = (c: NormalizedCitation) => c.kind === "knowledge" ? "chip-kb" : c.kind === "unknown" ? "chip-warn" : "chip-web";
 
-export function Inspector({ citation, all, statements, onClose, onNavigate, onCompare, demo }: {
+export function Inspector({ citation, all, statements, onClose, onNavigate, onCompare, demo, anchorTop = null }: {
   citation: NormalizedCitation; all: NormalizedCitation[]; statements: string[]; demo: boolean;
+  /** Viewport y of the triggering citation; the panel grows from that height. */
+  anchorTop?: number | null;
   onClose: () => void; onNavigate: (number: number) => void; onCompare: (other: number) => void;
 }) {
   const narrow = useNarrow();
@@ -50,13 +52,19 @@ export function Inspector({ citation, all, statements, onClose, onNavigate, onCo
   const web = citation.kind === "web-snapshot" || citation.kind === "web-original";
   const others = all.filter((c) => c.number !== citation.number);
   const offset = reduce ? 0 : narrow ? 40 : 24;
+  // Desktop: originate at the citation's height on the panel's inner edge (report text never moves).
+  const panelTop = 76; // topbar + gap, matches .inspector top
+  const originY = anchorTop == null ? 120 : Math.max(24, Math.min(window.innerHeight - 140, anchorTop - panelTop));
+  const enterFrom = reduce ? { opacity: 0 } : narrow ? { opacity: 0, y: offset } : { opacity: 0, x: offset, scale: 0.97 };
 
   return (
     <>
       {narrow ? <div className="scrim" onClick={onClose} aria-hidden="true" /> : null}
       <motion.aside ref={panel} id="inspector" className="inspector" role="dialog" aria-modal={narrow} aria-labelledby="inspector-title"
-        initial={{ opacity: 0, x: narrow ? 0 : offset, y: narrow ? offset : 0 }} animate={{ opacity: 1, x: 0, y: 0 }}
-        exit={{ opacity: 0, x: narrow ? 0 : offset, y: narrow ? offset : 0 }} transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}>
+        style={narrow ? undefined : { transformOrigin: `0px ${originY}px` }}
+        initial={enterFrom} animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+        exit={reduce ? { opacity: 0 } : narrow ? { opacity: 0, y: offset } : { opacity: 0, x: offset * 0.6, scale: 0.98 }}
+        transition={{ duration: 0.26, ease: [0.2, 0.8, 0.2, 1] }}>
         <div className="inspector-head">
           <div style={{ minWidth: 0 }}>
             <div className="flex flex-wrap items-center gap-2">
@@ -94,12 +102,18 @@ export function Inspector({ citation, all, statements, onClose, onNavigate, onCo
             <dl className="facts">
               <dt>引用映射</dt>
               <dd>{citation.indexed ? "INDEXED_V1：编号与来源 ID 一一对应（结构检查，不代表语句被证明为真）" : "未建立可验证映射"}</dd>
-              <dt>语句支持检查</dt><dd>当前接口未公开逐条结果</dd>
-              <dt>发布日期</dt><dd>未记录</dd>
-              <dt>更新日期</dt><dd>未记录</dd>
-              <dt>检索时间</dt><dd>未记录</dd>
-              <dt>适用时间</dt><dd>未记录</dd>
+              <dt>读取方式</dt><dd>{readModeLabel(citation.kind)}</dd>
+              <dt>来源元数据</dt>
+              <dd>{citation.metadataStatus === "available" ? "来自可信的检索记录（只说明出处，不代表内容正确）"
+                : citation.metadataStatus === "unavailable" ? "不可用" + (citation.unavailableReason ? `（${citation.unavailableReason}）` : "")
+                : "按该执行引擎的既有格式提供，未标注可用性"}</dd>
+              <dt>语句支持检查</dt><dd>报告引用未公开逐条结果{demo ? "" : "；自主研究运行可在报告末尾的“证据记录”中查看论断检查"}</dd>
+              <dt>发布日期</dt><dd>未知</dd>
+              <dt>更新日期</dt><dd>未知</dd>
+              <dt>检索时间</dt><dd>{citation.retrievedAt ? <time dateTime={citation.retrievedAt}>{new Date(citation.retrievedAt).toLocaleString()}</time> : "未记录"}</dd>
+              <dt>适用时间</dt><dd>未知</dd>
             </dl>
+            {citation.retrievedAt ? <p className="note" style={{ marginTop: 6 }}>检索时间是取得该快照的时间，不是发布日期或结论的适用时间。</p> : null}
           </section>
 
           {picking ? (

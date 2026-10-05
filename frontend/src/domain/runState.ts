@@ -144,3 +144,35 @@ export function mapLegacy(question: string, data: LegacyResponse): RunState {
       selectedMemoryCount: diagnostics.selectedMemoryCount, modelUseVerification: diagnostics.modelUseVerification ?? "unknown" } : null,
   };
 }
+
+export interface PlanTask { objective: string; status: string; evidenceCount: number | null; criteria: Array<{ text: string; status: string }> }
+export interface RecordedPlan { version: number | null; reason: string; tasks: PlanTask[]; revised: boolean }
+
+/** Latest plan recorded by an autonomous run (AGENT_PLAN_UPDATED / AGENT_PLAN_REVISED), as published. */
+export function latestPlan(run: RunState): RecordedPlan | null {
+  for (let i = run.events.length - 1; i >= 0; i -= 1) {
+    const event = run.events[i];
+    if (event.type !== "AGENT_PLAN_UPDATED" && event.type !== "AGENT_PLAN_REVISED") continue;
+    const p = (event.payload ?? {}) as Record<string, unknown>;
+    const tasks = Array.isArray(p.tasks) ? p.tasks : [];
+    return {
+      version: typeof p.planVersion === "number" ? p.planVersion : null,
+      reason: typeof p.reason === "string" ? p.reason : "",
+      revised: event.type === "AGENT_PLAN_REVISED",
+      tasks: tasks.filter((t): t is Record<string, unknown> => !!t && typeof t === "object").map((t) => ({
+        objective: String(t.objective ?? "未命名任务"),
+        status: String(t.status ?? "pending"),
+        evidenceCount: typeof t.evidenceCount === "number" ? t.evidenceCount : null,
+        criteria: Array.isArray(t.criteria) ? t.criteria.filter((c): c is Record<string, unknown> => !!c && typeof c === "object")
+          .map((c) => ({ text: String(c.text ?? ""), status: String(c.status ?? "uncovered") })) : [],
+      })),
+    };
+  }
+  return null;
+}
+
+/** Gaps recorded when an autonomous run stopped early (AGENT_STOPPED_WITH_GAPS). */
+export function recordedGaps(run: RunState): string[] {
+  return run.events.filter((e) => e.type === "AGENT_STOPPED_WITH_GAPS")
+    .flatMap((e) => Array.isArray(e.payload?.gaps) ? (e.payload!.gaps as unknown[]).map(String) : []);
+}

@@ -37,6 +37,16 @@ export function describeEvent(event: RunEvent): { title: string; detail: string 
     case "REVIEW_COMPLETED": return { title: "证据审阅完成", detail: p.sufficient === true ? "审阅结论：证据充分。" : `审阅结论：仍需补充；定向补充任务 ${p.revisionTaskCount ?? 0} 项。` };
     case "REVISION_STARTED": return { title: "开始定向补充", detail: `第 ${p.round ?? 1} 轮，共 ${p.taskCount ?? 0} 个任务。` };
     case "SYNTHESIS_COMPLETED": return { title: "答案已合成", detail: `引用 ${p.citationCount ?? 0} 条；发布前仍需服务端校验。` };
+    case "AGENT_ACTION_SELECTED": return { title: `决定下一步：${toolLabel(p.action)}`, detail: typeof p.reason === "string" ? p.reason : "根据最新观察选择动作。" };
+    case "AGENT_OBSERVATION": return { title: `观察到 ${toolLabel(p.action)} 的结果`, detail: p.errorCode ? `结果码：${String(p.errorCode)}。` : p.newEvidence ? "取得新证据。" : "没有新增证据。" };
+    case "AGENT_PLAN_UPDATED":
+    case "AGENT_PLAN_REVISED": return { title: event.type === "AGENT_PLAN_REVISED" ? "研究计划已修订" : "研究计划已更新",
+      detail: `${typeof p.reason === "string" ? p.reason : "记录了当前任务与证据。"}${p.planVersion != null ? `（版本 ${String(p.planVersion)}）` : ""}` };
+    case "AGENT_STOPPED_WITH_GAPS": return { title: "停止并保留待查事项", detail: Array.isArray(p.gaps) && p.gaps.length ? p.gaps.map(String).join("；") : "证据尚未充分。" };
+    case "AGENT_PUBLICATION_VALIDATED": return { title: "发布内容已由服务端核查", detail: `${p.reportStatus === "complete" ? "全部目标完成" : "仍有未完成目标或争议"}，引用 ${p.citationCount ?? 0} 条。` };
+    case "MODEL_RETRY_SCHEDULED": return { title: "模型调用准备重试", detail: `第 ${p.attempts ?? 1} 次调用未得到可靠结果，已记入预算，进行有限重试。` };
+    case "RUN_RESUMED": return { title: "已从检查点恢复", detail: "工作流从持久化检查点继续执行。" };
+    case "BUDGET_EXCEEDED": return { title: "运行预算已用尽", detail: "已触达模型、工具、Token 或成本上限。" };
     case "SUCCEEDED": return { title: "研究完成", detail: "答案、引用与用量已持久化。" };
     case "INSUFFICIENT_EVIDENCE": return { title: "可信证据不足", detail: "只发布有证据支持的部分，其余保留为待核查事项。" };
     case "FAILED": return { title: "研究失败", detail: p.errorCode ? `结果码：${String(p.errorCode)}。` : "失败信息已按安全规则记录。" };

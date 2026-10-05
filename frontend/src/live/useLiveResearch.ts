@@ -11,7 +11,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { startEventStream } from "../api/eventStream";
 import {
-  cancelRun, createRun, getRun, issueDevToken, ping, runLegacy, webSearchConfigured,
+  cancelRun, createRun, getEvidenceView, getRun, issueDevToken, ping, runLegacy, webSearchConfigured,
   type ApiContext, type PingResult,
 } from "../api/endpoints";
 import { apiOrigin, friendlyError, isUnknownCreateOutcome, validatedBase, type ApiError } from "../api/http";
@@ -22,6 +22,7 @@ import {
 import { canSafelyRetry, loadPending, newPending, savePending, type CreateBody, type PendingCreate } from "../api/pending";
 import { applyEvent, applyView, emptyRun, isTerminal, mapLegacy, type RunState } from "../domain/runState";
 import type { ExecutionMode, ToolName } from "../domain/types";
+import type { EvidenceViewResult } from "../domain/evidenceView";
 
 export type Connection = { state: "checking" } | { state: "online"; kind: PingResult["kind"] } | { state: "offline" };
 export type StreamStatus =
@@ -147,6 +148,18 @@ export function useLiveResearch(enabled: boolean, notify: Notify) {
   useEffect(() => {
     if (enabled && needsFinalSnapshot) void queryClient.refetchQueries({ queryKey: runKey, exact: true });
   }, [enabled, needsFinalSnapshot, queryClient, runKey]);
+
+  // ---- evidence read API: autonomous runs only, partitioned by identity like the run itself ----
+  const evidenceQuery = useQuery({
+    queryKey: ["evidence", scope, current?.runId ?? ""],
+    enabled: enabled && current?.mode === "agent" && !!identity.token && terminal,
+    retry: false, staleTime: Infinity, refetchOnWindowFocus: false,
+    queryFn: ({ signal }) => getEvidenceView(ctx, current!.runId, signal),
+  });
+  const evidence: { result: EvidenceViewResult | null; loading: boolean } | null = current?.mode === "agent" ? {
+    result: evidenceQuery.data ?? (evidenceQuery.error ? { state: "error", message: "无法读取证据记录：" + friendlyError(evidenceQuery.error, "status") } : null),
+    loading: evidenceQuery.isFetching,
+  } : null;
 
   // ---- identity ----
   const applyIdentity = useCallback((next: Identity): string | null => {
@@ -288,7 +301,7 @@ export function useLiveResearch(enabled: boolean, notify: Notify) {
     identity, origin, connection, webConfigured, applyIdentity, devToken,
     run, runError, loading: query.isFetching && !query.data, current, terminal,
     pending, unknownOutcome, submitting, blocking, start, safeRetry, discardPending,
-    stream, reconnects, cancel, cancelling, disconnectDrill, reconnectNow,
+    stream, reconnects, cancel, cancelling, disconnectDrill, reconnectNow, evidence,
     openRun, closeRun, recent,
   };
 }

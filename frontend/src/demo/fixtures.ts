@@ -1,6 +1,7 @@
 // Deterministic, synthetic demonstration data. Nothing here came from a model,
 // a retrieval provider or a real run. Shapes follow the existing public contracts
 // (WorkflowDtos.View / Event, finalResponse), except where marked FUTURE CONTRACT.
+import type { EvidenceView } from "../domain/evidenceView";
 import type { CitationDetail, FinalResponse, RunEvent, ToolName, Usage } from "../domain/types";
 
 export const DEMO_QUESTION = "本项目如何通过 checkpoint、claim fencing 与 SSE 重放实现崩溃恢复？混合检索在其中起什么作用？";
@@ -107,15 +108,40 @@ export const RUN_SCRIPT: Array<[number, RunEvent]> = [
 ];
 
 /**
- * FUTURE CONTRACT — the backend has no public projection for recorded
- * disagreements today. This sample only demonstrates the proposed layout and is
- * labelled as such wherever it is shown.
+ * Synthetic evidence-view/1 response (shape of GET /api/research/workflows/{runId}/evidence)
+ * with one recorded disagreement. Demo only; labelled wherever it is shown.
  */
-export const FUTURE_RECORDED_DISAGREEMENT = {
-  statement: "断线后，浏览器会从最后收到的事件之后继续接收。",
-  sourceA: SOURCES[2].sourceId,
-  sourceB: SOURCES[1].sourceId,
-  relation: "适用条件不同",
-  summary: "示例裁决摘要：两段材料描述的是不同层面——一段说明浏览器的重连请求，另一段说明服务端拒绝旧实例写入。它们并不互相否定；是否“从下一条继续”取决于服务端是否保存了对应游标。",
-  references: ["示例检查记录 check-demo-07"],
+const id = (recordType: string, recordId: string) => ({ recordType, recordId, version: 1, payloadSha256: "0".repeat(64), recordedAt: "2026-10-02T09:00:06Z" });
+const unknownDate = { status: "unknown", value: null } as const;
+export const DEMO_EVIDENCE_VIEW: EvidenceView = {
+  schemaVersion: "evidence-view/1", runId: "demo-run-0001", runStatus: "SUCCEEDED", availability: "AVAILABLE", publicationState: "RECORDED_ONLY",
+  limits: { records: 256, checks: 128, sourceReads: 128, blockedAttempts: 128, responseBytes: 262144, completeProjection: true },
+  limitations: ["RECORDED_OBSERVATIONS_ONLY", "EMPTY_DOES_NOT_PROVE_NO_CONFLICT", "MODEL_RELATIONS_ARE_NOT_TRUTH_GUARANTEES",
+    "PUBLICATION_REQUIRES_EXISTING_SEAL_AND_FINALIZATION", "NO_SOURCE_REFRESH", "NO_RAW_SNAPSHOTS_OR_MODEL_RATIONALES"],
+  evidence: [
+    { identity: id("Evidence", "ev-sse"), sourceId: "src-sse", kind: "web", title: "【示例】SSE 重连说明（合成网页）", url: "https://example.com/deepresearch-demo/sse",
+      publishedAt: unknownDate, observedAt: "2026-10-02T09:00:04Z", snapshotSha256: "1".repeat(64),
+      applicability: { version: unknownDate, validAt: unknownDate, conditions: ["浏览器侧重连请求"] } },
+    { identity: id("Evidence", "ev-fencing"), sourceId: "src-fencing", kind: "knowledge", title: "【示例】claim-lease-and-fencing.md", url: null,
+      publishedAt: unknownDate, observedAt: "2026-10-02T09:00:05Z", snapshotSha256: "2".repeat(64),
+      applicability: { version: unknownDate, validAt: unknownDate, conditions: ["服务端拒绝旧实例写入"] } },
+  ],
+  claims: [
+    { identity: id("Claim", "claim-resume"), text: "断线后，浏览器会从最后收到的事件之后继续接收。", kind: "fact", applicability: null,
+      decisionStatus: "contested", checkId: "check-1", latestRecordedRound: true, publicationState: "RECORDED_ONLY", evidenceLinks: [
+        { evidenceId: "ev-sse", evidenceVersion: 1, relation: "supports", disposition: "unresolved",
+          quote: { start: 0, end: 32, sha256: "3".repeat(64), text: "合成摘录：重连时携带最后收到的事件 ID，服务端从下一条继续发送。", textAvailability: "AVAILABLE" } },
+        { evidenceId: "ev-fencing", evidenceVersion: 1, relation: "refutes", disposition: "unresolved",
+          quote: { start: 0, end: 30, sha256: "4".repeat(64), text: "合成摘录：只有服务端保存了对应游标时，才能从下一条继续；否则需要快照重建。", textAvailability: "AVAILABLE" } }] },
+    { identity: id("Claim", "claim-fencing"), text: "fencing token 阻止过期实例覆盖新结果。", kind: "fact", applicability: null,
+      decisionStatus: "supported", checkId: "check-1", latestRecordedRound: true, publicationState: "RECORDED_ONLY", evidenceLinks: [
+        { evidenceId: "ev-fencing", evidenceVersion: 1, relation: "supports", disposition: "adopted", quote: null }] },
+  ],
+  decisions: [
+    { identity: id("DecisionRecord", "decision-resume"), claimId: "claim-resume", decisionStatus: "contested", policyVersion: "demo",
+      adoptedEvidenceIds: [], unresolvedEvidenceIds: ["ev-sse", "ev-fencing"], dismissedEvidence: [], gapCodes: [] },
+  ],
+  checks: [],
+  disagreements: [{ claimId: "claim-resume", decisionId: "decision-resume", checkId: "check-1", supportingEvidenceIds: ["ev-sse"], refutingEvidenceIds: ["ev-fencing"] }],
+  blockedAttempts: [],
 };

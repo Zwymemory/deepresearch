@@ -1,9 +1,12 @@
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useAnimate, useReducedMotion } from "motion/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { describeEvent, roleLabel, STEP_LABELS, toolLabel } from "../../domain/eventText";
-import { recordedEvidenceCount, STAGES, type RunState } from "../../domain/runState";
+import { latestPlan, recordedEvidenceCount, STAGES, type RunState } from "../../domain/runState";
 import type { StreamStatus } from "../../live/useLiveResearch";
 import { Icon } from "../../ui/Icon";
+
+const TASK_STATUS: Record<string, string> = { pending: "待执行", running: "执行中", done: "已完成", blocked: "待解决", cancelled: "已取消" };
+const CRITERION_STATUS: Record<string, string> = { resolved: "已核查", uncovered: "尚未核查", blocked: "待解决", stale: "前提已变化，需复核" };
 
 function formatElapsed(ms: number | null) {
   if (ms == null || ms < 0) return "—";
@@ -12,13 +15,32 @@ function formatElapsed(ms: number | null) {
 }
 
 export function RunningView({ run, startedAt, modeLabel, completed, demo, onCancel, onViewReport, onInspectingChange,
-  canCancel = true, cancelling = false, stream, reconnects = 0, onDisconnectDrill, onReconnectNow }: {
+  canCancel = true, cancelling = false, stream, reconnects = 0, onDisconnectDrill, onReconnectNow, origin }: {
   run: RunState; startedAt: number | null; modeLabel: string; completed: boolean; demo: boolean;
   onCancel: () => void; onViewReport: () => void; onInspectingChange: (inspecting: boolean) => void;
   canCancel?: boolean; cancelling?: boolean; stream?: StreamStatus; reconnects?: number;
   onDisconnectDrill?: () => void; onReconnectNow?: () => void;
+  /** Viewport rect of the composer question at submit time, for stage continuity. */
+  origin?: { left: number; top: number } | null;
 }) {
   const synchronous = run.mode === "legacy";
+  const autonomous = run.mode === "agent";
+  const recordedPlan = autonomous ? latestPlan(run) : null;
+  const reduce = useReducedMotion();
+  const [questionRef, animateQuestion] = useAnimate<HTMLParagraphElement>();
+  // Stage continuity: the question carries over from where it sat in the composer (transform/opacity only).
+  useLayoutEffect(() => {
+    const el = questionRef.current;
+    if (!origin || reduce || !el) return;
+    const rect = el.getBoundingClientRect();
+    const controls = animateQuestion(el, { x: [origin.left - rect.left, 0], y: [origin.top - rect.top, 0], opacity: [0.35, 1] },
+      { duration: 0.42, ease: [0.2, 0.8, 0.2, 1] });
+    return () => controls.stop();
+    // Runs once on mount: the origin belongs to the submit that created this view.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // Items already present when the record opens are shown statically; only later arrivals animate.
+  const seenOnOpen = useRef<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [expanded, setExpanded] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
@@ -62,7 +84,7 @@ export function RunningView({ run, startedAt, modeLabel, completed, demo, onCanc
     <section className="run-wrap" aria-labelledby="run-question">
       <div className="question-summary">
         <span className="eyebrow">正在研究{demo ? " · 示例数据" : ""}</span>
-        <p id="run-question" className="q" data-clamped={!expanded}>{run.question}</p>
+        <p id="run-question" ref={questionRef} className="q" data-clamped={!expanded}>{run.question}</p>
         <div className="meta-row">
           <span>{modeLabel}</span>
           {run.tools.map((tool) => (
@@ -93,10 +115,13 @@ export function RunningView({ run, startedAt, modeLabel, completed, demo, onCanc
         <div className="activity-top">
           <div className="now" aria-live="polite">
             {completed ? null : <span className="pulse" aria-hidden="true" />}
-            <div style={{ minWidth: 0 }}>
-              <div className="now-label">{current.title}</div>
-              <div className="now-sub">{current.detail}</div>
-            </div>
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.div key={latest?.id ?? latest?.type ?? "none"} style={{ minWidth: 0 }}
+                initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.18 }}>
+                <div className="now-label">{current.title}</div>
+                <div className="now-sub">{current.detail}</div>
+              </motion.div>
+            </AnimatePresence>
           </div>
           <div className="flex items-center gap-3">
             <span className="elapsed" title={startedAt != null ? "自提交起的本地计时" : completed ? "首条与最后一条记录事件之间的时长" : "自首条记录事件起的时长（按本机时钟）"}>
@@ -107,7 +132,9 @@ export function RunningView({ run, startedAt, modeLabel, completed, demo, onCanc
               : <span className="note" title="Single Agent 基线没有服务端取消接口">不支持取消</span>}
           </div>
         </div>
-        {synchronous ? (
+        {autonomous ? (
+          <p className="note">自主研究不按固定阶段推进；下面显示它记录的计划与当前动作。</p>
+        ) : synchronous ? (
           <p className="note">Single Agent 基线在一次同步请求中完成，没有可展示的阶段或持久事件；结果返回后直接进入报告。</p>
         ) : <>
         <ol className="stepper" aria-label="研究阶段">
@@ -132,6 +159,28 @@ export function RunningView({ run, startedAt, modeLabel, completed, demo, onCanc
         </>}
       </div>
 
+      {recordedPlan ? (
+        <section className="plan" aria-labelledby="plan-title">
+          <h2 id="plan-title">{recordedPlan.revised ? "修订后的研究计划" : "研究计划"}{recordedPlan.version != null ? <span className="note">　版本 {recordedPlan.version}</span> : null}</h2>
+          {recordedPlan.reason ? <p className="note">{recordedPlan.reason}</p> : null}
+          <AnimatePresence initial={false} mode="popLayout">
+            <motion.ol key={recordedPlan.version ?? "plan"} className="plan-tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
+              {recordedPlan.tasks.map((task, i) => (
+                <li key={i} className="plan-task">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="chip" data-task={task.status}>{TASK_STATUS[task.status] ?? task.status}</span>
+                    <strong style={{ overflowWrap: "anywhere" }}>{task.objective}</strong>
+                    {task.evidenceCount != null ? <span className="note">已记录证据 {task.evidenceCount} 条</span> : null}
+                  </div>
+                  {task.criteria.length ? <ul className="plan-criteria">{task.criteria.map((c, j) => (
+                    <li key={j}><span className="note">{CRITERION_STATUS[c.status] ?? c.status}</span>　{c.text}</li>))}</ul> : null}
+                </li>
+              ))}
+            </motion.ol>
+          </AnimatePresence>
+        </section>
+      ) : autonomous ? <p className="note">还没有记录研究计划。</p> : null}
+
       <div className="awaiting">
         <strong>报告将在核验完成后出现。</strong>
         <span className="note" style={{ display: "block", marginTop: 4 }}>当前接口不提供逐步生成的答案或中途证据详情，因此这里不显示临时正文；来源会随最终结果一起公开。</span>
@@ -152,13 +201,16 @@ export function RunningView({ run, startedAt, modeLabel, completed, demo, onCanc
               transition={{ duration: 0.24, ease: [0.2, 0.8, 0.2, 1] }} style={{ overflow: "hidden" }}>
               <ol id="timeline" ref={list} className="timeline" aria-label="过程记录" style={{ marginTop: 12 }}
                 onScroll={(e) => { const n = e.currentTarget; setAtLiveEdge(n.scrollHeight - n.scrollTop - n.clientHeight < 24); }}>
-                {run.events.map((event) => {
+                {run.events.map((event, index) => {
                   const text = describeEvent(event);
+                  if (seenOnOpen.current == null) seenOnOpen.current = run.events.length;
+                  const fresh = index >= seenOnOpen.current;
                   return (
-                    <li key={event.id ?? `${event.type}-${event.eventId}`} className="tl-item">
+                    <motion.li key={event.id ?? `${event.type}-${event.eventId}`} className={"tl-item" + (fresh ? " fresh" : "")}
+                      initial={fresh ? { opacity: 0, y: 6 } : false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
                       <time dateTime={event.createdAt ?? undefined}>{event.createdAt ? new Date(event.createdAt).toLocaleTimeString([], { hour12: false }) : "—"}</time>
                       <div><strong>{text.title}</strong> <span className="who">· {roleLabel(event.role)}</span><div className="note">{text.detail}</div></div>
-                    </li>
+                    </motion.li>
                   );
                 })}
               </ol>

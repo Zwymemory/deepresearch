@@ -8,7 +8,7 @@
     python3 scripts/frontend-preview/mock_server.py --port 8091
 
 场景通过页面地址的 ?scenario= 选择（API 请求的同源 Referer 会携带它）：
-    success（默认）| insufficient | failed | slow | disconnect | unknown | noweb | langgraph
+    success（默认）| insufficient | failed | budget | slow | disconnect | unknown | noweb | langgraph | evidence-disabled
 
 运行归属于创建它的 Bearer Token：换一个 Token 读取或取消会得到 404，用于验证前端的身份隔离。
 
@@ -149,6 +149,9 @@ def workflow_timeline(scenario: str, tools: list[str]):
     at += 0.6
     t.append(ev(at, "SYSTEM", "STAGE_CHANGED", {"stage": "SYNTHESIZING"}, "SYNTHESIZING", "SYNTHESIZING", 78))
     at += 1.4
+    if scenario == "budget":
+        t.append(ev(at, "SYSTEM", "BUDGET_EXCEEDED", {"errorCode": "BUDGET_EXCEEDED"}, "BUDGET_EXCEEDED", "TERMINAL", 100))
+        return t
     if scenario == "failed":
         t.append(ev(at, "SYNTHESIZER", "MODEL_RETRY_SCHEDULED", {"attempts": 1, "reasonCode": "MODEL_SCHEMA_INVALID"}, None, None, 82))
         at += 1.6
@@ -233,9 +236,18 @@ class Run:
                      "citationDetails": list(reversed(details)), "citationContract": "INDEXED_V1",
                      "report_status": "complete"}
             if self.scenario == "langgraph":
-                # 默认 LangGraph 路径的 finalResponse 不含 citationDetails（见 WorkflowService.finalize）。
+                # LangGraph 来源契约（FRONTEND_SOURCE_CONTRACT_2026-10-03）：逐项 metadataStatus；
+                # 最后一项模拟旧回执缺快照（MISSING_SNAPSHOT）。
+                def contract_item(d, available=True):
+                    if not available:
+                        return {"sourceId": d["sourceId"], "kind": "UNKNOWN", "title": None, "url": None, "excerpt": None,
+                                "metadataStatus": "UNAVAILABLE", "unavailableReason": "MISSING_SNAPSHOT"}
+                    kind = "KNOWLEDGE_CHUNK" if d["kind"] == "KNOWLEDGE_CHUNK" else "WEB_SEARCH_SNAPSHOT"
+                    return {"sourceId": d["sourceId"], "kind": kind, "title": d["title"], "url": d.get("url") if kind != "KNOWLEDGE_CHUNK" else None,
+                            "excerpt": d["excerpt"], "metadataStatus": "AVAILABLE", "unavailableReason": None}
                 final = {"answer": SUCCESS_ANSWER, "citations": [d["sourceId"] for d in details],
-                         "citationContract": "INDEXED_V1", "insufficientEvidence": False}
+                         "citationContract": "INDEXED_V1", "insufficientEvidence": False,
+                         "citationDetails": [contract_item(d, i < len(details) - 1) for i, d in enumerate(details)]}
         elif status == "INSUFFICIENT_EVIDENCE":
             final = {"answer": PARTIAL_ANSWER, "citations": [KB_DOC_2["sourceId"]], "citationDetails": [KB_DOC_2],
                      "citationContract": "INDEXED_V1", "report_status": "partial",
@@ -244,7 +256,9 @@ class Run:
                          {"task_id": "task-3", "text": "确认多次断线后的重连上限", "reason": "相关检查没有完成的评估记录"}]}
         elif status == "FAILED":
             error = "MODEL_PROVIDER_FAILED"
-        terminal = status in {"SUCCEEDED", "INSUFFICIENT_EVIDENCE", "FAILED", "CANCELLED"}
+        elif status == "BUDGET_EXCEEDED":
+            error = "BUDGET_EXCEEDED"
+        terminal = status in TERMINAL_STATUSES
         usage = {"modelCalls": 5, "toolCalls": len(self.tools) + 1, "totalTokens": 18342, "inputTokens": 15120,
                  "outputTokens": 3222, "durationMs": int((self.timeline[-1]["at"]) * 1000),
                  "estimatedCost": None, "costStatus": "unknown"} if terminal else {"modelCalls": 2, "toolCalls": 1}
@@ -254,9 +268,41 @@ class Run:
                 "createdAt": self.created_iso, "updatedAt": now_iso(), "remoteStopState": None}
 
     def terminal(self):
-        return self.view()["status"] in {"SUCCEEDED", "INSUFFICIENT_EVIDENCE", "FAILED", "CANCELLED"}
+        return self.view()["status"] in TERMINAL_STATUSES
+
+    def evidence_view(self):
+        """GET …/evidence（evidence-view/1，FRONTEND_EVIDENCE_READ_API_2026-10-03）的合成响应。"""
+        limits = {"records": 256, "checks": 128, "sourceReads": 128, "blockedAttempts": 128, "responseBytes": 262144, "completeProjection": True}
+        base = {"schemaVersion": "evidence-view/1", "runId": self.id, "runStatus": self.view()["status"], "limits": limits,
+                "limitations": ["RECORDED_OBSERVATIONS_ONLY", "EMPTY_DOES_NOT_PROVE_NO_CONFLICT", "MODEL_RELATIONS_ARE_NOT_TRUTH_GUARANTEES",
+                                "PUBLICATION_REQUIRES_EXISTING_SEAL_AND_FINALIZATION", "NO_SOURCE_REFRESH", "NO_RAW_SNAPSHOTS_OR_MODEL_RATIONALES"],
+                "evidence": [], "claims": [], "decisions": [], "checks": [], "disagreements": [], "blockedAttempts": []}
+        if not self.agent:
+            return {**base, "availability": "UNSUPPORTED_MODE", "publicationState": "NOT_ASSESSED"}
+        ident = lambda t, i: {"recordType": t, "recordId": i, "version": 1, "payloadSha256": "0" * 64, "recordedAt": self.created_iso}
+        unknown = {"status": "unknown", "value": None}
+        evidence = [
+            {"identity": ident("Evidence", "ev-web"), "sourceId": "src-web", "kind": "web", "title": "【演示】SSE 重连说明（合成网页）",
+             "url": "https://example.com/deepresearch-preview/sse", "publishedAt": unknown, "observedAt": self.created_iso, "snapshotSha256": "1" * 64,
+             "applicability": {"version": unknown, "validAt": unknown, "conditions": ["浏览器侧重连请求"]}},
+            {"identity": ident("Evidence", "ev-kb"), "sourceId": "src-kb", "kind": "knowledge", "title": "【演示】sse-durable-replay.md", "url": None,
+             "publishedAt": unknown, "observedAt": self.created_iso, "snapshotSha256": "2" * 64, "applicability": None},
+        ]
+        claim = {"identity": ident("Claim", "claim-resume"), "text": "断线后可以从最后收到的事件之后继续接收。", "kind": "fact", "applicability": None,
+                 "decisionStatus": "contested", "checkId": "check-1", "latestRecordedRound": True, "publicationState": "RECORDED_ONLY",
+                 "evidenceLinks": [
+                     {"evidenceId": "ev-web", "evidenceVersion": 1, "relation": "supports", "disposition": "unresolved",
+                      "quote": {"start": 0, "end": 20, "sha256": "3" * 64, "text": "合成引文：重连时携带最后的事件 ID。", "textAvailability": "AVAILABLE"}},
+                     {"evidenceId": "ev-kb", "evidenceVersion": 1, "relation": "refutes", "disposition": "unresolved",
+                      "quote": {"start": 0, "end": 20, "sha256": "4" * 64, "text": "合成引文：只有保存了游标才能续传。", "textAvailability": "AVAILABLE"}}]}
+        decision = {"identity": ident("DecisionRecord", "decision-resume"), "claimId": "claim-resume", "decisionStatus": "contested", "policyVersion": "preview",
+                    "adoptedEvidenceIds": [], "unresolvedEvidenceIds": ["ev-web", "ev-kb"], "dismissedEvidence": [], "gapCodes": []}
+        return {**base, "availability": "AVAILABLE", "publicationState": "RECORDED_ONLY", "evidence": evidence, "claims": [claim],
+                "decisions": [decision], "disagreements": [{"claimId": "claim-resume", "decisionId": "decision-resume", "checkId": "check-1",
+                                                             "supportingEvidenceIds": ["ev-web"], "refutingEvidenceIds": ["ev-kb"]}]}
 
 
+TERMINAL_STATUSES = {"SUCCEEDED", "INSUFFICIENT_EVIDENCE", "FAILED", "CANCELLED", "BUDGET_EXCEEDED"}
 RUNS: dict[str, Run] = {}
 BY_KEY: dict[str, tuple[str, Run]] = {}
 UNKNOWN_FAILED: set[str] = set()
@@ -339,6 +385,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json(200, run.view())
             if len(parts) == 5 and parts[4] == "events":
                 return self.stream(run)
+            if len(parts) == 5 and parts[4] == "evidence":
+                if self.scenario() == "evidence-disabled":
+                    return self.send_json(503, {"errorCode": "EVIDENCE_VIEW_DISABLED"})
+                return self.send_json(200, run.evidence_view())
         self.send_json(404, {"error": "预览服务器未模拟该路径", "path": path})
 
     def do_POST(self):

@@ -1,6 +1,7 @@
 // Typed callers for the established public routes. Nothing here calls
 // /internal/** or handles delegated execution credentials.
 import { ApiError, authHeaders, responseData } from "./http";
+import type { EvidenceView, EvidenceViewResult } from "../domain/evidenceView";
 import type { RunEvent, WorkflowView } from "../domain/types";
 
 export interface ApiContext {
@@ -125,4 +126,19 @@ export function parseEventData(data: string): RunEvent | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Public evidence read API (autonomous runs). 503 EVIDENCE_VIEW_DISABLED and 409
+ * EVIDENCE_VIEW_INTEGRITY_INVALID are capability states, not transport errors.
+ */
+export async function getEvidenceView(ctx: ApiContext, runId: string, signal?: AbortSignal): Promise<EvidenceViewResult> {
+  const response = await f(ctx)(`${ctx.origin}/api/research/workflows/${encodeURIComponent(runId)}/evidence`, {
+    headers: authHeaders(ctx.token, { Accept: "application/json" }), cache: "no-store", signal,
+  });
+  if (response.status === 503) return { state: "disabled" };
+  if (response.status === 409) return { state: "integrity" };
+  const view = await responseData<EvidenceView>(response);
+  if (view?.schemaVersion !== "evidence-view/1") return { state: "error", message: "证据记录格式未知：" + String(view?.schemaVersion) };
+  return { state: "ok", view };
 }

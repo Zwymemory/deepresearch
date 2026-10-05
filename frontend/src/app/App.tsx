@@ -5,29 +5,33 @@ import { normalizeCitations } from "../domain/citations";
 import { parseMarkdown, statementsFor } from "../domain/markdown";
 import { applyEvent, emptyRun, isTerminal, type RunState } from "../domain/runState";
 import type { ExecutionMode, ToolName } from "../domain/types";
-import { DEMO_QUESTION, DEMO_TOOLS } from "../demo/fixtures";
+import { DEMO_EVIDENCE_VIEW, DEMO_QUESTION, DEMO_TOOLS } from "../demo/fixtures";
 import { snapshotRun, useDemoRun, type DemoOutcome } from "../demo/useDemoRun";
 import { EntryView, type StartRequest } from "../features/composer/EntryView";
 import { CompareView } from "../features/evidence/CompareView";
+import { RecordedDisagreementView } from "../features/evidence/RecordedDisagreementView";
+import { recordedDisagreements } from "../domain/evidenceView";
 import { Inspector } from "../features/evidence/Inspector";
 import { SourcesDialog } from "../features/evidence/SourcesDialog";
 import { ReportView } from "../features/report/ReportView";
 import { RunningView } from "../features/running/RunningView";
 import { IdentityDialog, RecentDialog, type RecentItem } from "../features/shell/Dialogs";
+import { NotebookDialog } from "../features/memory/Notebook";
+import { PREVIEW_RECORDS, previewRecordFromRun, simulateSave, type ProgressRecord } from "../demo/memoryPreview";
 import { TopBar, type AppMode } from "../features/shell/TopBar";
 import { STAGE_LABELS } from "../domain/eventText";
 import { useLiveResearch, type Notify } from "../live/useLiveResearch";
 import { Icon } from "../ui/Icon";
 import { useTheme } from "./theme";
 
-type View = "entry" | "running" | "report" | "compare";
-interface CompareState { a: number; b: number; recorded: boolean }
+type View = "entry" | "running" | "report" | "compare" | "disagreement";
+interface CompareState { a: number; b: number }
 interface Toast { id: number; message: string; tone: "info" | "success" | "warning" | "error" }
 
 const MODE_LABELS: Record<ExecutionMode, string> = { workflow: "Durable Workflow", agent: "自主研究（候选）", legacy: "Single Agent 基线" };
 
 /** Live by default. Demo mode is explicit (`?demo`, or `?state=` deep links for review) and never touches the network. */
-function initialState(): { appMode: AppMode; view: View; run: RunState; inspect: number | null; compare: CompareState | null } {
+function initialState(): { appMode: AppMode; view: View; run: RunState; inspect: number | null; compare: CompareState | null; disagreement?: number } {
   const params = new URLSearchParams(window.location.search);
   const state = params.get("state");
   const demoMode = params.has("demo") || !!state;
@@ -42,8 +46,8 @@ function initialState(): { appMode: AppMode; view: View; run: RunState; inspect:
       return { ...base, view: "report", run: applyEvent(run, { type: "CANCELLED", id: `${run.runId}:cancel` }, `${run.runId}:cancel`) };
     }
     case "inspect": return { ...base, view: "report", run: done(), inspect: 3 };
-    case "compare": return { ...base, view: "compare", run: done(), compare: { a: 3, b: 2, recorded: false } };
-    case "compare-recorded": return { ...base, view: "compare", run: done(), compare: { a: 3, b: 2, recorded: true } };
+    case "compare": return { ...base, view: "compare", run: done(), compare: { a: 3, b: 2 } };
+    case "compare-recorded": return { ...base, view: "disagreement", run: done(), disagreement: 0 };
     default: return { ...base, view: "entry", run: emptyRun() };
   }
 }
@@ -77,10 +81,21 @@ export function App() {
   const [compare, setCompare] = useState<CompareState | null>(init.compare);
   const [inspecting, setInspecting] = useState(false);
   const [reportReady, setReportReady] = useState(false);
-  const [dialog, setDialog] = useState<"sources" | "identity" | "recent" | null>(null);
+  const [dialog, setDialog] = useState<"sources" | "identity" | "recent" | "notebook" | null>(null);
+  // Research notebook: preview only (backend progress-memory contract not delivered).
+  const [memoryRecords, setMemoryRecords] = useState<ProgressRecord[]>(PREVIEW_RECORDS);
+  const [loadedRecord, setLoadedRecord] = useState<ProgressRecord | null>(null);
+  const [saveState, setSaveState] = useState<{ runId: string; state: "idle" | "saving" | "saved" | "failed" }>({ runId: "", state: "idle" });
   const [demoRecent, setDemoRecent] = useState<Array<RecentItem & { run: RunState }>>([]);
+  const [disagreementIndex, setDisagreementIndex] = useState(init.disagreement ?? 0);
   const [prefill, setPrefill] = useState<{ key: number; question: string }>({ key: 0, question: "" });
   const trigger = useRef<string | null>(null);
+  // Where the question sat in the composer at submit time; consumed once by the running view.
+  const [stageOrigin, setStageOrigin] = useState<{ left: number; top: number } | null>(null);
+  const captureOrigin = () => {
+    const rect = document.getElementById("question")?.getBoundingClientRect();
+    setStageOrigin(rect ? { left: rect.left + 16, top: rect.top + 14 } : null);
+  };
   const restore = useRef<{ scrollY: number; focusId: string | null; reopen: number | null } | null>(null);
 
   const response = run?.finalResponse ?? null;
@@ -125,6 +140,7 @@ export function App() {
   }, [reportReady]);
 
   const enterDemo = useCallback((outcome: DemoOutcome) => {
+    captureOrigin();
     setUrlMode("demo");
     setAppMode("demo");
     setInspect(null); setCompare(null);
@@ -144,6 +160,7 @@ export function App() {
 
   const start = useCallback(async (request: StartRequest): Promise<string | null> => {
     setInspect(null); setCompare(null);
+    captureOrigin();
     if (demoMode) {
       demo.start(request.question, request.tools, request.outcome);
       setView("running");
@@ -156,8 +173,11 @@ export function App() {
     return result.ok ? null : result.reason;
   }, [demoMode, demo, live]);
 
+  const [anchorTop, setAnchorTop] = useState<number | null>(null);
   const openCitation = useCallback((number: number, el: HTMLElement | null) => {
-    trigger.current = el?.id ?? document.querySelector<HTMLElement>(`[data-cite="${number}"]`)?.id ?? null;
+    const target = el ?? document.querySelector<HTMLElement>(`[data-cite="${number}"]`);
+    trigger.current = target?.id ?? null;
+    setAnchorTop(target ? target.getBoundingClientRect().top : null);
     setInspect(number);
   }, []);
   const closeInspector = useCallback(() => {
@@ -173,7 +193,7 @@ export function App() {
   const beginCompare = useCallback((other: number) => {
     if (inspect == null) return;
     restore.current = { scrollY: window.scrollY, focusId: trigger.current, reopen: inspect };
-    setCompare({ a: inspect, b: other, recorded: false });
+    setCompare({ a: inspect, b: other });
     setInspect(null);
     setView("compare");
   }, [inspect]);
@@ -181,6 +201,32 @@ export function App() {
     if (!restore.current && compare) restore.current = { scrollY: 0, focusId: null, reopen: compare.a };
     setView("report");
   }, [compare]);
+
+  // Evidence record: live autonomous runs read the public evidence API; demo shows a labelled fixture.
+  const evidence = demoMode ? { result: { state: "ok" as const, view: DEMO_EVIDENCE_VIEW }, loading: false } : live.evidence;
+  const evidenceResult = evidence?.result ?? null;
+  const disagreements = useMemo(() => evidenceResult?.state === "ok" ? recordedDisagreements(evidenceResult.view) : [], [evidenceResult]);
+  const openDisagreement = useCallback((index: number) => {
+    restore.current = { scrollY: window.scrollY, focusId: (document.activeElement as HTMLElement | null)?.id || null, reopen: null };
+    setInspect(null);
+    setDisagreementIndex(index);
+    setView("disagreement");
+  }, []);
+  const endDisagreement = useCallback(() => {
+    if (!restore.current) restore.current = { scrollY: 0, focusId: null, reopen: null };
+    setView("report");
+  }, []);
+
+  const saveProgress = () => {
+    if (!demoMode || !run) return;
+    const runId = run.runId;
+    setSaveState({ runId, state: "saving" });
+    const fail = new URLSearchParams(window.location.search).has("memoryFail");
+    // Success is shown only after the (simulated) confirmation resolves.
+    simulateSave(previewRecordFromRun(run), fail)
+      .then((record) => { setMemoryRecords((rows) => [record, ...rows]); setSaveState({ runId, state: "saved" }); })
+      .catch(() => setSaveState({ runId, state: "failed" }));
+  };
 
   const goHome = () => {
     if (demoMode) demo.reset(emptyRun()); else live.closeRun();
@@ -225,7 +271,7 @@ export function App() {
         <div className="atmosphere" aria-hidden="true"><span className="a" /><span className="b" /><span className="c" /></div>
         <div className="app">
           <TopBar theme={theme} mode={appMode} connection={live.connection} identityLabel={identityLabel} onToggleTheme={toggle} onHome={goHome}
-            onOpenRecent={() => setDialog("recent")} onOpenIdentity={() => setDialog("identity")} onExitDemo={exitDemo} />
+            onOpenRecent={() => setDialog("recent")} onOpenNotebook={() => setDialog("notebook")} onOpenIdentity={() => setDialog("identity")} onExitDemo={exitDemo} />
           <AnimatePresence mode="wait" initial={false}>
             <motion.main key={view + (liveBlocked ? "-blocked" : "")} id="main" className="page" tabIndex={-1}
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
@@ -254,23 +300,31 @@ export function App() {
                   onCancel={demoMode ? demo.cancel : () => { void live.cancel(); }} canCancel={run.mode !== "legacy"} cancelling={!demoMode && live.cancelling}
                   stream={demoMode ? undefined : live.stream} reconnects={live.reconnects}
                   onDisconnectDrill={demoMode ? undefined : live.disconnectDrill} onReconnectNow={demoMode ? undefined : live.reconnectNow}
-                  onViewReport={() => { setView("report"); window.scrollTo({ top: 0 }); }} onInspectingChange={setInspecting} />
+                  onViewReport={() => { setView("report"); window.scrollTo({ top: 0 }); }} onInspectingChange={setInspecting} origin={stageOrigin} />
               ) : null}
               {!liveBlocked && view === "report" && run && hasRun ? (
                 <ReportView run={run} blocks={blocks} citations={citations} modeLabel={modeLabel} active={inspect} demo={demoMode}
                   lastEventId={run.lastEventId} onCite={openCitation} onOpenSources={() => setDialog("sources")} onNew={goHome}
-                  onRetryQuestion={retryQuestion} onFollowUp={followUp} onReady={setReportReady} />
+                  onRetryQuestion={retryQuestion} onFollowUp={followUp} onReady={setReportReady}
+                  evidence={evidence} onCompareDisagreement={openDisagreement}
+                  save={run.status === "SUCCEEDED" || run.status === "INSUFFICIENT_EVIDENCE" ? {
+                    available: demoMode, state: saveState.runId === run.runId ? saveState.state : "idle",
+                    onSave: saveProgress, onOpenNotebook: () => setDialog("notebook"),
+                  } : undefined} />
               ) : null}
               {!liveBlocked && view === "compare" && compare && compareA && compareB ? (
                 <CompareView statement={statementsFor(blocks, compare.a)[0] ?? null} a={compareA} b={compareB} all={citations} demo={demoMode}
-                  recorded={demoMode && compare.recorded} onChangeB={(b) => setCompare({ ...compare, b })} onBack={endCompare} />
+                  onChangeB={(b) => setCompare({ ...compare, b })} onBack={endCompare} />
+              ) : null}
+              {!liveBlocked && view === "disagreement" && disagreements[disagreementIndex] ? (
+                <RecordedDisagreementView disagreement={disagreements[disagreementIndex]} demo={demoMode} onBack={endDisagreement} />
               ) : null}
             </motion.main>
           </AnimatePresence>
 
           <AnimatePresence>
             {view === "report" && reportReady && active ? (
-              <Inspector key="inspector" citation={active} all={citations} statements={statementsFor(blocks, active.number)} demo={demoMode}
+              <Inspector key="inspector" citation={active} all={citations} statements={statementsFor(blocks, active.number)} demo={demoMode} anchorTop={anchorTop}
                 onClose={closeInspector} onNavigate={navigateInspector} onCompare={beginCompare} />
             ) : null}
           </AnimatePresence>
@@ -286,6 +340,10 @@ export function App() {
         <IdentityDialog open={dialog === "identity"} onOpenChange={(o) => setDialog(o ? "identity" : null)} mode={appMode}
           identity={live.identity} onApply={(next) => { const error = live.applyIdentity(next); if (!error) notify("身份已更新；已清除旧身份的缓存内容", "success"); return error; }}
           onDevToken={live.devToken} />
+        <NotebookDialog key={appMode} open={dialog === "notebook"} onOpenChange={(o) => setDialog(o ? "notebook" : null)} live={!demoMode}
+          records={memoryRecords} loaded={loadedRecord}
+          onLoad={(record) => setLoadedRecord(record)}
+          onDelete={(id) => { setMemoryRecords((rows) => rows.filter((r) => r.id !== id)); setLoadedRecord((l) => l?.id === id ? null : l); }} />
         <RecentDialog open={dialog === "recent"} onOpenChange={(o) => setDialog(o ? "recent" : null)} items={recentItems} demo={demoMode}
           onOpen={(item) => {
             setDialog(null);

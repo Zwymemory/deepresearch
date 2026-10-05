@@ -16,7 +16,7 @@ describe("normalizeCitations", () => {
   });
   it("treats missing, duplicate or mismatched details as insufficient", () => {
     expect(normalizeCitations(["web:a"], "INDEXED_V1", [])[0].kind).toBe("unknown");
-    expect(normalizeCitations(["web:a"], "INDEXED_V1", [web, { ...web, title: "Other" }])[0].missingReason).toMatch(/唯一/);
+    expect(normalizeCitations(["web:a"], "INDEXED_V1", [web, { ...web, title: "Other" }])[0].missingReason).toMatch(/不一致/);
     expect(normalizeCitations(["web:a"], "INDEXED_V1", [{ ...web, sourceId: "web:b" }])[0].url).toBeNull();
   });
   it("never links without the INDEXED_V1 contract", () => {

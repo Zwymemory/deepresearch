@@ -18,7 +18,11 @@ python3 scripts/frontend-preview/mock_server.py
 | `disconnect` | 第一条 SSE 连接在 4 条事件后断开，验证 `Last-Event-ID` 续传 |
 | `unknown` | 首次创建返回 502，验证“创建结果未知 → 原请求安全重试” |
 | `noweb` | 网页搜索未配置 |
-| `langgraph` | 与默认 LangGraph 路径相同：`finalResponse` 不含 `citationDetails` |
+| `langgraph` | 按 2026-10-03 来源契约返回 `citationDetails`（含 `metadataStatus`），最后一项为 `MISSING_SNAPSHOT` |
+| `budget` | 运行因预算上限终止（`BUDGET_EXCEEDED`） |
+| `evidence-disabled` | 证据记录接口返回 503 `EVIDENCE_VIEW_DISABLED` |
+
+自主研究运行可读取 `GET …/evidence`（`evidence-view/1`，含一条记录的分歧）；工作流运行返回 `UNSUPPORTED_MODE`。
 
 运行归属于创建它的 Bearer Token，换一个 Token 读取会得到 404，用于验证前端的身份隔离；幂等键也按 Token 隔离。
 
@@ -49,6 +53,7 @@ export PLAYWRIGHT_CORE=/path/to/node_modules/playwright-core
 export CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 node scripts/frontend-preview/journey-react-live.mjs   # 真实适配器旅程 → output/playwright/react-live/
 node scripts/frontend-preview/capture-react.mjs        # 示例模式版式与截图 → output/playwright/react-preview/
+node scripts/frontend-preview/check-r1r2.mjs           # R1/R2 迭代的聚焦检查 → output/playwright/r1r2/
 ```
 
 两个版本可以同时对比：V1 在 `http://127.0.0.1:8090/demo.html`，React 在 `http://127.0.0.1:5173/app/`。
