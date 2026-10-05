@@ -492,7 +492,9 @@ async def main():
             assert (state["tasks"][0]["status"] == "done") == (expected == "SUCCEEDED"), state[
                 "observations"
             ]
-            assert len(model.calls) == 2 and model.calls[1].max_output_tokens == 1024
+            assert len(model.calls) == 2
+            assert model.calls[0].max_output_tokens == 1024
+            assert model.calls[1].max_output_tokens == 4096
             state.update(
                 decision_steps=3,
                 action_sequence=3,

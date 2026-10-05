@@ -483,11 +483,14 @@ def batch_prerequisites(ready, source_path, review_path, state):
             or review.get("candidate_binding", {}).get("continuation_contract")
             != "agent-frozen-requirements/1"):
         raise ValueError("Actual frozen requirements implementation approval required")
-    if ready.get("batch_id") in {retest.OBLIGATION_ALIGNMENT_WEB_BATCH, retest.DECISION_CONTRACT_WEB_BATCH, retest.REMAINING_FOUR_BATCH}:
+    if ready.get("batch_id") in {retest.OBLIGATION_ALIGNMENT_WEB_BATCH, retest.DECISION_CONTRACT_WEB_BATCH, retest.REMAINING_FOUR_BATCH, retest.MIXED_CAPACITY_BATCH}:
         validate_obligation_readiness(ready, review)
-    if ready.get("batch_id") in {retest.DECISION_CONTRACT_WEB_BATCH, retest.REMAINING_FOUR_BATCH}:
+    if ready.get("batch_id") in {retest.DECISION_CONTRACT_WEB_BATCH, retest.REMAINING_FOUR_BATCH, retest.MIXED_CAPACITY_BATCH}:
         validate_decision_readiness(ready, review)
-    if ready.get("batch_id") == retest.REMAINING_FOUR_BATCH:
+    if ready.get("batch_id") == retest.MIXED_CAPACITY_BATCH and ready.get(
+            "decision_identity", {}).get("instruction_policy") != "agent-obligation-instruction/2":
+        raise ValueError("Mixed capacity requires actual fresh policy2")
+    if ready.get("batch_id") in {retest.REMAINING_FOUR_BATCH, retest.MIXED_CAPACITY_BATCH}:
         retest.validate_accepted_web(read_private(Path(state) / "run-journal.json"),
                                      review.get("candidate_binding", {}).get("accepted_web"))
     manifest = Path(ready["scenario_manifest_path"])

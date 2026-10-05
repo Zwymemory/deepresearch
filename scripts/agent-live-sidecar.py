@@ -69,6 +69,9 @@ def install_model_audit(httpx_module, path, expected, expected_result_transport=
                    "provider_model": None, "identity_matches": None, "http_status": None,
                    "identity": identity_diagnostic(endpoint, requested, expected, {}),
                    "policy_evidence": list(EVIDENCE_SOURCES)}
+        maximum = request_data.get("max_tokens") if type(request_data) is dict else None
+        if type(maximum) is int and 1 <= maximum <= 16384:
+            receipt["wire"]["max_tokens"] = maximum
         try:
             if request_reason:
                 diagnostic = identity_diagnostic(endpoint, requested, expected, {}, forced_reason=request_reason)

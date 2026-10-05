@@ -138,7 +138,8 @@ def verify_runtime(ready, token):
         decision = ready["decision_identity"]
         if decision != identity.get("decision_identity"):
             raise ValueError("Actual decision instruction or diagnostic differs from readiness")
-        if (decision.get("instruction_policy") != "agent-obligation-instruction/1"
+        if (decision.get("instruction_policy") not in {
+                "agent-obligation-instruction/1", "agent-obligation-instruction/2"}
                 or decision.get("schema_diagnostic_version") != "agent-schema-diagnostic/1"
                 or set(decision.get("modules", {})) != {
                     "agent_decision_instruction", "agent_schema_diagnostics", "agent_runtime", "agent_budget"}):

@@ -92,6 +92,7 @@ async def test_wire_budget_and_identity_use_identical_frozen_bytes(tmp_path, mon
     assert ledger.reserve.call_args.args[6] == len(calls[0].content) + 1024
     assert json.loads(prepared.identity)["version"] == TRANSPORT_CONTRACT_VERSION
     assert json.loads(path.read_text())["receipts"][0]["identity_matches"] is True
+    assert json.loads(path.read_text())["receipts"][0]["wire"]["max_tokens"] == body["max_tokens"]
 
 
 @pytest.mark.parametrize("content,error_class", [
