@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 
 from .agent_budget import canonical
-from .agent_decision_instruction import LEGACY_POLICY_VERSION, POLICY_VERSION
+from .agent_decision_instruction import CHECK_CAPACITY_POLICIES, SUPPORTED_POLICIES
 from .agent_protocol import ModelRequest
 from .graph import ModelCallError, WorkflowExecutionError
 
@@ -63,7 +63,7 @@ class HttpEvidenceBackend:
 
     async def check(self, state, task, call_id, claims, gateway):
         policy = state.get("instruction_policy")
-        if policy is not None and policy not in {LEGACY_POLICY_VERSION, POLICY_VERSION}:
+        if policy is not None and policy not in SUPPORTED_POLICIES:
             raise WorkflowExecutionError(
                 "Agent instruction policy unknown", error_code="AGENT_INSTRUCTION_POLICY_INVALID",
             )
@@ -128,11 +128,11 @@ class HttpEvidenceBackend:
                 instruction=verifier_instruction(prepared["request"]),
                 payload=prepared["request"],
                 schema=response_schema(prepared["request"]),
-                max_output_tokens=4096 if policy == POLICY_VERSION else 1024,
+                max_output_tokens=4096 if policy in CHECK_CAPACITY_POLICIES else 1024,
                 request_binding={
                     "check_id": prepared["check_id"],
                     "request_sha256": prepared["request_sha256"],
-                    **({"instruction_policy": POLICY_VERSION} if policy == POLICY_VERSION else {}),
+                    **({"instruction_policy": policy} if policy in CHECK_CAPACITY_POLICIES else {}),
                 },
             )
             model_id = (
@@ -152,7 +152,7 @@ class HttpEvidenceBackend:
                 non_retryable = (
                     isinstance(failed, ModelCallError) and failed.retryable is False
                 ) or failed.error_code == "AGENT_MODEL_NOT_RETRYABLE"
-                if policy != POLICY_VERSION or not non_retryable:
+                if policy not in CHECK_CAPACITY_POLICIES or not non_retryable:
                     raise
                 # The MODEL receipt remains UNKNOWN with its measured usage. A
                 # settled TOOL receipt makes this terminal observation replayable.

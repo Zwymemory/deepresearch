@@ -126,7 +126,7 @@ class ActualRuntimeEntranceTests(unittest.TestCase):
             def http(base,path,token=None):
                 return {'build':build} if path=='/actuator/info' else {'status':'UP','runner':'enabled'}
             with patch.object(common.subprocess,'check_output',side_effect=process),patch.object(common,'http_json',side_effect=http),patch.object(common,'assert_process'):
-                for policy in ('agent-obligation-instruction/1','agent-obligation-instruction/2'):
+                for policy in ('agent-obligation-instruction/1','agent-obligation-instruction/2','agent-obligation-instruction/3'):
                     decision['instruction_policy']=policy;common.write_private(identity_path,identity)
                     self.assertTrue(common.verify_runtime(ready,'fixture')['verified'])
                 decision['instruction_policy']='foreign';common.write_private(identity_path,identity)

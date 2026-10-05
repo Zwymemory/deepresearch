@@ -19,8 +19,9 @@ from .agent_completion import (
 )
 from .agent_context import CONTEXT_VERSION, decision_context
 from .agent_decision_instruction import (
-    LEGACY_POLICY_VERSION,
+    CHECK_CAPACITY_POLICIES,
     POLICY_VERSION,
+    SUPPORTED_POLICIES,
     obligation_instruction,
 )
 from .agent_investigations import (
@@ -198,7 +199,7 @@ class AutonomousResearchGraph:
         policy = state.get("instruction_policy")
         if (
             planner_version == OBLIGATION_PLANNER
-            and policy is not None and policy not in {LEGACY_POLICY_VERSION, POLICY_VERSION}
+            and policy is not None and policy not in SUPPORTED_POLICIES
         ):
             raise WorkflowExecutionError(
                 "Agent instruction policy unknown", error_code="AGENT_INSTRUCTION_POLICY_INVALID",
@@ -220,7 +221,7 @@ class AutonomousResearchGraph:
             state.get("investigations", {}),
             state.get("requirement_bindings", []),
         )
-        if policy == POLICY_VERSION and state.get("unusable_check"):
+        if policy in CHECK_CAPACITY_POLICIES and state.get("unusable_check"):
             decision = AgentDecision(
                 action="stop_with_gaps", reason="NON_RETRYABLE_CHECK",
                 gaps=["核查结果不可用且不可重试\uff0c原问题仍有未核实事项"],
@@ -483,7 +484,7 @@ class AutonomousResearchGraph:
             })
 
         if planner_version == OBLIGATION_PLANNER:
-            if policy in {LEGACY_POLICY_VERSION, POLICY_VERSION}:
+            if policy in SUPPORTED_POLICIES:
                 request = request.model_copy(update={
                     "instruction": obligation_instruction(
                         request.result_schema, continuation=bool(continuation), policy=policy,
@@ -953,7 +954,7 @@ class AutonomousResearchGraph:
                     "parent_call_id": key,
                     **({"origin": {"tool": work.tool, "receipt_call_id": key,
                                    "source_id": item["source_id"]}}
-                       if state.get("instruction_policy") == POLICY_VERSION else {}),
+                       if state.get("instruction_policy") in CHECK_CAPACITY_POLICIES else {}),
                 }
                 for item in result.get("evidence", [])
             ]
@@ -1064,7 +1065,7 @@ class AutonomousResearchGraph:
                     code = failed.error_code if isinstance(failed, WorkflowExecutionError) else None
                     result, accepted = {"errorCode": code or "CHECK_OPERATION_FAILED"}, False
                     if (
-                        state.get("instruction_policy") == POLICY_VERSION
+                        state.get("instruction_policy") in CHECK_CAPACITY_POLICIES
                         and code == "AGENT_OPERATION_UNKNOWN"
                     ):
                         # Crash after the inner MODEL receipt but before TOOL
@@ -1078,7 +1079,7 @@ class AutonomousResearchGraph:
                     update["packet"] = result
                 entry["attempt_status"] = "accepted" if accepted else "failed"
                 if (
-                    state.get("instruction_policy") == POLICY_VERSION
+                    state.get("instruction_policy") in CHECK_CAPACITY_POLICIES
                     and result.get("non_retryable_check") is True
                 ):
                     update["unusable_check"] = {

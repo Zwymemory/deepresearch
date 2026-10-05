@@ -9,7 +9,7 @@ from typing import Annotated, Any, Literal
 from pydantic import Field, field_validator, model_validator
 from typing_extensions import TypedDict
 
-from .agent_decision_instruction import POLICY_VERSION
+from .agent_decision_instruction import CHECK_CAPACITY_POLICIES
 from .agent_question_segments import PLANNER_VERSION, SegmentRequirementDraft
 from .agent_requirements import RequirementBinding, RequirementDraft
 from .domain import AgentRunBudget as AgentRunBudget
@@ -193,7 +193,7 @@ class ModelRequest(StrictModel):
     def output_allocation(self):
         if self.max_output_tokens > 1024 and not (
             self.name == "EvidenceCheck"
-            and self.request_binding.get("instruction_policy") == POLICY_VERSION
+            and self.request_binding.get("instruction_policy") in CHECK_CAPACITY_POLICIES
         ):
             raise ValueError("Expanded output requires the fresh CHECK policy")
         return self

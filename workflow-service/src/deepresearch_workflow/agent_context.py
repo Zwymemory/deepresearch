@@ -6,7 +6,7 @@ import copy
 import hashlib
 
 from .agent_budget import canonical
-from .agent_decision_instruction import POLICY_VERSION
+from .agent_decision_instruction import CHECK_CAPACITY_POLICIES
 from .agent_investigations import investigation_state
 
 CONTEXT_VERSION = "agent-decision-context/2"
@@ -171,7 +171,7 @@ def decision_context(state, budget):
             ),
         },
     }
-    if state.get("instruction_policy") == POLICY_VERSION:
+    if state.get("instruction_policy") in CHECK_CAPACITY_POLICIES:
         payload["actual_read_source_kinds"] = sorted({
             item["source"]["kind"] for item in evidence
             if isinstance(item.get("source", {}).get("kind"), str)

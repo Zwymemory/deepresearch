@@ -14,7 +14,12 @@ from pydantic import ValidationError
 
 from deepresearch_workflow.agent_budget import AgentBudgetGateway, canonical
 from deepresearch_workflow.agent_context import decision_context
-from deepresearch_workflow.agent_decision_instruction import LEGACY_POLICY_VERSION, POLICY_VERSION
+from deepresearch_workflow.agent_decision_instruction import (
+    CAPACITY_POLICY_VERSION,
+    CHECK_CAPACITY_POLICIES,
+    LEGACY_POLICY_VERSION,
+    POLICY_VERSION,
+)
 from deepresearch_workflow.agent_model import OpenAIAgentModel
 from deepresearch_workflow.agent_protocol import AgentRunBudget, ModelRequest, ModelResult
 from deepresearch_workflow.domain import ToolEvidence, ToolExecutionResult
@@ -49,11 +54,16 @@ def request(policy=POLICY_VERSION):
     )
 
 
-async def test_policy1_prepared_bytes_pending_and_settled_replay_are_frozen():
-    witness = json.loads(
-        (Path(__file__).parent / "fixtures/planner-policy1-instruction-witness.json").read_text()
-    )
-    runtime, ledger, model, initial, frozen = await context(LEGACY_POLICY_VERSION)
+@pytest.mark.parametrize(
+    "policy,fixture",
+    [
+        (LEGACY_POLICY_VERSION, "planner-policy1-instruction-witness.json"),
+        (CAPACITY_POLICY_VERSION, "planner-policy2-instruction-witness.json"),
+    ],
+)
+async def test_prior_policy_prepared_bytes_pending_and_settled_replay_are_frozen(policy, fixture):
+    witness = json.loads((Path(__file__).parent / "fixtures" / fixture).read_text())
+    runtime, ledger, model, initial, frozen = await context(policy)
     adapter = OpenAIAgentModel(json_settings(), None)
     for index, (req, row) in enumerate(zip(model.calls, witness["requests"], strict=True), 1):
         prepared = adapter.prepare(req)
@@ -61,7 +71,7 @@ async def test_policy1_prepared_bytes_pending_and_settled_replay_are_frozen():
         assert hashlib.sha256(prepared.wire).hexdigest() == row["wire_sha256"]
         assert len(prepared.wire) == row["wire_bytes"]
         assert req.max_output_tokens == 1024
-        assert "actual_read_source_kinds" not in req.payload
+        assert ("actual_read_source_kinds" in req.payload) == (policy == CAPACITY_POLICY_VERSION)
         receipt = ledger.rows[f"model:agent:decision-{index}"]
         assert (
             hashlib.sha256(canonical(receipt["result"]).encode()).hexdigest()
@@ -122,11 +132,12 @@ async def test_legacy_check_wire_and_settled_replay_preserve_original_binding(
     )
 
 
-async def test_fresh_check_wire_reserved_before_dispatch_and_actual_usage_settles_once():
+@pytest.mark.parametrize("policy", [CAPACITY_POLICY_VERSION, POLICY_VERSION])
+async def test_fresh_check_wire_reserved_before_dispatch_and_actual_usage_settles_once(policy):
     ledger, calls = LedgerSubstitute(), []
     _, response = check_fixture()
     response["planning_alignment"]["reason"] = "Controlled complete scope assessment. " * 120
-    req = request()
+    req = request(policy)
 
     def transport(wire):
         row = ledger.rows["model:capacity"]
@@ -236,11 +247,14 @@ async def frozen_check_state():
     return state
 
 
+@pytest.mark.parametrize("policy", [CAPACITY_POLICY_VERSION, POLICY_VERSION])
 @pytest.mark.parametrize("window", ["checkpoint", "settled_tool", "unknown_tool"])
 async def test_unusable_check_resume_stops_without_planning_recheck_or_duplicate_publication(
     window,
+    policy,
 ):
     state = await frozen_check_state()
+    state["instruction_policy"] = policy
 
     class Crash(BaseException):
         pass
@@ -340,7 +354,13 @@ async def test_unusable_check_resume_stops_without_planning_recheck_or_duplicate
 
 
 @pytest.mark.parametrize(
-    "policy,cap", [(None, 1024), (LEGACY_POLICY_VERSION, 1024), (POLICY_VERSION, 4096)]
+    "policy,cap",
+    [
+        (None, 1024),
+        (LEGACY_POLICY_VERSION, 1024),
+        (CAPACITY_POLICY_VERSION, 4096),
+        (POLICY_VERSION, 4096),
+    ],
 )
 async def test_backend_selection_retains_legacy_bindings_and_unusable_prepared_ids(policy, cap):
     prepared, _ = check_fixture()
@@ -386,7 +406,7 @@ async def test_backend_selection_retains_legacy_bindings_and_unusable_prepared_i
             java_base_url="http://native.test",
             service_tokens=SimpleNamespace(authorization_header=lambda: "fixture"),
         )
-        if policy == POLICY_VERSION:
+        if policy in CHECK_CAPACITY_POLICIES:
             result = await backend.check(state, {"task_id": "task"}, "tool-call", [], Gateway())
             assert result["non_retryable_check"] and result["check_id"] == prepared["check_id"]
             assert (

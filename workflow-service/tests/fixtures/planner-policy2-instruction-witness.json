@@ -1,0 +1,27 @@
+{
+  "origin_commit": "59fa3caab3b366d4ee2803cdf0f7f805b344baef",
+  "instruction_policy": "agent-obligation-instruction/2",
+  "requests": [
+    {
+      "request_sha256": "7cbb4bf1cbcd0976d422c2b10fa5f9bd48a3b663d103409e9fe52cc7a718d2d6",
+      "wire_sha256": "d907ac0f3904b11bb8bad2e4bdf0d05ed5168a82a35b1f7e44fd355067557295",
+      "wire_bytes": 15541,
+      "instruction_sha256": "e13ae8ed7426e4e35890964f0928b629d9da6e26fc5a89fe992b6f145888814a",
+      "settled_result_sha256": "e24a6303e36fbf5161ed1056ae8e6d90ce5b49ec49dfa637cd454a51d5efd2f4",
+      "settled_usage_sha256": "b4433f014ebbba33c91cafd306b2e2f9c1b67056f023c93f774075b47f6d5b24"
+    },
+    {
+      "request_sha256": "3cceb6c97affd8a278deec569d1af2ee41457f6bada98ad28a9b1f85bc9dabbb",
+      "wire_sha256": "9ba636d07e437192abd8eb6c9b5bed629e4543dfe5ef39b1052df1a946b6f09a",
+      "wire_bytes": 19832,
+      "instruction_sha256": "6478ce25abb2107ece39799f112827081871b62e26d35b196881027eb64be48e",
+      "settled_result_sha256": "4293bd3a0aa4cecdceaa1029066db9eaf7a2adf0993f1e0b67dd66ce4f01af32",
+      "settled_usage_sha256": "1333987541459e23516fcb915773b2d15de7b1d4257af8f1e5738f1715ec1935"
+    }
+  ],
+  "check_request": {
+    "request_sha256": "42de3d0cab78dcd3968c8ac999cf5204c824125092596b116302b9fc60ed6187",
+    "wire_sha256": "e4037dcc2b58408962ceb12ef07d2e19e82b719f76363afa79e348ecc80957cd",
+    "wire_bytes": 7063
+  }
+}
