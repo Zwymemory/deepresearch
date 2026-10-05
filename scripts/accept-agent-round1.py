@@ -483,10 +483,13 @@ def batch_prerequisites(ready, source_path, review_path, state):
             or review.get("candidate_binding", {}).get("continuation_contract")
             != "agent-frozen-requirements/1"):
         raise ValueError("Actual frozen requirements implementation approval required")
-    if ready.get("batch_id") in {retest.OBLIGATION_ALIGNMENT_WEB_BATCH, retest.DECISION_CONTRACT_WEB_BATCH}:
+    if ready.get("batch_id") in {retest.OBLIGATION_ALIGNMENT_WEB_BATCH, retest.DECISION_CONTRACT_WEB_BATCH, retest.REMAINING_FOUR_BATCH}:
         validate_obligation_readiness(ready, review)
-    if ready.get("batch_id") == retest.DECISION_CONTRACT_WEB_BATCH:
+    if ready.get("batch_id") in {retest.DECISION_CONTRACT_WEB_BATCH, retest.REMAINING_FOUR_BATCH}:
         validate_decision_readiness(ready, review)
+    if ready.get("batch_id") == retest.REMAINING_FOUR_BATCH:
+        retest.validate_accepted_web(read_private(Path(state) / "run-journal.json"),
+                                     review.get("candidate_binding", {}).get("accepted_web"))
     manifest = Path(ready["scenario_manifest_path"])
     if review.get("source_manifest_sha256") != file_sha(manifest) or ready.get("scenario_manifest_sha256") != file_sha(manifest):
         raise ValueError("B did not approve this exact source manifest")
@@ -671,8 +674,9 @@ def main():
     if args.batch and args.authorize_batch:
         if not args.authority or not args.historical_ready or not args.review_state:
             raise ValueError("Explicit authority, immutable stop history and B readiness required")
-        batch_prerequisites(ready, args.sources_ready, args.review_state, args.state_dir)
-        retest.authorize(args.state_dir, ready["build_sha"], ready["scenario_manifest_sha256"], args.authority, args.historical_ready, args.batch)
+        review = batch_prerequisites(ready, args.sources_ready, args.review_state, args.state_dir)
+        retest.authorize(args.state_dir, ready["build_sha"], ready["scenario_manifest_sha256"], args.authority, args.historical_ready, args.batch,
+                         accepted_web=review.get("candidate_binding", {}).get("accepted_web"))
         publish_batch_manifest(args.state_dir, ready, args.batch)
         print(json.dumps({"batch_id": args.batch, "authorization_registered": True, "new_runs": 0}))
         return

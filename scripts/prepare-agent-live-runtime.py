@@ -15,7 +15,7 @@ import zipfile
 from urllib.request import urlopen
 
 from agent_live_common import file_sha, http_json, read_private, source_digest, verify_runtime, write_private
-from agent_retest_batch import DECISION_CONTRACT_WEB_BATCH, ACTION_RECOVERY_WEB_BATCH, OBLIGATION_ALIGNMENT_WEB_BATCH, BATCH, BATCHES, DIAGNOSTICS_WEB_BATCH, JSON_DIAGNOSTICS_WEB_BATCH, JSON_WEB_BATCH, JSON_WEB_BATCHES, POST_IDENTITY_BATCH, SEGMENTS_WEB_BATCH, V22_WEB_BATCH
+from agent_retest_batch import REMAINING_FOUR_BATCH, DECISION_CONTRACT_WEB_BATCH, ACTION_RECOVERY_WEB_BATCH, OBLIGATION_ALIGNMENT_WEB_BATCH, BATCH, BATCHES, DIAGNOSTICS_WEB_BATCH, JSON_DIAGNOSTICS_WEB_BATCH, JSON_WEB_BATCH, JSON_WEB_BATCHES, POST_IDENTITY_BATCH, SEGMENTS_WEB_BATCH, V22_WEB_BATCH
 from agent_acceptance_v22 import candidate_schema_policy, verify_database_schema
 
 ISOLATION = "agent-live-20260930"
@@ -220,7 +220,7 @@ def start(state, credentials, built, python, ready_path, sources, model_name, ba
     image_id = json.loads(subprocess.check_output(["docker", "image", "inspect", image]))[0]["Id"]
     ready = {**built, "phase": "starting", "ready": False, "isolation_id": ISOLATION,
              "batch_id": batch_id, "historical_state_dir": str(state.resolve()),
-             "run_manifest_path": str((ready_path.parent / ({DECISION_CONTRACT_WEB_BATCH: "agent-live-decision-contract-web-runs-20261005.json", OBLIGATION_ALIGNMENT_WEB_BATCH: "agent-live-obligation-alignment-web-runs-20261005.json", ACTION_RECOVERY_WEB_BATCH: "agent-live-action-recovery-web-runs-20261004.json", JSON_DIAGNOSTICS_WEB_BATCH: "agent-live-json-diagnostics-web-runs-20261004.json", SEGMENTS_WEB_BATCH: "agent-live-segments-web-runs-20261004.json", DIAGNOSTICS_WEB_BATCH: "agent-live-diagnostics-web-runs-20261004.json", V22_WEB_BATCH: "agent-live-v22-web-runs-20261004.json", JSON_WEB_BATCH: "agent-live-json-web-runs-20261003.json", POST_IDENTITY_BATCH: "agent-live-post-identity-runs-20261003.json"}.get(batch_id, "agent-live-retest-runs-20261003.json"))).resolve()),
+             "run_manifest_path": str((ready_path.parent / ({REMAINING_FOUR_BATCH: "agent-live-remaining-four-runs-20261005.json", DECISION_CONTRACT_WEB_BATCH: "agent-live-decision-contract-web-runs-20261005.json", OBLIGATION_ALIGNMENT_WEB_BATCH: "agent-live-obligation-alignment-web-runs-20261005.json", ACTION_RECOVERY_WEB_BATCH: "agent-live-action-recovery-web-runs-20261004.json", JSON_DIAGNOSTICS_WEB_BATCH: "agent-live-json-diagnostics-web-runs-20261004.json", SEGMENTS_WEB_BATCH: "agent-live-segments-web-runs-20261004.json", DIAGNOSTICS_WEB_BATCH: "agent-live-diagnostics-web-runs-20261004.json", V22_WEB_BATCH: "agent-live-v22-web-runs-20261004.json", JSON_WEB_BATCH: "agent-live-json-web-runs-20261003.json", POST_IDENTITY_BATCH: "agent-live-post-identity-runs-20261003.json"}.get(batch_id, "agent-live-retest-runs-20261003.json"))).resolve()),
              "scenario_manifest_path": str((source / "testdata/agent-live/sources/scenarios.json").resolve()),
              "scenario_manifest_sha256": file_sha(source / "testdata/agent-live/sources/scenarios.json"),
              "ci": None, "research_runs_submitted": 0,
@@ -269,7 +269,7 @@ def start(state, credentials, built, python, ready_path, sources, model_name, ba
                   "model_identity": {"provider": "deepseek-openai-compatible", "name": model_name,
                                      "adapter": "OpenAIAgentModel", "endpoint": "https://api.deepseek.com"},
                   "ragflow_dataset_ids": datasets, "baseline_sha": "62e29a77130f727413558140a6c8872410a0b731",
-                  "migration_version": migrations, "max_research_runs": 1 if batch_id in JSON_WEB_BATCHES else 5 if batch_id == POST_IDENTITY_BATCH else 8, "limits": {"decisions": 8, "models": 16, "tools": 16, "seconds": 180, "input_tokens": 64000, "output_tokens": 16384},
+                  "migration_version": migrations, "max_research_runs": 4 if batch_id == REMAINING_FOUR_BATCH else 1 if batch_id in JSON_WEB_BATCHES else 5 if batch_id == POST_IDENTITY_BATCH else 8, "limits": {"decisions": 8, "models": 16, "tools": 16, "seconds": 180, "input_tokens": 64000, "output_tokens": 16384},
                   "registry_configured": False, "real_research_runs_started": 0})
     write_private(ready_path, ready)
     wait_health(ready["sidecar_base_url"], "/internal/health/ready")
@@ -280,15 +280,15 @@ def start(state, credentials, built, python, ready_path, sources, model_name, ba
             or sidecar_identity["model_identity"].get("result_transport") != agent_result_transport):
         raise ValueError("Actual sidecar request configuration differs")
     ready["model_identity"] = sidecar_identity["model_identity"]
-    if batch_id in {SEGMENTS_WEB_BATCH, JSON_DIAGNOSTICS_WEB_BATCH, ACTION_RECOVERY_WEB_BATCH, OBLIGATION_ALIGNMENT_WEB_BATCH, DECISION_CONTRACT_WEB_BATCH}:
+    if batch_id in {SEGMENTS_WEB_BATCH, JSON_DIAGNOSTICS_WEB_BATCH, ACTION_RECOVERY_WEB_BATCH, OBLIGATION_ALIGNMENT_WEB_BATCH, DECISION_CONTRACT_WEB_BATCH, REMAINING_FOUR_BATCH}:
         ready["planner_identity"] = sidecar_identity["planner_identity"]
-    if batch_id in {JSON_DIAGNOSTICS_WEB_BATCH, ACTION_RECOVERY_WEB_BATCH, OBLIGATION_ALIGNMENT_WEB_BATCH, DECISION_CONTRACT_WEB_BATCH}:
+    if batch_id in {JSON_DIAGNOSTICS_WEB_BATCH, ACTION_RECOVERY_WEB_BATCH, OBLIGATION_ALIGNMENT_WEB_BATCH, DECISION_CONTRACT_WEB_BATCH, REMAINING_FOUR_BATCH}:
         ready["json_diagnostic_identity"] = sidecar_identity["json_diagnostic_identity"]
-    if batch_id in {ACTION_RECOVERY_WEB_BATCH, OBLIGATION_ALIGNMENT_WEB_BATCH, DECISION_CONTRACT_WEB_BATCH}:
+    if batch_id in {ACTION_RECOVERY_WEB_BATCH, OBLIGATION_ALIGNMENT_WEB_BATCH, DECISION_CONTRACT_WEB_BATCH, REMAINING_FOUR_BATCH}:
         ready["continuation_identity"] = sidecar_identity["continuation_identity"]
-    if batch_id in {OBLIGATION_ALIGNMENT_WEB_BATCH, DECISION_CONTRACT_WEB_BATCH}:
+    if batch_id in {OBLIGATION_ALIGNMENT_WEB_BATCH, DECISION_CONTRACT_WEB_BATCH, REMAINING_FOUR_BATCH}:
         ready["obligation_identity"] = sidecar_identity["obligation_identity"]
-    if batch_id == DECISION_CONTRACT_WEB_BATCH:
+    if batch_id in {DECISION_CONTRACT_WEB_BATCH, REMAINING_FOUR_BATCH}:
         ready["decision_identity"] = sidecar_identity["decision_identity"]
     ready["build_verification"] = verify_runtime({**ready, "ready": True}, token)
     ready.update({"ready": True, "phase": "runtime_ready_sources_pending"})
