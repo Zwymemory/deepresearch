@@ -1,0 +1,20 @@
+{
+  "candidate_sha": "152a245e319aa6e301b3c07ae4ce9664217e3d47",
+  "instruction_policy": "agent-obligation-instruction/1",
+  "requests": [
+    {
+      "request_sha256": "a7b80c78890c6676e6f6549713573742ca5c3c3c9bd7bab8af230eb5ac2d4bd3",
+      "wire_sha256": "cd2757fc85475e3cffbc43ad2b0711d9c2bdb8fc71356d59fbaa3eaae12efe63",
+      "wire_bytes": 14672,
+      "settled_result_sha256": "f17c0a1dd999bd5cc8332205d9d6eca662bbbf563ad85cdac42d10dc9bbe68e2",
+      "settled_usage_sha256": "8262fcbe753a284144e11f6ef447c33e3791999a32c7df5ae99614580c26b098"
+    },
+    {
+      "request_sha256": "a8d8aaab2a15f5f5dfa0aa80003a6005b42af433786a34bc9759211e9f655bea",
+      "wire_sha256": "64f35c18aa86eb475569c85b6eff49c3a9b38d0182c779810ec313bd9302c850",
+      "wire_bytes": 18963,
+      "settled_result_sha256": "5fbe3631953c44ef55e94db229e629f722a19a5360f5517577b26544c48ebd93",
+      "settled_usage_sha256": "65395bc01e64d363533fa1021f3e9258b8600425216a05efdf7f725ca7e22a54"
+    }
+  ]
+}

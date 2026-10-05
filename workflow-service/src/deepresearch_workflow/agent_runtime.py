@@ -18,7 +18,11 @@ from .agent_completion import (
     recompute_tasks,
 )
 from .agent_context import CONTEXT_VERSION, decision_context
-from .agent_decision_instruction import POLICY_VERSION, obligation_instruction
+from .agent_decision_instruction import (
+    LEGACY_POLICY_VERSION,
+    POLICY_VERSION,
+    obligation_instruction,
+)
 from .agent_investigations import (
     InvestigationError,
     accept_check,
@@ -194,7 +198,7 @@ class AutonomousResearchGraph:
         policy = state.get("instruction_policy")
         if (
             planner_version == OBLIGATION_PLANNER
-            and policy is not None and policy != POLICY_VERSION
+            and policy is not None and policy not in {LEGACY_POLICY_VERSION, POLICY_VERSION}
         ):
             raise WorkflowExecutionError(
                 "Agent instruction policy unknown", error_code="AGENT_INSTRUCTION_POLICY_INVALID",
@@ -216,6 +220,18 @@ class AutonomousResearchGraph:
             state.get("investigations", {}),
             state.get("requirement_bindings", []),
         )
+        if policy == POLICY_VERSION and state.get("unusable_check"):
+            decision = AgentDecision(
+                action="stop_with_gaps", reason="NON_RETRYABLE_CHECK",
+                gaps=["核查结果不可用且不可重试\uff0c原问题仍有未核实事项"],
+            )
+            return {
+                "decision": self.internal_decision(decision, planner_version, state=state),
+                "action_sequence": action_sequence,
+                "agent_usage": summary,
+                "usage": usage.model_dump(),
+                "requirement_coverage": coverage,
+            }
         if (
             coverage["complete"]
             and all(task["status"] == "done" for task in state["tasks"])
@@ -467,13 +483,13 @@ class AutonomousResearchGraph:
             })
 
         if planner_version == OBLIGATION_PLANNER:
-            if policy == POLICY_VERSION:
+            if policy in {LEGACY_POLICY_VERSION, POLICY_VERSION}:
                 request = request.model_copy(update={
                     "instruction": obligation_instruction(
-                        request.result_schema, continuation=bool(continuation),
+                        request.result_schema, continuation=bool(continuation), policy=policy,
                     ),
                     "request_binding": {
-                        **request.request_binding, "instruction_policy": POLICY_VERSION,
+                        **request.request_binding, "instruction_policy": policy,
                     },
                 })
 
@@ -935,6 +951,9 @@ class AutonomousResearchGraph:
                     if len(item["source_id"]) <= 128
                     else "source-" + hashlib.sha256(item["source_id"].encode()).hexdigest(),
                     "parent_call_id": key,
+                    **({"origin": {"tool": work.tool, "receipt_call_id": key,
+                                   "source_id": item["source_id"]}}
+                       if state.get("instruction_policy") == POLICY_VERSION else {}),
                 }
                 for item in result.get("evidence", [])
             ]
@@ -1044,9 +1063,29 @@ class AutonomousResearchGraph:
                 except Exception as failed:
                     code = failed.error_code if isinstance(failed, WorkflowExecutionError) else None
                     result, accepted = {"errorCode": code or "CHECK_OPERATION_FAILED"}, False
+                    if (
+                        state.get("instruction_policy") == POLICY_VERSION
+                        and code == "AGENT_OPERATION_UNKNOWN"
+                    ):
+                        # Crash after the inner MODEL receipt but before TOOL
+                        # settlement: the non-repeatable TOOL fence prevents
+                        # re-entry. Stop conservatively with available IDs only.
+                        result.update(
+                            non_retryable_check=True, check_call_id=key,
+                            gaps=["核查操作结果未知\uff0c禁止重复请求\uff0c仍有未核实事项"],
+                        )
                 if accepted:
                     update["packet"] = result
                 entry["attempt_status"] = "accepted" if accepted else "failed"
+                if (
+                    state.get("instruction_policy") == POLICY_VERSION
+                    and result.get("non_retryable_check") is True
+                ):
+                    update["unusable_check"] = {
+                        **result, "task_id": task["task_id"], "criterion_ids": selected,
+                        "local_investigation_id": investigation_id,
+                    }
+                    entry["unusable_check"] = copy.deepcopy(update["unusable_check"])
                 recompute_tasks(tasks, investigations)
                 result = {
                     **result,

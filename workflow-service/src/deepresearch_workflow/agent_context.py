@@ -6,6 +6,7 @@ import copy
 import hashlib
 
 from .agent_budget import canonical
+from .agent_decision_instruction import POLICY_VERSION
 from .agent_investigations import investigation_state
 
 CONTEXT_VERSION = "agent-decision-context/2"
@@ -170,6 +171,11 @@ def decision_context(state, budget):
             ),
         },
     }
+    if state.get("instruction_policy") == POLICY_VERSION:
+        payload["actual_read_source_kinds"] = sorted({
+            item["source"]["kind"] for item in evidence
+            if isinstance(item.get("source", {}).get("kind"), str)
+        })
     from .agent_requirements import evaluate_coverage
 
     payload["original_requirements"] = copy.deepcopy(state.get("original_requirements"))

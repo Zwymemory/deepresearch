@@ -13,6 +13,7 @@ from pydantic import ValidationError
 from deepresearch_workflow.agent_budget import SAFE_FIELDS, AgentBudgetGateway
 from deepresearch_workflow.agent_decision_instruction import (
     ACTION_INPUTS,
+    LEGACY_POLICY_VERSION,
     POLICY_VERSION,
     obligation_instruction,
 )
@@ -325,7 +326,7 @@ async def test_instruction_policy_checkpoint_is_durable_before_any_model_reserva
     assert saved.next == ("decide",) and not runtime.ledger.rows
 
 
-@pytest.mark.parametrize("policy", [None, POLICY_VERSION])
+@pytest.mark.parametrize("policy", [None, LEGACY_POLICY_VERSION, POLICY_VERSION])
 async def test_same_missing_source_field_preserves_legacy_receipt_and_gates_fresh_diagnostic(
     policy,
 ):

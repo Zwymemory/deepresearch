@@ -2,11 +2,17 @@ package com.deepresearch.workflow;
 
 import com.deepresearch.security.JwtTokenService;
 import com.deepresearch.service.RagflowClient;
+import com.deepresearch.service.RagflowDocumentRegistry;
+import com.deepresearch.evidence.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -41,7 +47,26 @@ import static org.mockito.Mockito.when;
 })
 @ActiveProfiles("integration-test")
 @Testcontainers
+@Import(AgentHttpPostgresIT.ControlledOriginalTransport.class)
 class AgentHttpPostgresIT {
+    /** Substitute DNS/HTTP bytes only; all native source/check/publication gates remain real. */
+    @TestConfiguration
+    static class ControlledOriginalTransport {
+        @Bean @Primary EvidenceService controlledEvidenceService(AgentEvidenceAuthority authority,
+                EvidenceStore store, RagflowClient ragflow, RagflowDocumentRegistry registry) throws Exception {
+            var address=java.net.InetAddress.getByName("93.184.215.14");
+            var web=new SafeWebReader(host -> {
+                if(!host.equals("docs.example.test")) throw new IllegalArgumentException("Unconfigured offline original");
+                return List.of(address);
+            },(uri,addresses,remaining,maxBytes) -> {
+                assertThat(uri.toString()).isEqualTo("https://docs.example.test/policy");
+                String text="Document version: 2.0\nVersion 2.0 allows 100 requests per minute.\nControlled original web policy.\n";
+                return new SafeWebReader.Response(200,java.util.Map.of("content-type","text/plain; charset=utf-8"),
+                        text.getBytes(java.nio.charset.StandardCharsets.UTF_8),address);
+            });
+            return new EvidenceService(authority,store,new ManagedSourceReader(web,ragflow,registry,authority));
+        }
+    }
     @Container static final PostgreSQLContainer<?> PG=new PostgreSQLContainer<>(DockerImageName.parse("pgvector/pgvector:pg16"))
         .withDatabaseName("deepresearch").withUsername("deepresearch").withPassword("deepresearch")
         .withInitScript("init-workflow-role.sql");
@@ -88,7 +113,10 @@ class AgentHttpPostgresIT {
         return new Reply(response.statusCode(),response.body().isBlank()?object():JSON.readTree(response.body()));
     }
     Run create(String owner) throws Exception {
-        var reply=request("POST","/api/research/agents",user(owner),object("question","Investigate API limits","requestedTools",List.of("kb_search")));
+        return create(owner,List.of("kb_search"));
+    }
+    Run create(String owner,List<String> tools) throws Exception {
+        var reply=request("POST","/api/research/agents",user(owner),object("question","Investigate API limits","requestedTools",tools));
         assertThat(reply.status()).withFailMessage(reply.body().toString()).isEqualTo(202);
         String run=reply.body().path("runId").asText(),claim=UUID.randomUUID().toString();
         db.update("UPDATE agent_workflow_run SET status='WORKING',stage='WORKING',claim_token=?::uuid,lease_until=now()+interval '120 seconds' WHERE run_id=?",claim,run);
@@ -214,9 +242,11 @@ class AgentHttpPostgresIT {
     }
 
     private JsonNode criterionHttpScenario(String mode) throws Exception {
-        Run run=create("criteria-owner-"+mode);
+        boolean mixed=mode.equals("obligations-auto-mixed");
+        Run run=create("criteria-owner-"+mode,mixed?List.of("kb_search","web_search"):List.of("kb_search"));
         String objective=mode.equals("refuted")?"Verify API document version":"Verify API document version and per-minute request rate";
         if(mode.startsWith("obligations-")) objective="Using the Original source policy; verify API document version; verify per-minute request rate; quote the policy.";
+        if(mixed) objective="Using knowledge and web originals; verify API document version; verify per-minute request rate; quote both originals.";
         if(mode.equals("segments-complete")) objective="Verify API document version; verify per-minute request rate";
         var criteria=mode.equals("refuted")?List.of("Verify the API document version"):List.of("Verify the API document version","Verify the per-minute request rate");
         db.update("UPDATE agent_workflow_run SET question=? WHERE run_id=?",objective,run.id());
@@ -246,8 +276,15 @@ class AgentHttpPostgresIT {
             boolean legacy=mode.equals("legacy");
             assertThat(db.queryForObject("SELECT count(*) FROM agent_research_requirements WHERE run_id=?",Integer.class,run.id())).isEqualTo(legacy?0:1);
             assertThat(db.queryForObject("SELECT count(*) FROM agent_research_requirement_binding WHERE run_id=?",Integer.class,run.id())).isEqualTo(legacy?0:criteria.size());
-            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL' AND purpose='DECISION' AND status='SETTLED'",Integer.class,run.id())).isEqualTo(legacy?0:mode.equals("obligations-auto-recovery")?6:mode.equals("obligations-auto")?3:1);
-            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL'",Integer.class,run.id())).isEqualTo(legacy?1:mode.equals("obligations-auto-recovery")?8:mode.equals("obligations-auto")?4:2);
+            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL' AND purpose='DECISION' AND status='SETTLED'",Integer.class,run.id())).isEqualTo(legacy?0:mixed?5:mode.equals("obligations-auto-recovery")?6:mode.equals("obligations-auto")?3:1);
+            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL'",Integer.class,run.id())).isEqualTo(legacy?1:mixed?6:mode.equals("obligations-auto-recovery")?8:mode.equals("obligations-auto")?4:2);
+            if(mixed) {
+                assertThat(db.queryForObject("SELECT output_reserved FROM agent_research_operation WHERE run_id=? AND purpose='CHECK'",Integer.class,run.id())).isEqualTo(4096);
+                assertThat(db.queryForObject("SELECT (actual_usage->>'output_tokens')::int FROM agent_research_operation WHERE run_id=? AND purpose='CHECK'",Integer.class,run.id())).isEqualTo(1536);
+                // One publication plus its budgeted native source revalidation.
+                assertThat(db.queryForObject("SELECT count(*) FROM agent_research_publication WHERE run_id=?",Integer.class,run.id())).isEqualTo(1);
+                assertThat(db.queryForObject("SELECT count(*) FROM agent_evidence_check WHERE run_id=? AND status='COMPLETED'",Integer.class,run.id())).isEqualTo(1);
+            }
             String status=mode.startsWith("obligations-auto")||mode.equals("obligations-complete")||mode.equals("complete")||mode.equals("segments-complete")||mode.equals("refuted")?"SUCCEEDED":"INSUFFICIENT_EVIDENCE";
             if(mode.startsWith("obligations-")) {
                 var declared=JSON.readTree(db.queryForObject("SELECT safe_result::text FROM agent_research_operation WHERE run_id=? AND purpose='DECISION' ORDER BY created_at LIMIT 1",String.class,run.id()));
@@ -285,6 +322,7 @@ class AgentHttpPostgresIT {
         } finally {java.nio.file.Files.deleteIfExists(config);}
     }
     @Test void freshDefaultGraphSearchReadCheckAndPublicationUseNewNativeContract() throws Exception {criterionHttpScenario("obligations-auto");}
+    @Test void freshMixedOriginalsAndLargerCheckCompleteThroughNativeAttestation() throws Exception {criterionHttpScenario("obligations-auto-mixed");}
     @Test void freshDefaultGraphChangesSearchAfterWrongNamedSourceAndRecovers() throws Exception {criterionHttpScenario("obligations-auto-recovery");}
     @Test void obligationReferencesAndNativeAlignmentCanCompleteThroughHttpSql() throws Exception {criterionHttpScenario("obligations-complete");}
     @Test void truthfulIrrelevantClaimsDoNotCompleteOriginalObligations() throws Exception {criterionHttpScenario("obligations-irrelevant");}

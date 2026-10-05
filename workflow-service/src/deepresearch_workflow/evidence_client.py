@@ -5,8 +5,9 @@ from __future__ import annotations
 import hashlib
 
 from .agent_budget import canonical
+from .agent_decision_instruction import LEGACY_POLICY_VERSION, POLICY_VERSION
 from .agent_protocol import ModelRequest
-from .graph import WorkflowExecutionError
+from .graph import ModelCallError, WorkflowExecutionError
 
 
 class HttpEvidenceBackend:
@@ -61,6 +62,11 @@ class HttpEvidenceBackend:
         return {"records": [data]}
 
     async def check(self, state, task, call_id, claims, gateway):
+        policy = state.get("instruction_policy")
+        if policy is not None and policy not in {LEGACY_POLICY_VERSION, POLICY_VERSION}:
+            raise WorkflowExecutionError(
+                "Agent instruction policy unknown", error_code="AGENT_INSTRUCTION_POLICY_INVALID",
+            )
         identifiers = self.identifiers(state, task, call_id)
         current = state.get("packet", {})
         investigation_id = current.get("investigation_id")
@@ -122,23 +128,44 @@ class HttpEvidenceBackend:
                 instruction=verifier_instruction(prepared["request"]),
                 payload=prepared["request"],
                 schema=response_schema(prepared["request"]),
+                max_output_tokens=4096 if policy == POLICY_VERSION else 1024,
                 request_binding={
                     "check_id": prepared["check_id"],
                     "request_sha256": prepared["request_sha256"],
+                    **({"instruction_policy": POLICY_VERSION} if policy == POLICY_VERSION else {}),
                 },
             )
             model_id = (
                 "model:agent:check-"
                 + hashlib.sha256(prepared["check_id"].encode()).hexdigest()[:32]
             )
-            result = await gateway.model_call(
-                model_id,
-                "CHECK",
-                request,
-                lambda value: parse_verifier_response(
-                    canonical(value), prepared["request"], prepared["request_sha256"]
-                ),
-            )
+            try:
+                result = await gateway.model_call(
+                    model_id,
+                    "CHECK",
+                    request,
+                    lambda value: parse_verifier_response(
+                        canonical(value), prepared["request"], prepared["request_sha256"]
+                    ),
+                )
+            except WorkflowExecutionError as failed:
+                non_retryable = (
+                    isinstance(failed, ModelCallError) and failed.retryable is False
+                ) or failed.error_code == "AGENT_MODEL_NOT_RETRYABLE"
+                if policy != POLICY_VERSION or not non_retryable:
+                    raise
+                # The MODEL receipt remains UNKNOWN with its measured usage. A
+                # settled TOOL receipt makes this terminal observation replayable.
+                return {
+                    "errorCode": failed.error_code,
+                    "non_retryable_check": True,
+                    "check_call_id": call_id,
+                    "check_id": prepared["check_id"],
+                    "model_call_id": model_id,
+                    "investigation_id": prepared.get("investigation_id"),
+                    "request_sha256": prepared["request_sha256"],
+                    "gaps": ["核查模型结果不可用且不可重试"],
+                }
             checked = await self.post(
                 "/internal/agent/evidence/checks/complete",
                 {

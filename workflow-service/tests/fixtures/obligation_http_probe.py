@@ -14,6 +14,7 @@ from psycopg.types.json import Jsonb
 
 from deepresearch_workflow.agent_budget import SqlAgentLedger
 from deepresearch_workflow.agent_completion import ensure_criteria
+from deepresearch_workflow.agent_decision_instruction import POLICY_VERSION
 from deepresearch_workflow.agent_obligations import (
     CLAIMS_VERSION,
     CONTINUATION_VERSION,
@@ -67,6 +68,19 @@ class Verifier:
                     "action": "read_source",
                     "source_id": unread[-1]["source_id"],
                     "reason": "Read authorized current candidate",
+                }
+            elif (
+                cfg["mode"] == "obligations-auto-mixed"
+                and "web" not in payload["actual_read_source_kinds"]
+            ):
+                assert payload["actual_read_source_kinds"] == ["knowledge"]
+                assert payload["candidates"][0]["origin"]["tool"] == "kb_search"
+                value = {
+                    **fields,
+                    "action": "search",
+                    "tool": "web_search",
+                    "query": "Missing original web policy",
+                    "reason": "Knowledge read does not cover the requested web original",
                 }
             elif payload["observations"][-1].get("action") == "check_claims":
                 value = {
@@ -177,7 +191,9 @@ class Verifier:
                                 "evidence_id": e["evidence_id"],
                                 "relation": "supports",
                                 "quote": e["snapshot"]["text"],
-                                "reason": "Controlled exact original assessment",
+                                "reason": ("Controlled exact original assessment. " * 20)
+                                if cfg["mode"] == "obligations-auto-mixed"
+                                else "Controlled exact original assessment",
                                 "source_alignment": "wrong_source"
                                 if cfg["mode"] == "obligations-source"
                                 or e["source"]["source_id"] == "source-managed-wrong"
@@ -194,9 +210,14 @@ class Verifier:
                     "status": "incomplete"
                     if cfg["mode"] == "obligations-partition"
                     else "complete",
-                    "reason": "Controlled full original question classification",
+                    "reason": ("Controlled full original question classification. " * 18)
+                    if cfg["mode"] == "obligations-auto-mixed"
+                    else "Controlled full original question classification",
                 },
             }
+        if request.name == "EvidenceCheck" and cfg["mode"] == "obligations-auto-mixed":
+            assert request.max_output_tokens == 4096 and len(json.dumps(value)) > 4096
+            return ModelResult(value=value, input_tokens=30, output_tokens=1536)
         return ModelResult(value=value, input_tokens=30, output_tokens=30)
 
 
@@ -245,15 +266,18 @@ class ControlledSearch:
 
     async def execute(self, request):
         self.calls.append(request.task.query)
+        web = request.task.tool == "web_search"
         wrong = self.cfg["mode"] == "obligations-auto-recovery" and len(self.calls) == 1
-        identity = "source-managed-wrong" if wrong else "source-managed"
+        identity = "source-web" if web else "source-managed-wrong" if wrong else "source-managed"
         body = {
             "success": True,
-            "tool": "kb_search",
+            "tool": request.task.tool,
             "evidence": [
                 {
                     "evidenceId": identity,
-                    "uriOrChunkKey": "ragflow:dataset-http:document-http:chunk-old",
+                    "uriOrChunkKey": "https://docs.example.test/policy"
+                    if web
+                    else "ragflow:dataset-http:document-http:chunk-old",
                     "title": "News update" if wrong else "Original source policy",
                 }
             ],
@@ -268,12 +292,13 @@ class ControlledSearch:
                 run_id,call_id,task_id,tool_name,request_fingerprint,
                 status,safe_result,completed_at,claim_token,
                 mcp_execution_status,mcp_safe_result,mcp_claim_token,mcp_started_at,mcp_completed_at)
-                VALUES (%s,%s,%s,'kb_search',%s,'COMPLETED','{}',now(),%s::uuid,
+                VALUES (%s,%s,%s,%s,%s,'COMPLETED','{}',now(),%s::uuid,
                 'COMPLETED',%s,%s::uuid,now(),now())""",
                 (
                     request.run_id,
                     request.call_id,
                     request.task.task_id,
+                    request.task.tool,
                     "0" * 64,
                     self.cfg["claim"],
                     Jsonb(body),
@@ -282,7 +307,13 @@ class ControlledSearch:
             )
         return ToolExecutionResult(
             call_id=request.call_id,
-            evidence=[ToolEvidence(source_id=identity, content="Controlled retrieval lead")],
+            evidence=[
+                ToolEvidence(
+                    source_id=identity,
+                    content="Controlled retrieval lead",
+                    source_uri="https://docs.example.test/policy" if web else None,
+                )
+            ],
         )
 
 
@@ -305,7 +336,8 @@ async def autonomous(repo, client, cfg):
         "run_id": cfg["run"],
         "question": cfg["objective"],
         "grant_id": cfg["grant"],
-        "requested_scopes": ["kb_search", "read_source", "check_claims"],
+        "requested_scopes": ["kb_search", "read_source", "check_claims"]
+        + (["web_search"] if cfg["mode"] == "obligations-auto-mixed" else []),
         "deadline_at": (datetime.now(UTC) + timedelta(seconds=150)).isoformat(),
     }
     result = await graph.compile(checkpointer=InMemorySaver()).ainvoke(
@@ -317,7 +349,13 @@ async def autonomous(repo, client, cfg):
     )
     assert result["final_status"] == "SUCCEEDED", result
     assert len(result["original_requirements"]["requirements"]) == 2
-    if cfg["mode"] == "obligations-auto-recovery":
+    if cfg["mode"] == "obligations-auto-mixed":
+        assert len(tools.calls) == 2 and len(model.calls) == 6
+        assert {e["source"]["kind"] for e in result["evidence"]} == {"knowledge", "web"}
+        assert result["requirement_coverage"]["complete"]
+        assert all(c["status"] == "resolved" for t in result["tasks"] for c in t["criteria"])
+        assert result["instruction_policy"] == POLICY_VERSION
+    elif cfg["mode"] == "obligations-auto-recovery":
         assert len(tools.calls) == 2 and tools.calls[0] != tools.calls[1]
         assert len(model.calls) == 8 and len(result["evidence"]) == 2
         assert any(
@@ -325,7 +363,9 @@ async def autonomous(repo, client, cfg):
         )
     else:
         assert len(tools.calls) == 1 and len(model.calls) == 4
-    assert all(r.max_output_tokens == 1024 for r in model.calls)
+    assert all(
+        r.max_output_tokens == (4096 if r.name == "EvidenceCheck" else 1024) for r in model.calls
+    )
     await Path(cfg["output"]).write_text(
         json.dumps(result, ensure_ascii=False, indent=2, default=str)
     )

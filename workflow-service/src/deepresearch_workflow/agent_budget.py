@@ -13,7 +13,7 @@ from psycopg.types.json import Jsonb
 from pydantic import ValidationError as PydanticValidationError
 from referencing import Registry
 
-from .agent_decision_instruction import POLICY_VERSION
+from .agent_decision_instruction import LEGACY_POLICY_VERSION, POLICY_VERSION
 from .agent_diagnostics import safe_check_code, safe_requirement_code, safe_segment_diagnostic
 from .agent_json import FINISH_REASONS
 from .agent_model import MODEL_RULES, AgentModel, AgentModelFailure, OpenAIAgentModel
@@ -496,7 +496,8 @@ class AgentBudgetGateway:
         schema_diagnostic = None
         diagnostic_enabled = (
             request is not None
-            and request.request_binding.get("instruction_policy") == POLICY_VERSION
+            and request.request_binding.get("instruction_policy")
+            in {LEGACY_POLICY_VERSION, POLICY_VERSION}
             and request_hash is not None
         )
         stage, domain_code = None, None
@@ -615,6 +616,14 @@ class AgentBudgetGateway:
         # Freeze the exact provider bytes before admission; binding metadata is not sent.
         prepared = None
         try:
+            # model_copy(update=...) bypasses DTO validation. Enforce purpose here
+            # before encoding, reservation or any provider invocation.
+            ModelRequest.model_validate(request.model_dump(by_alias=True))
+            policy = request.request_binding.get("instruction_policy")
+            if policy is not None and policy not in {LEGACY_POLICY_VERSION, POLICY_VERSION}:
+                raise ValueError("Unknown instruction policy")
+            if request.max_output_tokens > 1024 and purpose != "CHECK":
+                raise ValueError("Expanded output is CHECK-only")
             request = request.model_copy(deep=True)
             if isinstance(self.model, OpenAIAgentModel):
                 prepared = self.model.prepare(request)

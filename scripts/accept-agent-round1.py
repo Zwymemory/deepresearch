@@ -534,7 +534,8 @@ def validate_decision_readiness(ready, review):
     proof = ready.get("decision_identity")
     if not isinstance(proof, dict) or proof != binding.get("decision_identity"):
         raise ValueError("Actual loaded decision proof and independent approval required")
-    if (proof.get("instruction_policy") != "agent-obligation-instruction/1"
+    if (proof.get("instruction_policy") not in {
+            "agent-obligation-instruction/1", "agent-obligation-instruction/2"}
             or proof.get("schema_diagnostic_version") != "agent-schema-diagnostic/1"
             or binding.get("instruction_policy") != proof["instruction_policy"]
             or binding.get("schema_diagnostic_version") != proof["schema_diagnostic_version"]

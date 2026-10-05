@@ -814,3 +814,89 @@ async def test_json_sql_inflight_cancellation_leaves_reserved_not_reissued(tmp_p
         assert len(calls) == 1 and (await ledger.summary(run, claim))["toolCalls"] == 0
     finally:
         await repo.close()
+
+
+@pytest.mark.parametrize("charged,admitted", [(12288, True), (12289, False)])
+async def test_fresh_check_4096_reservation_uses_unchanged_global_remaining_output(
+    charged, admitted
+):
+    from deepresearch_workflow.agent_decision_instruction import POLICY_VERSION
+
+    budget = AgentRunBudget(runtime="agent")
+    assert (
+        budget.max_decision_steps,
+        budget.max_model_calls,
+        budget.max_tool_calls,
+        budget.deadline_seconds,
+        budget.max_input_tokens,
+        budget.max_output_tokens,
+    ) == (8, 16, 16, 180, 64000, 16384)
+    repo, ledger, run, claim = await seed(budget)
+    await ledger.reserve(
+        run, claim, "model:prior", "MODEL", "CHECK", "a" * 64, 100, charged, budget
+    )
+    await ledger.settle(
+        run,
+        claim,
+        "model:prior",
+        1,
+        {"value": {}},
+        {"input_tokens": 1, "output_tokens": charged},
+    )
+
+    class Model:
+        calls = 0
+
+        async def invoke(self, request):
+            self.calls += 1
+            async with await psycopg.AsyncConnection.connect(URL) as conn:
+                row = await (
+                    await conn.execute(
+                        "SELECT output_reserved,status FROM agent_research_operation "
+                        "WHERE run_id=%s AND operation_key='model:fresh-capacity'",
+                        (run,),
+                    )
+                ).fetchone()
+                assert row == (4096, "RESERVED")
+            return ModelResult(
+                value={"accepted": True}, input_tokens=30, output_tokens=1536
+            )
+
+    model = Model()
+    gateway = AgentBudgetGateway(
+        run_id=run,
+        claim_token=claim,
+        budget=budget,
+        ledger=ledger,
+        model=model,
+        guard=lambda: repo.assert_active_claim(run, claim),
+    )
+    request = ModelRequest(
+        name="EvidenceCheck",
+        instruction="Controlled fresh allocation",
+        payload={},
+        schema={"type": "object"},
+        max_output_tokens=4096,
+        request_binding={"instruction_policy": POLICY_VERSION},
+    )
+    try:
+        if admitted:
+            result = await gateway.model_call("model:fresh-capacity", "CHECK", request)
+            assert (
+                await gateway.model_call("model:fresh-capacity", "CHECK", request)
+                == result
+            )
+            assert model.calls == 1
+            summary = await ledger.summary(run, claim)
+            assert (
+                summary["modelCalls"] == 2 and summary["outputTokens"] == charged + 1536
+            )
+        else:
+            with pytest.raises(RunBudgetExceededError):
+                await gateway.model_call("model:fresh-capacity", "CHECK", request)
+            assert (
+                model.calls == 0
+                and (await ledger.summary(run, claim))["modelCalls"] == 1
+            )
+    finally:
+        await repo.close()

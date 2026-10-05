@@ -1,0 +1,17 @@
+{
+  "candidate_sha": "152a245e319aa6e301b3c07ae4ce9664217e3d47",
+  "requests": [
+    {
+      "protocol": "evidence-check/1",
+      "request_sha256": "4c3bc80e08921c550bfcc1bec0fd9b797bd650c105d980defb2619ad5bcdd17a",
+      "wire_sha256": "aa69523ec6291849e659f83124e2767d4867cec448bf03fe7271893331db710e",
+      "wire_bytes": 5898
+    },
+    {
+      "protocol": "evidence-check/2",
+      "request_sha256": "0af4651c40cefd449687bff3e1d909a664e4c0d3ff20605bc4119eca78d7861b",
+      "wire_sha256": "f114adaca61c9a4773b8a4c4c769abc19f303bade92030ed34aed128f9b84d87",
+      "wire_bytes": 5971
+    }
+  ]
+}

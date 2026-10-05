@@ -9,6 +9,7 @@ from typing import Annotated, Any, Literal
 from pydantic import Field, field_validator, model_validator
 from typing_extensions import TypedDict
 
+from .agent_decision_instruction import POLICY_VERSION
 from .agent_question_segments import PLANNER_VERSION, SegmentRequirementDraft
 from .agent_requirements import RequirementBinding, RequirementDraft
 from .domain import AgentRunBudget as AgentRunBudget
@@ -185,8 +186,17 @@ class ModelRequest(StrictModel):
     instruction: str = Field(min_length=1, max_length=12000)
     payload: dict[str, Any]
     result_schema: dict[str, Any] = Field(alias="schema")
-    max_output_tokens: int = Field(default=1024, ge=1, le=1024)
+    max_output_tokens: int = Field(default=1024, ge=1, le=4096)
     request_binding: dict[str, str] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def output_allocation(self):
+        if self.max_output_tokens > 1024 and not (
+            self.name == "EvidenceCheck"
+            and self.request_binding.get("instruction_policy") == POLICY_VERSION
+        ):
+            raise ValueError("Expanded output requires the fresh CHECK policy")
+        return self
 
 
 class ModelResult(StrictModel):
@@ -214,6 +224,7 @@ class AgentState(TypedDict, total=False):
     decision_steps: int
     planner_contract: str
     instruction_policy: str
+    unusable_check: dict[str, Any]
     continuation_contract: str
     action_progress_step: int
     action_sequence: int

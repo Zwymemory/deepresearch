@@ -81,7 +81,7 @@ class LoadedDecisionTests(unittest.TestCase):
         spec.loader.exec_module(side)
         source = Path(agent_runtime.__file__).resolve().parents[1]
         proof = side.loaded_decision_identity(source)
-        self.assertEqual(proof["instruction_policy"], "agent-obligation-instruction/1")
+        self.assertEqual(proof["instruction_policy"], "agent-obligation-instruction/2")
         self.assertEqual(proof["schema_diagnostic_version"], "agent-schema-diagnostic/1")
         self.assertNotEqual(proof["initial_instruction_sha256"], proof["continuation_instruction_sha256"])
         for row in proof["modules"].values():
