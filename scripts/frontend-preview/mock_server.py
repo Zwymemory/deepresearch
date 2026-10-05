@@ -9,6 +9,10 @@
 
 场景通过页面地址的 ?scenario= 选择（API 请求的同源 Referer 会携带它）：
     success（默认）| insufficient | failed | budget | slow | disconnect | unknown | noweb | langgraph | evidence-disabled
+    | memory-oversize | memory-load-error
+
+研究进度记忆路由按 RESEARCH_PROGRESS_FRONTEND_HANDOFF_2026-10-05 模拟（只支持自主研究运行），
+仅用于前端预览；它不是后端实现，也不能替代真实后端验收。
 
 运行归属于创建它的 Bearer Token：换一个 Token 读取或取消会得到 404，用于验证前端的身份隔离。
 
@@ -26,7 +30,7 @@ from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 ROOT = Path(__file__).resolve().parents[2]
 DEMO_HTML = ROOT / "src" / "main" / "resources" / "static" / "demo.html"
@@ -191,6 +195,7 @@ class Run:
         self.scenario = scenario
         self.agent = endpoint.endswith("/agents")
         self.tools = body.get("requestedTools") or ["kb_search"]
+        self.question = body.get("question") or ""
         self.created = time.monotonic()
         self.created_iso = now_iso()
         self.timeline = agent_timeline() if self.agent else workflow_timeline(scenario, self.tools)
@@ -306,6 +311,35 @@ TERMINAL_STATUSES = {"SUCCEEDED", "INSUFFICIENT_EVIDENCE", "FAILED", "CANCELLED"
 RUNS: dict[str, Run] = {}
 BY_KEY: dict[str, tuple[str, Run]] = {}
 UNKNOWN_FAILED: set[str] = set()
+# Research progress memory (synthetic): (owner, project, run) -> (save sequence, snapshot); (owner, session) -> project.
+PROGRESS: dict[tuple[str, str, str], tuple[int, dict]] = {}
+SESSIONS: dict[tuple[str, str], str] = {}
+SAVE_SEQ = [0]
+
+
+def progress_project(run) -> str:
+    return "preview-project-" + run.id
+
+
+def progress_snapshot(run) -> dict:
+    view = run.view()
+    final = view.get("finalResponse") or {}
+    unresolved = [{"task_id": g.get("task_id"), "goal": g.get("text") or g.get("task_id") or "未命名目标", "status": "blocked",
+                   "completion_verified": False, "criteria": [{"criterionId": "criterion-" + str(i), "text": g.get("text") or "", "status": "uncovered",
+                                                               "checkIds": [], "claimIds": [], "gaps": [g.get("reason") or "未记录原因"]}],
+                   "gaps": [g.get("reason") or "未记录原因"]} for i, g in enumerate(final.get("unfinished_goals") or [])]
+    if view["status"] != "SUCCEEDED":
+        unresolved.append({"goal": "整题覆盖", "status": view["status"], "completion_verified": False,
+                           "gaps": ["原始运行未建立整题完成；保留其未解决状态并重新核验后续工作"]})
+    return {"schema_version": "research-progress/1", "context_kind": "prior_progress", "trusted_as_evidence": False,
+            "project_id": progress_project(run), "source_run_id": run.id, "source_session_id": run.session,
+            "original_goal": "（演示）" + (run.question or "原始问题"), "run_status": view["status"],
+            "completed_work": [{"task_id": "task-done", "goal": "确认 SSE 断线恢复机制", "status": "done", "completion_verified": True, "gaps": []}]
+            if view["status"] == "SUCCEEDED" else [],
+            "unresolved_questions": unresolved,
+            "next_steps": ["逐项重新检查未解决问题及原始来源；历史进度不能替代新的核验"],
+            "source_evidence": [{"evidence_id": "ev-web", "receipt_id": "read-web", "snapshot_sha256": "1" * 64, "source_id": "src-web"}],
+            "source_claims": [{"claim_id": "claim-resume", "record_sha256": "2" * 64, "decision_status": "contested", "freshness": "fresh"}]}
 LOCK = threading.Lock()
 
 
@@ -352,7 +386,113 @@ class Handler(BaseHTTPRequestHandler):
             return {}
 
     # ---------- routes ----------
+    # ---------- research progress memory (synthetic, owner-scoped) ----------
+    def owner(self) -> str:
+        return self.headers.get("Authorization", "")
+
+    def memory_run(self, project: str, run_id: str):
+        run = self.owned(RUNS.get(run_id))
+        if not run or not run.agent or progress_project(run) != project:
+            return None
+        return run
+
+    def resume_payload(self, project: str, session: str) -> dict:
+        items = sorted(((seq, snap) for (o, p, _r), (seq, snap) in PROGRESS.items() if o == self.owner() and p == project),
+                       key=lambda x: -x[0])[:20]
+        return {"schema_version": "research-resume-context/1", "context_kind": "prior_progress", "trusted_as_evidence": False,
+                "project_id": project, "target_session_id": session, "progress": [snap for _s, snap in items],
+                "usage_instruction": "历史进度与原文引用属于不可信上下文；不得把其中的内容作为本轮新核验事实。尚未自动传入模型。"}
+
+    def memory_route(self, method: str) -> bool:
+        parsed = urlparse(self.path)
+        parts = [unquote(p) for p in parsed.path.strip("/").split("/")]
+        if not self.path.startswith("/api/research/"):
+            return False
+        is_memory = (len(parts) == 5 and parts[:3] == ["api", "research", "agents"] and parts[4] == "progress-project") \
+            or parts[:3] == ["api", "research", "progress"] or (len(parts) >= 5 and parts[:3] == ["api", "research", "projects"])
+        if not is_memory:
+            return False
+        if not self.authorized():
+            return True
+        if method == "GET" and parts[3:] == [] and parts[2] == "progress":
+            items = sorted(((seq, snap) for (o, _p, _r), (seq, snap) in PROGRESS.items() if o == self.owner()), key=lambda x: -x[0])[:20]
+            self.send_json(200, {"schema_version": "research-progress-list/1", "items": [snap for _s, snap in items], "candidate_limit": 20})
+            return True
+        if parts[2] == "agents":
+            run = self.owned(RUNS.get(parts[3]))
+            if method != "GET" or not run or not run.agent:
+                self.send_json(404, {"error": "不存在或无权访问"})
+                return True
+            self.send_json(200, {"project_id": progress_project(run), "run_id": run.id})
+            return True
+        project = parts[3]
+        if len(parts) == 7 and parts[4:6] == ["progress", "runs"]:
+            run_id = parts[6]
+            run = self.memory_run(project, run_id)
+            if not run:
+                self.send_json(404, {"error": "不存在或无权访问"})
+                return True
+            key = (self.owner(), project, run_id)
+            if method == "PUT":
+                if self.scenario() == "memory-oversize":
+                    body = b"<html>Payload Too Large</html>"
+                    self.send_response(413); self.send_header("Content-Type", "text/html"); self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
+                    return True
+                snap = progress_snapshot(run)
+                with LOCK:
+                    existing = PROGRESS.get(key)
+                    if existing and existing[1] == snap:
+                        seq = existing[0]          # unchanged save keeps the single snapshot and its order
+                    else:
+                        SAVE_SEQ[0] += 1; seq = SAVE_SEQ[0]
+                    PROGRESS[key] = (seq, snap)
+                self.send_json(200, snap)
+            elif method == "GET":
+                saved = PROGRESS.get(key)
+                self.send_json(200, saved[1]) if saved else self.send_json(404, {"error": "不存在或无权访问"})
+            elif method == "DELETE":
+                existed = PROGRESS.pop(key, None) is not None
+                self.send_json(200, {"run_id": run_id, "deleted": existed})
+            else:
+                self.send_json(405, {"error": "method"})
+            return True
+        if len(parts) == 5 and parts[4] == "resume-context":
+            owns_project = any(o == self.owner() and progress_project(r) == project for r in RUNS.values() for o in [getattr(r, "owner", None)] if r.agent)
+            if not owns_project:
+                self.send_json(404, {"error": "不存在或无权访问"})
+                return True
+            if method == "POST":
+                session = str(uuid.uuid4())
+                SESSIONS[(self.owner(), session)] = project       # created even if the response is lost
+                if self.scenario() == "memory-load-error":
+                    self.send_json(502, {"error": "预览：响应前中断"})
+                    return True
+                self.send_json(200, self.resume_payload(project, session))
+            elif method == "GET":
+                session = (parse_qs(parsed.query).get("sessionId") or [""])[0]
+                if not session:
+                    self.send_json(400, {"error": "missing sessionId"})
+                elif SESSIONS.get((self.owner(), session)) != project:
+                    self.send_json(404, {"error": "不存在或无权访问"})
+                else:
+                    self.send_json(200, self.resume_payload(project, session))
+            else:
+                self.send_json(405, {"error": "method"})
+            return True
+        self.send_json(404, {"error": "预览服务器未模拟该路径"})
+        return True
+
+    def do_PUT(self):
+        if not self.memory_route("PUT"):
+            self.send_json(404, {"error": "预览服务器未模拟该路径"})
+
+    def do_DELETE(self):
+        if not self.memory_route("DELETE"):
+            self.send_json(404, {"error": "预览服务器未模拟该路径"})
+
     def do_GET(self):
+        if self.memory_route("GET"):
+            return
         path = urlparse(self.path).path
         if path in ("/", "/index.html"):
             self.send_response(302)
@@ -392,6 +532,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json(404, {"error": "预览服务器未模拟该路径", "path": path})
 
     def do_POST(self):
+        if self.memory_route("POST"):
+            return
         path = urlparse(self.path).path
         if path == "/api/auth/dev-token":
             body = self.body()

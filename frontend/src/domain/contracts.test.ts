@@ -94,11 +94,13 @@ describe("evidence view", () => {
 });
 
 describe("notebook preview honesty", () => {
-  it("saving a run never marks its cited sources as verified", async () => {
-    const { previewRecordFromRun } = await import("../demo/memoryPreview");
+  it("a preview save from a run marks nothing completed or verified and invents no claim references", async () => {
+    const { previewSnapshotFromRun } = await import("../demo/memoryPreview");
     const { snapshotRun } = await import("../demo/useDemoRun");
-    const record = previewRecordFromRun(snapshotRun("success", Infinity));
-    expect(record.provenance.length).toBeGreaterThan(0);
-    expect(record.provenance.every((p) => p.status === "unverified")).toBe(true);
+    const snapshot = previewSnapshotFromRun(snapshotRun("partial", Infinity));
+    expect(snapshot.completedWork).toEqual([]);
+    expect(snapshot.unresolvedQuestions.length).toBeGreaterThan(0);
+    expect(snapshot.unresolvedQuestions.every((g) => !g.completionVerified)).toBe(true);
+    expect([snapshot.sourceClaims, snapshot.sourceEvidence]).toEqual([[], []]);
   });
 });

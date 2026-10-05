@@ -17,7 +17,9 @@ import { ReportView } from "../features/report/ReportView";
 import { RunningView } from "../features/running/RunningView";
 import { IdentityDialog, RecentDialog, type RecentItem } from "../features/shell/Dialogs";
 import { NotebookDialog } from "../features/memory/Notebook";
-import { PREVIEW_RECORDS, previewRecordFromRun, simulateSave, type ProgressRecord } from "../demo/memoryPreview";
+import { PREVIEW_SNAPSHOTS, previewResume, previewSnapshotFromRun, simulateSave } from "../demo/memoryPreview";
+import { recordKey, type ProgressSnapshot } from "../domain/progressMemory";
+import { useNotebook, type LoadState, type SaveState } from "../live/useNotebook";
 import { TopBar, type AppMode } from "../features/shell/TopBar";
 import { STAGE_LABELS } from "../domain/eventText";
 import { useLiveResearch, type Notify } from "../live/useLiveResearch";
@@ -83,9 +85,15 @@ export function App() {
   const [reportReady, setReportReady] = useState(false);
   const [dialog, setDialog] = useState<"sources" | "identity" | "recent" | "notebook" | null>(null);
   // Research notebook: preview only (backend progress-memory contract not delivered).
-  const [memoryRecords, setMemoryRecords] = useState<ProgressRecord[]>(PREVIEW_RECORDS);
-  const [loadedRecord, setLoadedRecord] = useState<ProgressRecord | null>(null);
-  const [saveState, setSaveState] = useState<{ runId: string; state: "idle" | "saving" | "saved" | "failed" }>({ runId: "", state: "idle" });
+  // Demo mode keeps the explicitly selected synthetic notebook preview, separate from live data.
+  const [previewItems, setPreviewItems] = useState<ProgressSnapshot[]>(PREVIEW_SNAPSHOTS);
+  const [previewLoad, setPreviewLoad] = useState<LoadState>({ state: "idle" });
+  const [previewSave, setPreviewSave] = useState<{ runId: string; save: SaveState }>({ runId: "", save: { state: "idle" } });
+  // Live notebook: list only when opened; save eligibility from project discovery for the current run.
+  const notebook = useNotebook({
+    enabled: !demoMode, ctx: live.ctx, scope: live.scope, notebookOpen: dialog === "notebook",
+    run: live.run && live.run.runId ? { runId: live.run.runId, mode: live.run.mode } : null,
+  });
   const [demoRecent, setDemoRecent] = useState<Array<RecentItem & { run: RunState }>>([]);
   const [disagreementIndex, setDisagreementIndex] = useState(init.disagreement ?? 0);
   const [prefill, setPrefill] = useState<{ key: number; question: string }>({ key: 0, question: "" });
@@ -217,15 +225,31 @@ export function App() {
     setView("report");
   }, []);
 
-  const saveProgress = () => {
-    if (!demoMode || !run) return;
+  const savePreview = () => {
+    if (!run) return;
     const runId = run.runId;
-    setSaveState({ runId, state: "saving" });
+    setPreviewSave({ runId, save: { state: "saving" } });
     const fail = new URLSearchParams(window.location.search).has("memoryFail");
     // Success is shown only after the (simulated) confirmation resolves.
-    simulateSave(previewRecordFromRun(run), fail)
-      .then((record) => { setMemoryRecords((rows) => [record, ...rows]); setSaveState({ runId, state: "saved" }); })
-      .catch(() => setSaveState({ runId, state: "failed" }));
+    simulateSave(previewSnapshotFromRun(run), fail)
+      .then((snapshot) => {
+        setPreviewItems((rows) => [snapshot, ...rows.filter((r) => recordKey(r.projectId, r.sourceRunId) !== recordKey(snapshot.projectId, snapshot.sourceRunId))]);
+        setPreviewSave({ runId, save: { state: "saved", snapshot } });
+      })
+      .catch(() => setPreviewSave({ runId, save: { state: "failed", message: "模拟保存失败，没有任何内容被保存。" } }));
+  };
+
+  const reportSave = () => {
+    if (!run || !(run.status === "SUCCEEDED" || run.status === "INSUFFICIENT_EVIDENCE" || isTerminal(run.status))) return undefined;
+    if (demoMode) {
+      const save = previewSave.runId === run.runId ? previewSave.save : { state: "idle" as const };
+      return { eligibility: "eligible" as const, reason: "", state: save.state, message: save.state === "failed" ? save.message : undefined,
+        preview: true, onSave: savePreview, onOpenNotebook: () => setDialog("notebook") };
+    }
+    const e = notebook.eligibility;
+    return { eligibility: e.state, reason: e.reason, state: notebook.save.state,
+      message: notebook.save.state === "failed" ? notebook.save.message : undefined, preview: false,
+      onSave: () => { void notebook.onSave(); }, onOpenNotebook: () => setDialog("notebook") };
   };
 
   const goHome = () => {
@@ -307,10 +331,7 @@ export function App() {
                   lastEventId={run.lastEventId} onCite={openCitation} onOpenSources={() => setDialog("sources")} onNew={goHome}
                   onRetryQuestion={retryQuestion} onFollowUp={followUp} onReady={setReportReady}
                   evidence={evidence} onCompareDisagreement={openDisagreement}
-                  save={run.status === "SUCCEEDED" || run.status === "INSUFFICIENT_EVIDENCE" ? {
-                    available: demoMode, state: saveState.runId === run.runId ? saveState.state : "idle",
-                    onSave: saveProgress, onOpenNotebook: () => setDialog("notebook"),
-                  } : undefined} />
+                  save={reportSave()} />
               ) : null}
               {!liveBlocked && view === "compare" && compare && compareA && compareB ? (
                 <CompareView statement={statementsFor(blocks, compare.a)[0] ?? null} a={compareA} b={compareB} all={citations} demo={demoMode}
@@ -340,10 +361,25 @@ export function App() {
         <IdentityDialog open={dialog === "identity"} onOpenChange={(o) => setDialog(o ? "identity" : null)} mode={appMode}
           identity={live.identity} onApply={(next) => { const error = live.applyIdentity(next); if (!error) notify("身份已更新；已清除旧身份的缓存内容", "success"); return error; }}
           onDevToken={live.devToken} />
-        <NotebookDialog key={appMode} open={dialog === "notebook"} onOpenChange={(o) => setDialog(o ? "notebook" : null)} live={!demoMode}
-          records={memoryRecords} loaded={loadedRecord}
-          onLoad={(record) => setLoadedRecord(record)}
-          onDelete={(id) => { setMemoryRecords((rows) => rows.filter((r) => r.id !== id)); setLoadedRecord((l) => l?.id === id ? null : l); }} />
+        {demoMode ? (
+          <NotebookDialog key="preview" mode="preview" open={dialog === "notebook"} onOpenChange={(o) => setDialog(o ? "notebook" : null)}
+            needsIdentity={false} onOpenIdentity={() => setDialog("identity")}
+            items={previewItems} loading={false} error={null} candidateLimit={null} onRefresh={() => {}}
+            load={previewLoad} onLoad={(projectId) => setPreviewLoad({ state: "loaded", context: previewResume(projectId, previewItems), recovered: false })}
+            onClearLoaded={() => setPreviewLoad({ state: "idle" })}
+            onDelete={async (record) => {
+              const key = recordKey(record.projectId, record.sourceRunId);
+              setPreviewItems((rows) => rows.filter((r) => recordKey(r.projectId, r.sourceRunId) !== key));
+              setPreviewLoad((l) => l.state === "loaded" ? { ...l, context: { ...l.context, progress: l.context.progress.filter((p) => recordKey(p.projectId, p.sourceRunId) !== key) } } : l);
+              return true;
+            }} deletingKey={null} deleteError={null} />
+        ) : (
+          <NotebookDialog key={"live:" + live.scope} mode="live" open={dialog === "notebook"} onOpenChange={(o) => setDialog(o ? "notebook" : null)}
+            needsIdentity={!live.identity.token} onOpenIdentity={() => setDialog("identity")}
+            items={notebook.list.items} loading={notebook.list.loading} error={notebook.list.error} candidateLimit={notebook.list.candidateLimit}
+            onRefresh={notebook.list.refetch} load={notebook.load} onLoad={(projectId) => { void notebook.loadNewSession(projectId); }}
+            onClearLoaded={notebook.clearLoaded} onDelete={notebook.remove} deletingKey={notebook.deleting} deleteError={notebook.deleteError} />
+        )}
         <RecentDialog open={dialog === "recent"} onOpenChange={(o) => setDialog(o ? "recent" : null)} items={recentItems} demo={demoMode}
           onOpen={(item) => {
             setDialog(null);

@@ -33,4 +33,4 @@ DEEPRESEARCH_API_PROXY=http://127.0.0.1:8080 npm run dev   # 本机 Java 服务
 | `src/features/` | shell、composer、running、report、evidence |
 | `src/ui/`、`src/styles/` | 图标与 Airy/Mist 语义令牌 |
 
-文档：[第 1 阶段](../docs/frontend/REACT_M1_2026-10-03.md) · [第 2 阶段](../docs/frontend/REACT_M2_2026-10-03.md) · [集成交接](../docs/frontend/M2_INTEGRATION_HANDOFF.md) · [研究可见性与研究笔记](../docs/frontend/R1_R2_2026-10-05.md)。
+文档：[第 1 阶段](../docs/frontend/REACT_M1_2026-10-03.md) · [第 2 阶段](../docs/frontend/REACT_M2_2026-10-03.md) · [集成交接](../docs/frontend/M2_INTEGRATION_HANDOFF.md) · [研究可见性与研究笔记](../docs/frontend/R1_R2_2026-10-05.md) · [研究笔记接入](../docs/frontend/NOTEBOOK_INTEGRATION_2026-10-05.md)。

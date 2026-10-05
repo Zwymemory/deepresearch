@@ -298,7 +298,7 @@ export function useLiveResearch(enabled: boolean, notify: Notify) {
   const reconnectNow = useCallback(() => { setPaused(true); window.setTimeout(() => setPaused(false), 0); }, []);
 
   return {
-    identity, origin, connection, webConfigured, applyIdentity, devToken,
+    identity, origin, ctx, scope, connection, webConfigured, applyIdentity, devToken,
     run, runError, loading: query.isFetching && !query.data, current, terminal,
     pending, unknownOutcome, submitting, blocking, start, safeRetry, discardPending,
     stream, reconnects, cancel, cancelling, disconnectDrill, reconnectNow, evidence,

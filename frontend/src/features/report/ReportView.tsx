@@ -60,8 +60,12 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
   /** Autonomous runs (or demo): the public evidence record. null for modes without a projection. */
   evidence?: { result: EvidenceViewResult | null; loading: boolean } | null;
   onCompareDisagreement?: (index: number) => void;
-  /** Save-progress affordance; `available=false` explains the missing backend contract. */
-  save?: { available: boolean; state: "idle" | "saving" | "saved" | "failed"; onSave: () => void; onOpenNotebook: () => void };
+  /** Save-progress affordance. Eligibility comes from project discovery (live) or the preview (demo). */
+  save?: {
+    eligibility: "eligible" | "checking" | "unsupported"; reason: string;
+    state: "idle" | "saving" | "saved" | "failed"; message?: string; preview: boolean;
+    onSave: () => void; onOpenNotebook: () => void;
+  };
 }) {
   useLayoutEffect(() => { onReady(true); return () => onReady(false); }, [onReady]);
   const outcome = outcomeOf(run);
@@ -109,8 +113,8 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
             {citations.length ? <button type="button" className="btn btn-quiet btn-sm" onClick={onOpenSources}><Icon name="book" size={16} />全部来源（{citations.length}）</button> : null}
             {save ? (
               <button type="button" className="btn btn-quiet btn-sm" onClick={save.onSave} aria-describedby="save-status"
-                disabled={!save.available || save.state === "saving" || save.state === "saved"}>
-                <Icon name="flag" size={16} />{save.state === "saving" ? "正在保存…" : save.state === "saved" ? "已保存" : "保存研究进度"}
+                disabled={save.eligibility !== "eligible" || save.state === "saving"}>
+                <Icon name="flag" size={16} />{save.state === "saving" ? "正在保存…" : save.state === "saved" ? "再次保存（刷新快照）" : "保存研究进度"}
               </button>
             ) : null}
             <button type="button" className="btn btn-quiet btn-sm" onClick={onNew}><Icon name="spark" size={16} />新研究</button>
@@ -118,10 +122,10 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
         </div>
         {save ? (
           <p id="save-status" className="note" role="status" style={{ marginTop: -14, marginBottom: 18 }}>
-            {!save.available ? <>保存研究进度暂不可用：后端接口尚未交付。<button type="button" className="link-btn" onClick={save.onOpenNotebook}>了解原因</button></>
-              : save.state === "saved" ? <>已保存到研究笔记（示例数据，服务端未参与）。<button type="button" className="link-btn" onClick={save.onOpenNotebook}>查看</button></>
-              : save.state === "failed" ? <span style={{ color: "var(--error-ink)" }}>保存失败（示例）：没有任何内容被保存。可以重试。</span>
-              : save.state === "saving" ? "正在保存，等待确认…" : null}
+            {save.eligibility !== "eligible" ? <>保存研究进度：{save.reason}</>
+              : save.state === "saved" ? <>{save.preview ? "已保存到研究笔记（示例数据，服务端未参与）。" : "服务端已确认保存。保存内容来自服务端记录；保存不会让研究变为成功，也不是重新核验。"}<button type="button" className="link-btn" onClick={save.onOpenNotebook}>查看研究笔记</button></>
+              : save.state === "failed" ? <span style={{ color: "var(--error-ink)" }}>保存失败{save.preview ? "（示例）" : ""}：{save.message ?? "没有任何内容被保存。"} 可以重试。</span>
+              : save.state === "saving" ? "正在保存，等待服务端确认…" : null}
           </p>
         ) : null}
 

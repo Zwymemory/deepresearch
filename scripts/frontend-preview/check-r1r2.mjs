@@ -92,15 +92,15 @@ try {
       // 4. Notebook preview: save shows success only after confirmation; load; delete with confirmation.
       await page.evaluate(() => scrollTo(0, 0));
       await page.getByRole("button", { name: "保存研究进度" }).click();
-      check(`${tag}: saving state before confirmation`, await page.getByText("正在保存，等待确认").count() === 1);
+      check(`${tag}: saving state before confirmation`, await page.getByText(/正在保存，等待/).count() === 1);
       await page.getByText("已保存到研究笔记").waitFor();
       await page.getByRole("button", { name: "研究笔记（研究进度）" }).click();
       await page.locator(".notebook-card").first().click();
-      await page.getByRole("button", { name: "在新会话中载入为上下文" }).click();
-      check(`${tag}: load confirms context without starting research`, await page.getByText("未开始任何研究").count() === 1 && await page.locator(".activity").count() === 0);
+      await page.getByRole("button", { name: "载入此项目的研究进度到新会话" }).click();
+      check(`${tag}: load confirms context without starting research`, await page.getByText("已载入历史研究进度（尚未传入模型；未开始研究）").count() === 1 && await page.locator(".activity").count() === 0);
       await shot(page, `${tag}-notebook`);
       await page.locator(".notebook-card").first().click().catch(() => {});
-      await page.getByRole("button", { name: "删除…" }).click();
+      await page.getByRole("button", { name: "删除保存的进度…" }).click();
       await page.getByRole("button", { name: "确认删除" }).click();
       check(`${tag}: delete requires confirmation`, await page.getByRole("button", { name: "确认删除" }).count() === 0);
       await page.keyboard.press("Escape");
@@ -123,11 +123,14 @@ try {
     await page.locator("#report-question").waitFor({ timeout: 30000 });
     await page.locator("#ev-title").waitFor({ timeout: 10000 });
     check(`${theme} live: evidence record read from the API`, await page.getByText("记录的分歧：断线后可以从最后收到的事件之后继续接收。").count() === 1);
-    check(`${theme} live: save progress disabled with reason`, await page.getByRole("button", { name: "保存研究进度" }).isDisabled() && await page.getByText("后端接口尚未交付").count() === 1);
+    // Research-progress memory is now wired: an autonomous run becomes eligible after project discovery.
+    await page.waitForFunction(() => !document.querySelector('button[aria-describedby="save-status"]')?.hasAttribute("disabled"), null, { timeout: 10000 });
+    check(`${theme} live: autonomous run is eligible to save after discovery`, !(await page.getByRole("button", { name: "保存研究进度" }).isDisabled()));
     await page.locator("#ev-title").scrollIntoViewIfNeeded();
     await shot(page, `${theme}-live-evidence-record`);
     await page.getByRole("button", { name: "研究笔记（研究进度）" }).click();
-    check(`${theme} live: notebook explains unavailability first`, await page.getByText("真实模式暂不可用").count() === 1 && await page.locator(".notebook-card").count() === 0);
+    await page.getByText(/没有可访问的研究进度|服务端保存的研究进度/).first().waitFor();
+    check(`${theme} live: notebook shows server data, not the preview`, await page.getByText("预览 · 示例数据，不联网").count() === 0);
     await page.keyboard.press("Escape");
 
     await page.goto(APP + "?scenario=budget");

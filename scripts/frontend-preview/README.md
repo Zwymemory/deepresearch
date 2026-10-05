@@ -21,6 +21,10 @@ python3 scripts/frontend-preview/mock_server.py
 | `langgraph` | 按 2026-10-03 来源契约返回 `citationDetails`（含 `metadataStatus`），最后一项为 `MISSING_SNAPSHOT` |
 | `budget` | 运行因预算上限终止（`BUDGET_EXCEEDED`） |
 | `evidence-disabled` | 证据记录接口返回 503 `EVIDENCE_VIEW_DISABLED` |
+| `memory-oversize` | 保存研究进度返回 413（非 JSON 响应体） |
+| `memory-load-error` | 载入到新会话时服务端已建会话但返回 502（结果不确定） |
+
+研究进度记忆路由（`progress-project`、保存 / 读取 / 删除、列表、`resume-context` 的 POST 与 GET）按 2026-10-05 后端交接合成模拟，记录按 Bearer Token 隔离。它只用于前端预览，不能替代真实后端验收。
 
 自主研究运行可读取 `GET …/evidence`（`evidence-view/1`，含一条记录的分歧）；工作流运行返回 `UNSUPPORTED_MODE`。
 
@@ -54,6 +58,7 @@ export CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome
 node scripts/frontend-preview/journey-react-live.mjs   # 真实适配器旅程 → output/playwright/react-live/
 node scripts/frontend-preview/capture-react.mjs        # 示例模式版式与截图 → output/playwright/react-preview/
 node scripts/frontend-preview/check-r1r2.mjs           # R1/R2 迭代的聚焦检查 → output/playwright/r1r2/
+node scripts/frontend-preview/check-notebook.mjs       # 研究笔记接入（模拟 API）→ output/playwright/notebook/
 ```
 
 两个版本可以同时对比：V1 在 `http://127.0.0.1:8090/demo.html`，React 在 `http://127.0.0.1:5173/app/`。
