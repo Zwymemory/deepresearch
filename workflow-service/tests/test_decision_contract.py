@@ -156,7 +156,11 @@ SCHEMA = {
     "additionalProperties": False,
 }
 REQUEST = ModelRequest(
-    name="AgentDecision", instruction="Fixed instruction", payload={}, schema=SCHEMA
+    name="AgentDecision",
+    instruction="Fixed instruction",
+    payload={},
+    schema=SCHEMA,
+    request_binding={"instruction_policy": POLICY_VERSION},
 )
 
 
@@ -319,3 +323,49 @@ async def test_instruction_policy_checkpoint_is_durable_before_any_model_reserva
     assert saved.values["instruction_policy"] == POLICY_VERSION
     assert saved.values["planner_contract"] == "agent-planning-obligations/3"
     assert saved.next == ("decide",) and not runtime.ledger.rows
+
+
+@pytest.mark.parametrize("policy", [None, POLICY_VERSION])
+async def test_same_missing_source_field_preserves_legacy_receipt_and_gates_fresh_diagnostic(
+    policy,
+):
+    from .test_agent_json_transport import REQUEST as source_request
+
+    class Model:
+        calls = 0
+
+        async def invoke(self, request):
+            self.calls += 1
+            return ModelResult(value={"action": "read_source"}, input_tokens=41, output_tokens=7)
+
+    binding = dict(source_request.request_binding)
+    if policy is not None:
+        binding["instruction_policy"] = policy
+    request = source_request.model_copy(update={"request_binding": binding})
+    model, ledger = Model(), PlanningLedger()
+    gateway = AgentBudgetGateway(
+        run_id="offline",
+        claim_token="claim",
+        budget=AgentRunBudget(runtime="agent"),
+        ledger=ledger,
+        model=model,
+        guard=AsyncMock(),
+    )
+    with pytest.raises(ModelCallError):
+        await gateway.model_call("model:paired-policy", "DECISION", request)
+    row = ledger.rows["model:paired-policy"]
+    saved = copy.deepcopy(row)
+    failure = row["usage"]["model_failure"]
+    if policy is None:
+        assert "schema_diagnostic" not in failure
+        assert "source_id" not in json.dumps(row["usage"])
+    else:
+        assert failure["schema_diagnostic"]["issues"] == [{"path": "source_id", "code": "MISSING"}]
+        assert failure["schema_diagnostic"]["request_sha256"] == row["digest"]
+    assert "read_source" not in json.dumps(row["usage"])
+    with pytest.raises(WorkflowExecutionError):
+        await gateway.model_call("model:paired-policy", "DECISION", request)
+    assert ledger.rows["model:paired-policy"] == saved
+    assert row["status"] == "UNKNOWN" and row["result"] == {}
+    assert row["usage"]["input_tokens"] == 41 and row["usage"]["output_tokens"] == 7
+    assert model.calls == len(ledger.settlements) == 1

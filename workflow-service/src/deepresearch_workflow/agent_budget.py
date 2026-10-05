@@ -13,6 +13,7 @@ from psycopg.types.json import Jsonb
 from pydantic import ValidationError as PydanticValidationError
 from referencing import Registry
 
+from .agent_decision_instruction import POLICY_VERSION
 from .agent_diagnostics import safe_check_code, safe_requirement_code, safe_segment_diagnostic
 from .agent_json import FINISH_REASONS
 from .agent_model import MODEL_RULES, AgentModel, AgentModelFailure, OpenAIAgentModel
@@ -493,6 +494,11 @@ class AgentBudgetGateway:
         )
         tool_call_count = None
         schema_diagnostic = None
+        diagnostic_enabled = (
+            request is not None
+            and request.request_binding.get("instruction_policy") == POLICY_VERSION
+            and request_hash is not None
+        )
         stage, domain_code = None, None
         if isinstance(error, ResultValidationError):
             stage, error = error.stage, error.error
@@ -508,7 +514,7 @@ class AgentBudgetGateway:
             if isinstance(error, JsonSchemaValidationError):
                 error_class = "schema_validation"
                 paths = [safe_issue_path(error.absolute_path)]
-                if request is not None and request_hash is not None:
+                if diagnostic_enabled:
                     schema_diagnostic = schema_failure_diagnostic(
                         error, request, request_hash, SAFE_FIELDS,
                     )
@@ -516,7 +522,7 @@ class AgentBudgetGateway:
                 error_class = "schema_validation"
                 paths = sorted({safe_issue_path(item["loc"]) for item in error.errors(
                     include_input=False, include_context=False, include_url=False)})[:4]
-                if request is not None and request_hash is not None:
+                if diagnostic_enabled:
                     schema_diagnostic = schema_failure_diagnostic(
                         error, request, request_hash, SAFE_FIELDS, pydantic=True,
                     )
