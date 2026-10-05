@@ -134,6 +134,23 @@ def verify_runtime(ready, token):
             path = Path(row["path"]).resolve()
             if not path.is_relative_to(source.resolve()) or file_sha(path) != row["sha256"]:
                 raise ValueError("Loaded obligation module changed or is foreign")
+    if "decision_identity" in ready:
+        decision = ready["decision_identity"]
+        if decision != identity.get("decision_identity"):
+            raise ValueError("Actual decision instruction or diagnostic differs from readiness")
+        if (decision.get("instruction_policy") != "agent-obligation-instruction/1"
+                or decision.get("schema_diagnostic_version") != "agent-schema-diagnostic/1"
+                or set(decision.get("modules", {})) != {
+                    "agent_decision_instruction", "agent_schema_diagnostics", "agent_runtime", "agent_budget"}):
+            raise ValueError("Loaded decision policy proof incomplete")
+        for row in decision["modules"].values():
+            path = Path(row["path"]).resolve()
+            if not path.is_relative_to(source.resolve()) or file_sha(path) != row["sha256"]:
+                raise ValueError("Loaded decision module changed or is foreign")
+        for key in ("instruction_builder_sha256", "failure_classifier_sha256",
+                    "initial_instruction_sha256", "continuation_instruction_sha256"):
+            if not re.fullmatch(r"[a-f0-9]{64}", decision.get(key, "")):
+                raise ValueError("Loaded decision function or instruction proof incomplete")
     sidecar = http_json(ready["sidecar_base_url"], "/internal/health/ready")
     if sidecar.get("status") != "UP" or sidecar.get("runner") != "enabled":
         raise ValueError("Real sidecar is not ready")
@@ -151,4 +168,6 @@ def verify_runtime(ready, token):
             "json_diagnostic_identity": identity.get("json_diagnostic_identity"), "verified": True}
     if "obligation_identity" in ready:
         verified["obligation_identity"] = identity["obligation_identity"]
+    if "decision_identity" in ready:
+        verified["decision_identity"] = identity["decision_identity"]
     return verified

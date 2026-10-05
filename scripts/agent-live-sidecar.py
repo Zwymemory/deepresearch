@@ -158,6 +158,36 @@ def loaded_obligation_identity(source):
     }
 
 
+
+def loaded_decision_identity(source):
+    """Bind actual loaded policy, instruction builder and fresh diagnostic producer."""
+    import inspect
+    from deepresearch_workflow import agent_budget, agent_decision_instruction, agent_obligations
+    from deepresearch_workflow import agent_runtime, agent_schema_diagnostics
+    if (agent_runtime.POLICY_VERSION != agent_decision_instruction.POLICY_VERSION
+            or agent_budget.POLICY_VERSION != agent_decision_instruction.POLICY_VERSION
+            or agent_runtime.obligation_instruction is not agent_decision_instruction.obligation_instruction
+            or agent_budget.schema_failure_diagnostic is not agent_schema_diagnostics.diagnostic):
+        raise ValueError("Loaded policy or diagnostic wiring differs")
+    modules = {}
+    for name, module in {"agent_decision_instruction": agent_decision_instruction,
+                         "agent_schema_diagnostics": agent_schema_diagnostics,
+                         "agent_runtime": agent_runtime, "agent_budget": agent_budget}.items():
+        path = Path(module.__file__).resolve()
+        if not path.is_relative_to(source):
+            raise ValueError("Loaded decision implementation belongs to another archive")
+        modules[name] = {"path": str(path), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+    builder = agent_decision_instruction.obligation_instruction
+    return {
+        "instruction_policy": agent_decision_instruction.POLICY_VERSION,
+        "schema_diagnostic_version": agent_schema_diagnostics.VERSION,
+        "modules": modules,
+        "instruction_builder_sha256": hashlib.sha256(inspect.getsource(builder).encode()).hexdigest(),
+        "failure_classifier_sha256": hashlib.sha256(inspect.getsource(agent_budget.AgentBudgetGateway.classify_model_failure).encode()).hexdigest(),
+        "initial_instruction_sha256": hashlib.sha256(builder(agent_obligations.ObligationDecision.model_json_schema(), continuation=False).encode()).hexdigest(),
+        "continuation_instruction_sha256": hashlib.sha256(builder(agent_obligations.ObligationContinuation.wire_schema(), continuation=True).encode()).hexdigest(),
+    }
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--source-dir", type=Path, required=True)
@@ -219,6 +249,7 @@ def main():
     }
     obligation = loaded_obligation_identity(source)
     identity["obligation_identity"] = obligation
+    identity["decision_identity"] = loaded_decision_identity(source)
     identity["planner_identity"]["planner_contract"] = obligation["planner_contract"]
     identity["continuation_identity"]["version"] = obligation["continuation_contract"]
     descriptor = os.open(args.identity_output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)

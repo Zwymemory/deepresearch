@@ -483,8 +483,10 @@ def batch_prerequisites(ready, source_path, review_path, state):
             or review.get("candidate_binding", {}).get("continuation_contract")
             != "agent-frozen-requirements/1"):
         raise ValueError("Actual frozen requirements implementation approval required")
-    if ready.get("batch_id") == retest.OBLIGATION_ALIGNMENT_WEB_BATCH:
+    if ready.get("batch_id") in {retest.OBLIGATION_ALIGNMENT_WEB_BATCH, retest.DECISION_CONTRACT_WEB_BATCH}:
         validate_obligation_readiness(ready, review)
+    if ready.get("batch_id") == retest.DECISION_CONTRACT_WEB_BATCH:
+        validate_decision_readiness(ready, review)
     manifest = Path(ready["scenario_manifest_path"])
     if review.get("source_manifest_sha256") != file_sha(manifest) or ready.get("scenario_manifest_sha256") != file_sha(manifest):
         raise ValueError("B did not approve this exact source manifest")
@@ -522,6 +524,24 @@ def validate_obligation_readiness(ready, review):
         if not re.fullmatch(r"[a-f0-9]{64}", proof.get(name, "")):
             raise ValueError("Loaded obligation initializer/schema proof incomplete")
 
+
+
+def validate_decision_readiness(ready, review):
+    binding = review.get("candidate_binding", {})
+    proof = ready.get("decision_identity")
+    if not isinstance(proof, dict) or proof != binding.get("decision_identity"):
+        raise ValueError("Actual loaded decision proof and independent approval required")
+    if (proof.get("instruction_policy") != "agent-obligation-instruction/1"
+            or proof.get("schema_diagnostic_version") != "agent-schema-diagnostic/1"
+            or binding.get("instruction_policy") != proof["instruction_policy"]
+            or binding.get("schema_diagnostic_version") != proof["schema_diagnostic_version"]
+            or set(proof.get("modules", {})) != {
+                "agent_decision_instruction", "agent_schema_diagnostics", "agent_runtime", "agent_budget"}):
+        raise ValueError("Actual loaded fresh policy or diagnostic approval incomplete")
+    for field in ("instruction_builder_sha256", "failure_classifier_sha256",
+                  "initial_instruction_sha256", "continuation_instruction_sha256"):
+        if not re.fullmatch(r"[a-f0-9]{64}", proof.get(field, "")):
+            raise ValueError("Actual instruction function or hashes incomplete")
 
 def publish_batch_manifest(state, ready, batch_id=retest.BATCH):
     with retest.journal_lock(state) as journal:

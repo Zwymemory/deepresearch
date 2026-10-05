@@ -19,14 +19,16 @@ V22_WEB_BATCH = "round1-v22-web-20261004"
 DIAGNOSTICS_WEB_BATCH = "round1-diagnostics-web-20261004"
 SEGMENTS_WEB_BATCH = "round1-segments-web-20261004"
 ACTION_RECOVERY_WEB_BATCH = "round1-action-recovery-web-20261004"
+DECISION_CONTRACT_WEB_BATCH = "round1-decision-contract-web-20261005"
+DECISION_CONTRACT_WEB_HISTORY_SHA = "67ed0196fb953c197db45a77d8b8af2717062a7d11ecce3d7c9bc3ec5f35bac2"
 OBLIGATION_ALIGNMENT_WEB_BATCH = "round1-obligation-alignment-web-20261005"
 OBLIGATION_ALIGNMENT_WEB_HISTORY_SHA = "89824c69eb423fde0d1a9dc7dab6aaeb1aa667c717e28e9baed1d02d0a14a782"
 ACTION_RECOVERY_WEB_HISTORY_SHA = "ccbd3cf82908b2ae07465118ca260b5f80a930f67e0468c0ce2eaba1dda5ebcc"
 JSON_DIAGNOSTICS_WEB_BATCH = "round1-json-diagnostics-web-20261004"
 JSON_DIAGNOSTICS_WEB_HISTORY_SHA = "130bafd1e6ac9b0f9d426d8eb132a91fe5536e5fc8d57f71d5968b10bb76025a"
 SEGMENTS_WEB_HISTORY_SHA = "f5d56777cb5097d7f6fa08611fe29468371d3b53aee65aef324856b645f3be25"
-BATCHES = (BATCH, POST_IDENTITY_BATCH, JSON_WEB_BATCH, V22_WEB_BATCH, DIAGNOSTICS_WEB_BATCH, SEGMENTS_WEB_BATCH, JSON_DIAGNOSTICS_WEB_BATCH, ACTION_RECOVERY_WEB_BATCH, OBLIGATION_ALIGNMENT_WEB_BATCH)
-JSON_WEB_BATCHES = (JSON_WEB_BATCH, V22_WEB_BATCH, DIAGNOSTICS_WEB_BATCH, SEGMENTS_WEB_BATCH, JSON_DIAGNOSTICS_WEB_BATCH, ACTION_RECOVERY_WEB_BATCH, OBLIGATION_ALIGNMENT_WEB_BATCH)
+BATCHES = (BATCH, POST_IDENTITY_BATCH, JSON_WEB_BATCH, V22_WEB_BATCH, DIAGNOSTICS_WEB_BATCH, SEGMENTS_WEB_BATCH, JSON_DIAGNOSTICS_WEB_BATCH, ACTION_RECOVERY_WEB_BATCH, OBLIGATION_ALIGNMENT_WEB_BATCH, DECISION_CONTRACT_WEB_BATCH)
+JSON_WEB_BATCHES = (JSON_WEB_BATCH, V22_WEB_BATCH, DIAGNOSTICS_WEB_BATCH, SEGMENTS_WEB_BATCH, JSON_DIAGNOSTICS_WEB_BATCH, ACTION_RECOVERY_WEB_BATCH, OBLIGATION_ALIGNMENT_WEB_BATCH, DECISION_CONTRACT_WEB_BATCH)
 DIAGNOSTICS_WEB_HISTORY_SHA = "b8acc1802d962ed293615725d30902756ad5456f3f45642dce55cf2df64c3457"
 V22_WEB_HISTORY_SHA = "215e287377aeb7e148853cea831d9118e1501fd58dbc18bb375ba2ba2c3d0a14"
 JSON_WEB_HISTORY_SHA = "85466bf90171915ade72dcd58156804412cd9623ae8b42693a7063fc575551f6"
@@ -88,7 +90,20 @@ def authorize(
                 "Batch authorization unknown or already exists; never replace it"
             )
         expected_count = 6
-        if batch_id == OBLIGATION_ALIGNMENT_WEB_BATCH:
+        if batch_id == DECISION_CONTRACT_WEB_BATCH:
+            prior, prior_rows = validate_history(journal, OBLIGATION_ALIGNMENT_WEB_BATCH)
+            if (
+                set(journal.get("authorized_batches", {})) != set(BATCHES[:9])
+                or any(b.get("status") != "STOPPED" or not b.get("stop_reason")
+                       for b in journal["authorized_batches"].values())
+                or prior["status"] != "STOPPED" or not prior["stop_reason"]
+                or len(prior_rows) != 1
+                or prior_rows[0].get("status") != "FAILED"
+                or file_sha(state / "run-journal.json") != DECISION_CONTRACT_WEB_HISTORY_SHA
+            ):
+                raise ValueError("Exact fifteen-row nine-stopped-batch predecessor required")
+            expected_count = 15
+        elif batch_id == OBLIGATION_ALIGNMENT_WEB_BATCH:
             prior, prior_rows = validate_history(journal, ACTION_RECOVERY_WEB_BATCH)
             if (
                 set(journal.get("authorized_batches", {})) != set(BATCHES[:8])
@@ -268,7 +283,7 @@ def validate_history(journal, batch_id=BATCH):
     count = batch["history_count"]
     if (
         count != {BATCH: 6, POST_IDENTITY_BATCH: 7, JSON_WEB_BATCH: 8,
-                  V22_WEB_BATCH: 9, DIAGNOSTICS_WEB_BATCH: 10, SEGMENTS_WEB_BATCH: 11, JSON_DIAGNOSTICS_WEB_BATCH: 12, ACTION_RECOVERY_WEB_BATCH: 13, OBLIGATION_ALIGNMENT_WEB_BATCH: 14}[batch_id]
+                  V22_WEB_BATCH: 9, DIAGNOSTICS_WEB_BATCH: 10, SEGMENTS_WEB_BATCH: 11, JSON_DIAGNOSTICS_WEB_BATCH: 12, ACTION_RECOVERY_WEB_BATCH: 13, OBLIGATION_ALIGNMENT_WEB_BATCH: 14, DECISION_CONTRACT_WEB_BATCH: 15}[batch_id]
         or len(original["runs"]) != count
         or journal.get("runs", [])[:count] != original["runs"]
     ):
@@ -398,6 +413,22 @@ def validate_history(journal, batch_id=BATCH):
         if (prior["status"] != "STOPPED" or not prior["stop_reason"]
                 or len(prior_rows) != 1 or prior_rows[0].get("status") != "INSUFFICIENT_EVIDENCE"):
             raise ValueError("Stopped action recovery predecessor changed")
+    if batch_id == DECISION_CONTRACT_WEB_BATCH:
+        predecessors = set(BATCHES[:BATCHES.index(DECISION_CONTRACT_WEB_BATCH)])
+        if (
+            set(original.get("authorized_batches", {})) != predecessors
+            or any(original["authorized_batches"][name] != batches[name] for name in predecessors)
+            or batch["original_journal_sha256"] != DECISION_CONTRACT_WEB_HISTORY_SHA
+            or batch.get("result_transport") != "deepseek_json_object"
+            or batch.get("transport_contract_version") != "agent-result-wire/1"
+            or any(batches[name].get("status") != "STOPPED" or not batches[name].get("stop_reason")
+                   for name in predecessors)
+        ):
+            raise ValueError("Stopped decision contract predecessor chain or transport changed")
+        prior, prior_rows = validate_history(journal, OBLIGATION_ALIGNMENT_WEB_BATCH)
+        if (prior["status"] != "STOPPED" or not prior["stop_reason"]
+                or len(prior_rows) != 1 or prior_rows[0].get("status") != "FAILED"):
+            raise ValueError("Stopped obligation alignment predecessor changed")
     next_batch = (POST_IDENTITY_BATCH if batch_id == BATCH else
                   JSON_WEB_BATCH if batch_id == POST_IDENTITY_BATCH else
                   V22_WEB_BATCH if batch_id == JSON_WEB_BATCH else
@@ -405,10 +436,11 @@ def validate_history(journal, batch_id=BATCH):
                   SEGMENTS_WEB_BATCH if batch_id == DIAGNOSTICS_WEB_BATCH else
                   JSON_DIAGNOSTICS_WEB_BATCH if batch_id == SEGMENTS_WEB_BATCH else
                   ACTION_RECOVERY_WEB_BATCH if batch_id == JSON_DIAGNOSTICS_WEB_BATCH else
-                  OBLIGATION_ALIGNMENT_WEB_BATCH if batch_id == ACTION_RECOVERY_WEB_BATCH else None)
+                  OBLIGATION_ALIGNMENT_WEB_BATCH if batch_id == ACTION_RECOVERY_WEB_BATCH else
+                  DECISION_CONTRACT_WEB_BATCH if batch_id == OBLIGATION_ALIGNMENT_WEB_BATCH else None)
     end = batches[next_batch]["history_count"] if next_batch in batches else len(journal["runs"])
     if next_batch in batches and end != {BATCH: 7, POST_IDENTITY_BATCH: 8,
-                                        JSON_WEB_BATCH: 9, V22_WEB_BATCH: 10, DIAGNOSTICS_WEB_BATCH: 11, SEGMENTS_WEB_BATCH: 12, JSON_DIAGNOSTICS_WEB_BATCH: 13, ACTION_RECOVERY_WEB_BATCH: 14}[batch_id]:
+                                        JSON_WEB_BATCH: 9, V22_WEB_BATCH: 10, DIAGNOSTICS_WEB_BATCH: 11, SEGMENTS_WEB_BATCH: 12, JSON_DIAGNOSTICS_WEB_BATCH: 13, ACTION_RECOVERY_WEB_BATCH: 14, OBLIGATION_ALIGNMENT_WEB_BATCH: 15}[batch_id]:
         raise ValueError("Predecessor boundary changed")
     rows = journal["runs"][count:end]
     if len(rows) > maximum_runs(batch_id) or any(
@@ -494,7 +526,7 @@ def admit(journal, scenario, build_sha, review_state, batch_id=BATCH):
     if batch_id == ACTION_RECOVERY_WEB_BATCH and review_state.get(
             "candidate_binding", {}).get("continuation_contract") != "agent-frozen-requirements/1":
         raise ValueError("Independent frozen requirements continuation approval required")
-    if batch_id == OBLIGATION_ALIGNMENT_WEB_BATCH:
+    if batch_id in {OBLIGATION_ALIGNMENT_WEB_BATCH, DECISION_CONTRACT_WEB_BATCH}:
         binding = review_state.get("candidate_binding", {})
         if any(binding.get(k) != v for k, v in {
             "planner_contract": "agent-planning-obligations/3",
@@ -507,6 +539,11 @@ def admit(journal, scenario, build_sha, review_state, batch_id=BATCH):
             "json_diagnostic_version": "agent-json-diagnostic/1",
         }.items()):
             raise ValueError("Independent loaded obligation/reference/CHECK3 approval required")
+    if batch_id == DECISION_CONTRACT_WEB_BATCH:
+        binding = review_state.get("candidate_binding", {})
+        if (binding.get("instruction_policy") != "agent-obligation-instruction/1"
+                or binding.get("schema_diagnostic_version") != "agent-schema-diagnostic/1"):
+            raise ValueError("Independent fresh instruction and schema diagnostic approval required")
     order = scenario_order(batch_id)
     if len(rows) >= maximum_runs(batch_id) or scenario != order[len(rows)]:
         raise ValueError("Named ordered allowance only; no duplicate or rerun")
@@ -551,6 +588,7 @@ def reserve(state, scenario, build_sha, peer_sha, review_state, batch_id=BATCH):
             "retry_of": None,
             "fix_description": None,
             "idempotency_key": (
+                "live-decision-contract-web-" if batch_id == DECISION_CONTRACT_WEB_BATCH else
                 "live-obligation-alignment-web-" if batch_id == OBLIGATION_ALIGNMENT_WEB_BATCH else
                 "live-action-recovery-web-" if batch_id == ACTION_RECOVERY_WEB_BATCH else
                 "live-json-diagnostics-web-" if batch_id == JSON_DIAGNOSTICS_WEB_BATCH else
