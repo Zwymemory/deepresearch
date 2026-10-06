@@ -193,17 +193,18 @@ class WorkflowRunner:
             }
             snapshot = await graph.aget_state(config)
             if isinstance(budget, AgentRunBudget):
-                from .progress_memory import frozen_progress
+                from .progress_memory import frozen_progress, frozen_recall
 
-                current = frozen_progress(run.context_snapshot)
-                if snapshot.values and frozen_progress(
-                    snapshot.values.get("context_snapshot", {})
+                current = (frozen_progress(run.context_snapshot), frozen_recall(run.context_snapshot))
+                if snapshot.values and (
+                    frozen_progress(snapshot.values.get("context_snapshot", {})),
+                    frozen_recall(snapshot.values.get("context_snapshot", {})),
                 ) != current:
                     raise WorkflowExecutionError(
                         "Saved progress checkpoint differs from persisted selection",
                         error_code="RESEARCH_MEMORY_INVALID",
                     )
-                if current is not None:
+                if any(item is not None for item in current):
                     if self._progress_memory is None:
                         raise WorkflowExecutionError(
                             "Saved progress validator unavailable",

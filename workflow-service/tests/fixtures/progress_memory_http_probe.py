@@ -50,6 +50,25 @@ class EmptyTools:
 def controlled_decision(payload, scenario=None):
     fields = {"planner_contract": "agent-planning-obligations/3",
               "claims_contract": "agent-obligation-claims/1"}
+    if scenario == "m4":
+        recalled = payload.get("recalled_progress", {}).get("records", [])
+        reason = ("参考旧研究“" + recalled[0]["snapshot"]["original_goal"] + "”的相关线索；版本与争议需复核" if recalled
+                  else "未参考旧研究；从当前问题建立核查计划")
+        if payload.get("original_requirements"):
+            return {**fields, "continuation_contract": "agent-frozen-requirements/2",
+                    "requirements_ref": payload["original_requirements"]["manifest_sha256"],
+                    "action": "stop_with_gaps", "reason": reason,
+                    "gaps": ["当前版本原文与同数据集同硬件测量仍缺失；旧研究不能证明新结论"]}
+        text = "".join(r["text"] for r in payload["question_segments"]["segments"])
+        return {**fields, "action": "revise_plan", "reason": reason,
+                "obligations": [{"text": text, "segment_ids": [r["segment_id"]
+                    for r in payload["question_segments"]["segments"]], "kind": "factual",
+                    "applicability": {"subject": text[:120],
+                        "version": {"status": "unknown", "value": None, "reason": "新版本待核查"},
+                        "valid_at": {"status": "unknown", "value": None, "reason": "有效时间未知"},
+                        "conditions": ["同数据集", "同硬件", "不得编造延迟"]}}],
+                "constraints": [], "tasks": [{"objective": text,
+                    "acceptance_criteria": ["当前版本原文与实测证据或明确缺口"]}]}
     if scenario == "m3":
         if payload.get("original_requirements"):
             return {**fields, "continuation_contract": "agent-frozen-requirements/2",

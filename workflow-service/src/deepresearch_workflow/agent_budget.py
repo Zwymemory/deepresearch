@@ -651,7 +651,9 @@ class AgentBudgetGateway:
             await self.guard()
             # Revalidate on every planning attempt, including settled replay and retries.
             # This local check is not an atomic check-and-send or a revocation permit.
-            if purpose in {"DECISION", "SUMMARY"} and "prior_progress" in request.payload:
+            if purpose in {"DECISION", "SUMMARY"} and any(
+                kind in request.payload for kind in ("prior_progress", "recalled_progress")
+            ):
                 if self.validate_memory is None:
                     raise WorkflowExecutionError(
                         "Saved progress validator unavailable",

@@ -188,10 +188,14 @@ def decision_context(state, budget):
     )
     # Build last: interning packet/tasks may add canonical objects.
     payload["canonical_objects"] = {"claim_specs": specs, "records": records, "checks": checks}
-    from .progress_memory import frozen_progress
+    from .progress_memory import frozen_progress, frozen_recall
 
     selected = frozen_progress(state.get("context_snapshot", {}))
     if selected is not None:
         payload["context_version"] = "agent-decision-context/3"
         payload["prior_progress"] = selected[0]
+    recalled = frozen_recall(state.get("context_snapshot", {}))
+    if recalled is not None and recalled[0]["records"]:
+        payload["context_version"] = "agent-decision-context/4"
+        payload["recalled_progress"] = recalled[0]
     return payload

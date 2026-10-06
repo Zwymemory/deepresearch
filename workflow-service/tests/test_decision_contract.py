@@ -323,7 +323,7 @@ async def test_instruction_policy_checkpoint_is_durable_before_any_model_reserva
     saved = await compiled.aget_state(config)
     assert saved.values["instruction_policy"] == POLICY_VERSION
     assert saved.values["planner_contract"] == "agent-planning-obligations/3"
-    assert saved.next == ("decide",) and not runtime.ledger.rows
+    assert saved.next == ("compress",) and not runtime.ledger.rows
 
 
 @pytest.mark.parametrize("policy", [None, LEGACY_POLICY_VERSION, POLICY_VERSION])

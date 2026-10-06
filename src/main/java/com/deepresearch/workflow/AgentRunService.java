@@ -23,11 +23,16 @@ public class AgentRunService {
     private final JdbcTemplate jdbc;
     private final ResearchProgressSelectionService progress;
     private final com.deepresearch.service.ConversationSummaryService summaries;
+    private final ResearchRecallService recall;
     @Autowired
     public AgentRunService(WorkflowService workflows, UserContextService users, JdbcTemplate jdbc,
                            ResearchProgressSelectionService progress,
-                           com.deepresearch.service.ConversationSummaryService summaries) {
-        this.workflows=workflows; this.users=users; this.jdbc=jdbc; this.progress=progress; this.summaries=summaries;
+                           com.deepresearch.service.ConversationSummaryService summaries,ResearchRecallService recall) {
+        this.workflows=workflows; this.users=users; this.jdbc=jdbc; this.progress=progress; this.summaries=summaries;this.recall=recall;
+    }
+    public AgentRunService(WorkflowService workflows,UserContextService users,JdbcTemplate jdbc,
+                           ResearchProgressSelectionService progress,com.deepresearch.service.ConversationSummaryService summaries) {
+        this(workflows,users,jdbc,progress,summaries,null);
     }
     public AgentRunService(WorkflowService workflows, UserContextService users, JdbcTemplate jdbc,
                            ResearchProgressSelectionService progress) {
@@ -51,7 +56,7 @@ public class AgentRunService {
             WHERE user_id=? AND endpoint='/api/research/agents' AND idempotency_key=?
             """,Integer.class,principal.storageUserId(),key == null ? null : key.trim());
         if (prior != null && prior>0) {
-            var accepted=workflows.createAutonomousWithProgress(original,key,selected,null,null);
+            var accepted=workflows.createAutonomousWithProgress(original,key,selected,null,null,!Boolean.FALSE.equals(request.memoryRecall()));
             requireOwnedRun(accepted.runId(),principal.tenantId(),principal.userId());
             return accepted;
         }
@@ -68,7 +73,7 @@ public class AgentRunService {
             WHERE user_id=? AND endpoint='/api/research/agents' AND idempotency_key=?
             """,Integer.class,principal.storageUserId(),key == null ? null : key.trim());
         if (raced != null && raced>0) {
-            var accepted=workflows.createAutonomousWithProgress(original,key,selected,null,null);
+            var accepted=workflows.createAutonomousWithProgress(original,key,selected,null,null,!Boolean.FALSE.equals(request.memoryRecall()));
             requireOwnedRun(accepted.runId(),principal.tenantId(),principal.userId());
             return accepted;
         }
@@ -98,13 +103,20 @@ public class AgentRunService {
                 "projection_sha256",frozen.projectionSha256(),"canonical_bytes",frozen.canonicalBytes());
         // Keep the original optional-session request identity; the same deterministic session is derived in WorkflowService.
         var accepted=workflows.createAutonomousWithProgress(original,key,selected,
-                frozen==null?null:frozen.priorProgress(),binding);
+                frozen==null?null:frozen.priorProgress(),binding,!Boolean.FALSE.equals(request.memoryRecall()));
         if (accepted.replayed()) {
             requireOwnedRun(accepted.runId(),principal.tenantId(),principal.userId());
             return accepted;
         }
         jdbc.update("INSERT INTO agent_research_run(run_id,project_id,tenant_id,owner_id) VALUES (?,?,?,?)",
                 accepted.runId(),project,principal.tenantId(),principal.userId());
+        if(recall!=null && !Boolean.FALSE.equals(request.memoryRecall())) {
+            var recalled=recall.select(request.question(),session,selected,principal);
+            var recallBinding=EvidenceJson.object("project_id",project,"projection_sha256",EvidenceJson.sha(EvidenceJson.canonical(recalled)),
+                    "canonical_bytes",ResearchRecallAssembler.bytes(recalled));
+            jdbc.update("UPDATE agent_workflow_run SET context_snapshot=context_snapshot || ?::jsonb WHERE run_id=?",
+                EvidenceJson.canonical(EvidenceJson.object("recalled_progress",recalled,"recalled_progress_binding",recallBinding)),accepted.runId());
+        }
         if (summaries!=null) jdbc.update("""
             UPDATE agent_workflow_run SET context_snapshot=jsonb_set(context_snapshot,'{project_summary_policy}',?::jsonb)
             WHERE run_id=?

@@ -184,29 +184,28 @@ def mandatory_sections(state, sources=()):
     pin("disputes", state.get("packet", {}).get("gaps"), "packet/gaps")
     # Current tasks/requirements/check history remain whole in the decision payload;
     # mutable task status must not retrigger a summary of the same older range.
-    for index, row in enumerate(
-        state.get("context_snapshot", {}).get("prior_progress", {}).get("records", [])
-    ):
-        snap = row["snapshot"]
-        base = f"context_snapshot/prior_progress/records/{index}/snapshot"
-        for field, category in [
-            ("original_goal", "goals"),
-            ("completed_work", "findings"),
-            ("unresolved_questions", "unfinished"),
-            ("next_steps", "next_steps"),
-            ("source_claims", "disputes"),
-            ("historical_completed_work", "findings"),
-            ("user_correction", "constraints"),
-        ]:
-            pin(category, snap.get(field), base + "/" + field)
-        # Acceptance criteria and conditions are kept inside the unchanged unresolved items.
-        for j, unresolved in enumerate(snap.get("unresolved_questions", [])):
-            if isinstance(unresolved, dict):
-                pin(
-                    "constraints",
-                    unresolved.get("criteria"),
-                    base + f"/unresolved_questions/{j}/criteria",
-                )
+    for kind in ("prior_progress", "recalled_progress"):
+        for index, row in enumerate(state.get("context_snapshot", {}).get(kind, {}).get("records", [])):
+            snap = row["snapshot"]
+            base = f"context_snapshot/{kind}/records/{index}/snapshot"
+            for field, category in [
+                ("original_goal", "goals"),
+                ("completed_work", "findings"),
+                ("unresolved_questions", "unfinished"),
+                ("next_steps", "next_steps"),
+                ("source_claims", "disputes"),
+                ("historical_completed_work", "findings"),
+                ("user_correction", "constraints"),
+            ]:
+                pin(category, snap.get(field), base + "/" + field)
+            # Acceptance criteria and conditions are kept inside the unchanged unresolved items.
+            for j, unresolved in enumerate(snap.get("unresolved_questions", [])):
+                if isinstance(unresolved, dict):
+                    pin(
+                        "constraints",
+                        unresolved.get("criteria"),
+                        base + f"/unresolved_questions/{j}/criteria",
+                    )
     # Preserve constraint/TODO/dispute/failure sentences even when the model selects
     # other excerpts. Exact repeated sentences are represented once, with provenance.
     patterns = {
@@ -537,6 +536,8 @@ class ProjectSummaryCoordinator:
                     "source_segments": segments,
                     "selection_limit": selection_limit,
                     "mandatory": mandatory_sections(state),
+                    **({"recalled_progress": {"trusted_as_evidence": False,
+                        "context_kind": "recalled_progress"}} if "recalled_progress" in payload else {}),
                     **(
                         {
                             "prior_progress": {

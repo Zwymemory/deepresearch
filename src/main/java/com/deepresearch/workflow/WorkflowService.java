@@ -90,18 +90,23 @@ public class WorkflowService {
     public Accepted createAutonomousWithProgress(CreateRequest request, String idempotencyKey,
                                                 String projectSelection, JsonNode priorProgress,
                                                 JsonNode progressBinding) {
+        return createAutonomousWithProgress(request,idempotencyKey,projectSelection,priorProgress,progressBinding,true);
+    }
+    @Transactional
+    public Accepted createAutonomousWithProgress(CreateRequest request,String idempotencyKey,String projectSelection,
+                                                 JsonNode priorProgress,JsonNode progressBinding,boolean memoryRecall) {
         return createWithEngine(request,idempotencyKey,"agent","/api/research/agents",
-                projectSelection,priorProgress,progressBinding);
+                projectSelection,priorProgress,progressBinding,memoryRecall);
     }
 
     private Accepted createWithEngine(CreateRequest request, String idempotencyKey,
                                      String selectedEngine, String endpoint) {
-        return createWithEngine(request,idempotencyKey,selectedEngine,endpoint,null,null,null);
+        return createWithEngine(request,idempotencyKey,selectedEngine,endpoint,null,null,null,true);
     }
 
     private Accepted createWithEngine(CreateRequest request, String idempotencyKey,
                                      String selectedEngine, String endpoint, String projectSelection,
-                                     JsonNode priorProgress, JsonNode progressBinding) {
+                                     JsonNode priorProgress, JsonNode progressBinding,boolean memoryRecall) {
         requireEnabled();
         String userId = userContextService.currentUser();
         String key = validateKey(idempotencyKey);
@@ -120,6 +125,8 @@ public class WorkflowService {
                     "request_fingerprint",fingerprint,"research_project_id",projectSelection)));
         }
 
+        if (!memoryRecall) fingerprint=ToolArgumentFingerprint.sha256(writeJson(Map.of(
+                "request_fingerprint",fingerprint,"memory_recall",false)));
         WorkflowRepository.RunRow existing = repository.findByIdempotency(userId, endpoint, key).orElse(null);
         if (existing != null) {
             return replay(existing, fingerprint);

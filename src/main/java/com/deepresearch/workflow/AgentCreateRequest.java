@@ -12,7 +12,11 @@ public record AgentCreateRequest(
         @NotBlank @Size(max=4000) String question,
         @Size(max=64) String sessionId,
         @Size(max=3) List<String> requestedTools,
-        @Size(max=128) String researchProjectId) {
+        @Size(max=128) String researchProjectId,
+        Boolean memoryRecall) {
+    public AgentCreateRequest(String question,String sessionId,List<String> requestedTools,String researchProjectId) {
+        this(question,sessionId,requestedTools,researchProjectId,null);
+    }
     public AgentCreateRequest {
         if (question != null) question = question.trim();
         sessionId = normalize(sessionId, false);
