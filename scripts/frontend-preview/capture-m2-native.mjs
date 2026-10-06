@@ -16,7 +16,10 @@ const ready = JSON.parse(readFileSync(`${handoff}/${demoDir}/demo-ready.json`, "
 const secret = JSON.parse(readFileSync(`${handoff}/${demoDir}/demo-private.json`, "utf8"));
 const auth = secret.viewer_token;                              // already "Bearer …"
 const claims = JSON.parse(Buffer.from(auth.split(" ").pop().split(".")[1], "base64url").toString());
-const backendManifestSha = createHash("sha256").update(readFileSync(`${handoff}/candidate-manifest.json`)).digest("hex");
+// Two distinct identities: the candidate_sha256 field inside the manifest, and the SHA-256 of the manifest file.
+const manifestBytes = readFileSync(`${handoff}/candidate-manifest.json`);
+const backendManifestSha = createHash("sha256").update(manifestBytes).digest("hex");
+const candidateSha = JSON.parse(manifestBytes.toString("utf8")).candidate_sha256 ?? null;
 const redact = (t) => String(t).split(auth.split(" ").pop()).join("[redacted]");
 const results = [];
 const shots = [];
@@ -113,7 +116,7 @@ try {
 }
 writeFileSync(`${OUT}/m2-native-screenshots.json`, redact(JSON.stringify({
   label: "Synthetic history; controlled provider (provider=controlled, fixture_only=true). No paid model calls in this capture; DeepSeek observations are separate (live/).",
-  backend: { base_url: ready.base_url, candidate_manifest_sha256: backendManifestSha },
+  backend: { base_url: ready.base_url, candidate_sha256: candidateSha, candidate_manifest_file_sha256: backendManifestSha },
   frontend: { branch: "claude/deepresearch-memory-m1", commit: frontendCommit, origin: APP },
   identity: { subject: claims.sub, token: "not recorded" },
   ids: { runId: ready.run_id, projectId: ready.project_id, sessionId },
