@@ -47,9 +47,25 @@ class EmptyTools:
         return ToolExecutionResult(call_id=request.call_id, evidence=[])
 
 
-def controlled_decision(payload):
+def controlled_decision(payload, scenario=None):
     fields = {"planner_contract": "agent-planning-obligations/3",
               "claims_contract": "agent-obligation-claims/1"}
+    if scenario == "m3":
+        if payload.get("original_requirements"):
+            return {**fields, "continuation_contract": "agent-frozen-requirements/2",
+                    "requirements_ref": payload["original_requirements"]["manifest_sha256"],
+                    "action": "stop_with_gaps", "reason": "纠正条件已载入，仍缺新条件下的原文",
+                    "gaps": ["机器 C 条件下的认证要求仍待核查；历史完成记录不能替代新证据"]}
+        text = "".join(r["text"] for r in payload["question_segments"]["segments"])
+        return {**fields, "action": "revise_plan", "reason": "读取已更新的进度及纠正说明",
+                "obligations": [{"text": text, "segment_ids": [r["segment_id"]
+                    for r in payload["question_segments"]["segments"]], "kind": "factual",
+                    "applicability": {"subject": "API 认证要求",
+                        "version": {"status": "unknown", "value": None, "reason": "未核查"},
+                        "valid_at": {"status": "unknown", "value": None, "reason": "未核查"},
+                        "conditions": ["机器 C", "先核查原文，不编造结果"]}}],
+                "constraints": [], "tasks": [{"objective": text,
+                    "acceptance_criteria": ["认证要求的原文证据或明确缺口"]}]}
     if payload.get("original_requirements"):
         return {**fields, "continuation_contract": "agent-frozen-requirements/2",
                 "requirements_ref": payload["original_requirements"]["manifest_sha256"],
@@ -109,7 +125,7 @@ async def main():
                                                       ensure_ascii=False, indent=2))
                     return httpx.Response(response.status_code, json=data)
                 result = ({"selected_segment_ids": [payload["source_segments"][0]["segment_id"]]}
-                          if "source_segments" in payload else controlled_decision(payload))
+                          if "source_segments" in payload else controlled_decision(payload, cfg.get("scenario")))
                 capture["result"] = result
                 return httpx.Response(200, json={"model": "deepseek-flash",
                     "choices": [{"finish_reason": "stop", "message": {

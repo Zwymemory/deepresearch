@@ -16,6 +16,8 @@ import static com.deepresearch.workflow.ResearchProgressSelectionDtos.*;
 /** Atomic first project binding; accepted replay never reselects today's progress. */
 @Service
 public class AgentRunService {
+    @org.springframework.beans.factory.annotation.Value("${deepresearch.memory.auto-save.enabled:true}")
+    private boolean autoSaveEnabled=true;
     private final WorkflowService workflows;
     private final UserContextService users;
     private final JdbcTemplate jdbc;
@@ -107,6 +109,8 @@ public class AgentRunService {
             UPDATE agent_workflow_run SET context_snapshot=jsonb_set(context_snapshot,'{project_summary_policy}',?::jsonb)
             WHERE run_id=?
             """,EvidenceJson.canonical(EvidenceJson.JSON.valueToTree(summaries.projectSummaryPolicy())),accepted.runId());
+        jdbc.update("UPDATE agent_workflow_run SET context_snapshot=jsonb_set(context_snapshot,'{project_progress_policy}',?::jsonb) WHERE run_id=?",
+            EvidenceJson.canonical(EvidenceJson.object("schema_version","project-progress-policy/1","enabled",autoSaveEnabled)),accepted.runId());
         jdbc.update("UPDATE agent_workflow_run SET budget=CAST(? AS jsonb) WHERE run_id=?", """
             {"runtime":"agent","maxTasks":16,"maxConcurrency":1,"maxRevisionRounds":2,
              "maxDecisionSteps":8,"maxModelCalls":16,"maxToolCalls":16,"deadlineSeconds":180,

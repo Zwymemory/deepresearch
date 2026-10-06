@@ -91,16 +91,37 @@ public class ResearchProgressRepository {
             """,(rs,n)->parse(rs.getString(1)),project,run,p.tenantId(),p.userId());
     }
     boolean referencesAccessible(String project,AuthPrincipal p,JsonNode payload) {
-        var current=new HashMap<String,JsonNode>();
-        for(var row:evidence(project,payload.path("source_run_id").asText(),p)) current.put(row.path("evidence_id").asText(),row);
+        return referencesAccessible(project,p,payload,new HashSet<>(),new HashMap<>(),new HashSet<>());
+    }
+    private boolean referencesAccessible(String project,AuthPrincipal p,JsonNode payload,Set<String> trail,
+            Map<String,JsonNode> current,Set<String> validated) {
+        String run=payload.path("source_run_id").asText();
+        if(!trail.add(run)) return false;
+        if(validated.contains(run)) return true;
+        current.putIfAbsent(run,payload);
+        if(current.size()>20) return false;
+        for(var ref:payload.path("prior_memory_refs")) {
+            String ancestor=ref.path("source_run_id").asText();JsonNode record=current.get(ancestor);
+            if(record==null) {
+                if(current.size()>=20) return false;
+                var rows=saved(project,p,ancestor);
+                if(rows.size()!=1) return false;
+                record=rows.get(0);current.put(ancestor,record);
+            }
+            if(!sha(canonical(record)).equals(ref.path("snapshot_sha256").asText())
+                || !referencesAccessible(project,p,record,new HashSet<>(trail),current,validated)) return false;
+        }
+        var evidenceById=new HashMap<String,JsonNode>();
+        for(var row:evidence(project,run,p)) evidenceById.put(row.path("evidence_id").asText(),row);
         for(var ref:payload.path("source_evidence")) {
-            var row=current.get(ref.path("evidence_id").asText());
+            var row=evidenceById.get(ref.path("evidence_id").asText());
             if(row==null || !"available".equals(row.path("availability").asText()) || !"fresh".equals(row.path("freshness").asText())
                     || !ref.path("snapshot_sha256").equals(row.path("snapshot").path("sha256"))) return false;
         }
         var claims=new HashMap<String,JsonNode>();
-        for(var row:claimStates(project,payload.path("source_run_id").asText(),p)) claims.put(row.path("claim_id").asText(),row);
+        for(var row:claimStates(project,run,p)) claims.put(row.path("claim_id").asText(),row);
         for(var ref:payload.path("source_claims")) if(!ref.equals(claims.get(ref.path("claim_id").asText()))) return false;
+        validated.add(run);
         return true;
     }
     List<JsonNode> claimStates(String project,String run,AuthPrincipal p) {
@@ -120,6 +141,27 @@ public class ResearchProgressRepository {
         var result=new HashSet<String>();
         if(!rows.isEmpty()) rows.get(0).path("adopted_evidence_ids").forEach(e->result.add(e.asText()));
         return result;
+    }
+    List<JsonNode> frozenPredecessors(String project,String run,AuthPrincipal p) {
+        JsonNode context=parse(db.queryForObject("SELECT context_snapshot::text FROM agent_workflow_run WHERE run_id=?",String.class,run));
+        var result=new ArrayList<JsonNode>();
+        for(var selected:context.path("prior_progress").path("records")) {
+            var rows=saved(project,p,selected.path("source_run_id").asText());
+            if(rows.size()!=1 || !sha(canonical(rows.get(0))).equals(selected.path("snapshot_sha256").asText())
+                    || !referencesAccessible(project,p,rows.get(0))) throw new IllegalStateException("PREDECESSOR_CHANGED");
+            result.add(rows.get(0));
+        }
+        return result;
+    }
+    void lockSaveOutcome(String run) {
+        db.update("INSERT INTO research_progress_auto_save(run_id,status) SELECT run_id,'PENDING' FROM agent_workflow_run WHERE run_id=? AND status IN ('SUCCEEDED','INSUFFICIENT_EVIDENCE','FAILED','CANCELLED','TIMED_OUT','BUDGET_EXCEEDED') ON CONFLICT(run_id) DO NOTHING",run);
+        db.queryForList("SELECT run_id FROM research_progress_auto_save WHERE run_id=? FOR UPDATE",run);
+    }
+    void markSaved(String run) {
+        db.update("UPDATE research_progress_auto_save SET status='SAVED',error_code=NULL,updated_at=now() WHERE run_id=?",run);
+    }
+    void markDeleted(String run) {
+        db.update("INSERT INTO research_progress_auto_save(run_id,status) VALUES (?,'DELETED') ON CONFLICT(run_id) DO UPDATE SET status='DELETED',error_code=NULL,updated_at=now()",run);
     }
     boolean delete(String project,String run,AuthPrincipal p) {
         return db.update("DELETE FROM research_progress_memory WHERE project_id=? AND run_id=? AND tenant_id=? AND owner_id=?",

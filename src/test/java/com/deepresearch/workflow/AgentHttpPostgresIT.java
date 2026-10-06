@@ -38,6 +38,7 @@ import static org.mockito.Mockito.when;
 
 /** Real HTTP, JWT filters/services, Flyway and PG. Only retrieval/provider transport is substituted. */
 @SpringBootTest(webEnvironment=SpringBootTest.WebEnvironment.RANDOM_PORT,properties={
+    "deepresearch.memory.auto-save.scheduler-enabled=false",
     "deepresearch.workflow.enabled=true", "deepresearch.agent.evidence.enabled=true",
     "spring.autoconfigure.exclude=org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration",
     "spring.ai.openai.api-key=isolated-http-model-key", "spring.ai.zhipuai.api-key=isolated-http-embedding-key",
@@ -115,8 +116,11 @@ class AgentHttpPostgresIT {
     Run create(String owner) throws Exception {
         return create(owner,List.of("kb_search"));
     }
-    Run create(String owner,List<String> tools) throws Exception {
-        var reply=request("POST","/api/research/agents",user(owner),object("question","Investigate API limits","requestedTools",tools));
+    Run create(String owner,List<String> tools) throws Exception { return create(owner,tools,null,null); }
+    Run create(String owner,List<String> tools,String project,String session) throws Exception {
+        var body=object("question","Investigate API limits","requestedTools",tools);
+        if(project!=null) body.put("researchProjectId",project).put("sessionId",session);
+        var reply=request("POST","/api/research/agents",user(owner),body);
         assertThat(reply.status()).withFailMessage(reply.body().toString()).isEqualTo(202);
         String run=reply.body().path("runId").asText(),claim=UUID.randomUUID().toString();
         db.update("UPDATE agent_workflow_run SET status='WORKING',stage='WORKING',claim_token=?::uuid,lease_until=now()+interval '120 seconds' WHERE run_id=?",claim,run);
@@ -241,9 +245,15 @@ class AgentHttpPostgresIT {
         assertThat(db.queryForObject("SELECT count(*) FROM agent_research_source_validation WHERE run_id=?",Integer.class,run.id())).isZero();
     }
 
-    private JsonNode criterionHttpScenario(String mode) throws Exception {
+    JsonNode criterionHttpScenario(String mode) throws Exception {
+        return criterionHttpScenario(mode,"criteria-owner-"+mode,null,null);
+    }
+    JsonNode criterionHttpScenario(String mode,String owner,String project,String session) throws Exception {
+        return criterionHttpScenario(mode,owner,project,session,false);
+    }
+    JsonNode criterionHttpScenario(String mode,String owner,String project,String session,boolean extraPending) throws Exception {
         boolean mixed=mode.equals("obligations-auto-mixed");
-        Run run=create("criteria-owner-"+mode,mixed?List.of("kb_search","web_search"):List.of("kb_search"));
+        Run run=create(owner,mixed?List.of("kb_search","web_search"):List.of("kb_search"),project,session);
         String objective=mode.equals("refuted")?"Verify API document version":"Verify API document version and per-minute request rate";
         if(mode.startsWith("obligations-")) objective="Using the Original source policy; verify API document version; verify per-minute request rate; quote the policy.";
         if(mixed) objective="Using knowledge and web originals; verify API document version; verify per-minute request rate; quote both originals.";
@@ -251,6 +261,11 @@ class AgentHttpPostgresIT {
         var criteria=mode.equals("refuted")?List.of("Verify the API document version"):List.of("Verify the API document version","Verify the per-minute request rate");
         db.update("UPDATE agent_workflow_run SET question=? WHERE run_id=?",objective,run.id());
         db.update("UPDATE agent_research_task SET objective=?,acceptance_criteria=CAST(? AS text[]) WHERE run_id=? AND task_id='task-main'",objective,"{\""+String.join("\",\"",criteria)+"\"}",run.id());
+        if(extraPending) db.update("""
+            INSERT INTO agent_research_task(run_id,task_id,objective,status,acceptance_criteria,plan_version,task_json,claim_token)
+            SELECT run_id,'task-auth','Verify authentication header','pending',ARRAY['Read authentication original'],1,'{}',claim_token
+            FROM agent_research_task WHERE run_id=? AND task_id='task-main'
+            """,run.id());
         String original=mode.startsWith("obligations-")||mode.equals("complete")||mode.equals("segments-complete")?"Document version: 2.0\nVersion 2.0 allows 100 requests per minute.\n":"Document version: 2.0\nThis source specifies version 2.0 only; the per-minute request rate is not stated.\n";
         when(ragflow.chunk("dataset-http","document-http","chunk-old")).thenReturn(object("id","chunk-old","doc_id","document-http","content",original));
         search(run,"search-criteria-"+mode,"chunk-old");

@@ -17,6 +17,11 @@ public class ResearchProgressController {
     public JsonNode save(@PathVariable String projectId,@PathVariable String runId) { return progress.save(projectId,runId); }
     @GetMapping("/projects/{projectId}/progress/runs/{runId}")
     public JsonNode read(@PathVariable String projectId,@PathVariable String runId) { return progress.read(projectId,runId); }
+    public record Correction(String note) {}
+    @PatchMapping("/projects/{projectId}/progress/runs/{runId}")
+    public JsonNode correct(@PathVariable String projectId,@PathVariable String runId,@RequestBody Correction correction) {
+        return progress.correct(projectId,runId,correction.note());
+    }
     @DeleteMapping("/projects/{projectId}/progress/runs/{runId}")
     public Map<String,Object> delete(@PathVariable String projectId,@PathVariable String runId) {
         return Map.of("run_id",runId,"deleted",progress.delete(projectId,runId));

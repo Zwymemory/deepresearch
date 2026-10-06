@@ -195,6 +195,8 @@ def mandatory_sections(state, sources=()):
             ("unresolved_questions", "unfinished"),
             ("next_steps", "next_steps"),
             ("source_claims", "disputes"),
+            ("historical_completed_work", "findings"),
+            ("user_correction", "constraints"),
         ]:
             pin(category, snap.get(field), base + "/" + field)
         # Acceptance criteria and conditions are kept inside the unchanged unresolved items.
