@@ -11,6 +11,8 @@
     success（默认）| insufficient | failed | budget | slow | disconnect | unknown | noweb | langgraph | evidence-disabled
     | memory-oversize | memory-load-error | memory-unavailable | memory-revoked
 
+M4 历史研究参考（memoryRecall）：创建时按简单关键词从同一身份已保存的进度中冻结最多 3 条；
+被引用的快照之后被修改或删除时返回 UNAVAILABLE。仅用于界面检查，不代表后端的选择算法。
 autosave-off / autosave-fail：自动保存状态（M3）的“未启用 / 失败”界面检查；默认在运行结束后约 1.5 秒自动保存。
 memory-unavailable / memory-revoked 只模拟“继续研究”（researchProjectId）的拒绝形状，用于界面检查；
 真实的选择、核对与规划输入只能在后端链路上验证。
@@ -201,6 +203,8 @@ class Run:
         self.tools = body.get("requestedTools") or ["kb_search"]
         self.question = body.get("question") or ""
         self.research_project = body.get("researchProjectId") if endpoint.endswith("/agents") else None
+        self.memory_recall = body.get("memoryRecall", True) is not False
+        self.recalled = []   # frozen at creation: [(key, snapshot copy, matched terms)]
         self.created = time.monotonic()
         self.created_iso = now_iso()
         self.timeline = agent_timeline() if self.agent else workflow_timeline(scenario, self.tools)
@@ -355,6 +359,67 @@ def progress_snapshot(run, origin: str = "manual", owner: str = "") -> dict:
             "source_claims": [{"claim_id": "claim-resume", "record_sha256": "2" * 64, "decision_status": "contested", "freshness": "fresh"}]}
 LOCK = threading.Lock()
 AUTO_SAVE: dict = {}   # run_id -> first terminal observation (monotonic), for the synthetic reconcile delay
+RECALL_TERMS = ["kafka", "延迟", "检索", "认证", "版本"]
+
+
+def recall_terms(text: str) -> set:
+    import re
+    low = (text or "").lower()
+    return {t for t in RECALL_TERMS if t in low} | set(re.findall(r"[a-z]{4,}", low))
+
+
+def versions_in(text: str) -> list:
+    import re
+    return sorted(set(re.findall(r"v\d+(?:\.\d+)*", (text or "").lower())))
+
+
+def freeze_recall(run, owner: str):
+    if not (run.agent and run.memory_recall):
+        return
+    wanted = recall_terms(run.question)
+    picked = []
+    for (o, p, r), (_seq, snap) in sorted(PROGRESS.items(), key=lambda kv: -kv[1][0]):
+        if o != owner or r == run.id:
+            continue
+        matched = sorted(wanted & recall_terms(snap.get("original_goal", "") + " " + (snap.get("current_question") or "")))
+        if matched:
+            picked.append(((o, p, r), json.loads(json.dumps(snap)), matched))
+        if len(picked) == 3:
+            break
+    run.recalled = picked
+
+
+def recall_view(run) -> dict:
+    base = {"schema_version": "research-recall-view/1", "run_id": run.id, "project_id": progress_project(run),
+            "trusted_as_evidence": False, "planner_input_recorded": False, "records": [], "selection": None,
+            "message": "旧研究仅作调查线索；时间、版本和条件均需重新核查。"}
+    if not run.memory_recall:
+        return dict(base, status="DISABLED")
+    if any(PROGRESS.get(key, (0, None))[1] != snap for key, snap, _m in run.recalled):
+        return dict(base, status="UNAVAILABLE", message="旧记录已变更或不可访问，需重新开始研究。")
+    selection = {"candidate_limit": 20, "max_records": 3, "limit_bytes": 8192, "method": "keyword-baseline/1",
+                 "unrelated": max(0, len(PROGRESS) - len(run.recalled)), "inaccessible": 0, "duplicates": 0, "omitted": 0}
+    if not run.recalled:
+        return dict(base, status="EMPTY", selection=selection)
+    q_versions = versions_in(run.question)
+    records = []
+    for key, snap, matched in run.recalled:
+        old_versions = versions_in(snap.get("original_goal", "") + " " + (snap.get("current_question") or ""))
+        refs = [{"source_key": "src-" + e.get("source_id", "x"), "source": {"title": "预览来源：" + e.get("source_id", "x")},
+                 "snapshot_sha256": e.get("snapshot_sha256") or "1" * 64, "source_run_id": key[2], "evidence_id": e.get("evidence_id", ""),
+                 "independent_evidence": False} for e in snap.get("source_evidence", [])]
+        records.append({"source_project_id": key[1], "source_run_id": key[2], "snapshot_sha256": "4" * 64, "snapshot": snap,
+                        "reason": {"method": "keyword-baseline/1", "matched_terms": matched, "score": len(matched)},
+                        "applicability": {"status": "RECHECK_REQUIRED",
+                                          "cautions": ["旧研究涉及的版本与本问题不同"] if old_versions and q_versions and old_versions != q_versions else [],
+                                          "mentioned_versions": old_versions,
+                                          "time": {"status": "unknown", "value": None, "reason": "有效时间未知"},
+                                          "conditions": {"status": "unknown", "value": None, "reason": "适用条件未知"}},
+                        "source_refs": refs + refs})   # duplicated on purpose: the page must count each source once
+    used = run.terminal()
+    return dict(base, status="USED" if used else "SELECTED", planner_input_recorded=used, records=records, selection=selection)
+
+
 SAVE_GONE: dict = {}   # run_id -> ("DELETED" | "UNAVAILABLE", error_code) after a deletion (synthetic cascade)
 
 
@@ -423,7 +488,7 @@ class Handler(BaseHTTPRequestHandler):
         parts = [unquote(p) for p in parsed.path.strip("/").split("/")]
         if not self.path.startswith("/api/research/"):
             return False
-        is_memory = (len(parts) == 5 and parts[:3] == ["api", "research", "agents"] and parts[4] in ("progress-project", "progress-save")) \
+        is_memory = (len(parts) == 5 and parts[:3] == ["api", "research", "agents"] and parts[4] in ("progress-project", "progress-save", "memory-recall")) \
             or parts[:3] == ["api", "research", "progress"] or (len(parts) >= 5 and parts[:3] == ["api", "research", "projects"])
         if not is_memory:
             return False
@@ -437,6 +502,9 @@ class Handler(BaseHTTPRequestHandler):
             run = self.owned(RUNS.get(parts[3]))
             if method != "GET" or not run or not run.agent:
                 self.send_json(404, {"error": "不存在或无权访问"})
+                return True
+            if parts[4] == "memory-recall":
+                self.send_json(200, recall_view(run))
                 return True
             if parts[4] == "progress-save":
                 # 合成的自动保存状态（research-progress-save/1），只用于界面检查。
@@ -619,6 +687,7 @@ class Handler(BaseHTTPRequestHandler):
                     UNKNOWN_FAILED.add(key)
                     run = Run("success", body, path)
                     run.owner = owner
+                    freeze_recall(run, self.owner())
                     RUNS[run.id] = run
                     BY_KEY[key] = (fingerprint, run)
                     return self.send_json(502, {"error": "预览：模拟网关在响应前中断"})
@@ -630,6 +699,7 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     run = Run(scenario, body, path)
                     run.owner = owner
+                    freeze_recall(run, self.owner())
                     RUNS[run.id] = run
                     BY_KEY[key] = (fingerprint, run)
                     replayed = False
