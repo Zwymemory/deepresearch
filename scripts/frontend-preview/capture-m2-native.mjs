@@ -47,10 +47,19 @@ try {
   if (!(await remember.isChecked())) await remember.check();
   await page.getByRole("button", { name: "保存并连接" }).click();
   await page.waitForTimeout(400);
+  // The run's question as stored by the server: the summary goal entry whose locator is "question".
+  const question = await page.evaluate(async ([a, id]) => {
+    const r = await fetch(`/api/research/agents/${encodeURIComponent(id)}/context-summary`, { headers: { Authorization: a } });
+    const v = await r.json();
+    const goal = (v.summary?.sections?.goals ?? []).find((g) => g.locator === "question");
+    return typeof goal?.value === "string" ? goal.value : "";
+  }, [auth, ready.run_id]);
+  check("run question available for the report heading", question.length > 0, question);
   // Same record the app saves for a run it is showing; the app then recovers it via GET + SSE.
-  await page.evaluate((runId) => sessionStorage.setItem("deepresearch.console.currentRun", JSON.stringify({ mode: "agent", runId, question: "" })), ready.run_id);
+  await page.evaluate(([runId, q]) => sessionStorage.setItem("deepresearch.console.currentRun", JSON.stringify({ mode: "agent", runId, question: q })), [ready.run_id, question]);
   await page.reload();
-  await page.locator("#report").waitFor({ timeout: 30000 });
+  await page.locator("#report-question").waitFor({ timeout: 30000 });
+  check("report heading shows the run question", (await page.locator("#report-question").textContent()) === question);
   await page.locator(".summary-disclosure").waitFor({ timeout: 15000 });
   await page.waitForTimeout(800);
 
@@ -76,6 +85,8 @@ try {
   check("locators shown for entries", body.includes("context_snapshot/prior_progress/records/0/snapshot/unresolved_questions"));
   check("coverage matches the native record counts", body.includes(`覆盖 ${n.summary.covered_records.length} 条原始记录`) && body.includes(`未覆盖 ${n.uncovered_records.length} 条`));
   check("planner binding described without claiming understanding", body.includes("不证明模型理解或采纳"));
+  check("categories are described as highlights; originals remain available", body.includes("这些分类只是重点摘录"));
+  check("every original record is listed in full", n.sources.every((s) => body.includes(typeof s.value === "string" ? s.value.slice(-20) : "")));
   await shot("m2-02-summary-expanded", "expanded: sections with saved excerpts and locators, coverage counts, honest planner-binding wording");
   await page.locator(".summary-body details").first().locator("summary").click();
   check("original records listed", (await page.locator(".summary-sources > li").count()) === n.sources.length);

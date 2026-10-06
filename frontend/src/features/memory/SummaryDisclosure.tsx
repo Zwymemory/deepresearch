@@ -35,6 +35,7 @@ export function SummaryDisclosure({ read }: { read: SummaryRead }) {
             : v.plannerInputRecorded === false ? "尚无规划决策记录绑定这份摘要输入。" : "无法确认是否已有规划决策记录绑定这份摘要。"}
           {" "}以下为保存的原文摘录及出处，不是新核验的事实。
         </p>
+        <p className="note">这些分类只是重点摘录，并不完整；全部原始记录仍保留，可在下方“原始记录”中查看。</p>
         {v.summary ? v.summary.sections.map((section) => (
           <section key={section.key}>
             <h4 className="insp-label">{SECTION_LABELS[section.key] ?? section.key}</h4>
