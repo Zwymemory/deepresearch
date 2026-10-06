@@ -86,6 +86,7 @@ try {
   check("coverage matches the native record counts", body.includes(`覆盖 ${n.summary.covered_records.length} 条原始记录`) && body.includes(`未覆盖 ${n.uncovered_records.length} 条`));
   check("planner binding described without claiming understanding", body.includes("不证明模型理解或采纳"));
   check("categories are described as highlights; originals remain available", body.includes("这些分类只是重点摘录"));
+  check("coverage explained in Chinese, not the raw English note", body.includes("摘录式选择") && !(await page.locator(".summary-body > p.note").allTextContents()).some((t) => t.includes("Extractive selection")));
   check("every original record is listed in full", n.sources.every((s) => body.includes(typeof s.value === "string" ? s.value.slice(-20) : "")));
   await shot("m2-02-summary-expanded", "expanded: sections with saved excerpts and locators, coverage counts, honest planner-binding wording");
   await page.locator(".summary-body details").first().locator("summary").click();

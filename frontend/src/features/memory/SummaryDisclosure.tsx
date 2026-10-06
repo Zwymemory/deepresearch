@@ -1,4 +1,4 @@
-import { valueText, type ContextSummary } from "../../domain/contextSummary";
+import { KNOWN_COVERAGE_NOTES, valueText, type ContextSummary } from "../../domain/contextSummary";
 
 const SECTION_LABELS: Record<string, string> = {
   goals: "目标", constraints: "限制条件", findings: "已有发现", disputes: "争议", failed_attempts: "失败尝试", unfinished: "未完成事项", next_steps: "下一步",
@@ -53,9 +53,11 @@ export function SummaryDisclosure({ read }: { read: SummaryRead }) {
           </section>
         ) : null}
         <p className="note">
-          覆盖 {v.summary?.coveredRecords.length ?? 0} 条原始记录；未覆盖 {v.uncoveredRecords.length} 条{v.uncoveredRecords.length ? "（原文保留，未被删除）" : ""}。{v.summary?.coverageNote ? `服务端说明：${v.summary.coverageNote}` : ""}
+          覆盖 {v.summary?.coveredRecords.length ?? 0} 条原始记录；未覆盖 {v.uncoveredRecords.length} 条{v.uncoveredRecords.length ? "（原文保留，未被删除）" : ""}。{v.summary?.coverageNote && KNOWN_COVERAGE_NOTES[v.summary.coverageNote] ? KNOWN_COVERAGE_NOTES[v.summary.coverageNote] : ""}
         </p>
-        {v.uncoveredRecords.length ? <ul className="nb-gaps">{v.uncoveredRecords.map((r, i) => <li key={i}><span className="source-id">{r.locator}</span>{r.reason ? `：${r.reason}` : ""}</li>)}</ul> : null}
+        {v.uncoveredRecords.length ? <ul className="nb-gaps">{v.uncoveredRecords.map((r, i) => (
+          <li key={i}>{r.resolved ? <span className="source-id">{r.locator}</span> : <>未能对应到原始记录：<span className="source-id">{r.sourceRef || "（空引用）"}</span></>}</li>
+        ))}</ul> : null}
         {v.sources.length ? (
           <details className="note">
             <summary style={{ cursor: "pointer", width: "fit-content" }}>原始记录（{v.sources.length}）</summary>
@@ -73,6 +75,8 @@ export function SummaryDisclosure({ read }: { read: SummaryRead }) {
             <dt>projectId</dt><dd className="source-id">{v.projectId ?? "—"}</dd>
             <dt>measurement</dt><dd className="source-id">{m ? `${m.method} before=${fmt(m.beforeBytes)} after=${fmt(m.afterBytes)} budget=${fmt(m.budgetBytes)} within_budget=${String(v.withinBudget)}` : "—"}</dd>
             <dt>planner_input_recorded</dt><dd className="source-id">{String(v.plannerInputRecorded)}</dd>
+            {v.summary?.coverageNote ? <><dt>coverage_note</dt><dd className="source-id">{v.summary.coverageNote}</dd></> : null}
+            {v.uncoveredRecords.length ? <><dt>uncovered_records</dt><dd className="source-id">{v.uncoveredRecords.map((r) => `${r.sourceRef}${r.recordSha256 ? " " + r.recordSha256.slice(0, 12) : ""}`).join("，")}</dd></> : null}
             <dt>summary_sha256</dt><dd className="source-id">{v.summary?.summarySha256 ?? "—"}</dd>
             <dt>source_sha256</dt><dd className="source-id">{v.sourceSha256 ?? "—"}</dd>
           </dl>
