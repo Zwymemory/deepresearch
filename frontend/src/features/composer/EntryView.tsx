@@ -4,6 +4,44 @@ import { Icon } from "../../ui/Icon";
 import type { DemoOutcome } from "../../demo/useDemoRun";
 import { DEMO_QUESTION } from "../../demo/fixtures";
 import type { AppMode } from "../shell/TopBar";
+import type { Continuation } from "../../domain/researchMemory";
+import type { MemoryRejection } from "../../live/useLiveResearch";
+
+/** History shown as history: the saved record, not part of this round's question. */
+function SourceProject({ continuation, onClear }: { continuation: Continuation; onClear: () => void }) {
+  return (
+    <section className="source-project" aria-labelledby="source-project-title">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p id="source-project-title" className="eyebrow">来源项目 · 历史记录{continuation.preview ? " · 示例数据" : ""}</p>
+        <button type="button" className="link-btn" onClick={onClear}>不使用此项目</button>
+      </div>
+      <ul className="source-goals">{continuation.goals.map((g, i) => <li key={i}>{g}</li>)}</ul>
+      {continuation.unresolved.length ? (
+        <div>
+          <p className="insp-label">尚未解决的问题</p>
+          <ul className="nb-gaps">{continuation.unresolved.map((u, i) => (
+            <li key={i}>{u.goal}{u.gaps.length ? <span className="note">（{u.gaps.join("；")}）</span> : null}
+              {u.criteria.length ? <span className="note">　标准：{u.criteria.join("；")}</span> : null}</li>
+          ))}</ul>
+        </div>
+      ) : null}
+      {continuation.nextSteps.length ? (
+        <div>
+          <p className="insp-label">保存时记录的下一步</p>
+          <ul className="nb-gaps">{continuation.nextSteps.map((n, i) => <li key={i}>{n}</li>)}</ul>
+        </div>
+      ) : null}
+      <p className="note">这是保存的历史记录，尚未传入模型。提交后，服务端会重新核对并选择该项目的历史进度作为规划参考（不可信的历史上下文，不是新证据）；页面无法确认模型是否收到或使用了它。</p>
+      <details className="note">
+        <summary style={{ cursor: "pointer", width: "fit-content" }}>技术详情</summary>
+        <dl className="facts" style={{ marginTop: 8 }}>
+          <dt>researchProjectId</dt><dd className="source-id">{continuation.projectId}</dd>
+          <dt>sessionId（载入返回）</dt><dd className="source-id">{continuation.sessionId}</dd>
+        </dl>
+      </details>
+    </section>
+  );
+}
 
 type Scope = "kb" | "web" | "mixed";
 
@@ -19,7 +57,7 @@ const MODE_NOTES: Record<ExecutionMode, string> = {
   legacy: "单 Agent 基线：Java 直接选择工具，同步返回；不具备工作流恢复与服务端取消，不使用检索范围设置。",
 };
 
-export interface StartRequest { question: string; tools: ToolName[]; mode: ExecutionMode; outcome: DemoOutcome; sessionId: string }
+export interface StartRequest { question: string; tools: ToolName[]; mode: ExecutionMode; outcome: DemoOutcome; sessionId: string; researchProjectId?: string }
 
 export interface UnknownCreate { question: string; idempotencyKey: string; onRetry: () => void; onDiscard: () => void }
 
@@ -35,8 +73,14 @@ function FolioStack() {
   );
 }
 
-export function EntryView({ appMode, onStart, onExample, onOpenArchive, onOpenRecent, recentCount, busy = false, webConfigured = null, initialQuestion = "", unknown = null, blocking = null }: {
+export function EntryView({ appMode, onStart, onExample, onOpenArchive, onOpenRecent, recentCount, busy = false, webConfigured = null, initialQuestion = "", unknown = null, blocking = null,
+  continuation = null, onClearContinuation, rejection = null }: {
   appMode: AppMode;
+  /** Loaded project/session pair chosen with "Continue research"; absent for ordinary research. */
+  continuation?: Continuation | null;
+  onClearContinuation?: () => void;
+  /** The server refused the last project continuation; nothing was started. */
+  rejection?: MemoryRejection | null;
   onOpenArchive: () => void;
   onOpenRecent: () => void;
   /** Local runs remembered by this browser (never server data). */
@@ -53,7 +97,9 @@ export function EntryView({ appMode, onStart, onExample, onOpenArchive, onOpenRe
   const [question, setQuestion] = useState(initialQuestion);
   const [scope, setScope] = useState<Scope>("mixed");
   const [calculator, setCalculator] = useState(true);
-  const [mode, setMode] = useState<ExecutionMode>("workflow");
+  const [chosenMode, setMode] = useState<ExecutionMode>("workflow");
+  // Continuing a project is an autonomous-research feature; the pair decides the mode.
+  const mode: ExecutionMode = continuation ? "agent" : chosenMode;
   const [sessionId, setSessionId] = useState("");
   const [error, setError] = useState("");
   const field = useRef<HTMLTextAreaElement>(null);
@@ -65,12 +111,21 @@ export function EntryView({ appMode, onStart, onExample, onOpenArchive, onOpenRe
     ...(calculator ? ["calculator" as const] : []),
   ];
 
+  // Synchronous guard: a double click cannot reach onStart twice before the busy state renders.
+  const submitting = useRef(false);
   const submit = async (text = question, outcome: DemoOutcome = "success") => {
-    if (locked) return;
+    if (locked || submitting.current) return;
     if (!text.trim()) { setError("请先写下研究问题。"); field.current?.focus(); return; }
     setError("");
-    const result = await onStart({ question: text.trim(), tools: mode === "legacy" ? [] : tools(), mode, outcome, sessionId: sessionId.trim() });
-    if (result) setError(result);
+    submitting.current = true;
+    try {
+      const result = await onStart(continuation
+        ? { question: text.trim(), tools: tools(), mode: "agent", outcome, sessionId: continuation.sessionId, researchProjectId: continuation.projectId }
+        : { question: text.trim(), tools: mode === "legacy" ? [] : tools(), mode, outcome, sessionId: sessionId.trim() });
+      if (result) setError(result);
+    } finally {
+      submitting.current = false;
+    }
   };
 
   const onKey = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -97,11 +152,21 @@ export function EntryView({ appMode, onStart, onExample, onOpenArchive, onOpenRe
         <p className="entry-intro">提出一个问题。研究助手会检索、核验并整理成可以逐条追溯来源的报告；证据不足时会说明缺口，而不是补全答案。</p>
 
         {blocking ? <p className="limits" role="alert" style={{ marginTop: 20 }}><strong>暂不可用：</strong>{blocking}</p> : null}
+        {continuation && onClearContinuation ? <SourceProject continuation={continuation} onClear={onClearContinuation} /> : null}
+        {rejection ? (
+          <div className="unknown memory-rejected" role="alert">
+            <strong><Icon name="alert" size={16} />{rejection.label}：历史进度没有被使用，研究没有开始</strong>
+            <p>{rejection.text}</p>
+            {rejection.reselect ? <button type="button" className="btn btn-quiet btn-sm" style={{ justifySelf: "start" }} onClick={onOpenArchive}>回到研究档案重新选择</button> : null}
+            <details className="note"><summary style={{ cursor: "pointer", width: "fit-content" }}>技术详情</summary>
+              <p className="source-id" style={{ marginTop: 6 }}>{rejection.code} · researchProjectId {rejection.projectId}</p></details>
+          </div>
+        ) : null}
 
         <form className="composer" onSubmit={(e) => { e.preventDefault(); void submit(); }} aria-busy={busy}>
-          <label htmlFor="question" className="sr-only">研究问题</label>
+          <label htmlFor="question" className="sr-only">{continuation ? "本轮研究问题" : "研究问题"}</label>
           <textarea id="question" ref={field} className="question-field" rows={3} maxLength={4000} value={question} disabled={locked}
-            placeholder="例如：本项目如何在崩溃和断线后继续研究，而不重复创建任务？"
+            placeholder={continuation ? "本轮研究问题，例如：接着做，先推进尚未完成的部分。" : "例如：本项目如何在崩溃和断线后继续研究，而不重复创建任务？"}
             aria-describedby={error ? "question-error" : "question-hint"} aria-invalid={!!error}
             onChange={(e) => { setQuestion(e.target.value); if (error) setError(""); }} onKeyDown={onKey} />
           <div className="composer-bar">
@@ -119,7 +184,7 @@ export function EntryView({ appMode, onStart, onExample, onOpenArchive, onOpenRe
             </button>
             <span className="spacer" />
             <button type="submit" className="btn btn-primary btn-lg" disabled={locked}>
-              <Icon name="spark" />{busy ? "正在提交…" : mode === "legacy" ? "运行基线" : "开始研究"}
+              <Icon name="spark" />{busy ? "正在提交…" : continuation ? "在此项目继续研究" : mode === "legacy" ? "运行基线" : "开始研究"}
             </button>
           </div>
         </form>
@@ -141,7 +206,7 @@ export function EntryView({ appMode, onStart, onExample, onOpenArchive, onOpenRe
             : <>{question.length} / 4000 · ⌘/Ctrl + Enter 提交 · 网页搜索为外部调用</>}</span>
           <label className="mode-picker">
             <span>执行方式</span>
-            <select value={mode} disabled={locked} onChange={(e) => setMode(e.target.value as ExecutionMode)} aria-describedby="mode-note">
+            <select value={mode} disabled={locked || !!continuation} onChange={(e) => setMode(e.target.value as ExecutionMode)} aria-describedby="mode-note">
               <option value="workflow">Durable Workflow</option>
               <option value="agent">自主研究（候选）</option>
               <option value="legacy">Single Agent 基线</option>
@@ -151,7 +216,7 @@ export function EntryView({ appMode, onStart, onExample, onOpenArchive, onOpenRe
         <p id="mode-note" className="note" style={{ padding: "6px 6px 0" }}>
           {mode === "agent" ? <span className="chip chip-future" style={{ marginRight: 6 }}>候选功能</span> : null}{MODE_NOTES[mode]}
         </p>
-        {appMode === "live" ? (
+        {appMode === "live" && !continuation ? (
           <details className="note" style={{ padding: "8px 6px 0" }}>
             <summary style={{ cursor: "pointer", width: "fit-content" }}>会话选项</summary>
             <label className="field-row" style={{ marginTop: 8, maxWidth: 360 }}>

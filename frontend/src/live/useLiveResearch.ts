@@ -23,6 +23,19 @@ import { canSafelyRetry, loadPending, newPending, savePending, type CreateBody, 
 import { applyEvent, applyView, emptyRun, isTerminal, mapLegacy, type RunState } from "../domain/runState";
 import type { ExecutionMode, ToolName } from "../domain/types";
 import type { EvidenceViewResult } from "../domain/evidenceView";
+import { isMemoryCode, memoryErrorInfo, type MemoryRequest } from "../domain/researchMemory";
+
+const MEMORY_RUNS_STORE = "deepresearch.react.memoryRuns";
+/** Runs created with an explicit project selection, keyed by identity scope + run id (this browser session only). */
+function readMemoryRuns(): Record<string, MemoryRequest> {
+  try { return JSON.parse(sessionStorage.getItem(MEMORY_RUNS_STORE) || "{}") as Record<string, MemoryRequest>; } catch { return {}; }
+}
+function writeMemoryRuns(value: Record<string, MemoryRequest>) {
+  try { sessionStorage.setItem(MEMORY_RUNS_STORE, JSON.stringify(value)); } catch { /* storage unavailable: in-memory only */ }
+}
+
+/** A create that the server refused because of the project selection; nothing was started. */
+export interface MemoryRejection { scope: string; projectId: string; code: string; label: string; text: string; reselect: boolean }
 
 export type Connection = { state: "checking" } | { state: "online"; kind: PingResult["kind"] } | { state: "offline" };
 export type StreamStatus =
@@ -58,6 +71,8 @@ export function useLiveResearch(enabled: boolean, notify: Notify) {
   const [reconnects, setReconnects] = useState(0);
   const [paused, setPaused] = useState(false);
   const [recent, setRecent] = useState<RecentRun[]>(() => loadRecent());
+  const [memoryRuns, setMemoryRuns] = useState<Record<string, MemoryRequest>>(() => readMemoryRuns());
+  const [rejection, setRejection] = useState<MemoryRejection | null>(null);
   const [blocking, setBlocking] = useState<string | null>(null);
   const cursorRef = useRef("");
 
@@ -202,6 +217,11 @@ export function useLiveResearch(enabled: boolean, notify: Notify) {
         savePending(null); setPending(null); setUnknownOutcome(false);
         setLegacyRun(null);
         setCurrent({ runId: accepted.runId, mode: record.mode, question, tools });
+        // Remember only what was requested; whether a model received it is not observable here.
+        if (record.body.researchProjectId && record.body.sessionId) {
+          const entry: MemoryRequest = { projectId: record.body.researchProjectId, sessionId: record.body.sessionId };
+          setMemoryRuns((runs) => { const next = { ...runs, [scope + "\u0000" + accepted.runId]: entry }; writeMemoryRuns(next); return next; });
+        }
         queryClient.setQueryData<RunState>(["run", scope, accepted.runId], {
           ...emptyRun(question, tools, record.mode), runId: accepted.runId, sessionId: accepted.sessionId ?? "",
           status: accepted.status || "QUEUED", stage: accepted.stage || accepted.status || "QUEUED",
@@ -216,6 +236,12 @@ export function useLiveResearch(enabled: boolean, notify: Notify) {
       } else {
         savePending(null); setPending(null); setUnknownOutcome(false);
         const message = friendlyError(error, "workflow");
+        const code = (error as ApiError).code;
+        if (record.body.researchProjectId && (isMemoryCode(code) || (error as ApiError).status === 404)) {
+          const info = memoryErrorInfo(isMemoryCode(code) ? code : "RESEARCH_MEMORY_NOT_FOUND");
+          const reselect = (error as ApiError).requiresReselection ?? info.reselect;
+          setRejection({ scope, projectId: record.body.researchProjectId, code: isMemoryCode(code) ? code : `HTTP ${(error as ApiError).status}`, ...info, reselect });
+        }
         if ((error as ApiError).status === 503) setBlocking(message);
         notify(message, "error");
       }
@@ -226,8 +252,13 @@ export function useLiveResearch(enabled: boolean, notify: Notify) {
     }
   }, [ctx, notify, queryClient, scope]);
 
-  const start = useCallback(async (mode: ExecutionMode, question: string, tools: ToolName[], sessionId = "") => {
+  /**
+   * `researchProjectId` continues a loaded project: agent mode only, always paired with the
+   * sessionId returned by that explicit load. The server selects and re-checks the history.
+   */
+  const start = useCallback(async (mode: ExecutionMode, question: string, tools: ToolName[], sessionId = "", researchProjectId = "") => {
     if (submitting || pending) return { ok: false, reason: "已有待确认的创建请求。" };
+    if (researchProjectId && (mode !== "agent" || !sessionId.trim())) return { ok: false, reason: "继续研究需要先载入该项目到新会话（自主研究）。" };
     if (!identity.token) return { ok: false, reason: "needs-identity" };
     if (mode !== "legacy" && !tools.length) return { ok: false, reason: "请至少允许一个只读工具。" };
     if (mode !== "legacy" && tools.includes("web_search")) {
@@ -239,6 +270,8 @@ export function useLiveResearch(enabled: boolean, notify: Notify) {
     }
     const body: CreateBody = mode === "legacy" ? { question } : { question, requestedTools: tools };
     if (sessionId.trim()) body.sessionId = sessionId.trim();
+    if (researchProjectId) body.researchProjectId = researchProjectId;
+    setRejection(null);
     const record = newPending(mode, body, requestScope(identity, origin));
     // Persist before sending so a reload during an unknown outcome can only replay this exact request.
     savePending(record); setPending(record);
@@ -247,7 +280,7 @@ export function useLiveResearch(enabled: boolean, notify: Notify) {
     if (mode === "legacy") setLegacyRun({ ...emptyRun(question, [], "legacy"), status: "WORKING", stage: "WORKING" });
     const ok = await createWithPending(record, question, tools);
     if (!ok && mode === "legacy") setLegacyRun(null);
-    return { ok: true, reason: "" };
+    return { ok: true, reason: "", accepted: ok };
   }, [submitting, pending, identity, scope, ctx, origin, createWithPending]);
 
   const safeRetry = useCallback(async () => {
@@ -301,6 +334,8 @@ export function useLiveResearch(enabled: boolean, notify: Notify) {
     identity, origin, ctx, scope, connection, webConfigured, applyIdentity, devToken,
     run, runError, loading: query.isFetching && !query.data, current, terminal,
     pending, unknownOutcome, submitting, blocking, start, safeRetry, discardPending,
+    memoryRequestFor: (runId: string): MemoryRequest | null => memoryRuns[scope + "\u0000" + runId] ?? null,
+    rejection: rejection && rejection.scope === scope ? rejection : null, clearRejection: () => setRejection(null),
     stream, reconnects, cancel, cancelling, disconnectDrill, reconnectNow, evidence,
     openRun, closeRun, recent,
   };

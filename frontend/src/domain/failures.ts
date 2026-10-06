@@ -1,6 +1,8 @@
 // Explanations for terminal and failure codes (ported from the V1 page). Only
 // stable, safe codes are explained; provider responses are never shown.
 
+import { isMemoryCode, memoryErrorInfo } from "./researchMemory";
+
 export interface FailureInfo { label: string; description: string; recovery: string }
 
 const RETRY = "可以用同样的问题重新发起一次研究（会创建新的运行）。";
@@ -37,6 +39,12 @@ export function codeKey(value: unknown): string {
 
 /** The most specific known explanation for a terminal run, or a neutral fallback. */
 export function explainFailure(status: string, errorCode?: string | null): FailureInfo & { code: string } {
+  const memory = codeKey(errorCode);
+  if (isMemoryCode(memory)) {
+    const info = memoryErrorInfo(memory);
+    return { code: memory, label: info.label, description: info.text,
+      recovery: info.reselect ? "请回到研究档案重新载入该项目后，再明确选择继续研究。" : RETRY };
+  }
   for (const candidate of [errorCode, status]) {
     const key = codeKey(candidate);
     if (key && FAILURES[key]) return { code: key, ...FAILURES[key] };

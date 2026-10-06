@@ -51,6 +51,7 @@ export function describeEvent(event: RunEvent): { title: string; detail: string 
     case "INSUFFICIENT_EVIDENCE": return { title: "可信证据不足", detail: "只发布有证据支持的部分，其余保留为待核查事项。" };
     case "FAILED": return { title: "研究失败", detail: p.errorCode ? `结果码：${String(p.errorCode)}。` : "失败信息已按安全规则记录。" };
     case "CANCELLED": return { title: "研究已取消", detail: "服务端已停止后续工具授权。" };
+    case "RESEARCH_PROGRESS_SELECTED": return { title: "已选择项目历史进度", detail: `服务端为本次运行选择了项目历史进度（${typeof p.input_bytes === "number" ? p.input_bytes + " 字节，" : ""}不可信历史上下文，不是证据）。这只表示已选择，不代表模型已收到或使用。` };
     default: return { title: String(event.type), detail: typeof p.summary === "string" ? p.summary : "记录了一条运行事件。" };
   }
 }

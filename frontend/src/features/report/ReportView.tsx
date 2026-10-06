@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import type { NormalizedCitation } from "../../domain/citations";
 import { STAGE_LABELS, toolLabel } from "../../domain/eventText";
 import { explainFailure } from "../../domain/failures";
@@ -6,6 +6,7 @@ import type { Block } from "../../domain/markdown";
 import { lastReachedStage, recordedGaps, type RunState } from "../../domain/runState";
 import type { UnfinishedGoal, Usage } from "../../domain/types";
 import { Icon } from "../../ui/Icon";
+import { isMemoryCode } from "../../domain/researchMemory";
 import { Markdown, type CiteHandlers } from "./Markdown";
 import { EvidenceRecord } from "../evidence/EvidenceRecord";
 import type { EvidenceViewResult } from "../../domain/evidenceView";
@@ -48,7 +49,7 @@ function RunInfo({ run }: { run: RunState }) {
   );
 }
 
-export function ReportView({ run, blocks, citations, modeLabel, active, onCite, onOpenSources, onNew, onFollowUp, onReady, demo, onRetryQuestion, lastEventId, evidence, onCompareDisagreement, save }: {
+export function ReportView({ run, blocks, citations, modeLabel, active, onCite, onOpenSources, onNew, onFollowUp, onReady, demo, onRetryQuestion, lastEventId, evidence, onCompareDisagreement, save, memoryNote = null }: {
   run: RunState; blocks: Block[]; citations: NormalizedCitation[]; modeLabel: string; active: number | null;
   onCite: CiteHandlers["onCite"]; onOpenSources: () => void; onNew: () => void; onFollowUp: (question: string) => void;
   demo: boolean;
@@ -57,6 +58,8 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
   lastEventId?: string;
   /** Called once the report is in the DOM, so scroll/focus restoration has a target. */
   onReady: (ready: boolean) => void;
+  /** Project-history note for runs created with an explicit project selection. */
+  memoryNote?: ReactNode;
   /** Autonomous runs (or demo): the public evidence record. null for modes without a projection. */
   evidence?: { result: EvidenceViewResult | null; loading: boolean } | null;
   onCompareDisagreement?: (index: number) => void;
@@ -137,8 +140,9 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
           {citations.length ? <span title="按引用编号排列，不是可信度排名">引用 {citations.length} 个来源（知识库 {kb} · 网页 {web}{unknownSources ? ` · 详情未记录 ${unknownSources}` : ""}）</span> : null}
         </div>
 
+        {memoryNote}
         {run.status === "INSUFFICIENT_EVIDENCE" ? (
-          <p className="limits"><strong>限制：</strong>只发布有证据支持的部分；{goals.length} 项目标仍未完成，见文末“尚未解决的问题”。</p>
+          <p className="limits"><strong>限制：</strong>只发布有证据支持的部分；{goals.length ? <>{goals.length} 项目标仍未完成，见文末“尚未解决的问题”。</> : "服务端没有返回未完成目标的明细，页面不会推断哪些目标已完成。"}</p>
         ) : run.status === "CANCELLED" ? (
           <p className="limits"><strong>已取消：</strong>研究在“{STAGE_LABELS[stoppedAt ?? ""] ?? "早期"}”阶段被取消，没有可发布的答案。已记录的过程仍可查看。</p>
         ) : budgetStop ? (
@@ -147,7 +151,7 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
             <p className="note" style={{ marginTop: 6 }}>可以缩小问题范围后重新研究。</p>
             <button type="button" className="btn btn-quiet btn-sm" style={{ marginTop: 10 }} onClick={onRetryQuestion}>用同一问题重新研究</button>
           </div>
-        ) : failed ? (
+        ) : failed && !(memoryNote && isMemoryCode(run.errorCode)) ? (
           <div className="limits" role="status">
             <p><strong>{failure.label}</strong>（结果码 <code>{failure.code}</code>）：{failure.description}{stoppedAt ? ` 运行停在“${STAGE_LABELS[stoppedAt]}”阶段。` : ""}</p>
             {run.errorMessage && run.errorMessage !== failure.description ? <p className="note" style={{ marginTop: 4 }}>服务端说明：{run.errorMessage}</p> : null}

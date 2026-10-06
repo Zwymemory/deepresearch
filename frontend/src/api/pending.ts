@@ -4,7 +4,8 @@
 import { sameScope, STORE, storages, type RequestScope } from "./identity";
 import type { ExecutionMode } from "../domain/types";
 
-export interface CreateBody { question: string; requestedTools?: string[]; sessionId?: string }
+/** `researchProjectId` (agent mode only) is always paired with the sessionId returned by an explicit load. */
+export interface CreateBody { question: string; requestedTools?: string[]; sessionId?: string; researchProjectId?: string }
 
 export interface PendingCreate {
   mode: ExecutionMode;

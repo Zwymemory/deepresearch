@@ -9,7 +9,10 @@
 
 场景通过页面地址的 ?scenario= 选择（API 请求的同源 Referer 会携带它）：
     success（默认）| insufficient | failed | budget | slow | disconnect | unknown | noweb | langgraph | evidence-disabled
-    | memory-oversize | memory-load-error
+    | memory-oversize | memory-load-error | memory-unavailable | memory-revoked
+
+memory-unavailable / memory-revoked 只模拟“继续研究”（researchProjectId）的拒绝形状，用于界面检查；
+真实的选择、核对与规划输入只能在后端链路上验证。
 
 研究进度记忆路由按 RESEARCH_PROGRESS_FRONTEND_HANDOFF_2026-10-05 模拟（只支持自主研究运行），
 仅用于前端预览；它不是后端实现，也不能替代真实后端验收。
@@ -199,6 +202,9 @@ class Run:
         self.created = time.monotonic()
         self.created_iso = now_iso()
         self.timeline = agent_timeline() if self.agent else workflow_timeline(scenario, self.tools)
+        if self.agent and scenario == "memory-revoked" and body.get("researchProjectId"):
+            # 界面检查：运行在下一次使用前发现所选快照已变化，停止使用历史进度。
+            self.timeline = self.timeline[:2] + [ev(1.8, "SYSTEM", "FAILED", {"errorCode": "RESEARCH_MEMORY_REVOKED"}, "FAILED", "TERMINAL", 100)]
         self.cancelled_at = None
         self.stream_count = 0
         self.lock = threading.Lock()
@@ -260,7 +266,7 @@ class Run:
                          {"task_id": "task-2", "criterion_id": "c-2", "text": "获得可核对的生产断线率统计", "reason": "知识库与网页均未提供该数字"},
                          {"task_id": "task-3", "text": "确认多次断线后的重连上限", "reason": "相关检查没有完成的评估记录"}]}
         elif status == "FAILED":
-            error = "MODEL_PROVIDER_FAILED"
+            error = next((e["payload"].get("errorCode") for _, e in reversed(visible) if e["type"] == "FAILED"), None) or "MODEL_PROVIDER_FAILED"
         elif status == "BUDGET_EXCEEDED":
             error = "BUDGET_EXCEEDED"
         terminal = status in TERMINAL_STATUSES
@@ -545,6 +551,10 @@ class Handler(BaseHTTPRequestHandler):
             key = self.headers.get("Idempotency-Key") or ""
             body = self.body()
             scenario = self.scenario()
+            if "researchProjectId" in body and path.endswith("/workflows"):
+                return self.send_json(400, {"errorCode": "RESEARCH_MEMORY_REQUEST_INVALID", "requiresReselection": False})
+            if body.get("researchProjectId") and scenario == "memory-unavailable":
+                return self.send_json(409, {"errorCode": "RESEARCH_MEMORY_UNAVAILABLE", "requiresReselection": True})
             fingerprint = json.dumps(body, sort_keys=True)
             owner = self.headers.get("Authorization", "")
             key = owner + "\n" + key  # 幂等键按身份隔离

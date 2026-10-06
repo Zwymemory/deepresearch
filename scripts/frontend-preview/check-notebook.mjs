@@ -173,7 +173,7 @@ try {
     await openNotebook(page);
     await openRecord(page, page.locator(".archive-item").first());
     await page.getByRole("button", { name: "载入此项目的研究进度到新会话" }).click();
-    await page.getByText("载入未完成").first().waitFor();
+    await page.getByText("载入结果未知").first().waitFor();
     await page.waitForTimeout(1500);
     check("ambiguous POST failure: no automatic retry", memory(requests).filter((r) => r.method === "POST").length === 1);
     check("ambiguous POST failure: explicit second load offered", await page.getByRole("button", { name: "再次载入（会再新建一个会话）" }).count() === 1);

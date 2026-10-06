@@ -24,6 +24,8 @@ import { TopBar, type AppMode } from "../features/shell/TopBar";
 import { STAGE_LABELS } from "../domain/eventText";
 import { useLiveResearch, type Notify } from "../live/useLiveResearch";
 import { Icon } from "../ui/Icon";
+import { MemoryNote } from "../features/memory/MemoryNote";
+import type { Continuation } from "../domain/researchMemory";
 import { useTheme } from "./theme";
 
 type View = "entry" | "running" | "report" | "compare" | "disagreement" | "archive";
@@ -96,6 +98,27 @@ export function App() {
     enabled: !demoMode, ctx: live.ctx, scope: live.scope, notebookOpen: view === "archive",
     run: live.run && live.run.runId ? { runId: live.run.runId, mode: live.run.mode } : null,
   });
+  // Continue research: the project/session pair from an explicit load, carried to an explicit submit.
+  const [continuation, setContinuation] = useState<Continuation | null>(null);
+  const activeLoad: LoadState = demoMode ? previewLoad : notebook.load;
+  const pairScope = demoMode ? "demo" : live.scope;
+  // The pair stays valid only while the same load is current, in the same identity scope, with no deleted source.
+  const activeContinuation = continuation && continuation.scope === pairScope && activeLoad.state === "loaded"
+    && !activeLoad.sourceDeleted && activeLoad.context.projectId === continuation.projectId
+    && activeLoad.context.targetSessionId === continuation.sessionId ? continuation : null;
+  const continueProject = (projectId: string) => {
+    if (activeLoad.state !== "loaded" || activeLoad.sourceDeleted || activeLoad.context.projectId !== projectId) return;
+    const { context } = activeLoad;
+    setContinuation({
+      scope: pairScope, projectId: context.projectId, sessionId: context.targetSessionId, preview: demoMode,
+      goals: [...new Set(context.progress.map((p) => p.originalGoal))],
+      unresolved: context.progress.flatMap((p) => p.unresolvedQuestions.map((u) => ({ goal: u.goal, gaps: u.gaps, criteria: u.criteria.map((c) => c.text) }))),
+      nextSteps: [...new Set(context.progress.flatMap((p) => p.nextSteps))],
+    });
+    live.clearRejection();
+    setInspect(null); setView("entry"); window.scrollTo({ top: 0 });
+    window.setTimeout(() => document.getElementById("question")?.focus({ preventScroll: true }), 260);
+  };
   const [demoRecent, setDemoRecent] = useState<Array<RecentItem & { run: RunState }>>([]);
   const [disagreementIndex, setDisagreementIndex] = useState(init.disagreement ?? 0);
   const [prefill, setPrefill] = useState<{ key: number; question: string }>({ key: 0, question: "" });
@@ -173,13 +196,16 @@ export function App() {
     captureOrigin();
     if (demoMode) {
       demo.start(request.question, request.tools, request.outcome);
+      if (request.researchProjectId) setContinuation(null);   // preview only: nothing is sent
       setView("running");
       window.scrollTo({ top: 0 });
       return null;
     }
     if (!live.identity.token) { setDialog("identity"); return "请先在“连接与身份”中设置 Bearer Token。"; }
-    const result = await live.start(request.mode, request.question, request.tools, request.sessionId);
+    const result = await live.start(request.mode, request.question, request.tools, request.sessionId, request.researchProjectId ?? "");
     if (!result.ok && result.reason === "needs-identity") { setDialog("identity"); return "请先连接身份。"; }
+    // Once a run exists the pair has been used; an unresolved create keeps it (the pending request holds it verbatim).
+    if (request.researchProjectId && "accepted" in result && result.accepted) setContinuation(null);
     return result.ok ? null : result.reason;
   }, [demoMode, demo, live]);
 
@@ -290,6 +316,9 @@ export function App() {
   const recentItems: RecentItem[] = demoMode ? demoRecent
     : live.recent.map((r) => ({ runId: r.runId, question: r.question || r.runId, status: STAGE_LABELS[r.status ?? ""] ?? r.status ?? "未知", at: r.updatedAt }));
 
+  const memoryRequest = !demoMode && run?.runId ? live.memoryRequestFor(run.runId) : null;
+  const memoryNote = memoryRequest && run ? <MemoryNote request={memoryRequest} runId={run.runId} errorCode={run.errorCode} onReselect={openArchive} /> : null;
+
   const active = inspect != null ? citations[inspect - 1] ?? null : null;
   const compareA = compare ? citations[compare.a - 1] : null;
   const compareB = compare ? citations[compare.b - 1] : null;
@@ -333,6 +362,8 @@ export function App() {
               {!liveBlocked && (view === "entry" || (!hasRun && view !== "archive")) ? (
                 <EntryView key={prefill.key} appMode={appMode} onStart={start} onExample={enterDemo} initialQuestion={prefill.question}
                   onOpenArchive={openArchive} onOpenRecent={() => setDialog("recent")} recentCount={recentItems.length}
+                  continuation={activeContinuation} onClearContinuation={() => { setContinuation(null); live.clearRejection(); }}
+                  rejection={demoMode ? null : live.rejection}
                   busy={!demoMode && live.submitting} webConfigured={demoMode ? null : live.webConfigured} unknown={unknown} blocking={demoMode ? null : live.blocking} />
               ) : null}
               {!liveBlocked && view === "running" && run && hasRun ? (
@@ -340,14 +371,15 @@ export function App() {
                   onCancel={demoMode ? demo.cancel : () => { void live.cancel(); }} canCancel={run.mode !== "legacy"} cancelling={!demoMode && live.cancelling}
                   stream={demoMode ? undefined : live.stream} reconnects={live.reconnects}
                   onDisconnectDrill={demoMode ? undefined : live.disconnectDrill} onReconnectNow={demoMode ? undefined : live.reconnectNow}
-                  onViewReport={() => { setView("report"); window.scrollTo({ top: 0 }); }} onInspectingChange={setInspecting} origin={stageOrigin} />
+                  onViewReport={() => { setView("report"); window.scrollTo({ top: 0 }); }} onInspectingChange={setInspecting} origin={stageOrigin}
+                  memoryNote={memoryNote} />
               ) : null}
               {!liveBlocked && view === "report" && run && hasRun ? (
                 <ReportView run={run} blocks={blocks} citations={citations} modeLabel={modeLabel} active={inspect} demo={demoMode}
                   lastEventId={run.lastEventId} onCite={openCitation} onOpenSources={() => setDialog("sources")} onNew={goHome}
                   onRetryQuestion={retryQuestion} onFollowUp={followUp} onReady={setReportReady}
                   evidence={evidence} onCompareDisagreement={openDisagreement}
-                  save={reportSave()} />
+                  save={reportSave()} memoryNote={memoryNote} />
               ) : null}
               {!liveBlocked && view === "compare" && compare && compareA && compareB ? (
                 <CompareView statement={statementsFor(blocks, compare.a)[0] ?? null} a={compareA} b={compareB} all={citations} demo={demoMode}
@@ -361,16 +393,17 @@ export function App() {
                   onDelete={async (record) => {
                     const key = recordKey(record.projectId, record.sourceRunId);
                     setPreviewItems((rows) => rows.filter((r) => recordKey(r.projectId, r.sourceRunId) !== key));
-                    setPreviewLoad((l) => l.state === "loaded" ? { ...l, context: { ...l.context, progress: l.context.progress.filter((p) => recordKey(p.projectId, p.sourceRunId) !== key) } } : l);
+                    setPreviewLoad((l) => l.state === "loaded" ? { ...l, context: { ...l.context, progress: l.context.progress.filter((p) => recordKey(p.projectId, p.sourceRunId) !== key) },
+                      sourceDeleted: l.sourceDeleted || l.context.projectId === record.projectId } : l);
                     return true;
                   }} deletingKey={null} deleteError={null}
-                  onOpenRecent={() => setDialog("recent")} back={archiveBack} initialOpen={init.openRecord} />
+                  onOpenRecent={() => setDialog("recent")} back={archiveBack} initialOpen={init.openRecord} onContinue={continueProject} />
               ) : (
                 <ArchiveView key={"live:" + live.scope} mode="live" needsIdentity={!live.identity.token} onOpenIdentity={() => setDialog("identity")}
                   items={notebook.list.items} loading={notebook.list.loading} error={notebook.list.error} candidateLimit={notebook.list.candidateLimit}
                   onRefresh={notebook.list.refetch} load={notebook.load} onLoad={(projectId) => { void notebook.loadNewSession(projectId); }}
                   onClearLoaded={notebook.clearLoaded} onDelete={notebook.remove} deletingKey={notebook.deleting} deleteError={notebook.deleteError}
-                  onOpenRecent={() => setDialog("recent")} back={archiveBack} />
+                  onOpenRecent={() => setDialog("recent")} back={archiveBack} onContinue={continueProject} />
               )) : null}
               {!liveBlocked && view === "disagreement" && disagreements[disagreementIndex] ? (
                 <RecordedDisagreementView disagreement={disagreements[disagreementIndex]} demo={demoMode} onBack={endDisagreement} />

@@ -13,7 +13,8 @@ export interface ApiContext {
 const f = (ctx: ApiContext) => ctx.fetch ?? globalThis.fetch.bind(globalThis);
 
 /** WorkflowDtos.Accepted */
-export interface Accepted { runId: string; sessionId?: string; status?: string; stage?: string; replayed?: boolean }
+/** statusUrl / eventsUrl are returned by the server; for this API they name the existing workflow routes used below. */
+export interface Accepted { runId: string; sessionId?: string; status?: string; stage?: string; replayed?: boolean; statusUrl?: string; eventsUrl?: string }
 /** WorkflowDtos.Cancelled */
 export interface Cancelled { runId: string; status: string; alreadyTerminal: boolean }
 

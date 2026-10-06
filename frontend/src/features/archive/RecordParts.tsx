@@ -16,7 +16,7 @@ function Goals({ index, title, goals, empty }: { index: string; title: string; g
           {goals.map((g, i) => (
             <li key={i}>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="chip">{GOAL_STATUS[g.status] ?? g.status}</span>
+                {g.status !== "unknown" ? <span className="chip">{GOAL_STATUS[g.status] ?? g.status}</span> : null}
                 <strong style={{ overflowWrap: "anywhere" }}>{g.goal}</strong>
                 {g.completionVerified ? <span className="chip chip-ok">保存时已有完成证明</span> : null}
                 {g.errorCode ? <code>{g.errorCode}</code> : null}
@@ -57,17 +57,20 @@ export function RecordSections({ record }: { record: ProgressSnapshot }) {
 }
 
 /** Load and two-step delete. Loading creates a new, empty session; it never starts research. */
-export function RecordActions({ onLoad, loadBusy, loadedHere, onDelete, deleting, deleteError }: {
+export function RecordActions({ onLoad, loadBusy, loadedHere, onContinue, onDelete, deleting, deleteError }: {
   onLoad: () => void; loadBusy: boolean;
   /** This project's context is already loaded into a new session; another load creates another session. */
   loadedHere: boolean;
+  /** Present only while the loaded project/session pair is still valid. Continue is a separate explicit step. */
+  onContinue?: (() => void) | null;
   onDelete: () => void; deleting: boolean; deleteError: string | null;
 }) {
   const [confirming, setConfirming] = useState(false);
   return (
     <div className="grid gap-3">
       <div className="rec-actions">
-        <button type="button" className="btn btn-primary btn-sm" onClick={onLoad} disabled={loadBusy || loadedHere}>
+        {loadedHere && onContinue ? <button type="button" className="btn btn-primary btn-sm" onClick={onContinue}>在此项目继续研究…</button> : null}
+        <button type="button" className={"btn btn-sm " + (loadedHere && onContinue ? "btn-quiet" : "btn-primary")} onClick={onLoad} disabled={loadBusy || loadedHere}>
           {loadBusy ? "正在载入…" : loadedHere ? "已载入到新会话" : "载入此项目的研究进度到新会话"}
         </button>
         {loadedHere && !loadBusy ? <button type="button" className="btn btn-quiet btn-sm" onClick={onLoad}>另建一个新会话再次载入</button> : null}
@@ -76,19 +79,26 @@ export function RecordActions({ onLoad, loadBusy, loadedHere, onDelete, deleting
           <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirming(false)} disabled={deleting}>取消</button>
         </div> : <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirming(true)}>删除保存的进度…</button>}
       </div>
-      <p className="note">载入会新建一个空会话，并返回该项目最近的研究进度（可能不止这一条）；不会开始研究。删除只移除保存的进度，不删除原始运行、证据或会话。</p>
+      <p className="note">先载入：新建一个空会话并返回该项目最近的研究进度（可能不止这一条），不会开始研究。再单独选择“继续研究”并写下本轮问题，才会创建研究运行。删除只移除这一份保存的进度快照，不删除项目、原始运行、证据或会话。</p>
       {deleteError ? <p className="missing" role="alert">{deleteError}</p> : null}
     </div>
   );
 }
 
-export function LoadedPanel({ load, onClear, onRetry }: { load: LoadState; onClear: () => void; onRetry: (projectId: string) => void }) {
+export function LoadedPanel({ load, onClear, onRetry, onContinue }: {
+  load: LoadState; onClear: () => void; onRetry: (projectId: string) => void;
+  /** Continue with the loaded pair; omitted where the panel is only informational. */
+  onContinue?: ((projectId: string) => void) | null;
+}) {
   if (load.state === "loading") return <p className="note" role="status">正在新建会话并读取该项目的研究进度…</p>;
   if (load.state === "failed") return (
     <div className="unknown" role="alert" style={{ marginTop: 0 }}>
-      <strong><Icon name="alert" size={16} />载入未完成</strong>
+      <strong><Icon name="alert" size={16} />{load.maybeCreated ? "载入结果未知" : "载入未完成"}</strong>
       <p>{load.message}</p>
-      {load.maybeCreated ? <button type="button" className="btn btn-quiet btn-sm" style={{ justifySelf: "start" }} onClick={() => onRetry(load.projectId)}>再次载入（会再新建一个会话）</button> : null}
+      {load.maybeCreated ? <>
+        <p className="note">第一次请求可能已经创建了一个空会话（空会话不会开始研究）。页面不会自动重试；如需继续，请明确载入到另一个新会话。</p>
+        <button type="button" className="btn btn-quiet btn-sm" style={{ justifySelf: "start" }} onClick={() => onRetry(load.projectId)}>再次载入（会再新建一个会话）</button>
+      </> : null}
     </div>
   );
   if (load.state !== "loaded") return null;
@@ -101,7 +111,9 @@ export function LoadedPanel({ load, onClear, onRetry }: { load: LoadState; onCle
         <li key={recordKey(p.projectId, p.sourceRunId)}>{p.originalGoal}<span className="note">（保存时：{statusLabel(p.runStatus)}，未解决 {p.unresolvedQuestions.length} 项）</span></li>
       ))}</ul> : <p className="note">该项目当前没有可用的研究进度。</p>}
       {context.usageInstruction ? <p className="note" style={{ marginTop: 6 }}>服务端说明：{context.usageInstruction}</p> : null}
-      <button type="button" className="link-btn" style={{ marginTop: 6 }} onClick={onClear}>清除载入记录</button>
+      {load.sourceDeleted ? <p className="missing" style={{ marginTop: 8 }}>该项目的一份保存的进度快照已删除。这个载入记录不能再用于继续研究；请重新载入。</p>
+        : onContinue ? <button type="button" className="btn btn-primary btn-sm" style={{ marginTop: 10 }} onClick={() => onContinue(context.projectId)}>在此项目继续研究…</button> : null}
+      <button type="button" className="link-btn" style={{ marginTop: 6, marginLeft: onContinue && !load.sourceDeleted ? 12 : 0 }} onClick={onClear}>清除载入记录</button>
     </div>
   );
 }

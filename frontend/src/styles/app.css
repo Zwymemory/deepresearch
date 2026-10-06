@@ -470,6 +470,15 @@ svg.i { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentCo
 .hud-counts dd { margin: 0; font: 700 20px/1.3 var(--font-mono); }
 .archive-hud .btn-outline { justify-self: start; }
 
+/* ---------------------------------------------------------------- memory continuation (M1) */
+.source-project { display: grid; gap: 12px; margin-top: 22px; padding: 16px 18px 14px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; background: var(--paper); }
+.source-goals { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: 16px; font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; }
+.memory-rejected { margin-top: 18px; }
+.memory-note { display: grid; gap: 8px; margin-top: 14px; padding: 12px 14px; border-left: 3px solid var(--accent); border-radius: 0 var(--radius-md) var(--radius-md) 0; background: var(--accent-soft); color: var(--ink-2); font-size: 14px; }
+.memory-note strong { color: var(--ink); display: inline-flex; align-items: center; gap: 6px; }
+.memory-note.is-rejected { border-left-color: var(--error); background: var(--error-soft); }
+.memory-note.is-rejected strong { color: var(--error-ink); }
+
 /* ---------------------------------------------------------------- record reading layer */
 .rec-layer { position: fixed; z-index: 30; top: var(--topbar-h); left: 0; right: 0; bottom: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--canvas); }
 .rec-layer[data-leaving="true"] { pointer-events: none; }

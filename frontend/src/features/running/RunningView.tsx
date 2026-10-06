@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useAnimate, useReducedMotion } from "motion/react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { describeEvent, roleLabel, STEP_LABELS, toolLabel } from "../../domain/eventText";
 import { latestPlan, recordedEvidenceCount, STAGES, type RunState } from "../../domain/runState";
 import type { StreamStatus } from "../../live/useLiveResearch";
@@ -15,13 +15,15 @@ function formatElapsed(ms: number | null) {
 }
 
 export function RunningView({ run, startedAt, modeLabel, completed, demo, onCancel, onViewReport, onInspectingChange,
-  canCancel = true, cancelling = false, stream, reconnects = 0, onDisconnectDrill, onReconnectNow, origin }: {
+  canCancel = true, cancelling = false, stream, reconnects = 0, onDisconnectDrill, onReconnectNow, origin, memoryNote = null }: {
   run: RunState; startedAt: number | null; modeLabel: string; completed: boolean; demo: boolean;
   onCancel: () => void; onViewReport: () => void; onInspectingChange: (inspecting: boolean) => void;
   canCancel?: boolean; cancelling?: boolean; stream?: StreamStatus; reconnects?: number;
   onDisconnectDrill?: () => void; onReconnectNow?: () => void;
   /** Viewport rect of the composer question at submit time, for stage continuity. */
   origin?: { left: number; top: number } | null;
+  /** Project-history note for runs created with an explicit project selection. */
+  memoryNote?: ReactNode;
 }) {
   const synchronous = run.mode === "legacy";
   const autonomous = run.mode === "agent";
@@ -95,6 +97,7 @@ export function RunningView({ run, startedAt, modeLabel, completed, demo, onCanc
           ) : null}
         </div>
       </div>
+      {memoryNote}
 
       {stream && (stream.state === "reconnecting" || stream.state === "paused" || stream.state === "fatal") && !completed ? (
         <div className="connection" data-tone={stream.state === "fatal" ? "error" : "warn"} role="status">

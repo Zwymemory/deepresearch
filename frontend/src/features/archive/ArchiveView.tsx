@@ -24,6 +24,8 @@ export interface ArchiveProps {
   load: LoadState; onLoad: (projectId: string) => void; onClearLoaded: () => void;
   onDelete: (record: ProgressSnapshot) => Promise<boolean>; deletingKey: string | null; deleteError: { key: string; message: string } | null;
   onOpenRecent: () => void;
+  /** Continue research with the currently loaded project/session pair (separate from loading). */
+  onContinue?: ((projectId: string) => void) | null;
   /** Where the reader came from (e.g. a report), if anywhere. */
   back?: { label: string; onClick: () => void } | null;
   /** Review deep link: open the first record on arrival (no flight, nothing to fly from). */
@@ -147,7 +149,7 @@ export function ArchiveView(props: ArchiveProps) {
           </div>
         </header>
         {/* While a record is open its layer shows the loaded context; the hidden archive does not repeat it. */}
-        {load.state !== "idle" && !open ? <div className="archive-loaded"><LoadedPanel load={load} onClear={props.onClearLoaded} onRetry={props.onLoad} /></div> : null}
+        {load.state !== "idle" && !open ? <div className="archive-loaded"><LoadedPanel load={load} onClear={props.onClearLoaded} onRetry={props.onLoad} onContinue={props.onContinue} /></div> : null}
 
         <div className="archive-grid">
           <div className="archive-controls">
@@ -231,7 +233,7 @@ export function ArchiveView(props: ArchiveProps) {
             onDelete={() => { void remove(open.record); }}
             deleting={props.deletingKey === keyOf(open.record)}
             deleteError={props.deleteError?.key === keyOf(open.record) ? props.deleteError.message : null}
-            onClearLoaded={props.onClearLoaded} />
+            onClearLoaded={props.onClearLoaded} onContinue={props.onContinue} />
         ) : null}
       </AnimatePresence>
     </section>
@@ -281,10 +283,11 @@ const EASE_LIFT = "cubic-bezier(.3,.7,.1,1)";
 const EASE_OUT = "cubic-bezier(.2,.8,.2,1)";
 
 /** Reading layer. The cover is extracted from the folio's on-screen rect and returned to it on close. */
-function RecordLayer({ record, index, slots, origin, reduce, preview, getTarget, onClose, load, onLoad, onDelete, deleting, deleteError, onClearLoaded }: {
+function RecordLayer({ record, index, slots, origin, reduce, preview, getTarget, onClose, load, onLoad, onDelete, deleting, deleteError, onClearLoaded, onContinue }: {
   record: ProgressSnapshot; index: number; slots: number; origin: DOMRect | null; reduce: boolean; preview: boolean;
   getTarget: () => DOMRect | null; onClose: () => void;
   load: LoadState; onLoad: (projectId: string) => void; onDelete: () => void; deleting: boolean; deleteError: string | null; onClearLoaded: () => void;
+  onContinue?: ((projectId: string) => void) | null;
 }) {
   const [isPresent, safeToRemove] = usePresence();
   const root = useRef<HTMLElement>(null);
@@ -369,6 +372,7 @@ function RecordLayer({ record, index, slots, origin, reduce, preview, getTarget,
           </div>
           <RecordActions onLoad={() => onLoad(record.projectId)} loadBusy={load.state === "loading"}
             loadedHere={load.state === "loaded" && load.context.projectId === record.projectId}
+            onContinue={onContinue && load.state === "loaded" && load.context.projectId === record.projectId && !load.sourceDeleted ? () => onContinue(record.projectId) : null}
             onDelete={onDelete} deleting={deleting} deleteError={deleteError} />
         </div>
         <article ref={body} className="rec-read">

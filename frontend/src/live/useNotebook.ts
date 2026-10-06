@@ -18,7 +18,9 @@ export type SaveState = { state: "idle" } | { state: "saving" } | { state: "save
 export type LoadState =
   | { state: "idle" }
   | { state: "loading"; projectId: string }
-  | { state: "loaded"; context: ResumeContext; recovered: boolean }
+  | { state: "loaded"; context: ResumeContext; recovered: boolean;
+      /** A saved snapshot of this project was deleted after loading: the pair must be reloaded before Continue. */
+      sourceDeleted?: boolean }
   | { state: "failed"; projectId: string; message: string; maybeCreated: boolean };
 
 interface StoredLoad { scope: string; projectId: string; targetSessionId: string }
@@ -114,7 +116,8 @@ export function useNotebook({ enabled, ctx, scope, notebookOpen, run }: {
         old ? { ...old, items: old.items.filter((i) => recordKey(i.projectId, i.sourceRunId) !== key) } : old);
       // Drop any loaded browser copy that references the deleted snapshot.
       setLoad((current) => current.state === "loaded"
-        ? { ...current, context: { ...current.context, progress: current.context.progress.filter((p) => recordKey(p.projectId, p.sourceRunId) !== key) } }
+        ? { ...current, context: { ...current.context, progress: current.context.progress.filter((p) => recordKey(p.projectId, p.sourceRunId) !== key) },
+            sourceDeleted: current.sourceDeleted || current.context.projectId === record.projectId }
         : current);
       return true;
     } catch (error) {

@@ -65,6 +65,8 @@ function goal(value: unknown): ProgressGoal {
     gaps: strings(g.gaps),
     // Nested criteria keep the existing camelCase fields; they are not snake_case.
     criteria: arr(g.criteria).map((c) => {
+      // Some saved snapshots record criteria as plain strings: keep the text verbatim, with no invented status.
+      if (typeof c === "string") return { criterionId: null, text: c, status: "", gaps: [] };
       const r = obj(c);
       return { criterionId: str(r.criterionId), text: str(r.text) ?? "", status: str(r.status) ?? "unknown", gaps: strings(r.gaps) };
     }),
