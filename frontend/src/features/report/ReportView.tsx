@@ -49,7 +49,7 @@ function RunInfo({ run }: { run: RunState }) {
   );
 }
 
-export function ReportView({ run, blocks, citations, modeLabel, active, onCite, onOpenSources, onNew, onFollowUp, onReady, demo, onRetryQuestion, lastEventId, evidence, onCompareDisagreement, save, memoryNote = null }: {
+export function ReportView({ run, blocks, citations, modeLabel, active, onCite, onOpenSources, onNew, onFollowUp, onReady, demo, onRetryQuestion, lastEventId, evidence, onCompareDisagreement, save, memoryNote = null, summary = null }: {
   run: RunState; blocks: Block[]; citations: NormalizedCitation[]; modeLabel: string; active: number | null;
   onCite: CiteHandlers["onCite"]; onOpenSources: () => void; onNew: () => void; onFollowUp: (question: string) => void;
   demo: boolean;
@@ -60,6 +60,8 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
   onReady: (ready: boolean) => void;
   /** Project-history note for runs created with an explicit project selection. */
   memoryNote?: ReactNode;
+  /** Read-only project summary used by this run (memory M2). */
+  summary?: ReactNode;
   /** Autonomous runs (or demo): the public evidence record. null for modes without a projection. */
   evidence?: { result: EvidenceViewResult | null; loading: boolean } | null;
   onCompareDisagreement?: (index: number) => void;
@@ -141,6 +143,7 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
         </div>
 
         {memoryNote}
+        {summary}
         {run.status === "INSUFFICIENT_EVIDENCE" ? (
           <p className="limits"><strong>限制：</strong>只发布有证据支持的部分；{goals.length ? <>{goals.length} 项目标仍未完成，见文末“尚未解决的问题”。</> : "服务端没有返回未完成目标的明细，页面不会推断哪些目标已完成。"}</p>
         ) : run.status === "CANCELLED" ? (

@@ -25,6 +25,11 @@ import { STAGE_LABELS } from "../domain/eventText";
 import { useLiveResearch, type Notify } from "../live/useLiveResearch";
 import { Icon } from "../ui/Icon";
 import { MemoryNote } from "../features/memory/MemoryNote";
+import { SummaryDisclosure, type SummaryRead } from "../features/memory/SummaryDisclosure";
+import { useQuery } from "@tanstack/react-query";
+import { getContextSummary } from "../api/endpoints";
+import { friendlyError, type ApiError } from "../api/http";
+import { parseContextSummary, type ContextSummary } from "../domain/contextSummary";
 import type { Continuation } from "../domain/researchMemory";
 import { useTheme } from "./theme";
 
@@ -319,6 +324,26 @@ export function App() {
   const memoryRequest = !demoMode && run?.runId ? live.memoryRequestFor(run.runId) : null;
   const memoryNote = memoryRequest && run ? <MemoryNote request={memoryRequest} runId={run.runId} errorCode={run.errorCode} onReselect={openArchive} /> : null;
 
+  // Memory M2: owned, read-only summary of the project context this agent run used. Read when the run
+  // is shown, again once it is terminal and on each summary event; one retry; never creates anything.
+  const summaryEvents = run?.events.filter((e) => e.type === "PROJECT_CONTEXT_SUMMARY").length ?? 0;
+  const summaryQuery = useQuery<ContextSummary>({
+    queryKey: ["context-summary", live.scope, run?.runId ?? "", terminal, summaryEvents],
+    enabled: !demoMode && !!run?.runId && run.mode === "agent" && !!live.identity.token,
+    retry: (count, error) => count < 1 && ((error as ApiError).status == null || (error as ApiError).status! >= 500),
+    staleTime: Infinity, refetchOnWindowFocus: false,
+    // Keep the last summary while re-reading the same run under the same identity only (no cross-scope leak).
+    placeholderData: (previous, previousQuery) => previousQuery?.queryKey[1] === live.scope && previousQuery?.queryKey[2] === run?.runId ? previous : undefined,
+    queryFn: async ({ signal }) => parseContextSummary(await getContextSummary(live.ctx, run!.runId, signal)),
+  });
+  const summaryRead: SummaryRead | null = demoMode || !run?.runId || run.mode !== "agent" ? null
+    : summaryQuery.data ? { state: "ok", view: summaryQuery.data }
+    : summaryQuery.error ? ((summaryQuery.error as ApiError).status === 404 ? { state: "absent" }
+      : (summaryQuery.error as Error).name === "SummaryContractError" ? { state: "invalid", message: (summaryQuery.error as Error).message }
+      : { state: "error", message: friendlyError(summaryQuery.error, "status") })
+    : { state: "loading" };
+  const summary = summaryRead ? <SummaryDisclosure read={summaryRead} /> : null;
+
   const active = inspect != null ? citations[inspect - 1] ?? null : null;
   const compareA = compare ? citations[compare.a - 1] : null;
   const compareB = compare ? citations[compare.b - 1] : null;
@@ -372,14 +397,14 @@ export function App() {
                   stream={demoMode ? undefined : live.stream} reconnects={live.reconnects}
                   onDisconnectDrill={demoMode ? undefined : live.disconnectDrill} onReconnectNow={demoMode ? undefined : live.reconnectNow}
                   onViewReport={() => { setView("report"); window.scrollTo({ top: 0 }); }} onInspectingChange={setInspecting} origin={stageOrigin}
-                  memoryNote={memoryNote} />
+                  memoryNote={memoryNote} summary={summary} />
               ) : null}
               {!liveBlocked && view === "report" && run && hasRun ? (
                 <ReportView run={run} blocks={blocks} citations={citations} modeLabel={modeLabel} active={inspect} demo={demoMode}
                   lastEventId={run.lastEventId} onCite={openCitation} onOpenSources={() => setDialog("sources")} onNew={goHome}
                   onRetryQuestion={retryQuestion} onFollowUp={followUp} onReady={setReportReady}
                   evidence={evidence} onCompareDisagreement={openDisagreement}
-                  save={reportSave()} memoryNote={memoryNote} />
+                  save={reportSave()} memoryNote={memoryNote} summary={summary} />
               ) : null}
               {!liveBlocked && view === "compare" && compare && compareA && compareB ? (
                 <CompareView statement={statementsFor(blocks, compare.a)[0] ?? null} a={compareA} b={compareB} all={citations} demo={demoMode}

@@ -15,7 +15,7 @@ function formatElapsed(ms: number | null) {
 }
 
 export function RunningView({ run, startedAt, modeLabel, completed, demo, onCancel, onViewReport, onInspectingChange,
-  canCancel = true, cancelling = false, stream, reconnects = 0, onDisconnectDrill, onReconnectNow, origin, memoryNote = null }: {
+  canCancel = true, cancelling = false, stream, reconnects = 0, onDisconnectDrill, onReconnectNow, origin, memoryNote = null, summary = null }: {
   run: RunState; startedAt: number | null; modeLabel: string; completed: boolean; demo: boolean;
   onCancel: () => void; onViewReport: () => void; onInspectingChange: (inspecting: boolean) => void;
   canCancel?: boolean; cancelling?: boolean; stream?: StreamStatus; reconnects?: number;
@@ -24,6 +24,8 @@ export function RunningView({ run, startedAt, modeLabel, completed, demo, onCanc
   origin?: { left: number; top: number } | null;
   /** Project-history note for runs created with an explicit project selection. */
   memoryNote?: ReactNode;
+  /** Read-only project summary used by this run (memory M2). */
+  summary?: ReactNode;
 }) {
   const synchronous = run.mode === "legacy";
   const autonomous = run.mode === "agent";
@@ -98,6 +100,7 @@ export function RunningView({ run, startedAt, modeLabel, completed, demo, onCanc
         </div>
       </div>
       {memoryNote}
+      {summary}
 
       {stream && (stream.state === "reconnecting" || stream.state === "paused" || stream.state === "fatal") && !completed ? (
         <div className="connection" data-tone={stream.state === "fatal" ? "error" : "warn"} role="status">

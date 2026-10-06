@@ -143,3 +143,11 @@ export async function getEvidenceView(ctx: ApiContext, runId: string, signal?: A
   if (view?.schemaVersion !== "evidence-view/1") return { state: "error", message: "证据记录格式未知：" + String(view?.schemaVersion) };
   return { state: "ok", view };
 }
+
+/** Owned, read-only project context summary of an agent run (memory M2). Creates nothing. */
+export async function getContextSummary(ctx: ApiContext, runId: string, signal?: AbortSignal): Promise<unknown> {
+  const response = await f(ctx)(`${ctx.origin}/api/research/agents/${encodeURIComponent(runId)}/context-summary`, {
+    headers: authHeaders(ctx.token), cache: "no-store", signal,
+  });
+  return responseData<unknown>(response);
+}
