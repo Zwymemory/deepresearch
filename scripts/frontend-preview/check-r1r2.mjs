@@ -16,7 +16,7 @@ const check = (name, ok, detail = "") => { results.push({ name, ok: !!ok, detail
 const VIEWPORTS = { desktop: { width: 1440, height: 900 }, mobile: { width: 390, height: 844 } };
 
 async function session(browser, theme, vp, reducedMotion = "no-preference") {
-  const context = await browser.newContext({ viewport: VIEWPORTS[vp], colorScheme: theme === "mist" ? "dark" : "light", reducedMotion,
+  const context = await browser.newContext({ viewport: VIEWPORTS[vp], colorScheme: theme === "smoked" ? "dark" : "light", reducedMotion,
     isMobile: vp === "mobile", hasTouch: vp === "mobile", deviceScaleFactor: vp === "mobile" ? 2 : 1 });
   const page = await context.newPage();
   const errors = [];
@@ -43,7 +43,7 @@ async function ask(page, question, mode) {
 
 const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
 try {
-  for (const theme of ["airy", "mist"]) {
+  for (const theme of ["ivory", "smoked"]) {
     for (const vp of ["desktop", "mobile"]) {
       const tag = `${theme}-${vp}`;
       const { context, page, errors } = await session(browser, theme, vp);
@@ -93,15 +93,16 @@ try {
       await page.evaluate(() => scrollTo(0, 0));
       await page.getByRole("button", { name: "保存研究进度" }).click();
       check(`${tag}: saving state before confirmation`, await page.getByText(/正在保存，等待/).count() === 1);
-      await page.getByText("已保存到研究笔记").waitFor();
-      await page.getByRole("button", { name: "研究笔记（研究进度）" }).click();
-      await page.locator(".notebook-card").first().click();
+      await page.getByText("已保存到研究档案").waitFor();
+      await page.getByRole("button", { name: "研究档案（保存的研究进度）" }).click();
+      await page.locator(".archive-item").first().click();
+      if (!(await page.locator("#archive-record").count())) await page.keyboard.press("Enter");
       await page.getByRole("button", { name: "载入此项目的研究进度到新会话" }).click();
       check(`${tag}: load confirms context without starting research`, await page.getByText("已载入历史研究进度（尚未传入模型；未开始研究）").count() === 1 && await page.locator(".activity").count() === 0);
       await shot(page, `${tag}-notebook`);
-      await page.locator(".notebook-card").first().click().catch(() => {});
       await page.getByRole("button", { name: "删除保存的进度…" }).click();
       await page.getByRole("button", { name: "确认删除" }).click();
+      await page.getByRole("button", { name: "确认删除" }).waitFor({ state: "detached", timeout: 5000 }).catch(() => {});
       check(`${tag}: delete requires confirmation`, await page.getByRole("button", { name: "确认删除" }).count() === 0);
       await page.keyboard.press("Escape");
 
@@ -112,7 +113,7 @@ try {
   }
 
   // 5. Live (mock API): autonomous plan, evidence API, budget, contract-shaped LangGraph sources, notebook unavailable.
-  for (const theme of ["airy", "mist"]) {
+  for (const theme of ["ivory", "smoked"]) {
     const { context, page, errors } = await session(browser, theme, "desktop");
     await page.goto(APP + "?scenario=success");
     await connect(page);
@@ -128,7 +129,7 @@ try {
     check(`${theme} live: autonomous run is eligible to save after discovery`, !(await page.getByRole("button", { name: "保存研究进度" }).isDisabled()));
     await page.locator("#ev-title").scrollIntoViewIfNeeded();
     await shot(page, `${theme}-live-evidence-record`);
-    await page.getByRole("button", { name: "研究笔记（研究进度）" }).click();
+    await page.getByRole("button", { name: "研究档案（保存的研究进度）" }).click();
     await page.getByText(/没有可访问的研究进度|服务端保存的研究进度/).first().waitFor();
     check(`${theme} live: notebook shows server data, not the preview`, await page.getByText("预览 · 示例数据，不联网").count() === 0);
     await page.keyboard.press("Escape");
@@ -157,7 +158,7 @@ try {
 
   // 6. Evidence view disabled on the deployment.
   {
-    const { context, page } = await session(browser, "airy", "mobile");
+    const { context, page } = await session(browser, "ivory", "mobile");
     await page.goto(APP + "?scenario=evidence-disabled");
     await connect(page);
     await ask(page, "合成问题：证据视图关闭。", "agent");
@@ -165,25 +166,25 @@ try {
     check("mobile live: disabled evidence view is a stated capability, not an error", true);
     check("mobile live: no horizontal overflow", await overflow(page) <= 0);
     await page.locator(".ev-record").scrollIntoViewIfNeeded();
-    await shot(page, "airy-mobile-live-evidence-disabled");
+    await shot(page, "ivory-mobile-live-evidence-disabled");
     await context.close();
   }
 
   // 8. Save failure is recoverable and never shown as success (preview).
   {
-    const { context, page } = await session(browser, "mist", "desktop");
+    const { context, page } = await session(browser, "smoked", "desktop");
     await page.goto(APP + "?demo&state=report&memoryFail");
     await page.getByRole("button", { name: "保存研究进度" }).click();
     await page.getByText("保存失败（示例）").waitFor();
-    check("save failure: stated, nothing saved, retry available", await page.getByText("已保存到研究笔记").count() === 0
+    check("save failure: stated, nothing saved, retry available", await page.getByText("已保存到研究档案").count() === 0
       && !(await page.getByRole("button", { name: "保存研究进度" }).isDisabled()));
-    await shot(page, "mist-desktop-save-failed");
+    await shot(page, "smoked-desktop-save-failed");
     await context.close();
   }
 
   // 7. Reduced motion: no travel on stage change; inspector still opens and closes correctly.
   {
-    const { context, page } = await session(browser, "airy", "desktop", "reduce");
+    const { context, page } = await session(browser, "ivory", "desktop", "reduce");
     await page.goto(APP + "?demo");
     await page.locator("#question").fill("合成问题：减少动态效果。");
     await page.getByRole("button", { name: "开始研究", exact: true }).click();

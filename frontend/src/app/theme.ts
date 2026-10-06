@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 
-export type Theme = "airy" | "mist";
+export type Theme = "ivory" | "smoked";
 // Same key and values as the V1 page, so an explicit choice carries over.
 const STORE = "deepresearch.console.theme";
 
 function systemTheme(): Theme {
-  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "mist" : "airy";
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "smoked" : "ivory";
 }
 
 function savedTheme(): Theme | null {
   try {
     const value = localStorage.getItem(STORE);
-    return value === "light" ? "airy" : value === "dark" ? "mist" : null;
+    return value === "light" ? "ivory" : value === "dark" ? "smoked" : null;
   } catch {
     return null;
   }
@@ -24,20 +24,20 @@ export function useTheme() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "mist" ? "#1b2030" : "#f8f3e8");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "smoked" ? "#252824" : "#ece8e1");
   }, [theme]);
 
   useEffect(() => {
     if (explicit) return;
     const query = window.matchMedia?.("(prefers-color-scheme: dark)");
-    const follow = (event: MediaQueryListEvent) => setThemeState(event.matches ? "mist" : "airy");
+    const follow = (event: MediaQueryListEvent) => setThemeState(event.matches ? "smoked" : "ivory");
     query?.addEventListener("change", follow);
     return () => query?.removeEventListener("change", follow);
   }, [explicit]);
 
   const toggle = useCallback((origin?: HTMLElement | null) => {
-    const next: Theme = theme === "airy" ? "mist" : "airy";
-    try { localStorage.setItem(STORE, next === "mist" ? "dark" : "light"); } catch { /* storage unavailable: keep the in-memory choice */ }
+    const next: Theme = theme === "ivory" ? "smoked" : "ivory";
+    try { localStorage.setItem(STORE, next === "smoked" ? "dark" : "light"); } catch { /* storage unavailable: keep the in-memory choice */ }
     setExplicit(true);
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     const root = document.documentElement;
@@ -50,12 +50,12 @@ export function useTheme() {
       const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
       doc.startViewTransition(apply).ready.then(() => {
         root.animate({ clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
-          { duration: 420, easing: "cubic-bezier(.2,.8,.2,1)", pseudoElement: "::view-transition-new(root)" });
+          { duration: 280, easing: "cubic-bezier(.2,.8,.2,1)", pseudoElement: "::view-transition-new(root)" });
       }).catch(() => {});
     } else {
       root.classList.add("theme-fading");
       apply();
-      window.setTimeout(() => root.classList.remove("theme-fading"), 360);
+      window.setTimeout(() => root.classList.remove("theme-fading"), 300);
     }
   }, [theme]);
 

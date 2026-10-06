@@ -17,7 +17,7 @@ const check = (name, ok, detail = "") => { results.push({ name, ok: !!ok, detail
 const SIZES = { desktop: { width: 1440, height: 900 }, mobile: { width: 390, height: 844 } };
 
 async function session(browser, theme, size, reducedMotion = "no-preference") {
-  const context = await browser.newContext({ viewport: SIZES[size], colorScheme: theme === "mist" ? "dark" : "light", reducedMotion,
+  const context = await browser.newContext({ viewport: SIZES[size], colorScheme: theme === "smoked" ? "dark" : "light", reducedMotion,
     isMobile: size === "mobile", hasTouch: size === "mobile", deviceScaleFactor: size === "mobile" ? 2 : 1 });
   const page = await context.newPage();
   const requests = [];
@@ -52,11 +52,17 @@ async function ask(page, question, mode) {
   await page.waitForTimeout(400);
 }
 const home = (page) => page.getByRole("button", { name: "DeepResearch：返回新研究" }).click();
-const openNotebook = (page) => page.getByRole("button", { name: "研究笔记（研究进度）" }).click();
+const openNotebook = (page) => page.getByRole("button", { name: "研究档案（保存的研究进度）" }).click();
+// Archive list: a click selects; clicking the selected record (or Enter) opens its reading layer.
+async function openRecord(page, item) {
+  await item.click();
+  if (!(await page.locator("#archive-record").count())) await page.keyboard.press("Enter");
+  await page.locator("#archive-record").waitFor();
+}
 
 const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
 try {
-  for (const [theme, size] of [["airy", "desktop"], ["mist", "mobile"]]) {
+  for (const [theme, size] of [["ivory", "desktop"], ["smoked", "mobile"]]) {
     const tag = `${theme}-${size}`;
     const { context, page, requests, errors } = await session(browser, theme, size);
     await page.goto(APP + "?scenario=success");
@@ -82,10 +88,10 @@ try {
     // 3. Notebook: list fetched only when opened; detail; project-level load with one POST despite a double click.
     check(`${tag}: list not fetched before opening`, !memory(requests).some((r) => r.path === "/api/research/progress"));
     await openNotebook(page);
-    await page.locator(".notebook-card").first().waitFor();
+    await page.locator(".archive-item").first().waitFor();
     check(`${tag}: list fetched on open`, memory(requests).some((r) => r.path === "/api/research/progress"));
-    await page.locator(".notebook-card").first().click();
-    const dialog = page.getByRole("dialog");
+    await openRecord(page, page.locator(".archive-item").first());
+    const dialog = page.locator("#archive-record");
     check(`${tag}: detail keeps unresolved status and shows no save date`, await dialog.getByText("尚未解决的问题").count() === 1 && await dialog.getByText("保存于").count() === 0);
     const createsBefore = requests.filter((r) => r.method === "POST" && /\/api\/research\/(workflows|agents)$/.test(r.path)).length;
     const loadButton = page.getByRole("button", { name: "载入此项目的研究进度到新会话" });
@@ -109,20 +115,24 @@ try {
 
     // 5. Delete with confirmation; the specific record leaves the list and the loaded copy.
     // (The mock issues one fixed dev token, so records from earlier runs may share this owner.)
-    const target = page.locator(".notebook-card", { hasText: "合成问题：自主研究的进度。" }).first();
-    const cardsBefore = await page.locator(".notebook-card").count();
+    const target = page.locator(".archive-item", { hasText: "合成问题：自主研究的进度。" }).first();
+    const cardsBefore = await page.locator(".archive-item").count();
     const loadedBefore = Number((await page.getByText(/项目级载入：返回 \d+ 条研究进度/).textContent())?.match(/(\d+)/)?.[1]);
-    await target.click();
+    await openRecord(page, target);
     await page.getByRole("button", { name: "删除保存的进度…" }).click();
     await page.getByRole("button", { name: "确认删除" }).click();
     // The detail view closes only after the server confirms the deletion.
     await page.getByRole("button", { name: "确认删除" }).waitFor({ state: "detached", timeout: 10000 });
+    // The reading layer closes after the server confirms; its return motion finishes before removal.
+    await page.locator("#archive-record").waitFor({ state: "detached", timeout: 5000 });
+    const focusAfterDelete = await page.evaluate(() => `${document.activeElement?.tagName}.${document.activeElement?.className}`);
+    check(`${tag}: after delete, focus returns to the archive list`, /archive-item|text-input|archive-title/.test(focusAfterDelete), focusAfterDelete);
     // The loaded panel re-renders with the list; allow a frame for it to settle.
     await page.waitForFunction((n) => (document.body.innerText.match(/项目级载入：返回 (\d+) 条研究进度/) ?? [])[1] === String(n), loadedBefore - 1, { timeout: 5000 }).catch(() => {});
     const loadedAfter = Number((await page.getByText(/项目级载入：返回 \d+ 条研究进度/).textContent())?.match(/(\d+)/)?.[1]);
     check(`${tag}: delete removes the record and its loaded copy`, memory(requests).filter((r) => r.method === "DELETE").length === 1
-      && await page.locator(".notebook-card").count() === cardsBefore - 1 && loadedAfter === loadedBefore - 1,
-      JSON.stringify({ cardsBefore, cardsAfter: await page.locator(".notebook-card").count(), loadedBefore, loadedAfter }));
+      && await page.locator(".archive-item").count() === cardsBefore - 1 && loadedAfter === loadedBefore - 1,
+      JSON.stringify({ cardsBefore, cardsAfter: await page.locator(".archive-item").count(), loadedBefore, loadedAfter }));
     await shot(page, `${tag}-deleted`);
     await page.keyboard.press("Escape");
 
@@ -140,7 +150,7 @@ try {
 
   // 7. Errors: 413 save, ambiguous POST failure without automatic retry.
   {
-    const { context, page, requests } = await session(browser, "airy", "desktop");
+    const { context, page, requests } = await session(browser, "ivory", "desktop");
     await page.goto(APP + "?scenario=memory-oversize");
     await connect(page);
     await ask(page, "合成问题：过大的进度。", "agent");
@@ -148,11 +158,11 @@ try {
     await page.getByRole("button", { name: "保存研究进度" }).click();
     await page.getByText(/60,000 字节上限/).waitFor();
     check("413: explained, not truncated, nothing shown as saved", await page.getByText("服务端已确认保存").count() === 0);
-    await shot(page, "airy-desktop-oversize");
+    await shot(page, "ivory-desktop-oversize");
     await context.close();
   }
   {
-    const { context, page, requests } = await session(browser, "mist", "desktop");
+    const { context, page, requests } = await session(browser, "smoked", "desktop");
     await page.goto(APP + "?scenario=success");
     await connect(page);
     await ask(page, "合成问题：载入失败。", "agent");
@@ -161,28 +171,28 @@ try {
     await page.getByText("服务端已确认保存").waitFor();
     await page.goto(APP + "?scenario=memory-load-error");
     await openNotebook(page);
-    await page.locator(".notebook-card").first().click();
+    await openRecord(page, page.locator(".archive-item").first());
     await page.getByRole("button", { name: "载入此项目的研究进度到新会话" }).click();
-    await page.getByText("载入未完成").waitFor();
+    await page.getByText("载入未完成").first().waitFor();
     await page.waitForTimeout(1500);
     check("ambiguous POST failure: no automatic retry", memory(requests).filter((r) => r.method === "POST").length === 1);
     check("ambiguous POST failure: explicit second load offered", await page.getByRole("button", { name: "再次载入（会再新建一个会话）" }).count() === 1);
-    await shot(page, "mist-desktop-load-failed");
+    await shot(page, "smoked-desktop-load-failed");
     await context.close();
   }
 
   // 8. Demo preview is labelled and makes no memory requests.
   {
-    const { context, page, requests } = await session(browser, "airy", "mobile", "reduce");
+    const { context, page, requests } = await session(browser, "ivory", "mobile", "reduce");
     await page.goto(APP + "?demo&state=report");
     await openNotebook(page);
     await page.getByText("预览 · 示例数据，不联网").waitFor();
     check("demo: notebook preview labelled and network-free", memory(requests).length === 0);
-    await page.locator(".notebook-card").first().click();
+    await openRecord(page, page.locator(".archive-item").first());
     await page.getByRole("button", { name: "载入此项目的研究进度到新会话" }).click();
     check("demo: preview load confirmation", await page.getByText("已载入历史研究进度（尚未传入模型；未开始研究）").count() === 1 && memory(requests).length === 0);
     check("demo mobile reduced-motion: no horizontal overflow", await overflow(page) <= 0);
-    await shot(page, "airy-mobile-demo-notebook");
+    await shot(page, "ivory-mobile-demo-notebook");
     await context.close();
   }
 } finally {

@@ -23,8 +23,24 @@ export interface StartRequest { question: string; tools: ToolName[]; mode: Execu
 
 export interface UnknownCreate { question: string; idempotencyKey: string; onRetry: () => void; onDiscard: () => void }
 
-export function EntryView({ appMode, onStart, onExample, busy = false, webConfigured = null, initialQuestion = "", unknown = null, blocking = null }: {
+/** Decorative folio stack — a quiet reference to the archive; carries no data. */
+function FolioStack() {
+  return (
+    <div className="folio-stack" aria-hidden="true">
+      <span className="ring r1" /><span className="ring r2" /><span className="ring r3" />
+      <div className="stack-plane">
+        {[0, 1, 2, 3, 4].map((i) => <span key={i} className="stack-folio" style={{ ["--d" as string]: i }}><i />{i === 4 ? <b>No.01</b> : null}</span>)}
+      </div>
+    </div>
+  );
+}
+
+export function EntryView({ appMode, onStart, onExample, onOpenArchive, onOpenRecent, recentCount, busy = false, webConfigured = null, initialQuestion = "", unknown = null, blocking = null }: {
   appMode: AppMode;
+  onOpenArchive: () => void;
+  onOpenRecent: () => void;
+  /** Local runs remembered by this browser (never server data). */
+  recentCount: number;
   /** Resolves to an error message, or null when accepted for submission. */
   onStart: (request: StartRequest) => Promise<string | null> | string | null;
   onExample: (outcome: DemoOutcome) => void;
@@ -76,6 +92,7 @@ export function EntryView({ appMode, onStart, onExample, busy = false, webConfig
   return (
     <section className="entry" aria-labelledby="entry-title">
       <div className="entry-inner">
+        <p className="eyebrow entry-eyebrow">RESEARCH CONSOLE · 研究工作台</p>
         <h1 id="entry-title" className="entry-title">你想弄清楚什么？</h1>
         <p className="entry-intro">提出一个问题。研究助手会检索、核验并整理成可以逐条追溯来源的报告；证据不足时会说明缺口，而不是补全答案。</p>
 
@@ -145,6 +162,7 @@ export function EntryView({ appMode, onStart, onExample, busy = false, webConfig
         ) : null}
 
         <div className="examples" aria-label="示例体验（示例数据）">
+          <p className="eyebrow" style={{ gridColumn: "1 / -1" }}>示例体验 · 不联网</p>
           <button type="button" className="example" onClick={() => appMode === "demo" ? void submit(DEMO_QUESTION, "success") : onExample("success")}>
             <span className="chip chip-warn" style={{ justifySelf: "start" }}>示例数据</span>
             <strong>完整报告：知识库 + 网页来源</strong>
@@ -157,6 +175,28 @@ export function EntryView({ appMode, onStart, onExample, busy = false, webConfig
           </button>
         </div>
       </div>
+
+      <aside className="entry-side" aria-label="已有的研究">
+        <FolioStack />
+        <div className="entry-paths">
+          <button type="button" className="path-card" onClick={onOpenArchive}>
+            <span className="path-n" aria-hidden="true">A</span>
+            <span className="path-body">
+              <strong>研究档案</strong>
+              <span>{appMode === "demo" ? "保存的研究进度 · 示例数据" : "服务端保存的研究进度；打开时才读取"}</span>
+            </span>
+            <Icon name="arrowUpRight" size={16} />
+          </button>
+          <button type="button" className="path-card" onClick={onOpenRecent}>
+            <span className="path-n" aria-hidden="true">B</span>
+            <span className="path-body">
+              <strong>最近运行（本机）</strong>
+              <span>{recentCount ? `本机浏览器记住了 ${recentCount} 次运行` : "本机还没有运行记录；开始一次研究后会出现在这里"}</span>
+            </span>
+            <Icon name="arrowUpRight" size={16} />
+          </button>
+        </div>
+      </aside>
     </section>
   );
 }

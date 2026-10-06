@@ -18,6 +18,9 @@ const PATHS: Record<string, string> = {
   alert: "M12 8v5M12 16.5v.5M10.3 3.9 2.6 17.5A2 2 0 0 0 4.3 20.5h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z",
   pause: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM10 9v6M14 9v6",
   chevronDown: "m6 9 6 6 6-6",
+  archive: "M4 8.5 12 4l8 4.5-8 4.5-8-4.5ZM4 12.5l8 4.5 8-4.5M4 16.5l8 4.5 8-4.5",
+  arrowUpRight: "M7 17 17 7M9 7h8v8",
+  half: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM12 3v18",
 };
 
 export type IconName = keyof typeof PATHS;

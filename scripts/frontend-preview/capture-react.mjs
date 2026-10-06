@@ -18,7 +18,7 @@ const report = [];
 
 async function open(browser, theme, size, state, reducedMotion = "no-preference") {
   const [width, height] = SIZES[size];
-  const context = await browser.newContext({ viewport: { width, height }, colorScheme: theme === "mist" ? "dark" : "light", reducedMotion,
+  const context = await browser.newContext({ viewport: { width, height }, colorScheme: theme === "smoked" ? "dark" : "light", reducedMotion,
     deviceScaleFactor: size === "mobile" || size === "narrow" ? 2 : 1, isMobile: width < 760, hasTouch: width < 760 });
   const page = await context.newPage();
   const errors = [];
@@ -51,7 +51,7 @@ async function metrics(page) {
 
 const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
 try {
-  for (const theme of ["airy", "mist"]) {
+  for (const theme of ["ivory", "smoked"]) {
     for (const size of Object.keys(SIZES)) {
       for (const state of STATES) {
         const { context, page, errors } = await open(browser, theme, size, state);
@@ -66,7 +66,7 @@ try {
   }
 
   // Live journey: example → running → automatic report; then keyboard citation inspection.
-  for (const theme of ["airy", "mist"]) {
+  for (const theme of ["ivory", "smoked"]) {
     const { context, page, errors } = await open(browser, theme, "desktop", "entry");
     await page.getByRole("button", { name: /完整报告/ }).click();
     await page.waitForSelector(".activity");
@@ -106,20 +106,20 @@ try {
 
   // Cancel from the running state is a real state transition, not a closed stream.
   {
-    const { context, page, errors } = await open(browser, "airy", "desktop", "entry");
+    const { context, page, errors } = await open(browser, "ivory", "desktop", "entry");
     await page.getByRole("button", { name: /完整报告/ }).click();
     await page.waitForTimeout(1500);
     await page.getByRole("button", { name: "取消研究" }).click();
-    await page.waitForSelector(".status-tag");
-    report.push({ name: "cancel", status: await page.locator(".status-tag").textContent(), errors });
+    await page.waitForSelector(".outcome .status-tag");
+    report.push({ name: "cancel", status: await page.locator(".outcome .status-tag").textContent(), errors });
     await context.close();
   }
 
   // Reduced motion: transitions collapse; theme choice persists and is shared with V1's key.
   {
-    const { context, page, errors } = await open(browser, "airy", "desktop", "report", "reduce");
+    const { context, page, errors } = await open(browser, "ivory", "desktop", "report", "reduce");
     const btn = await page.evaluate(() => getComputedStyle(document.querySelector(".btn")).transitionDuration);
-    await page.getByRole("button", { name: /切换到雾夜主题/ }).click();
+    await page.getByRole("button", { name: /切换到烟灰外观/ }).click();
     await page.waitForTimeout(150);
     const saved = await page.evaluate(() => localStorage.getItem("deepresearch.console.theme"));
     await page.reload();

@@ -58,7 +58,10 @@ export CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome
 node scripts/frontend-preview/journey-react-live.mjs   # 真实适配器旅程 → output/playwright/react-live/
 node scripts/frontend-preview/capture-react.mjs        # 示例模式版式与截图 → output/playwright/react-preview/
 node scripts/frontend-preview/check-r1r2.mjs           # R1/R2 迭代的聚焦检查 → output/playwright/r1r2/
-node scripts/frontend-preview/check-notebook.mjs       # 研究笔记接入（模拟 API）→ output/playwright/notebook/
+node scripts/frontend-preview/check-notebook.mjs       # 研究档案（研究进度）接入（模拟 API）→ output/playwright/notebook/
+node scripts/frontend-preview/check-archive.mjs        # 档案旅程：入口→选择→打开→返回，四种尺寸×两种外观 → output/playwright/archive/
 ```
 
 两个版本可以同时对比：V1 在 `http://127.0.0.1:8090/demo.html`，React 在 `http://127.0.0.1:5173/app/`。
+
+评审深链：`/app/?demo&state=archive`（档案）、`/app/?state=record`（直接打开第一条示例记录）。

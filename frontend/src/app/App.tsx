@@ -16,7 +16,7 @@ import { SourcesDialog } from "../features/evidence/SourcesDialog";
 import { ReportView } from "../features/report/ReportView";
 import { RunningView } from "../features/running/RunningView";
 import { IdentityDialog, RecentDialog, type RecentItem } from "../features/shell/Dialogs";
-import { NotebookDialog } from "../features/memory/Notebook";
+import { ArchiveView } from "../features/archive/ArchiveView";
 import { PREVIEW_SNAPSHOTS, previewResume, previewSnapshotFromRun, simulateSave } from "../demo/memoryPreview";
 import { recordKey, type ProgressSnapshot } from "../domain/progressMemory";
 import { useNotebook, type LoadState, type SaveState } from "../live/useNotebook";
@@ -26,14 +26,14 @@ import { useLiveResearch, type Notify } from "../live/useLiveResearch";
 import { Icon } from "../ui/Icon";
 import { useTheme } from "./theme";
 
-type View = "entry" | "running" | "report" | "compare" | "disagreement";
+type View = "entry" | "running" | "report" | "compare" | "disagreement" | "archive";
 interface CompareState { a: number; b: number }
 interface Toast { id: number; message: string; tone: "info" | "success" | "warning" | "error" }
 
 const MODE_LABELS: Record<ExecutionMode, string> = { workflow: "Durable Workflow", agent: "自主研究（候选）", legacy: "Single Agent 基线" };
 
 /** Live by default. Demo mode is explicit (`?demo`, or `?state=` deep links for review) and never touches the network. */
-function initialState(): { appMode: AppMode; view: View; run: RunState; inspect: number | null; compare: CompareState | null; disagreement?: number } {
+function initialState(): { appMode: AppMode; view: View; run: RunState; inspect: number | null; compare: CompareState | null; disagreement?: number; openRecord?: boolean } {
   const params = new URLSearchParams(window.location.search);
   const state = params.get("state");
   const demoMode = params.has("demo") || !!state;
@@ -50,6 +50,8 @@ function initialState(): { appMode: AppMode; view: View; run: RunState; inspect:
     case "inspect": return { ...base, view: "report", run: done(), inspect: 3 };
     case "compare": return { ...base, view: "compare", run: done(), compare: { a: 3, b: 2 } };
     case "compare-recorded": return { ...base, view: "disagreement", run: done(), disagreement: 0 };
+    case "archive": return { ...base, view: "archive", run: emptyRun() };
+    case "record": return { ...base, view: "archive", run: emptyRun(), openRecord: true };
     default: return { ...base, view: "entry", run: emptyRun() };
   }
 }
@@ -83,15 +85,15 @@ export function App() {
   const [compare, setCompare] = useState<CompareState | null>(init.compare);
   const [inspecting, setInspecting] = useState(false);
   const [reportReady, setReportReady] = useState(false);
-  const [dialog, setDialog] = useState<"sources" | "identity" | "recent" | "notebook" | null>(null);
-  // Research notebook: preview only (backend progress-memory contract not delivered).
-  // Demo mode keeps the explicitly selected synthetic notebook preview, separate from live data.
+  const [dialog, setDialog] = useState<"sources" | "identity" | "recent" | null>(null);
+  // Research archive (saved research progress). Demo mode keeps the explicitly selected synthetic
+  // preview, separate from live data; live reads the progress-memory contract.
   const [previewItems, setPreviewItems] = useState<ProgressSnapshot[]>(PREVIEW_SNAPSHOTS);
   const [previewLoad, setPreviewLoad] = useState<LoadState>({ state: "idle" });
   const [previewSave, setPreviewSave] = useState<{ runId: string; save: SaveState }>({ runId: "", save: { state: "idle" } });
-  // Live notebook: list only when opened; save eligibility from project discovery for the current run.
+  // Live archive: list only while the archive is open; save eligibility from project discovery for the current run.
   const notebook = useNotebook({
-    enabled: !demoMode, ctx: live.ctx, scope: live.scope, notebookOpen: dialog === "notebook",
+    enabled: !demoMode, ctx: live.ctx, scope: live.scope, notebookOpen: view === "archive",
     run: live.run && live.run.runId ? { runId: live.run.runId, mode: live.run.mode } : null,
   });
   const [demoRecent, setDemoRecent] = useState<Array<RecentItem & { run: RunState }>>([]);
@@ -244,13 +246,27 @@ export function App() {
     if (demoMode) {
       const save = previewSave.runId === run.runId ? previewSave.save : { state: "idle" as const };
       return { eligibility: "eligible" as const, reason: "", state: save.state, message: save.state === "failed" ? save.message : undefined,
-        preview: true, onSave: savePreview, onOpenNotebook: () => setDialog("notebook") };
+        preview: true, onSave: savePreview, onOpenNotebook: openArchive };
     }
     const e = notebook.eligibility;
     return { eligibility: e.state, reason: e.reason, state: notebook.save.state,
       message: notebook.save.state === "failed" ? notebook.save.message : undefined, preview: false,
-      onSave: () => { void notebook.onSave(); }, onOpenNotebook: () => setDialog("notebook") };
+      onSave: () => { void notebook.onSave(); }, onOpenNotebook: openArchive };
   };
+
+  // The archive is a full view; it remembers which research view it was opened from.
+  const [archiveFrom, setArchiveFrom] = useState<View | null>(null);
+  const openArchive = () => {
+    if (view === "archive") return;
+    setArchiveFrom(view === "entry" ? null : view);
+    setInspect(null);
+    setView("archive");
+    window.scrollTo({ top: 0 });
+  };
+  const archiveBack = archiveFrom && hasRun && run ? {
+    label: archiveFrom === "running" && !terminal ? "返回进行中的研究" : "返回报告",
+    onClick: () => { setView(archiveFrom === "running" && !terminal ? "running" : "report"); window.scrollTo({ top: 0 }); },
+  } : null;
 
   const goHome = () => {
     if (demoMode) demo.reset(emptyRun()); else live.closeRun();
@@ -281,7 +297,7 @@ export function App() {
   const identityLabel = live.identity.token ? `${live.identity.tenantId}:${live.identity.userId}` : null;
 
   // Live states that have no run to show yet.
-  const liveBlocked = !demoMode && !!live.current && !live.run;
+  const liveBlocked = !demoMode && !!live.current && !live.run && view !== "archive";
   const unknown = !demoMode && live.unknownOutcome && live.pending ? {
     question: live.pending.body.question, idempotencyKey: live.pending.key,
     onRetry: () => { void live.safeRetry().then((reason) => { if (reason) { notify(reason, "error"); setDialog("identity"); } }); },
@@ -292,14 +308,13 @@ export function App() {
     <MotionConfig reducedMotion="user">
       <Tooltip.Provider>
         <a className="skip-link" href="#main">跳到主要内容</a>
-        <div className="atmosphere" aria-hidden="true"><span className="a" /><span className="b" /><span className="c" /></div>
         <div className="app">
           <TopBar theme={theme} mode={appMode} connection={live.connection} identityLabel={identityLabel} onToggleTheme={toggle} onHome={goHome}
-            onOpenRecent={() => setDialog("recent")} onOpenNotebook={() => setDialog("notebook")} onOpenIdentity={() => setDialog("identity")} onExitDemo={exitDemo} />
+            onOpenRecent={() => setDialog("recent")} onOpenNotebook={openArchive} archiveActive={view === "archive"} onOpenIdentity={() => setDialog("identity")} onExitDemo={exitDemo} />
           <AnimatePresence mode="wait" initial={false}>
             <motion.main key={view + (liveBlocked ? "-blocked" : "")} id="main" className="page" tabIndex={-1}
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.24, ease: [0.2, 0.8, 0.2, 1] }} style={{ outline: "none" }}>
+              transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }} style={{ outline: "none" }}>
               {liveBlocked ? (
                 <section className="run-wrap" aria-live="polite">
                   <div className="activity">
@@ -315,8 +330,9 @@ export function App() {
                   </div>
                 </section>
               ) : null}
-              {!liveBlocked && (view === "entry" || !hasRun) ? (
+              {!liveBlocked && (view === "entry" || (!hasRun && view !== "archive")) ? (
                 <EntryView key={prefill.key} appMode={appMode} onStart={start} onExample={enterDemo} initialQuestion={prefill.question}
+                  onOpenArchive={openArchive} onOpenRecent={() => setDialog("recent")} recentCount={recentItems.length}
                   busy={!demoMode && live.submitting} webConfigured={demoMode ? null : live.webConfigured} unknown={unknown} blocking={demoMode ? null : live.blocking} />
               ) : null}
               {!liveBlocked && view === "running" && run && hasRun ? (
@@ -337,6 +353,25 @@ export function App() {
                 <CompareView statement={statementsFor(blocks, compare.a)[0] ?? null} a={compareA} b={compareB} all={citations} demo={demoMode}
                   onChangeB={(b) => setCompare({ ...compare, b })} onBack={endCompare} />
               ) : null}
+              {view === "archive" ? (demoMode ? (
+                <ArchiveView key="preview" mode="preview" needsIdentity={false} onOpenIdentity={() => setDialog("identity")}
+                  items={previewItems} loading={false} error={null} candidateLimit={null} onRefresh={() => {}}
+                  load={previewLoad} onLoad={(projectId) => setPreviewLoad({ state: "loaded", context: previewResume(projectId, previewItems), recovered: false })}
+                  onClearLoaded={() => setPreviewLoad({ state: "idle" })}
+                  onDelete={async (record) => {
+                    const key = recordKey(record.projectId, record.sourceRunId);
+                    setPreviewItems((rows) => rows.filter((r) => recordKey(r.projectId, r.sourceRunId) !== key));
+                    setPreviewLoad((l) => l.state === "loaded" ? { ...l, context: { ...l.context, progress: l.context.progress.filter((p) => recordKey(p.projectId, p.sourceRunId) !== key) } } : l);
+                    return true;
+                  }} deletingKey={null} deleteError={null}
+                  onOpenRecent={() => setDialog("recent")} back={archiveBack} initialOpen={init.openRecord} />
+              ) : (
+                <ArchiveView key={"live:" + live.scope} mode="live" needsIdentity={!live.identity.token} onOpenIdentity={() => setDialog("identity")}
+                  items={notebook.list.items} loading={notebook.list.loading} error={notebook.list.error} candidateLimit={notebook.list.candidateLimit}
+                  onRefresh={notebook.list.refetch} load={notebook.load} onLoad={(projectId) => { void notebook.loadNewSession(projectId); }}
+                  onClearLoaded={notebook.clearLoaded} onDelete={notebook.remove} deletingKey={notebook.deleting} deleteError={notebook.deleteError}
+                  onOpenRecent={() => setDialog("recent")} back={archiveBack} />
+              )) : null}
               {!liveBlocked && view === "disagreement" && disagreements[disagreementIndex] ? (
                 <RecordedDisagreementView disagreement={disagreements[disagreementIndex]} demo={demoMode} onBack={endDisagreement} />
               ) : null}
@@ -361,25 +396,6 @@ export function App() {
         <IdentityDialog open={dialog === "identity"} onOpenChange={(o) => setDialog(o ? "identity" : null)} mode={appMode}
           identity={live.identity} onApply={(next) => { const error = live.applyIdentity(next); if (!error) notify("身份已更新；已清除旧身份的缓存内容", "success"); return error; }}
           onDevToken={live.devToken} />
-        {demoMode ? (
-          <NotebookDialog key="preview" mode="preview" open={dialog === "notebook"} onOpenChange={(o) => setDialog(o ? "notebook" : null)}
-            needsIdentity={false} onOpenIdentity={() => setDialog("identity")}
-            items={previewItems} loading={false} error={null} candidateLimit={null} onRefresh={() => {}}
-            load={previewLoad} onLoad={(projectId) => setPreviewLoad({ state: "loaded", context: previewResume(projectId, previewItems), recovered: false })}
-            onClearLoaded={() => setPreviewLoad({ state: "idle" })}
-            onDelete={async (record) => {
-              const key = recordKey(record.projectId, record.sourceRunId);
-              setPreviewItems((rows) => rows.filter((r) => recordKey(r.projectId, r.sourceRunId) !== key));
-              setPreviewLoad((l) => l.state === "loaded" ? { ...l, context: { ...l.context, progress: l.context.progress.filter((p) => recordKey(p.projectId, p.sourceRunId) !== key) } } : l);
-              return true;
-            }} deletingKey={null} deleteError={null} />
-        ) : (
-          <NotebookDialog key={"live:" + live.scope} mode="live" open={dialog === "notebook"} onOpenChange={(o) => setDialog(o ? "notebook" : null)}
-            needsIdentity={!live.identity.token} onOpenIdentity={() => setDialog("identity")}
-            items={notebook.list.items} loading={notebook.list.loading} error={notebook.list.error} candidateLimit={notebook.list.candidateLimit}
-            onRefresh={notebook.list.refetch} load={notebook.load} onLoad={(projectId) => { void notebook.loadNewSession(projectId); }}
-            onClearLoaded={notebook.clearLoaded} onDelete={notebook.remove} deletingKey={notebook.deleting} deleteError={notebook.deleteError} />
-        )}
         <RecentDialog open={dialog === "recent"} onOpenChange={(o) => setDialog(o ? "recent" : null)} items={recentItems} demo={demoMode}
           onOpen={(item) => {
             setDialog(null);

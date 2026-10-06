@@ -27,6 +27,39 @@ export const PREVIEW_SNAPSHOTS: ProgressSnapshot[] = [
     sourceEvidence: [],
     sourceClaims: [{ claimId: "preview-claim-2", recordSha256: "3".repeat(64), decisionStatus: "insufficient", freshness: "fresh" }],
   },
+  {
+    projectId: "preview-project-citations", sourceRunId: "demo-run-0003", sourceSessionId: "preview-session-3",
+    originalGoal: "梳理报告引用从检索结果到最终答案的传递路径。", runStatus: "SUCCEEDED",
+    completedWork: [goal("确认引用编号在合成阶段保持不变", "done", [], true)],
+    unresolvedQuestions: [],
+    nextSteps: ["需要时对照原始来源重新阅读；保存的结论不是新的核验"],
+    sourceEvidence: [{ evidenceId: "preview-evidence-3", receiptId: null, snapshotSha256: null, sourceId: null }],
+    sourceClaims: [{ claimId: "preview-claim-3", recordSha256: null, decisionStatus: "supported", freshness: "fresh" }],
+  },
+  {
+    projectId: "preview-project-budget", sourceRunId: "demo-run-0004", sourceSessionId: null,
+    originalGoal: "评估长问题在预算上限内能覆盖多少检索轮次。", runStatus: "BUDGET_EXCEEDED",
+    completedWork: [goal("记录首轮检索的覆盖范围", "done")],
+    unresolvedQuestions: [goal("后续检索轮次", "pending", ["运行在预算上限处终止"])],
+    nextSteps: ["缩小问题范围后重新研究"],
+    sourceEvidence: [], sourceClaims: [],
+  },
+  {
+    projectId: "preview-project-cancel", sourceRunId: "demo-run-0005", sourceSessionId: "preview-session-5",
+    originalGoal: "确认取消请求在各阶段的生效时机。", runStatus: "CANCELLED",
+    completedWork: [],
+    unresolvedQuestions: [goal("审阅阶段的取消行为", "uncovered")],
+    nextSteps: [],
+    sourceEvidence: [], sourceClaims: [{ claimId: "preview-claim-5", recordSha256: null, decisionStatus: "unverified", freshness: null }],
+  },
+  {
+    projectId: "preview-project-failure", sourceRunId: "demo-run-0006", sourceSessionId: "preview-session-6",
+    originalGoal: "检查网页来源读取失败时的报告呈现。", runStatus: "FAILED",
+    completedWork: [],
+    unresolvedQuestions: [{ taskId: "preview-task-6", goal: "读取指定网页来源", status: "FAILED", completionVerified: false, gaps: ["读取失败"], criteria: [], errorCode: null }],
+    nextSteps: ["确认来源可访问后重新研究"],
+    sourceEvidence: [], sourceClaims: [],
+  },
 ];
 
 /** Synthetic snapshot from a demo run, using only fields the run actually has; nothing becomes verified. */

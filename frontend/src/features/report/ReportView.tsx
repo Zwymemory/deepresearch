@@ -123,7 +123,7 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
         {save ? (
           <p id="save-status" className="note" role="status" style={{ marginTop: -14, marginBottom: 18 }}>
             {save.eligibility !== "eligible" ? <>保存研究进度：{save.reason}</>
-              : save.state === "saved" ? <>{save.preview ? "已保存到研究笔记（示例数据，服务端未参与）。" : "服务端已确认保存。保存内容来自服务端记录；保存不会让研究变为成功，也不是重新核验。"}<button type="button" className="link-btn" onClick={save.onOpenNotebook}>查看研究笔记</button></>
+              : save.state === "saved" ? <>{save.preview ? "已保存到研究档案（示例数据，服务端未参与）。" : "服务端已确认保存。保存内容来自服务端记录；保存不会让研究变为成功，也不是重新核验。"}<button type="button" className="link-btn" onClick={save.onOpenNotebook}>在研究档案中查看</button></>
               : save.state === "failed" ? <span style={{ color: "var(--error-ink)" }}>保存失败{save.preview ? "（示例）" : ""}：{save.message ?? "没有任何内容被保存。"} 可以重试。</span>
               : save.state === "saving" ? "正在保存，等待服务端确认…" : null}
           </p>

@@ -14,6 +14,7 @@ interface Props {
   onHome: () => void;
   onOpenRecent: () => void;
   onOpenNotebook: () => void;
+  archiveActive: boolean;
   onOpenIdentity: () => void;
   onExitDemo: () => void;
 }
@@ -34,7 +35,7 @@ function ConnectionBadge({ mode, connection }: { mode: AppMode; connection: Conn
     <span className="dot" aria-hidden="true" /><span className="label-long" aria-hidden="true">{label}</span><span className="label-short" aria-hidden="true">{short}</span></span>;
 }
 
-export function TopBar({ theme, mode, connection, identityLabel, onToggleTheme, onHome, onOpenRecent, onOpenNotebook, onOpenIdentity, onExitDemo }: Props) {
+export function TopBar({ theme, mode, connection, identityLabel, onToggleTheme, onHome, onOpenRecent, onOpenNotebook, archiveActive, onOpenIdentity, onExitDemo }: Props) {
   const [scrolled, setScrolled] = useState(false);
   const themeButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -42,24 +43,27 @@ export function TopBar({ theme, mode, connection, identityLabel, onToggleTheme, 
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-  const mist = theme === "mist";
+  const smoked = theme === "smoked";
   return (
     <header className="topbar" data-scrolled={scrolled}>
       <button type="button" className="brand" onClick={onHome} aria-label="DeepResearch：返回新研究">
-        <span className="brand-mark" aria-hidden="true"><Icon name="search" size={18} /></span>
-        <span className="brand-name">DeepResearch</span>
+        <span className="brand-mark" aria-hidden="true" />
+        <span className="brand-word" aria-hidden="true"><b>DEEP</b><b>RESEARCH</b></span>
+        <span className="brand-sub" aria-hidden="true">研究工作台</span>
       </button>
       <div className="top-actions">
         <ConnectionBadge mode={mode} connection={connection} />
         {mode === "demo" ? (
           <button type="button" className="btn btn-quiet btn-sm top-label" onClick={onExitDemo}>退出示例</button>
         ) : null}
+        <button type="button" className="nav-btn" onClick={onOpenNotebook} aria-label="研究档案（保存的研究进度）" aria-current={archiveActive ? "page" : undefined}>
+          <Icon name="archive" size={17} /><span className="top-label">档案</span>
+        </button>
         <button type="button" className="icon-btn" onClick={onOpenRecent} aria-label="最近的研究（本机）"><Icon name="clock" /></button>
-        <button type="button" className="icon-btn" onClick={onOpenNotebook} aria-label="研究笔记（研究进度）"><Icon name="book" /></button>
-        <button ref={themeButton} type="button" className="icon-btn" aria-pressed={mist}
-          aria-label={mist ? "当前为雾夜主题，切换到晴空主题" : "当前为晴空主题，切换到雾夜主题"}
+        <button ref={themeButton} type="button" className="icon-btn" aria-pressed={smoked}
+          aria-label={smoked ? "当前为烟灰外观，切换到象牙外观" : "当前为象牙外观，切换到烟灰外观"}
           onClick={() => onToggleTheme(themeButton.current)}>
-          <span className="theme-orb" aria-hidden="true" />
+          <Icon name="half" className="theme-glyph" />
         </button>
         <button type="button" className={"identity-btn" + (mode === "live" && !identityLabel ? " unauth" : "")} onClick={onOpenIdentity}
           aria-label={"连接与身份：" + (mode === "demo" ? "示例模式" : identityLabel ?? "未认证")}>

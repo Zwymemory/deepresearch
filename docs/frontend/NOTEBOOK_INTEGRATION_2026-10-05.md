@@ -4,6 +4,8 @@
 
 **契约来源**：后端交接 `RESEARCH_PROGRESS_FRONTEND_HANDOFF_2026-10-05.md`，分支 `feat/research-progress-memory-mvp-20261005`，提交 `8d941e8`。它取代了 [R1_R2_2026-10-05.md](R1_R2_2026-10-05.md) 中关于记忆接口的阻塞项；该文档列出的其他依赖不受影响。
 
+> 2026-10-06 更新：研究笔记对话框已由“研究档案”视图取代（同样的接口与行为），见 [RHINELAB_REDESIGN_2026-10-05.md](RHINELAB_REDESIGN_2026-10-05.md)。
+
 ## 状态
 
 | 项目 | 状态 |
