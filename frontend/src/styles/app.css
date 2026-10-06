@@ -480,6 +480,9 @@ svg.i { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentCo
 .memory-note.is-rejected strong { color: var(--error-ink); }
 
 .summary-row { margin-top: 10px; }
+.recall-toggle { display: flex; align-items: flex-start; gap: 8px; padding: 8px 6px 0; cursor: pointer; }
+.recall-toggle input { margin-top: 4px; accent-color: var(--accent-ink); }
+.recall-toggle strong { color: var(--ink-2); }
 .auto-save { margin: -10px 0 18px; }
 .auto-save[data-status="FAILED"], .auto-save[data-status="UNAVAILABLE"] { color: var(--error-ink); }
 .summary-disclosure { margin-top: 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paper); font-size: 14px; }

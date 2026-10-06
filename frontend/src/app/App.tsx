@@ -28,7 +28,9 @@ import { MemoryNote } from "../features/memory/MemoryNote";
 import { SummaryDisclosure, type SummaryRead } from "../features/memory/SummaryDisclosure";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AutoSaveStatus, type AutoSaveRead } from "../features/memory/AutoSaveStatus";
-import { getProgressSave } from "../api/progress";
+import { getMemoryRecall, getProgressSave } from "../api/progress";
+import { RecallDisclosure, type RecallRead } from "../features/memory/RecallDisclosure";
+import type { RecallView } from "../domain/memoryRecall";
 import type { ProgressSaveView } from "../domain/progressMemory";
 import { getContextSummary } from "../api/endpoints";
 import { friendlyError, type ApiError } from "../api/http";
@@ -211,7 +213,7 @@ export function App() {
       return null;
     }
     if (!live.identity.token) { setDialog("identity"); return "请先在“连接与身份”中设置 Bearer Token。"; }
-    const result = await live.start(request.mode, request.question, request.tools, request.sessionId, request.researchProjectId ?? "");
+    const result = await live.start(request.mode, request.question, request.tools, request.sessionId, request.researchProjectId ?? "", request.memoryRecall ?? null);
     if (!result.ok && result.reason === "needs-identity") { setDialog("identity"); return "请先连接身份。"; }
     // Once a run exists the pair has been used; an unresolved create keeps it (the pending request holds it verbatim).
     if (request.researchProjectId && "accepted" in result && result.accepted) setContinuation(null);
@@ -346,7 +348,28 @@ export function App() {
       : (summaryQuery.error as Error).name === "SummaryContractError" ? { state: "invalid", message: (summaryQuery.error as Error).message }
       : { state: "error", message: friendlyError(summaryQuery.error, "status") })
     : { state: "loading" };
-  const summary = summaryRead ? <SummaryDisclosure read={summaryRead} /> : null;
+  const summaryNode = summaryRead ? <SummaryDisclosure read={summaryRead} /> : null;
+
+  // Memory M4: cross-question recall (read-only). Polled while the run is active (bounded), re-read
+  // when it becomes terminal, and keyed on the notebook's memory epoch so that after a correction or
+  // deletion old recalled content is never redisplayed from cache. A failed read counts as unavailable.
+  const recallEpoch = notebook.memoryEpoch;
+  const recallQuery = useQuery<RecallView>({
+    queryKey: ["memory-recall", live.scope, run?.runId ?? "", terminal, recallEpoch],
+    enabled: !demoMode && !!run?.runId && run.mode === "agent" && !!live.identity.token,
+    retry: (count, error) => count < 1 && ((error as ApiError).status == null || (error as ApiError).status! >= 500),
+    staleTime: Infinity, refetchOnWindowFocus: false,
+    placeholderData: (previous, previousQuery) => previousQuery?.queryKey[1] === live.scope && previousQuery?.queryKey[2] === run?.runId
+      && previousQuery?.queryKey[4] === recallEpoch ? previous : undefined,
+    refetchInterval: (query) => !terminal && query.state.dataUpdateCount < 60 ? 3000 : false,
+    queryFn: ({ signal }) => getMemoryRecall(live.ctx, run!.runId, signal),
+  });
+  const recallRead: RecallRead | null = demoMode || !run?.runId || run.mode !== "agent" ? null
+    : recallQuery.error ? ((recallQuery.error as ApiError).status === 404 ? { state: "absent" }
+      : { state: "unavailable", message: "无法读取（" + ((recallQuery.error as Error).name === "RecallContractError" ? (recallQuery.error as Error).message : friendlyError(recallQuery.error, "status")) + "），视为不可用。" })
+    : recallQuery.data ? { state: "ok", view: recallQuery.data }
+    : { state: "loading" };
+  const summary = summaryNode || recallRead ? <>{summaryNode}{recallRead ? <RecallDisclosure read={recallRead} /> : null}</> : null;
 
   // Memory M3: automatic progress-save status (read-only; the page never starts an automatic save).
   // Polled every 2 s only while a terminal run is PENDING, at most 30 reads; re-read on each

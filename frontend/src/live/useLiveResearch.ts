@@ -258,7 +258,7 @@ export function useLiveResearch(enabled: boolean, notify: Notify) {
    * `researchProjectId` continues a loaded project: agent mode only, always paired with the
    * sessionId returned by that explicit load. The server selects and re-checks the history.
    */
-  const start = useCallback(async (mode: ExecutionMode, question: string, tools: ToolName[], sessionId = "", researchProjectId = "") => {
+  const start = useCallback(async (mode: ExecutionMode, question: string, tools: ToolName[], sessionId = "", researchProjectId = "", memoryRecall: boolean | null = null) => {
     if (submitting || pending) return { ok: false, reason: "已有待确认的创建请求。" };
     if (researchProjectId && (mode !== "agent" || !sessionId.trim())) return { ok: false, reason: "继续研究需要先载入该项目到新会话（自主研究）。" };
     if (!identity.token) return { ok: false, reason: "needs-identity" };
@@ -273,6 +273,8 @@ export function useLiveResearch(enabled: boolean, notify: Notify) {
     const body: CreateBody = mode === "legacy" ? { question } : { question, requestedTools: tools };
     if (sessionId.trim()) body.sessionId = sessionId.trim();
     if (researchProjectId) body.researchProjectId = researchProjectId;
+    // Sent explicitly for autonomous research so the stored (idempotent) body records the choice.
+    if (mode === "agent" && memoryRecall != null) body.memoryRecall = memoryRecall;
     setRejection(null);
     const record = newPending(mode, body, requestScope(identity, origin));
     // Persist before sending so a reload during an unknown outcome can only replay this exact request.

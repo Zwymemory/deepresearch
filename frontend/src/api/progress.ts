@@ -2,6 +2,7 @@
 // All requests have no JSON body. Errors branch on HTTP status only; bodies may not be JSON.
 // The new-session POST is not idempotent and is never retried automatically.
 import type { ApiContext } from "./endpoints";
+import { parseRecall, type RecallView } from "../domain/memoryRecall";
 import { ApiError, authHeaders, responseData } from "./http";
 import { parseList, parseProgressSave, parseProject, parseResume, parseSnapshot, type ProgressSaveView, type ProgressSnapshot, type ResumeContext } from "../domain/progressMemory";
 
@@ -35,6 +36,11 @@ export async function getProgressSave(ctx: ApiContext, runId: string, signal?: A
 /** User correction note (≤2000 chars; "" clears). Returns the snapshot; never edits verified facts. */
 export async function correctProgress(ctx: ApiContext, projectId: string, runId: string, note: string): Promise<ProgressSnapshot> {
   return parseSnapshot(await call(ctx, "PATCH", `/api/research/projects/${enc(projectId)}/progress/runs/${enc(runId)}`, undefined, { note }));
+}
+
+/** Cross-question recall of an owned agent run (read-only; never selects or saves anything). */
+export async function getMemoryRecall(ctx: ApiContext, runId: string, signal?: AbortSignal): Promise<RecallView> {
+  return parseRecall(await call(ctx, "GET", `/api/research/agents/${enc(runId)}/memory-recall`, signal));
 }
 
 /** Read a saved snapshot; never saves implicitly. */

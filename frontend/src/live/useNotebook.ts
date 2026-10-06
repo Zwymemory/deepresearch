@@ -105,6 +105,10 @@ export function useNotebook({ enabled, ctx, scope, notebookOpen, run }: {
 
   const clearLoaded = useCallback(() => { writeStored(null); setLoad({ state: "idle" }); }, []);
 
+  // Bumped after any successful correction or deletion: recall views keyed on it are re-read from the
+  // server and never redisplayed from cache (M4).
+  const [memoryEpoch, setMemoryEpoch] = useState(0);
+
   // ---- delete ----
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<{ key: string; message: string } | null>(null);
@@ -120,6 +124,8 @@ export function useNotebook({ enabled, ctx, scope, notebookOpen, run }: {
       // list and every automatic-save status for this identity from the server rather than trusting cache.
       void queryClient.invalidateQueries({ queryKey: ["progress-list", scope] });
       void queryClient.invalidateQueries({ queryKey: ["progress-save", scope] });
+      void queryClient.invalidateQueries({ queryKey: ["memory-recall", scope] });
+      setMemoryEpoch((n) => n + 1);
       // Drop any loaded browser copy that references the deleted snapshot.
       setLoad((current) => current.state === "loaded"
         ? { ...current, context: { ...current.context, progress: current.context.progress.filter((p) => recordKey(p.projectId, p.sourceRunId) !== key) },
@@ -147,6 +153,8 @@ export function useNotebook({ enabled, ctx, scope, notebookOpen, run }: {
         old ? { ...old, items: old.items.map((i) => recordKey(i.projectId, i.sourceRunId) === key ? updated : i) } : old);
       void queryClient.invalidateQueries({ queryKey: ["progress-list", scope] });
       void queryClient.invalidateQueries({ queryKey: ["progress-save", scope] });
+      void queryClient.invalidateQueries({ queryKey: ["memory-recall", scope] });
+      setMemoryEpoch((n) => n + 1);
       // A loaded copy of this project is now stale: require an explicit reload before Continue.
       setLoad((current) => current.state === "loaded" && current.context.projectId === record.projectId ? { ...current, sourceCorrected: true } : current);
       return true;
@@ -171,7 +179,7 @@ export function useNotebook({ enabled, ctx, scope, notebookOpen, run }: {
     save: (saveKey && saves[saveKey]) || { state: "idle" as const }, onSave: save,
     load: visibleLoad, loadNewSession, clearLoaded,
     deleting, deleteError, remove,
-    correcting, correctError, correct,
+    correcting, correctError, correct, memoryEpoch,
   };
 }
 

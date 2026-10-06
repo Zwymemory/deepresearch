@@ -63,7 +63,9 @@ const MODE_NOTES: Record<ExecutionMode, string> = {
   legacy: "单 Agent 基线：Java 直接选择工具，同步返回；不具备工作流恢复与服务端取消，不使用检索范围设置。",
 };
 
-export interface StartRequest { question: string; tools: ToolName[]; mode: ExecutionMode; outcome: DemoOutcome; sessionId: string; researchProjectId?: string }
+export interface StartRequest { question: string; tools: ToolName[]; mode: ExecutionMode; outcome: DemoOutcome; sessionId: string; researchProjectId?: string;
+  /** Autonomous research only: let the server reference relevant saved research (M4). */
+  memoryRecall?: boolean }
 
 export interface UnknownCreate { question: string; idempotencyKey: string; onRetry: () => void; onDiscard: () => void }
 
@@ -104,6 +106,7 @@ export function EntryView({ appMode, onStart, onExample, onOpenArchive, onOpenRe
   const [scope, setScope] = useState<Scope>("mixed");
   const [calculator, setCalculator] = useState(true);
   const [chosenMode, setMode] = useState<ExecutionMode>("workflow");
+  const [recall, setRecall] = useState(true);
   // Continuing a project is an autonomous-research feature; the pair decides the mode.
   const mode: ExecutionMode = continuation ? "agent" : chosenMode;
   const [sessionId, setSessionId] = useState("");
@@ -126,8 +129,8 @@ export function EntryView({ appMode, onStart, onExample, onOpenArchive, onOpenRe
     submitting.current = true;
     try {
       const result = await onStart(continuation
-        ? { question: text.trim(), tools: tools(), mode: "agent", outcome, sessionId: continuation.sessionId, researchProjectId: continuation.projectId }
-        : { question: text.trim(), tools: mode === "legacy" ? [] : tools(), mode, outcome, sessionId: sessionId.trim() });
+        ? { question: text.trim(), tools: tools(), mode: "agent", outcome, sessionId: continuation.sessionId, researchProjectId: continuation.projectId, memoryRecall: recall }
+        : { question: text.trim(), tools: mode === "legacy" ? [] : tools(), mode, outcome, sessionId: sessionId.trim(), ...(mode === "agent" ? { memoryRecall: recall } : {}) });
       if (result) setError(result);
     } finally {
       submitting.current = false;
@@ -222,6 +225,12 @@ export function EntryView({ appMode, onStart, onExample, onOpenArchive, onOpenRe
         <p id="mode-note" className="note" style={{ padding: "6px 6px 0" }}>
           {mode === "agent" ? <span className="chip chip-future" style={{ marginRight: 6 }}>候选功能</span> : null}{MODE_NOTES[mode]}
         </p>
+        {mode === "agent" ? (
+          <label className="recall-toggle note">
+            <input type="checkbox" checked={recall} disabled={locked} onChange={(e) => setRecall(e.target.checked)} />
+            <span><strong>参考相关的历史研究</strong>：服务端会从你保存的研究中挑选与本问题相关的少量记录，作为需要复查的线索（不是已核验的证据）。{continuation ? "这与上面“继续此项目”是两件事。" : "这与“在此项目继续研究”是两件事。"}</span>
+          </label>
+        ) : null}
         {appMode === "live" && !continuation ? (
           <details className="note" style={{ padding: "8px 6px 0" }}>
             <summary style={{ cursor: "pointer", width: "fit-content" }}>会话选项</summary>
