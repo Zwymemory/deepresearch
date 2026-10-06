@@ -6,10 +6,15 @@ import type { ProgressSnapshot, ResumeContext } from "../domain/progressMemory";
 import type { RunState } from "../domain/runState";
 
 const goal = (g: string, status: string, gaps: string[] = [], completionVerified = false): ProgressSnapshot["unresolvedQuestions"][number] =>
-  ({ taskId: null, goal: g, status, completionVerified, gaps, criteria: [], errorCode: null });
+  ({ taskId: null, goal: g, status, completionVerified, gaps, criteria: [], errorCode: null, historical: false, fromRunId: null });
+
+// Synthetic preview: no automatic save or correction recorded unless shown explicitly.
+const M3_NONE: Pick<ProgressSnapshot, "currentQuestion" | "saveOrigin" | "historicalCompletedWork" | "priorMemoryRefs" | "userCorrection"> =
+  { currentQuestion: null, saveOrigin: null, historicalCompletedWork: [], priorMemoryRefs: [], userCorrection: "" };
 
 export const PREVIEW_SNAPSHOTS: ProgressSnapshot[] = [
   {
+    ...M3_NONE,
     projectId: "preview-project-recovery", sourceRunId: "demo-run-0001", sourceSessionId: "preview-session-1",
     originalGoal: "解释本项目的崩溃恢复机制与混合检索的关系。", runStatus: "SUCCEEDED",
     completedWork: [goal("确认 checkpoint 与幂等 finalize 的作用", "done", [], true), goal("确认 fencing token 阻止旧实例回写", "done", [], true)],
@@ -19,6 +24,7 @@ export const PREVIEW_SNAPSHOTS: ProgressSnapshot[] = [
     sourceClaims: [{ claimId: "preview-claim-1", recordSha256: "2".repeat(64), decisionStatus: "contested", freshness: "fresh" }],
   },
   {
+    ...M3_NONE,
     projectId: "preview-project-retrieval", sourceRunId: "demo-run-0002", sourceSessionId: "preview-session-2",
     originalGoal: "比较向量召回与 BM25 在编号类查询上的差异。", runStatus: "INSUFFICIENT_EVIDENCE",
     completedWork: [],
@@ -28,6 +34,7 @@ export const PREVIEW_SNAPSHOTS: ProgressSnapshot[] = [
     sourceClaims: [{ claimId: "preview-claim-2", recordSha256: "3".repeat(64), decisionStatus: "insufficient", freshness: "fresh" }],
   },
   {
+    ...M3_NONE,
     projectId: "preview-project-citations", sourceRunId: "demo-run-0003", sourceSessionId: "preview-session-3",
     originalGoal: "梳理报告引用从检索结果到最终答案的传递路径。", runStatus: "SUCCEEDED",
     completedWork: [goal("确认引用编号在合成阶段保持不变", "done", [], true)],
@@ -37,6 +44,7 @@ export const PREVIEW_SNAPSHOTS: ProgressSnapshot[] = [
     sourceClaims: [{ claimId: "preview-claim-3", recordSha256: null, decisionStatus: "supported", freshness: "fresh" }],
   },
   {
+    ...M3_NONE,
     projectId: "preview-project-budget", sourceRunId: "demo-run-0004", sourceSessionId: null,
     originalGoal: "评估长问题在预算上限内能覆盖多少检索轮次。", runStatus: "BUDGET_EXCEEDED",
     completedWork: [goal("记录首轮检索的覆盖范围", "done")],
@@ -45,6 +53,7 @@ export const PREVIEW_SNAPSHOTS: ProgressSnapshot[] = [
     sourceEvidence: [], sourceClaims: [],
   },
   {
+    ...M3_NONE,
     projectId: "preview-project-cancel", sourceRunId: "demo-run-0005", sourceSessionId: "preview-session-5",
     originalGoal: "确认取消请求在各阶段的生效时机。", runStatus: "CANCELLED",
     completedWork: [],
@@ -53,10 +62,11 @@ export const PREVIEW_SNAPSHOTS: ProgressSnapshot[] = [
     sourceEvidence: [], sourceClaims: [{ claimId: "preview-claim-5", recordSha256: null, decisionStatus: "unverified", freshness: null }],
   },
   {
+    ...M3_NONE,
     projectId: "preview-project-failure", sourceRunId: "demo-run-0006", sourceSessionId: "preview-session-6",
     originalGoal: "检查网页来源读取失败时的报告呈现。", runStatus: "FAILED",
     completedWork: [],
-    unresolvedQuestions: [{ taskId: "preview-task-6", goal: "读取指定网页来源", status: "FAILED", completionVerified: false, gaps: ["读取失败"], criteria: [], errorCode: null }],
+    unresolvedQuestions: [{ taskId: "preview-task-6", goal: "读取指定网页来源", status: "FAILED", completionVerified: false, gaps: ["读取失败"], criteria: [], errorCode: null, historical: false, fromRunId: null }],
     nextSteps: ["确认来源可访问后重新研究"],
     sourceEvidence: [], sourceClaims: [],
   },
@@ -66,6 +76,7 @@ export const PREVIEW_SNAPSHOTS: ProgressSnapshot[] = [
 export function previewSnapshotFromRun(run: RunState): ProgressSnapshot {
   const goals = run.finalResponse?.unfinished_goals ?? [];
   return {
+    ...M3_NONE, currentQuestion: run.question,
     projectId: "preview-project-" + run.runId, sourceRunId: run.runId, sourceSessionId: run.sessionId || null,
     originalGoal: run.question, runStatus: run.status,
     completedWork: [],

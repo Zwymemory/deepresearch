@@ -13,7 +13,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { recordKey, type ProgressSnapshot } from "../../domain/progressMemory";
 import type { LoadState } from "../../live/useNotebook";
 import { Icon } from "../../ui/Icon";
-import { LoadedPanel, RecordActions, RecordSections } from "./RecordParts";
+import { CorrectionNote, LoadedPanel, RecordActions, RecordSections, SaveFacts } from "./RecordParts";
 import { shortId, statusLabel, statusTone } from "./recordText";
 
 export interface ArchiveProps {
@@ -26,6 +26,9 @@ export interface ArchiveProps {
   onOpenRecent: () => void;
   /** Continue research with the currently loaded project/session pair (separate from loading). */
   onContinue?: ((projectId: string) => void) | null;
+  /** Save a user correction note (annotation only). */
+  onCorrect?: ((record: ProgressSnapshot, note: string) => Promise<boolean>) | null;
+  correctingKey?: string | null; correctError?: { key: string; message: string } | null;
   /** Where the reader came from (e.g. a report), if anywhere. */
   back?: { label: string; onClick: () => void } | null;
   /** Review deep link: open the first record on arrival (no flight, nothing to fly from). */
@@ -187,7 +190,7 @@ export function ArchiveView(props: ArchiveProps) {
                         <span className="archive-item-n" aria-hidden="true">{pad(index + 1)}</span>
                         <span className="archive-item-body">
                           <strong>{r.originalGoal}</strong>
-                          <span>保存时：{statusLabel(r.runStatus)} · 未解决 {r.unresolvedQuestions.length} 项 · 已完成 {r.completedWork.length} 项</span>
+                          <span>保存时：{statusLabel(r.runStatus)} · 未解决 {r.unresolvedQuestions.length} 项 · 已完成 {r.completedWork.length} 项{r.saveOrigin === "automatic" ? " · 自动保存" : ""}{r.userCorrection ? " · 有纠正说明" : ""}</span>
                         </span>
                       </li>
                     );
@@ -227,13 +230,16 @@ export function ArchiveView(props: ArchiveProps) {
 
       <AnimatePresence>
         {open ? (
-          <RecordLayer key={keyOf(open.record)} record={open.record} index={open.index} slots={slots} origin={open.origin} reduce={!!reduce}
+          <RecordLayer key={keyOf(open.record)} record={items.find((r) => keyOf(r) === keyOf(open.record)) ?? open.record} index={open.index} slots={slots} origin={open.origin} reduce={!!reduce}
             preview={mode === "preview"} getTarget={() => folios.current.get(keyOf(open.record))?.getBoundingClientRect() ?? null}
             onClose={() => closeRecord()} load={load} onLoad={props.onLoad}
             onDelete={() => { void remove(open.record); }}
             deleting={props.deletingKey === keyOf(open.record)}
             deleteError={props.deleteError?.key === keyOf(open.record) ? props.deleteError.message : null}
-            onClearLoaded={props.onClearLoaded} onContinue={props.onContinue} />
+            onClearLoaded={props.onClearLoaded} onContinue={props.onContinue}
+            onCorrect={props.onCorrect ? (note) => props.onCorrect!(open.record, note) : null}
+            correcting={props.correctingKey === keyOf(open.record)}
+            correctError={props.correctError?.key === keyOf(open.record) ? props.correctError.message : null} />
         ) : null}
       </AnimatePresence>
     </section>
@@ -283,11 +289,12 @@ const EASE_LIFT = "cubic-bezier(.3,.7,.1,1)";
 const EASE_OUT = "cubic-bezier(.2,.8,.2,1)";
 
 /** Reading layer. The cover is extracted from the folio's on-screen rect and returned to it on close. */
-function RecordLayer({ record, index, slots, origin, reduce, preview, getTarget, onClose, load, onLoad, onDelete, deleting, deleteError, onClearLoaded, onContinue }: {
+function RecordLayer({ record, index, slots, origin, reduce, preview, getTarget, onClose, load, onLoad, onDelete, deleting, deleteError, onClearLoaded, onContinue, onCorrect, correcting, correctError }: {
   record: ProgressSnapshot; index: number; slots: number; origin: DOMRect | null; reduce: boolean; preview: boolean;
   getTarget: () => DOMRect | null; onClose: () => void;
   load: LoadState; onLoad: (projectId: string) => void; onDelete: () => void; deleting: boolean; deleteError: string | null; onClearLoaded: () => void;
   onContinue?: ((projectId: string) => void) | null;
+  onCorrect: ((note: string) => Promise<boolean>) | null; correcting: boolean; correctError: string | null;
 }) {
   const [isPresent, safeToRemove] = usePresence();
   const root = useRef<HTMLElement>(null);
@@ -372,13 +379,15 @@ function RecordLayer({ record, index, slots, origin, reduce, preview, getTarget,
           </div>
           <RecordActions onLoad={() => onLoad(record.projectId)} loadBusy={load.state === "loading"}
             loadedHere={load.state === "loaded" && load.context.projectId === record.projectId}
-            onContinue={onContinue && load.state === "loaded" && load.context.projectId === record.projectId && !load.sourceDeleted ? () => onContinue(record.projectId) : null}
+            onContinue={onContinue && load.state === "loaded" && load.context.projectId === record.projectId && !load.sourceDeleted && !load.sourceCorrected ? () => onContinue(record.projectId) : null}
             onDelete={onDelete} deleting={deleting} deleteError={deleteError} />
         </div>
         <article ref={body} className="rec-read">
           <p className="eyebrow">保存时的记录 · 不是重新核验</p>
           <h1 id="rec-title" ref={title} className="rec-title" tabIndex={-1}>{record.originalGoal}</h1>
           {load.state !== "idle" ? <div style={{ marginTop: 18 }}><LoadedPanel load={load} onClear={onClearLoaded} onRetry={onLoad} /></div> : null}
+          <SaveFacts record={record} />
+          <CorrectionNote record={record} onSave={onCorrect} busy={correcting} error={correctError} preview={preview} />
           <RecordSections record={record} />
         </article>
       </div>

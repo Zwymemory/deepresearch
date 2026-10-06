@@ -31,6 +31,8 @@ export interface Continuation {
   goals: string[];
   unresolved: Array<{ goal: string; gaps: string[]; criteria: string[] }>;
   nextSteps: string[];
+  /** User correction notes saved on the loaded snapshots (annotations, not verified facts). */
+  corrections: string[];
 }
 
 /** A run created with an explicit project selection (as requested, not as observed by a model). */

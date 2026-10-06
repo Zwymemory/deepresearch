@@ -19,6 +19,10 @@ export interface ProgressGoal {
   gaps: string[];
   criteria: ProgressCriterion[];
   errorCode: string | null;
+  /** Carried over from an earlier saved snapshot (M3); never proof for the current run. */
+  historical: boolean;
+  /** Run the carried item came from, when historical. */
+  fromRunId: string | null;
 }
 
 export interface ProgressSnapshot {
@@ -33,6 +37,15 @@ export interface ProgressSnapshot {
   nextSteps: string[];
   sourceEvidence: Array<{ evidenceId: string; receiptId: string | null; snapshotSha256: string | null; sourceId: string | null }>;
   sourceClaims: Array<{ claimId: string; recordSha256: string | null; decisionStatus: string; freshness: string | null }>;
+  /** M3 fields; absent on older snapshots. */
+  currentQuestion: string | null;
+  /** "automatic" | "manual" as saved by the server; null when not recorded. */
+  saveOrigin: string | null;
+  /** Earlier saved progress carried forward; never proof of current completion. */
+  historicalCompletedWork: ProgressGoal[];
+  priorMemoryRefs: Array<{ sourceRunId: string; snapshotSha256: string | null }>;
+  /** User annotation; never edits verified facts. "" means none. */
+  userCorrection: string;
 }
 
 export interface ResumeContext {
@@ -71,6 +84,8 @@ function goal(value: unknown): ProgressGoal {
       return { criterionId: str(r.criterionId), text: str(r.text) ?? "", status: str(r.status) ?? "unknown", gaps: strings(r.gaps) };
     }),
     errorCode: str(g.error_code),
+    historical: g.historical === true,
+    fromRunId: str(g.source_run_id),
   };
 }
 
@@ -102,6 +117,34 @@ export function parseSnapshot(value: unknown): ProgressSnapshot {
       const r = obj(c);
       return { claimId: str(r.claim_id) ?? "", recordSha256: str(r.record_sha256), decisionStatus: str(r.decision_status) ?? "unknown", freshness: str(r.freshness) };
     }),
+    currentQuestion: str(raw.current_question),
+    saveOrigin: str(raw.save_origin),
+    historicalCompletedWork: arr(raw.historical_completed_work).map(goal),
+    priorMemoryRefs: arr(raw.prior_memory_refs).map((r) => { const x = obj(r); return { sourceRunId: str(x.source_run_id) ?? "", snapshotSha256: str(x.snapshot_sha256) }; }),
+    userCorrection: str(raw.user_correction) ?? "",
+  };
+}
+
+// ---- automatic save status (research-progress-save/1, M3) ----
+export type ProgressSaveStatus = "WAITING" | "PENDING" | "SAVED" | "FAILED" | "DELETED" | "NOT_ENABLED" | "UNAVAILABLE";
+const SAVE_STATUSES: readonly string[] = ["WAITING", "PENDING", "SAVED", "FAILED", "DELETED", "NOT_ENABLED", "UNAVAILABLE"];
+export interface ProgressSaveView {
+  runId: string; projectId: string | null; enabled: boolean; saved: boolean;
+  status: ProgressSaveStatus | "UNKNOWN"; errorCode: string | null;
+  /** "automatic" | "manual" when the server reports it; null otherwise (never assumed automatic). */
+  saveOrigin: string | null;
+}
+
+export function parseProgressSave(value: unknown): ProgressSaveView {
+  const raw = obj(value);
+  if (raw.schema_version !== "research-progress-save/1") throw new ContractError("不支持的保存状态格式：" + String(raw.schema_version));
+  if (raw.trusted_as_evidence !== false) throw new ContractError("保存状态的 trusted_as_evidence 应为 false。");
+  const status = str(raw.status);
+  return {
+    runId: str(raw.run_id) ?? "", projectId: str(raw.project_id),
+    enabled: raw.enabled === true, saved: raw.saved === true,
+    status: status && SAVE_STATUSES.includes(status) ? status as ProgressSaveStatus : "UNKNOWN",
+    errorCode: str(raw.error_code), saveOrigin: str(raw.save_origin),
   };
 }
 

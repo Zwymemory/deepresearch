@@ -9,7 +9,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ApiContext } from "../api/endpoints";
-import { createResumeContext, deleteProgress, discoverProject, getResumeContext, listProgress, progressErrorText, saveProgress } from "../api/progress";
+import { createResumeContext, deleteProgress, discoverProject, getResumeContext, listProgress, progressErrorText, saveProgress, correctProgress } from "../api/progress";
 import { recordKey, type ProgressSnapshot, type ResumeContext } from "../domain/progressMemory";
 
 const LOADED_STORE = "deepresearch.react.loadedProgressContext";
@@ -20,7 +20,9 @@ export type LoadState =
   | { state: "loading"; projectId: string }
   | { state: "loaded"; context: ResumeContext; recovered: boolean;
       /** A saved snapshot of this project was deleted after loading: the pair must be reloaded before Continue. */
-      sourceDeleted?: boolean }
+      sourceDeleted?: boolean;
+      /** A correction note of this project changed after loading: reload so the next session uses it. */
+      sourceCorrected?: boolean }
   | { state: "failed"; projectId: string; message: string; maybeCreated: boolean };
 
 interface StoredLoad { scope: string; projectId: string; targetSessionId: string }
@@ -128,6 +130,29 @@ export function useNotebook({ enabled, ctx, scope, notebookOpen, run }: {
     }
   }, [ctx, queryClient, scope]);
 
+  // ---- user correction note (annotation only; never edits verified facts) ----
+  const [correcting, setCorrecting] = useState<string | null>(null);
+  const [correctError, setCorrectError] = useState<{ key: string; message: string } | null>(null);
+  const correct = useCallback(async (record: ProgressSnapshot, note: string) => {
+    const key = recordKey(record.projectId, record.sourceRunId);
+    setCorrecting(key);
+    setCorrectError(null);
+    try {
+      const updated = await correctProgress(ctx, record.projectId, record.sourceRunId, note);
+      queryClient.setQueryData<{ items: ProgressSnapshot[]; candidateLimit: number | null }>(["progress-list", scope], (old) =>
+        old ? { ...old, items: old.items.map((i) => recordKey(i.projectId, i.sourceRunId) === key ? updated : i) } : old);
+      void queryClient.invalidateQueries({ queryKey: ["progress-list", scope] });
+      // A loaded copy of this project is now stale: require an explicit reload before Continue.
+      setLoad((current) => current.state === "loaded" && current.context.projectId === record.projectId ? { ...current, sourceCorrected: true } : current);
+      return true;
+    } catch (error) {
+      setCorrectError({ key, message: progressErrorText(error, "correct") });
+      return false;
+    } finally {
+      setCorrecting(null);
+    }
+  }, [ctx, queryClient, scope]);
+
   // Anything loaded under another identity is never shown.
   const visibleLoad: LoadState = load.scope && load.scope !== scope ? { state: "idle" } : load;
 
@@ -141,6 +166,7 @@ export function useNotebook({ enabled, ctx, scope, notebookOpen, run }: {
     save: (saveKey && saves[saveKey]) || { state: "idle" as const }, onSave: save,
     load: visibleLoad, loadNewSession, clearLoaded,
     deleting, deleteError, remove,
+    correcting, correctError, correct,
   };
 }
 

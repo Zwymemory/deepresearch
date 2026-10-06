@@ -11,6 +11,7 @@
     success（默认）| insufficient | failed | budget | slow | disconnect | unknown | noweb | langgraph | evidence-disabled
     | memory-oversize | memory-load-error | memory-unavailable | memory-revoked
 
+autosave-off / autosave-fail：自动保存状态（M3）的“未启用 / 失败”界面检查；默认在运行结束后约 1.5 秒自动保存。
 memory-unavailable / memory-revoked 只模拟“继续研究”（researchProjectId）的拒绝形状，用于界面检查；
 真实的选择、核对与规划输入只能在后端链路上验证。
 
@@ -327,7 +328,7 @@ def progress_project(run) -> str:
     return "preview-project-" + run.id
 
 
-def progress_snapshot(run) -> dict:
+def progress_snapshot(run, origin: str = "manual") -> dict:
     view = run.view()
     final = view.get("finalResponse") or {}
     unresolved = [{"task_id": g.get("task_id"), "goal": g.get("text") or g.get("task_id") or "未命名目标", "status": "blocked",
@@ -340,6 +341,7 @@ def progress_snapshot(run) -> dict:
     return {"schema_version": "research-progress/1", "context_kind": "prior_progress", "trusted_as_evidence": False,
             "project_id": progress_project(run), "source_run_id": run.id, "source_session_id": run.session,
             "original_goal": "（演示）" + (run.question or "原始问题"), "run_status": view["status"],
+            "current_question": run.question, "save_origin": origin, "historical_completed_work": [], "prior_memory_refs": [], "user_correction": "",
             "completed_work": [{"task_id": "task-done", "goal": "确认 SSE 断线恢复机制", "status": "done", "completion_verified": True, "gaps": []}]
             if view["status"] == "SUCCEEDED" else [],
             "unresolved_questions": unresolved,
@@ -347,6 +349,7 @@ def progress_snapshot(run) -> dict:
             "source_evidence": [{"evidence_id": "ev-web", "receipt_id": "read-web", "snapshot_sha256": "1" * 64, "source_id": "src-web"}],
             "source_claims": [{"claim_id": "claim-resume", "record_sha256": "2" * 64, "decision_status": "contested", "freshness": "fresh"}]}
 LOCK = threading.Lock()
+AUTO_SAVE: dict = {}   # run_id -> first terminal observation (monotonic), for the synthetic reconcile delay
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -414,7 +417,7 @@ class Handler(BaseHTTPRequestHandler):
         parts = [unquote(p) for p in parsed.path.strip("/").split("/")]
         if not self.path.startswith("/api/research/"):
             return False
-        is_memory = (len(parts) == 5 and parts[:3] == ["api", "research", "agents"] and parts[4] == "progress-project") \
+        is_memory = (len(parts) == 5 and parts[:3] == ["api", "research", "agents"] and parts[4] in ("progress-project", "progress-save")) \
             or parts[:3] == ["api", "research", "progress"] or (len(parts) >= 5 and parts[:3] == ["api", "research", "projects"])
         if not is_memory:
             return False
@@ -428,6 +431,29 @@ class Handler(BaseHTTPRequestHandler):
             run = self.owned(RUNS.get(parts[3]))
             if method != "GET" or not run or not run.agent:
                 self.send_json(404, {"error": "不存在或无权访问"})
+                return True
+            if parts[4] == "progress-save":
+                # 合成的自动保存状态（research-progress-save/1），只用于界面检查。
+                project = progress_project(run)
+                key = (self.owner(), project, run.id)
+                view = {"schema_version": "research-progress-save/1", "run_id": run.id, "project_id": project, "enabled": True,
+                        "saved": False, "status": "WAITING", "error_code": None, "trusted_as_evidence": False}
+                if self.scenario() == "autosave-off":
+                    view.update(enabled=False, status="NOT_ENABLED")
+                elif run.terminal():
+                    first = AUTO_SAVE.setdefault(run.id, time.monotonic())
+                    if self.scenario() == "autosave-fail":
+                        view.update(status="FAILED", error_code="PROGRESS_SAVE_FAILED")
+                    elif key in PROGRESS:
+                        view.update(status="SAVED", saved=True, save_origin=PROGRESS[key][1].get("save_origin"))
+                    elif time.monotonic() - first >= 1.5:
+                        with LOCK:
+                            SAVE_SEQ[0] += 1
+                            PROGRESS[key] = (SAVE_SEQ[0], progress_snapshot(run, "automatic"))
+                        view.update(status="SAVED", saved=True, save_origin="automatic")
+                    else:
+                        view.update(status="PENDING")
+                self.send_json(200, view)
                 return True
             self.send_json(200, {"project_id": progress_project(run), "run_id": run.id})
             return True
@@ -453,6 +479,17 @@ class Handler(BaseHTTPRequestHandler):
                         SAVE_SEQ[0] += 1; seq = SAVE_SEQ[0]
                     PROGRESS[key] = (seq, snap)
                 self.send_json(200, snap)
+            elif method == "PATCH":
+                note = self.body().get("note")
+                saved = PROGRESS.get(key)
+                if not isinstance(note, str) or len(note) > 2000:
+                    self.send_json(400, {"error": "纠正说明最多2000字符"})
+                elif not saved:
+                    self.send_json(404, {"error": "不存在或无权访问"})
+                else:
+                    snap = dict(saved[1], user_correction=note)
+                    PROGRESS[key] = (saved[0], snap)
+                    self.send_json(200, snap)
             elif method == "GET":
                 saved = PROGRESS.get(key)
                 self.send_json(200, saved[1]) if saved else self.send_json(404, {"error": "不存在或无权访问"})
@@ -494,6 +531,10 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         if not self.memory_route("DELETE"):
+            self.send_json(404, {"error": "预览服务器未模拟该路径"})
+
+    def do_PATCH(self):
+        if not self.memory_route("PATCH"):
             self.send_json(404, {"error": "预览服务器未模拟该路径"})
 
     def do_GET(self):

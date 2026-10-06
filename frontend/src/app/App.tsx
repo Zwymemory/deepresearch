@@ -26,7 +26,10 @@ import { useLiveResearch, type Notify } from "../live/useLiveResearch";
 import { Icon } from "../ui/Icon";
 import { MemoryNote } from "../features/memory/MemoryNote";
 import { SummaryDisclosure, type SummaryRead } from "../features/memory/SummaryDisclosure";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AutoSaveStatus, type AutoSaveRead } from "../features/memory/AutoSaveStatus";
+import { getProgressSave } from "../api/progress";
+import type { ProgressSaveView } from "../domain/progressMemory";
 import { getContextSummary } from "../api/endpoints";
 import { friendlyError, type ApiError } from "../api/http";
 import { parseContextSummary, type ContextSummary } from "../domain/contextSummary";
@@ -109,16 +112,17 @@ export function App() {
   const pairScope = demoMode ? "demo" : live.scope;
   // The pair stays valid only while the same load is current, in the same identity scope, with no deleted source.
   const activeContinuation = continuation && continuation.scope === pairScope && activeLoad.state === "loaded"
-    && !activeLoad.sourceDeleted && activeLoad.context.projectId === continuation.projectId
+    && !activeLoad.sourceDeleted && !activeLoad.sourceCorrected && activeLoad.context.projectId === continuation.projectId
     && activeLoad.context.targetSessionId === continuation.sessionId ? continuation : null;
   const continueProject = (projectId: string) => {
-    if (activeLoad.state !== "loaded" || activeLoad.sourceDeleted || activeLoad.context.projectId !== projectId) return;
+    if (activeLoad.state !== "loaded" || activeLoad.sourceDeleted || activeLoad.sourceCorrected || activeLoad.context.projectId !== projectId) return;
     const { context } = activeLoad;
     setContinuation({
       scope: pairScope, projectId: context.projectId, sessionId: context.targetSessionId, preview: demoMode,
       goals: [...new Set(context.progress.map((p) => p.originalGoal))],
       unresolved: context.progress.flatMap((p) => p.unresolvedQuestions.map((u) => ({ goal: u.goal, gaps: u.gaps, criteria: u.criteria.map((c) => c.text) }))),
       nextSteps: [...new Set(context.progress.flatMap((p) => p.nextSteps))],
+      corrections: context.progress.map((p) => p.userCorrection).filter(Boolean),
     });
     live.clearRejection();
     setInspect(null); setView("entry"); window.scrollTo({ top: 0 });
@@ -282,7 +286,7 @@ export function App() {
     const e = notebook.eligibility;
     return { eligibility: e.state, reason: e.reason, state: notebook.save.state,
       message: notebook.save.state === "failed" ? notebook.save.message : undefined, preview: false,
-      onSave: () => { void notebook.onSave(); }, onOpenNotebook: openArchive };
+      onSave: () => { void notebook.onSave().then(() => queryClient.invalidateQueries({ queryKey: ["progress-save", live.scope] })); }, onOpenNotebook: openArchive };
   };
 
   // The archive is a full view; it remembers which research view it was opened from.
@@ -344,6 +348,29 @@ export function App() {
     : { state: "loading" };
   const summary = summaryRead ? <SummaryDisclosure read={summaryRead} /> : null;
 
+  // Memory M3: automatic progress-save status (read-only; the page never starts an automatic save).
+  // Polled every 2 s only while a terminal run is PENDING, at most 30 reads; re-read on each
+  // RESEARCH_PROGRESS_AUTO_SAVE event. Scoped by identity like every other run read.
+  const queryClient = useQueryClient();
+  const autoSaveEvents = run?.events.filter((e) => e.type === "RESEARCH_PROGRESS_AUTO_SAVE").length ?? 0;
+  const autoSaveKey = ["progress-save", live.scope, run?.runId ?? "", terminal, autoSaveEvents] as const;
+  const autoSaveQuery = useQuery<ProgressSaveView>({
+    queryKey: autoSaveKey,
+    enabled: !demoMode && !!run?.runId && run.mode === "agent" && !!live.identity.token && view === "report",
+    retry: (count, error) => count < 1 && ((error as ApiError).status == null || (error as ApiError).status! >= 500),
+    staleTime: Infinity, refetchOnWindowFocus: false,
+    placeholderData: (previous, previousQuery) => previousQuery?.queryKey[1] === live.scope && previousQuery?.queryKey[2] === run?.runId ? previous : undefined,
+    refetchInterval: (query) => terminal && query.state.data?.status === "PENDING" && query.state.dataUpdateCount < 30 ? 2000 : false,
+    queryFn: ({ signal }) => getProgressSave(live.ctx, run!.runId, signal),
+  });
+  const savedNow = autoSaveQuery.data?.status === "SAVED";
+  useEffect(() => { if (savedNow) void queryClient.invalidateQueries({ queryKey: ["progress-list", live.scope] }); }, [savedNow, queryClient, live.scope]);
+  const autoSaveRead: AutoSaveRead | null = demoMode || !run?.runId || run.mode !== "agent" ? null
+    : autoSaveQuery.data ? { state: "ok", view: autoSaveQuery.data, exhausted: autoSaveQuery.data.status === "PENDING" && (queryClient.getQueryState(autoSaveKey)?.dataUpdateCount ?? 0) >= 30 }
+    : autoSaveQuery.error ? ((autoSaveQuery.error as ApiError).status === 404 ? { state: "absent" } : { state: "error", message: friendlyError(autoSaveQuery.error, "status") })
+    : { state: "loading" };
+  const autoSave = autoSaveRead ? <AutoSaveStatus read={autoSaveRead} /> : null;
+
   const active = inspect != null ? citations[inspect - 1] ?? null : null;
   const compareA = compare ? citations[compare.a - 1] : null;
   const compareB = compare ? citations[compare.b - 1] : null;
@@ -404,7 +431,7 @@ export function App() {
                   lastEventId={run.lastEventId} onCite={openCitation} onOpenSources={() => setDialog("sources")} onNew={goHome}
                   onRetryQuestion={retryQuestion} onFollowUp={followUp} onReady={setReportReady}
                   evidence={evidence} onCompareDisagreement={openDisagreement}
-                  save={reportSave()} memoryNote={memoryNote} summary={summary} />
+                  save={reportSave()} memoryNote={memoryNote} summary={summary} autoSave={autoSave} />
               ) : null}
               {!liveBlocked && view === "compare" && compare && compareA && compareB ? (
                 <CompareView statement={statementsFor(blocks, compare.a)[0] ?? null} a={compareA} b={compareB} all={citations} demo={demoMode}
@@ -422,13 +449,21 @@ export function App() {
                       sourceDeleted: l.sourceDeleted || l.context.projectId === record.projectId } : l);
                     return true;
                   }} deletingKey={null} deleteError={null}
-                  onOpenRecent={() => setDialog("recent")} back={archiveBack} initialOpen={init.openRecord} onContinue={continueProject} />
+                  onOpenRecent={() => setDialog("recent")} back={archiveBack} initialOpen={init.openRecord} onContinue={continueProject}
+                  onCorrect={async (record, note) => {
+                    // Preview only: annotate the synthetic record in this page; a loaded copy becomes stale.
+                    const key = recordKey(record.projectId, record.sourceRunId);
+                    setPreviewItems((rows) => rows.map((r) => recordKey(r.projectId, r.sourceRunId) === key ? { ...r, userCorrection: note } : r));
+                    setPreviewLoad((l) => l.state === "loaded" && l.context.projectId === record.projectId ? { ...l, sourceCorrected: true } : l);
+                    return true;
+                  }} />
               ) : (
                 <ArchiveView key={"live:" + live.scope} mode="live" needsIdentity={!live.identity.token} onOpenIdentity={() => setDialog("identity")}
                   items={notebook.list.items} loading={notebook.list.loading} error={notebook.list.error} candidateLimit={notebook.list.candidateLimit}
                   onRefresh={notebook.list.refetch} load={notebook.load} onLoad={(projectId) => { void notebook.loadNewSession(projectId); }}
                   onClearLoaded={notebook.clearLoaded} onDelete={notebook.remove} deletingKey={notebook.deleting} deleteError={notebook.deleteError}
-                  onOpenRecent={() => setDialog("recent")} back={archiveBack} onContinue={continueProject} />
+                  onOpenRecent={() => setDialog("recent")} back={archiveBack} onContinue={continueProject}
+                  onCorrect={notebook.correct} correctingKey={notebook.correcting} correctError={notebook.correctError} />
               )) : null}
               {!liveBlocked && view === "disagreement" && disagreements[disagreementIndex] ? (
                 <RecordedDisagreementView disagreement={disagreements[disagreementIndex]} demo={demoMode} onBack={endDisagreement} />

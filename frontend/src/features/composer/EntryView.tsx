@@ -31,6 +31,12 @@ function SourceProject({ continuation, onClear }: { continuation: Continuation; 
           <ul className="nb-gaps">{continuation.nextSteps.map((n, i) => <li key={i}>{n}</li>)}</ul>
         </div>
       ) : null}
+      {continuation.corrections.length ? (
+        <div>
+          <p className="insp-label">纠正说明（用户批注）</p>
+          <ul className="nb-gaps">{continuation.corrections.map((c, i) => <li key={i} style={{ whiteSpace: "pre-wrap" }}>{c}</li>)}</ul>
+        </div>
+      ) : null}
       <p className="note">这是保存的历史记录，尚未传入模型。提交后，服务端会重新核对并选择该项目的历史进度作为规划参考（不可信的历史上下文，不是新证据）；页面无法确认模型是否收到或使用了它。</p>
       <details className="note">
         <summary style={{ cursor: "pointer", width: "fit-content" }}>技术详情</summary>

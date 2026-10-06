@@ -49,7 +49,7 @@ function RunInfo({ run }: { run: RunState }) {
   );
 }
 
-export function ReportView({ run, blocks, citations, modeLabel, active, onCite, onOpenSources, onNew, onFollowUp, onReady, demo, onRetryQuestion, lastEventId, evidence, onCompareDisagreement, save, memoryNote = null, summary = null }: {
+export function ReportView({ run, blocks, citations, modeLabel, active, onCite, onOpenSources, onNew, onFollowUp, onReady, demo, onRetryQuestion, lastEventId, evidence, onCompareDisagreement, save, memoryNote = null, summary = null, autoSave = null }: {
   run: RunState; blocks: Block[]; citations: NormalizedCitation[]; modeLabel: string; active: number | null;
   onCite: CiteHandlers["onCite"]; onOpenSources: () => void; onNew: () => void; onFollowUp: (question: string) => void;
   demo: boolean;
@@ -62,6 +62,8 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
   memoryNote?: ReactNode;
   /** Read-only project summary used by this run (memory M2). */
   summary?: ReactNode;
+  /** Read-only automatic progress-save status (memory M3). */
+  autoSave?: ReactNode;
   /** Autonomous runs (or demo): the public evidence record. null for modes without a projection. */
   evidence?: { result: EvidenceViewResult | null; loading: boolean } | null;
   onCompareDisagreement?: (index: number) => void;
@@ -133,6 +135,7 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
               : save.state === "saving" ? "正在保存，等待服务端确认…" : null}
           </p>
         ) : null}
+        {autoSave}
 
         <h1 id="report-question" className="report-q" tabIndex={-1}>{run.question}</h1>
         <div className="outcome">
