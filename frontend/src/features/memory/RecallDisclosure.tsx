@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import type { RecallView } from "../../domain/memoryRecall";
 import { CLAIM_STATUS } from "../../domain/progressMemory";
-import { recallHeadline } from "./recallText";
+import { cautionText, recallHeadline } from "./recallText";
 
 const short = (id: string) => (id.length > 16 ? id.slice(0, 8) + "…" + id.slice(-6) : id);
 
@@ -31,13 +31,13 @@ export function RecallDisclosure({ read }: { read: RecallRead }) {
               <h4 className="insp-label">参考 {i + 1}：{s ? s.originalGoal : "无法确认该记录的内容"}</h4>
               {r.snapshotError ? <p className="missing">{r.snapshotError}</p> : null}
               {s?.currentQuestion && s.currentQuestion !== s.originalGoal ? <p className="note">当时的问题：{s.currentQuestion}</p> : null}
-              <p className="note">相关原因：关键词 {r.reason.matchedTerms.length ? r.reason.matchedTerms.map((t) => `“${t}”`).join("、") : "（未记录）"}{r.reason.method ? `（${r.reason.method}）` : ""}</p>
+              <p className="note">相关原因：问题中的关键词 {r.reason.matchedTerms.length ? r.reason.matchedTerms.map((t) => `“${t}”`).join("、") : "（未记录）"} 与这条旧研究相同</p>
               <ul className="nb-gaps">
                 <li>适用性：{r.applicability.status === "RECHECK_REQUIRED" ? "需要重新核查" : r.applicability.status}</li>
                 {r.applicability.mentionedVersions.length ? <li>涉及版本：{r.applicability.mentionedVersions.join("、")}（与本次问题的版本可能不同）</li> : null}
-                {r.applicability.cautions.map((c, j) => <li key={j}>注意：{c}</li>)}
-                <li>时间：{r.applicability.time?.status === "unknown" || !r.applicability.time ? `未知${r.applicability.time?.reason ? `（${r.applicability.time.reason}）` : ""}` : String(r.applicability.time.value)}</li>
-                <li>条件：{r.applicability.conditions?.status === "unknown" || !r.applicability.conditions ? `未知${r.applicability.conditions?.reason ? `（${r.applicability.conditions.reason}）` : ""}` : String(r.applicability.conditions.value)}</li>
+                {[...new Set(r.applicability.cautions.map(cautionText))].map((c, j) => <li key={j}>注意：{c}</li>)}
+                <li>时间：{r.applicability.time?.status === "unknown" || !r.applicability.time ? "未知，需要重新核查" : String(r.applicability.time.value)}</li>
+                <li>条件：{r.applicability.conditions?.status === "unknown" || !r.applicability.conditions ? "未知，需要重新核查" : String(r.applicability.conditions.value)}</li>
                 {disputed.length ? <li className="recall-dispute">有争议：{disputed.length} 条当时的论断仍有争议（{disputed.map((c) => CLAIM_STATUS[c.decisionStatus]?.label ?? c.decisionStatus).join("、")}），不能当作结论。</li> : null}
                 {s?.userCorrection ? <li>用户纠正说明：{s.userCorrection}</li> : null}
               </ul>
@@ -58,7 +58,12 @@ export function RecallDisclosure({ read }: { read: RecallRead }) {
             <dt>planner_input_recorded</dt><dd className="source-id">{String(v.plannerInputRecorded)}</dd>
             <dt>runId</dt><dd className="source-id">{v.runId}</dd>
             {v.selection ? <><dt>selection</dt><dd className="source-id">{`${v.selection.method} 候选上限 ${v.selection.candidateLimit ?? "—"} · 最多 ${v.selection.maxRecords ?? "—"} 条 · ${v.selection.limitBytes ?? "—"} 字节 · 不相关 ${v.selection.unrelated} · 不可访问 ${v.selection.inaccessible} · 重复 ${v.selection.duplicates} · 省略 ${v.selection.omitted}`}</dd></> : null}
-            {v.records.map((r, i) => <Fragment key={r.sourceRunId || i}><dt>{short(r.sourceRunId)}</dt><dd className="source-id">{r.sourceProjectId} · {r.snapshotSha256.slice(0, 16)}… · score {r.reason.score ?? "—"}</dd></Fragment>)}
+            {v.records.map((r, i) => <Fragment key={r.sourceRunId || i}><dt>{short(r.sourceRunId)}</dt><dd className="source-id">
+              {r.sourceProjectId} · {r.snapshotSha256.slice(0, 16)}… · {r.reason.method || "—"} score {r.reason.score ?? "—"}
+              {r.applicability.cautions.length ? ` · cautions ${r.applicability.cautions.join(", ")}` : ""}
+              {r.applicability.time?.reason ? ` · time: ${r.applicability.time.reason}` : ""}
+              {r.applicability.conditions?.reason ? ` · conditions: ${r.applicability.conditions.reason}` : ""}
+            </dd></Fragment>)}
           </dl>
         </details>
       </div>

@@ -2,7 +2,7 @@
 // (ResearchRecallService.view); recorded native responses will be checked at native capture.
 import { describe, expect, it } from "vitest";
 import { newPending } from "../api/pending";
-import { recallHeadline } from "../features/memory/recallText";
+import { cautionText, recallHeadline } from "../features/memory/recallText";
 import { parseRecall } from "./memoryRecall";
 
 const snapshot = {
@@ -51,6 +51,14 @@ describe("recall view", () => {
     expect(usedNoRecord.plannerInputRecorded).toBe(false);
     expect(recallHeadline(usedNoRecord)).not.toContain("已有");
     expect(parseRecall(view({ status: "SELECTED", planner_input_recorded: true })).plannerInputRecorded).toBe(false);
+  });
+
+  it("caution codes read as familiar Chinese; unknown codes stay honest", () => {
+    expect(cautionText("VERSION_DIFFERENCE")).toBe("旧研究涉及的版本与本次问题不同");
+    expect(cautionText("TIME_UNKNOWN")).toBe("记录的有效时间未知");
+    expect(cautionText("DISPUTED_OR_UNVERIFIED")).toContain("不能当作结论");
+    expect(cautionText("SOMETHING_NEW")).toBe("有一条未识别的适用性提示，需要重新核查");
+    for (const code of ["REVERIFY_BEFORE_USE", "CONDITIONS_UNKNOWN", "VERSION_APPLICABILITY_UNKNOWN"]) expect(cautionText(code)).not.toMatch(/[A-Z_]{4,}/);
   });
 
   it("EMPTY and DISABLED say so plainly", () => {

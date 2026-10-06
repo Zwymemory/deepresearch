@@ -14,3 +14,15 @@ export function recallHeadline(v: RecallView): string {
     default: return "无法确认本次运行的历史研究参考状态。";
   }
 }
+
+/** Familiar Chinese for known applicability caution codes; raw codes stay in technical details. */
+const CAUTIONS: Record<string, string> = {
+  REVERIFY_BEFORE_USE: "使用前需要重新核查",
+  TIME_UNKNOWN: "记录的有效时间未知",
+  CONDITIONS_UNKNOWN: "适用条件未知",
+  VERSION_DIFFERENCE: "旧研究涉及的版本与本次问题不同",
+  VERSION_APPLICABILITY_UNKNOWN: "不确定旧结论是否适用于当前版本",
+  DISPUTED_OR_UNVERIFIED: "其中有争议或未核实的内容，不能当作结论",
+};
+/** Known code → Chinese; anything else → an honest generic note (the raw value is in technical details). */
+export const cautionText = (code: string) => CAUTIONS[code] ?? "有一条未识别的适用性提示，需要重新核查";
