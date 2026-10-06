@@ -11,7 +11,7 @@ public class AgentWorkflowController {
     private final AgentRunService agents;
     public AgentWorkflowController(AgentRunService agents) { this.agents=agents; }
     @PostMapping
-    public ResponseEntity<WorkflowDtos.Accepted> create(@Valid @RequestBody WorkflowDtos.CreateRequest request,
+    public ResponseEntity<WorkflowDtos.Accepted> create(@Valid @RequestBody AgentCreateRequest request,
                                                      @RequestHeader("Idempotency-Key") String key) {
         var accepted=agents.create(request,key);
         return ResponseEntity.status(HttpStatus.ACCEPTED)

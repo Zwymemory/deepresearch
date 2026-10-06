@@ -20,6 +20,13 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler(com.deepresearch.workflow.ResearchMemoryException.class)
+    public ResponseEntity<Map<String, Object>> handleMemory(
+            com.deepresearch.workflow.ResearchMemoryException e) {
+        return ResponseEntity.status(e.getStatusCode()).body(Map.of(
+                "errorCode", e.code(), "requiresReselection", e.requiresReselection()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException e) {
         String msg = e.getBindingResult().getFieldErrors().stream()
@@ -33,6 +40,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleMissingHeader(MissingRequestHeaderException e) {
         return ResponseEntity.badRequest().body(Map.of(
                 "error", "缺少请求头：" + e.getHeaderName()));
+    }
+
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, String>> handleUnreadable(
+            org.springframework.http.converter.HttpMessageNotReadableException e) {
+        return ResponseEntity.badRequest().body(Map.of("error", "请求 JSON 或字段无效"));
     }
 
     @ExceptionHandler(ResponseStatusException.class)

@@ -25,6 +25,7 @@ from .graph import DurableResearchGraph, GraphRuntime
 from .mcp import HttpGrantTokenProvider, HttpMcpToolClient, ReceiptCachingToolClient
 from .model import OpenAIWorkflowModel
 from .ports import RepositoryEventSink
+from .progress_memory import HttpProgressMemoryClient
 from .repository import PostgresWorkflowRepository, checkpoint_pool
 from .runner import WorkflowRunner
 from .settings import Settings, harden_langgraph_deserialization
@@ -97,6 +98,10 @@ class ServiceRuntime:
             service_tokens=service_tokens,
         )
         events = RepositoryEventSink(repository)
+        progress_memory = HttpProgressMemoryClient(
+            client=http_client, java_base_url=self.settings.java_base_url,
+            service_tokens=service_tokens, timeout_seconds=self.settings.http_timeout_seconds,
+        )
         control_plane = HttpControlPlaneClient(
             client=http_client,
             java_base_url=self.settings.java_base_url,
@@ -107,7 +112,8 @@ class ServiceRuntime:
         def graph_factory(claim_token: str, budget: RunBudget) -> Any:
             if isinstance(budget,AgentRunBudget):
                 return AutonomousResearchGraph(model=agent_model,tools=tools,repository=repository,
-                    ledger=ledger,evidence=evidence,events=events,budget=budget,claim_token=claim_token).compile(checkpointer=saver)
+                    ledger=ledger,evidence=evidence,events=events,budget=budget,
+                    claim_token=claim_token,progress_memory=progress_memory).compile(checkpointer=saver)
             return DurableResearchGraph(
                 model=model,
                 tools=tools,
@@ -123,6 +129,7 @@ class ServiceRuntime:
             control_plane=control_plane,
             graph_factory=graph_factory,
             settings=self.settings,
+            progress_memory=progress_memory,
         )
         self.runner = runner
         self.runner_task = asyncio.create_task(runner.serve_forever(), name="workflow-runner")

@@ -276,11 +276,14 @@ public class WorkflowRepository {
     @Transactional
     public boolean finishDify(String runId, WorkflowStatus status, String responseJson,
                               String usageJson, String errorCode, String answer) {
+        RunRow discovered = find(runId).orElse(null);
+        if (discovered == null) return false;
+        lockSessionAndRun(runId, discovered.sessionId(), discovered.userId());
         int changed = jdbcTemplate.update("""
                 UPDATE agent_workflow_run SET status = ?, stage = ?, final_response = CAST(? AS jsonb),
                     usage = CAST(? AS jsonb), error_code = ?, error_message = ?, updated_at = now(), version = version + 1
                 WHERE run_id = ? AND status = 'DIFY_WORKING' AND cancel_requested = false
-                  AND deadline_at > now()
+                  AND deadline_at > clock_timestamp()
                   AND EXISTS (SELECT 1 FROM dify_workflow_run WHERE run_id = ? AND dispatch_state = 'BOUND')
                 """, status.name(), status.name(), responseJson, usageJson, errorCode,
                 errorCode == null ? null : DifyFailureCodes.message(errorCode), runId, runId);
@@ -758,13 +761,30 @@ public class WorkflowRepository {
                     error_code = ?, error_message = ?, finalize_fingerprint = ?,
                     finalized_claim_token = ?, version = version + 1, updated_at = now()
                 WHERE run_id = ? AND claim_token = ?
-                  AND lease_until > now()
+                  AND lease_until > clock_timestamp()
                   AND cancel_requested = FALSE
                   AND status NOT IN ('SUCCEEDED','INSUFFICIENT_EVIDENCE','FAILED','CANCELLED','TIMED_OUT','BUDGET_EXCEEDED')
                   AND (? NOT IN ('SUCCEEDED','INSUFFICIENT_EVIDENCE') OR status = 'FINALIZING')
                 """, status.name(), status.name(), finalResponseJson, usageJson,
                 errorCode, errorMessage, finalizeFingerprint, claimToken,
                 runId, claimToken, status.name());
+    }
+
+    /** Common finalization prefix: never acquire the first session lock after a run lock. */
+    public void lockSessionAndRun(String runId, String sessionId, String userId) {
+        if (jdbcTemplate.queryForList("""
+                SELECT session_id FROM agent_session WHERE session_id=? AND user_id=? FOR UPDATE
+                """, sessionId, userId).isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "workflow 不存在");
+        }
+        if (jdbcTemplate.queryForList("""
+                SELECT run_id FROM agent_workflow_run
+                WHERE run_id=? AND session_id=? AND user_id=? FOR UPDATE
+                """, runId, sessionId, userId).isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "workflow 不存在");
+        }
     }
 
     public void insertFinalMessages(String runId, String sessionId, String userId,

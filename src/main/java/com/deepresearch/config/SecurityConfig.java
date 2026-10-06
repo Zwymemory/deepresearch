@@ -62,7 +62,8 @@ public class SecurityConfig {
                             "/internal/agent/evidence/investigations",
                             "/internal/agent/evidence/reports",
                             "/internal/agent/evidence/publish",
-                            "/internal/agent/publication").permitAll();
+                            "/internal/agent/publication",
+                            "/internal/agent/memory/validate").permitAll();
                     auth.requestMatchers("/internal/**").denyAll();
                     // Dify 只能以普通 API 身份读取已裁剪证据；禁止匿名访问。
                     auth.requestMatchers(HttpMethod.POST,

@@ -27,6 +27,11 @@ public final class WorkflowDtos {
             @Size(max = 3, message = "requestedTools 最多 3 项")
             List<String> requestedTools
     ) {
+        @com.fasterxml.jackson.annotation.JsonAnySetter
+        public void rejectProjectSelection(String key, Object value) {
+            if ("researchProjectId".equals(key))
+                throw new IllegalArgumentException("RESEARCH_MEMORY_REQUEST_INVALID");
+        }
     }
 
     public record Accepted(

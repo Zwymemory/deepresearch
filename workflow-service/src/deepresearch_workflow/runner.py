@@ -51,12 +51,14 @@ class WorkflowRunner:
         graph_factory: Callable[[str, RunBudget], Any],
         settings: Settings,
         agent_ledger_factory: Callable | None = None,
+        progress_memory=None,
     ) -> None:
         self._repository = repository
         self._control_plane = control_plane
         self._graph_factory = graph_factory
         self._settings = settings
         self._agent_ledger_factory = agent_ledger_factory
+        self._progress_memory = progress_memory
         self._stop = asyncio.Event()
         self.active_runs = 0
         self.last_error_code: str | None = None
@@ -190,6 +192,45 @@ class WorkflowRunner:
                 "max_concurrency": budget.max_concurrency,
             }
             snapshot = await graph.aget_state(config)
+            if isinstance(budget, AgentRunBudget):
+                from .progress_memory import frozen_progress
+
+                current = frozen_progress(run.context_snapshot)
+                if snapshot.values and frozen_progress(
+                    snapshot.values.get("context_snapshot", {})
+                ) != current:
+                    raise WorkflowExecutionError(
+                        "Saved progress checkpoint differs from persisted selection",
+                        error_code="RESEARCH_MEMORY_INVALID",
+                    )
+                if current is not None:
+                    if self._progress_memory is None:
+                        raise WorkflowExecutionError(
+                            "Saved progress validator unavailable",
+                            error_code="RESEARCH_MEMORY_UNAVAILABLE",
+                        )
+                    # A completed graph may only need idempotent finalization; it sends no
+                    # further history/model request. Active/new checkpoints must revalidate.
+                    if not snapshot.values or snapshot.next:
+                        if run.deadline_at <= datetime.now(UTC):
+                            raise RunTimedOutError("workflow deadline elapsed")
+                        try:
+                            await self._progress_memory.validate(
+                                run.run_id, run.claim_token, run.context_snapshot
+                            )
+                        except WorkflowExecutionError:
+                            # Preserve lifecycle errors when they arise during the HTTP check.
+                            active, cancelled = await self._repository.assert_active_claim(
+                                run.run_id, run.claim_token
+                            )
+                            if cancelled:
+                                raise RunCancelledError(
+                                    "run cancelled during memory check") from None
+                            if not active:
+                                raise StaleClaimError("claim changed during memory check") from None
+                            if run.deadline_at <= datetime.now(UTC):
+                                raise RunTimedOutError("workflow deadline elapsed") from None
+                            raise
             graph_input: WorkflowState | None
             if snapshot.values:
                 claim_epoch = hashlib.sha256(run.claim_token.encode()).hexdigest()[:12]

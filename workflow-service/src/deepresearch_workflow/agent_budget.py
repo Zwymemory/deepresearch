@@ -482,9 +482,11 @@ class SqlAgentLedger:
 
 
 class AgentBudgetGateway:
-    def __init__(self, *, run_id, claim_token, budget, ledger, model: AgentModel, guard):
+    def __init__(self, *, run_id, claim_token, budget, ledger, model: AgentModel, guard,
+                 validate_memory=None):
         self.run_id, self.claim_token, self.budget = run_id, claim_token, budget
         self.ledger, self.model, self.guard = ledger, model, guard
+        self.validate_memory = validate_memory
 
     @staticmethod
     def classify_model_failure(
@@ -647,6 +649,21 @@ class AgentBudgetGateway:
         request_hash = hashlib.sha256(encoded_request).hexdigest()
         for _ in range(2):
             await self.guard()
+            # Revalidate on every planning attempt, including settled replay and retries.
+            # This local check is not an atomic check-and-send or a revocation permit.
+            if purpose == "DECISION" and "prior_progress" in request.payload:
+                if self.validate_memory is None:
+                    raise WorkflowExecutionError(
+                        "Saved progress validator unavailable",
+                        error_code="RESEARCH_MEMORY_UNAVAILABLE",
+                    )
+                try:
+                    await self.validate_memory()
+                except WorkflowExecutionError:
+                    # The validation wait may overlap cancellation, claim rotation or deadline.
+                    # Let the original lifecycle guard retain the correct terminal behavior.
+                    await self.guard()
+                    raise
             try:
                 reservation = await self.ledger.reserve(
                     self.run_id,

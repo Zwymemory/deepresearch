@@ -86,8 +86,22 @@ public class WorkflowService {
         return createWithEngine(request, idempotencyKey, "agent", "/api/research/agents");
     }
 
+    @Transactional
+    public Accepted createAutonomousWithProgress(CreateRequest request, String idempotencyKey,
+                                                String projectSelection, JsonNode priorProgress,
+                                                JsonNode progressBinding) {
+        return createWithEngine(request,idempotencyKey,"agent","/api/research/agents",
+                projectSelection,priorProgress,progressBinding);
+    }
+
     private Accepted createWithEngine(CreateRequest request, String idempotencyKey,
                                      String selectedEngine, String endpoint) {
+        return createWithEngine(request,idempotencyKey,selectedEngine,endpoint,null,null,null);
+    }
+
+    private Accepted createWithEngine(CreateRequest request, String idempotencyKey,
+                                     String selectedEngine, String endpoint, String projectSelection,
+                                     JsonNode priorProgress, JsonNode progressBinding) {
         requireEnabled();
         String userId = userContextService.currentUser();
         String key = validateKey(idempotencyKey);
@@ -101,6 +115,10 @@ public class WorkflowService {
             scopes = expanded.stream().sorted().toList();
         }
         String fingerprint = fingerprint(request, scopes);
+        if (projectSelection != null) {
+            fingerprint = ToolArgumentFingerprint.sha256(writeJson(Map.of(
+                    "request_fingerprint",fingerprint,"research_project_id",projectSelection)));
+        }
 
         WorkflowRepository.RunRow existing = repository.findByIdempotency(userId, endpoint, key).orElse(null);
         if (existing != null) {
@@ -118,6 +136,12 @@ public class WorkflowService {
         OffsetDateTime deadlineAt = OffsetDateTime.now(ZoneOffset.UTC)
                 .plus("agent".equals(selectedEngine) ? Duration.ofSeconds(180) : deadline);
         String contextJson = boundedContext(context);
+        if (priorProgress != null) {
+            var frozen=(com.fasterxml.jackson.databind.node.ObjectNode) json(contextJson);
+            frozen.set("prior_progress",priorProgress.deepCopy());
+            frozen.set("prior_progress_binding",progressBinding.deepCopy());
+            contextJson=writeJson(frozen);
+        }
         WorkflowRepository.NewRun newRun = new WorkflowRepository.NewRun(
                 runId, context.sessionId(), userId, request.question().trim(), contextJson,
                 endpoint, key, fingerprint, runId,
@@ -238,6 +262,9 @@ public class WorkflowService {
                     "引用校验失败不得发布候选答案或引用");
         }
         WorkflowRepository.RunRow row = repository.find(runId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "workflow 不存在"));
+        repository.lockSessionAndRun(runId, row.sessionId(), row.userId());
+        row = repository.find(runId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "workflow 不存在"));
         boolean agentRun="/api/research/agents".equals(row.endpoint());
         if (!agentRun) answer=answer.trim();
