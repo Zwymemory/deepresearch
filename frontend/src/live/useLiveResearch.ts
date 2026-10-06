@@ -20,7 +20,7 @@ import {
   type Identity, type RecentRun,
 } from "../api/identity";
 import { canSafelyRetry, loadPending, newPending, savePending, type CreateBody, type PendingCreate } from "../api/pending";
-import { applyEvent, applyView, emptyRun, isTerminal, mapLegacy, type RunState } from "../domain/runState";
+import { applyEvent, applyView, emptyRun, isTerminal, mapLegacy, needsTerminalSnapshot, type RunState } from "../domain/runState";
 import type { ExecutionMode, ToolName } from "../domain/types";
 import type { EvidenceViewResult } from "../domain/evidenceView";
 import { isMemoryCode, memoryErrorInfo, type MemoryRequest } from "../domain/researchMemory";
@@ -157,9 +157,11 @@ export function useLiveResearch(enabled: boolean, notify: Notify) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, ctx, current?.runId, identity.token, !!query.data, terminal, paused, runKey]);
 
-  // A terminal event can arrive before the snapshot that carries finalResponse. Tearing down the
-  // stream cancels its debounced refetch, so fetch the authoritative snapshot explicitly here.
-  const needsFinalSnapshot = terminal && !query.data?.finalResponse && !query.isFetching && !query.error;
+  // A terminal event can arrive before the snapshot that carries the final details. Tearing down the
+  // stream cancels its debounced refetch, so fetch the authoritative terminal snapshot explicitly here.
+  // Keyed on "a terminal GET was applied", not on finalResponse: a queued snapshot may already hold a
+  // blank finalResponse. One terminal GET settles it (no loop); a failed GET stops via query.error.
+  const needsFinalSnapshot = terminal && needsTerminalSnapshot(query.data) && !query.isFetching && !query.error;
   useEffect(() => {
     if (enabled && needsFinalSnapshot) void queryClient.refetchQueries({ queryKey: runKey, exact: true });
   }, [enabled, needsFinalSnapshot, queryClient, runKey]);

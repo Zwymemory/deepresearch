@@ -28,6 +28,12 @@ export interface RunState {
   usage: Usage | null;
   errorCode: string | null;
   errorMessage: string | null;
+  /**
+   * True once a status snapshot (GET) that itself reported a terminal status has been applied.
+   * A terminal SSE event alone is not enough: an earlier queued snapshot may already carry a
+   * blank finalResponse, so the presence of finalResponse cannot mean "final details loaded".
+   */
+  terminalSnapshot?: boolean;
   /** Single Agent only: selected session context (selection is not proof of model use). */
   memoryContext?: { summarySelected?: boolean; recentMessageCount?: number; selectedMemoryCount?: number; modelUseVerification?: string } | null;
 }
@@ -89,8 +95,12 @@ export function applyView(run: RunState, view: WorkflowView): RunState {
     finalResponse: view.finalResponse ?? next.finalResponse,
     usage: view.usage ?? next.usage,
     errorCode: view.errorCode ?? next.errorCode,
+    terminalSnapshot: isTerminal(view.status ?? "") || (!!next.terminalSnapshot && isTerminal(next.status)),
   };
 }
+
+/** The run is terminal but its authoritative terminal snapshot has not been read yet. */
+export const needsTerminalSnapshot = (run: RunState | null | undefined) => !!run && isTerminal(run.status) && !run.terminalSnapshot;
 
 /** Last stage actually entered; used to show where a non-successful run stopped. */
 export function lastReachedStage(run: RunState): string | null {
