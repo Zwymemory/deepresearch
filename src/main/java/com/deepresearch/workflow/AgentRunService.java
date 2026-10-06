@@ -20,10 +20,16 @@ public class AgentRunService {
     private final UserContextService users;
     private final JdbcTemplate jdbc;
     private final ResearchProgressSelectionService progress;
+    private final com.deepresearch.service.ConversationSummaryService summaries;
     @Autowired
     public AgentRunService(WorkflowService workflows, UserContextService users, JdbcTemplate jdbc,
+                           ResearchProgressSelectionService progress,
+                           com.deepresearch.service.ConversationSummaryService summaries) {
+        this.workflows=workflows; this.users=users; this.jdbc=jdbc; this.progress=progress; this.summaries=summaries;
+    }
+    public AgentRunService(WorkflowService workflows, UserContextService users, JdbcTemplate jdbc,
                            ResearchProgressSelectionService progress) {
-        this.workflows=workflows; this.users=users; this.jdbc=jdbc; this.progress=progress;
+        this(workflows,users,jdbc,progress,null);
     }
     public AgentRunService(WorkflowService workflows, UserContextService users, JdbcTemplate jdbc) {
         this(workflows,users,jdbc,null);
@@ -97,6 +103,10 @@ public class AgentRunService {
         }
         jdbc.update("INSERT INTO agent_research_run(run_id,project_id,tenant_id,owner_id) VALUES (?,?,?,?)",
                 accepted.runId(),project,principal.tenantId(),principal.userId());
+        if (summaries!=null) jdbc.update("""
+            UPDATE agent_workflow_run SET context_snapshot=jsonb_set(context_snapshot,'{project_summary_policy}',?::jsonb)
+            WHERE run_id=?
+            """,EvidenceJson.canonical(EvidenceJson.JSON.valueToTree(summaries.projectSummaryPolicy())),accepted.runId());
         jdbc.update("UPDATE agent_workflow_run SET budget=CAST(? AS jsonb) WHERE run_id=?", """
             {"runtime":"agent","maxTasks":16,"maxConcurrency":1,"maxRevisionRounds":2,
              "maxDecisionSteps":8,"maxModelCalls":16,"maxToolCalls":16,"deadlineSeconds":180,

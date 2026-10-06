@@ -17,6 +17,7 @@ from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from .agent_budget import SqlAgentLedger
 from .agent_model import OpenAIAgentModel
 from .agent_runtime import AutonomousResearchGraph
+from .project_summary import ProjectSummaryCoordinator, SqlProjectSummaryStore
 from .auth import ServiceJwtProvider
 from .control_plane import HttpControlPlaneClient
 from .domain import AgentRunBudget, RunBudget
@@ -109,11 +110,14 @@ class ServiceRuntime:
             timeout_seconds=self.settings.http_timeout_seconds,
         )
 
+        project_summaries = ProjectSummaryCoordinator(SqlProjectSummaryStore(repository))
+
         def graph_factory(claim_token: str, budget: RunBudget) -> Any:
             if isinstance(budget,AgentRunBudget):
                 return AutonomousResearchGraph(model=agent_model,tools=tools,repository=repository,
                     ledger=ledger,evidence=evidence,events=events,budget=budget,
-                    claim_token=claim_token,progress_memory=progress_memory).compile(checkpointer=saver)
+                    claim_token=claim_token,progress_memory=progress_memory,
+                    project_summaries=project_summaries).compile(checkpointer=saver)
             return DurableResearchGraph(
                 model=model,
                 tools=tools,

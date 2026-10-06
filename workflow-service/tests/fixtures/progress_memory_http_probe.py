@@ -17,6 +17,7 @@ from deepresearch_workflow.domain import ToolExecutionResult
 from deepresearch_workflow.evidence_client import HttpEvidenceBackend
 from deepresearch_workflow.ports import RepositoryEventSink
 from deepresearch_workflow.progress_memory import HttpProgressMemoryClient
+from deepresearch_workflow.project_summary import ProjectSummaryCoordinator, SqlProjectSummaryStore
 from deepresearch_workflow.repository import PostgresWorkflowRepository, checkpoint_pool
 from deepresearch_workflow.runner import WorkflowRunner
 from deepresearch_workflow.settings import Settings
@@ -107,7 +108,8 @@ async def main():
                     await output.write_text(json.dumps({"calls": captures},
                                                       ensure_ascii=False, indent=2))
                     return httpx.Response(response.status_code, json=data)
-                result = controlled_decision(payload)
+                result = ({"selected_segment_ids": [payload["source_segments"][0]["segment_id"]]}
+                          if "source_segments" in payload else controlled_decision(payload))
                 capture["result"] = result
                 return httpx.Response(200, json={"model": "deepseek-flash",
                     "choices": [{"finish_reason": "stop", "message": {
@@ -141,7 +143,8 @@ async def main():
                         events=(InterruptAfterSettledDecision()
                                 if cfg.get("interrupt_after_decision") else sink),
                         budget=budget, claim_token=claim,
-                        progress_memory=memory).compile(checkpointer=saver)
+                        progress_memory=memory,
+                        project_summaries=ProjectSummaryCoordinator(SqlProjectSummaryStore(repo))).compile(checkpointer=saver)
 
                 runner = WorkflowRunner(repository=repo,
                     control_plane=HttpControlPlaneClient(client=native,

@@ -163,6 +163,113 @@ class MemoryContinuationIT extends AgentHttpPostgresIT {
             assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL'",Integer.class,run)).isEqualTo(1);
         } finally {Files.deleteIfExists(config);}
     }
+    String longSession(String owner,Run old) throws Exception {
+        var load=request("POST","/api/research/projects/"+old.project()+"/resume-context",user(owner),object());
+        assertThat(load.status()).isEqualTo(200);String session=load.body().path("target_session_id").asText();
+        String legacy="m2-legacy-"+UUID.randomUUID();
+        db.update("INSERT INTO agent_run(run_id,session_id,user_id,question,answer,rounds,finished) VALUES (?,?,?,'合成研究过程','尚无实测数据',1,false)",
+            legacy,session,db.queryForObject("SELECT user_id FROM agent_session WHERE session_id=?",String.class,session));
+        // Synthetic original messages, persisted before creation; no checkpoint/model substitutions.
+        for(int i=0;i<8;i++) {
+            String content=(i==0?"原目标：比较方案 A、B；同数据集、同硬件；无实测数据不得编造数值。":
+                i==1?"已记录检索机制；效果有争议，延迟未测量；失败尝试缺少测量数据。":
+                i==6?"最新修正：下一次测量使用机器 C，旧数字无效。":
+                i==7?"最新记录：延迟仍未测量，保留争议和待办。":"较早原始观察：尚无新测量数据。")
+                +"合成过程记录，重复描述检索机制与尚未完成的测量，不构成事实证据。".repeat(80);
+            db.update("""
+                INSERT INTO agent_message(message_id,session_id,run_id,role,content,created_at)
+                VALUES (?,?,?,?,?,clock_timestamp()+?*interval '1 millisecond')
+                ""","m2-message-"+UUID.randomUUID(),session,legacy,i%2==0?"user":"assistant",content,i);
+        }
+        return session;
+    }
+    @Test void sourcedSummaryEntersActualPlanningAndOwnedReadView() throws Exception {
+        String owner="m2-"+UUID.randomUUID();Run old=history(owner);String session=longSession(owner,old);
+        var accepted=post("/api/research/agents",owner,"m2-"+UUID.randomUUID(),object("question","接着做，先推进尚未完成的部分。",
+            "sessionId",session,"requestedTools",List.of("kb_search"),"researchProjectId",old.project()));
+        assertThat(accepted.status()).isEqualTo(202);String run=accepted.body().path("runId").asText();
+        Path dir=Path.of(System.getProperty("memory.resultsDir","target/memory-m2")).toAbsolutePath();Files.createDirectories(dir);
+        Path config=Files.createTempFile("memory-m2-",".json");Files.setPosixFilePermissions(config,java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
+        var settings=object("url","http://127.0.0.1:"+port,"token",service(),"viewer_token",user(owner),"run",run,
+            "provider",System.getProperty("memory.provider","controlled"),"output",dir.resolve("native-summary-provider.json").toString());
+        if(settings.path("provider").asText().equals("live-deepseek")) settings.put("private_credentials",Objects.requireNonNull(System.getenv("MEMORY_PRIVATE_CREDENTIALS")));
+        try {
+            Files.writeString(config,canonical(settings));var worker=probe(config,dir.resolve("native-summary.log"),false);
+            assertThat(worker.waitFor(180,java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            assertThat(worker.exitValue()).withFailMessage(Files.readString(dir.resolve("native-summary.log"))).isZero();
+            var summary=request("GET","/api/research/agents/"+run+"/context-summary",user(owner),null);
+            assertThat(summary.status()).isEqualTo(200);var view=summary.body();
+            Files.writeString(dir.resolve("summary-view.json"),canonical(view));
+            assertThat(view.path("status").asText()).isEqualTo("READY");
+            assertThat(view.path("planner_input_recorded").asBoolean()).isTrue();
+            assertThat(view.path("measurement").path("method").asText()).isEqualTo("utf8-canonical-bytes/1");
+            assertThat(view.path("measurement").path("after_bytes").asLong()).isLessThan(view.path("measurement").path("before_bytes").asLong()).isLessThanOrEqualTo(24000);
+            assertThat(canonical(view.path("summary"))).contains("同数据集","同硬件","未测量","contested","无实测数据不得编造数值");
+            var calls=JSON.readTree(Files.readString(dir.resolve("native-summary-provider.json"))).path("calls");
+            boolean nextPlanning=false;
+            for(var call:calls) {
+                var payload=JSON.readTree(call.path("wire").path("messages").get(1).path("content").asText());
+                if(payload.has("project_summary")) {
+                    assertThat(payload.path("project_summary")).isEqualTo(view.path("summary"));
+                    assertThat(canonical(payload).getBytes(java.nio.charset.StandardCharsets.UTF_8).length)
+                        .isEqualTo(view.path("measurement").path("after_bytes").asInt()).isLessThanOrEqualTo(24000);
+                    var encoded=payload.path("project_summary");
+                    assertThat(encoded.path("original_encoding").asText()).isEqualTo("source-record-dictionary/1");
+                    for(var original:encoded.path("original_records")) {
+                        StringBuilder restored=new StringBuilder();
+                        for(var part:original.path("parts")) restored.append(encoded.path("source_dictionary").path(part.path("text_ref").asText()).asText().repeat(part.path("repeat").asInt()));
+                        var source=java.util.stream.StreamSupport.stream(view.path("sources").spliterator(),false)
+                            .filter(row->row.path("source_ref").equals(original.path("source_ref"))).findFirst().orElseThrow();
+                        assertThat(restored.toString()).isEqualTo(source.path("value").asText());
+                    }
+                    assertThat(canonical(payload.path("prior_context").path("recentConversation"))).contains("最新修正","机器 C","最新记录");
+                    nextPlanning=true;
+                }
+            }
+            assertThat(nextPlanning).isTrue();
+            assertThat(request("GET","/api/research/agents/"+run+"/context-summary",user("foreign-"+UUID.randomUUID()),null).status()).isEqualTo(404);
+            int before=db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=?",Integer.class,run);
+            assertThat(request("GET","/api/research/agents/"+run+"/context-summary",user(owner),null).body()).isEqualTo(view);
+            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=?",Integer.class,run)).isEqualTo(before);
+            Files.writeString(dir.resolve("summary-view.json"),canonical(view));
+            long keep=Long.getLong("memory.demo.keepAliveSeconds",0L);
+            if(keep>0) {
+                Files.writeString(dir.resolve("demo-private.json"),canonical(object("base_url","http://127.0.0.1:"+port,
+                    "viewer_token",users.issue("tenant-http",owner,List.of("USER"),keep+120).authorizationHeader(),
+                    "project_id",old.project(),"session_id",session,"run_id",run,"provider","controlled","fixture_only",true)));
+                Files.setPosixFilePermissions(dir.resolve("demo-private.json"),java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
+                Files.writeString(dir.resolve("demo-ready.json"),canonical(object("base_url","http://127.0.0.1:"+port,"project_id",old.project(),"run_id",run,"provider","controlled","fixture_only",true)));
+                long until=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(keep);
+                while(System.nanoTime()<until && !Files.exists(dir.resolve("demo-stop"))) Thread.sleep(20000);
+            }
+        } finally {Files.deleteIfExists(config);}
+    }
+    @Test void summarySurvivesRealProcessRestartWithoutRepeatedSummaryCall() throws Exception {
+        String owner="m2-restart-"+UUID.randomUUID();Run old=history(owner);String session=longSession(owner,old);
+        var accepted=post("/api/research/agents",owner,"m2-restart-"+UUID.randomUUID(),object("question","接着做，先推进尚未完成的部分。",
+            "sessionId",session,"requestedTools",List.of("kb_search"),"researchProjectId",old.project()));
+        assertThat(accepted.status()).isEqualTo(202);String run=accepted.body().path("runId").asText();
+        Path dir=Path.of(System.getProperty("memory.resultsDir","target/memory-m2")).toAbsolutePath();Files.createDirectories(dir);
+        Path config=Files.createTempFile("m2-restart-",".json");Files.setPosixFilePermissions(config,java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
+        var settings=object("url","http://127.0.0.1:"+port,"token",service(),"viewer_token",user(owner),"run",run,
+            "output",dir.resolve("summary-restart-first.json").toString(),"interrupt_after_decision",true);
+        try {
+            Files.writeString(config,canonical(settings));var first=probe(config,dir.resolve("summary-restart-first.log"),false);
+            assertThat(first.waitFor(60,java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            assertThat(first.exitValue()).withFailMessage(Files.readString(dir.resolve("summary-restart-first.log"))).isZero();
+            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND purpose='SUMMARY'",Integer.class,run)).isEqualTo(1);
+            db.update("UPDATE agent_workflow_run SET lease_until=now()-interval '1 second' WHERE run_id=?",run);
+            settings.put("interrupt_after_decision",false).put("token",service()).put("output",dir.resolve("summary-restart-second.json").toString());
+            Files.writeString(config,canonical(settings));var second=probe(config,dir.resolve("summary-restart-second.log"),false);
+            assertThat(second.waitFor(60,java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            assertThat(second.exitValue()).withFailMessage(Files.readString(dir.resolve("summary-restart-second.log"))).isZero();
+            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND purpose='SUMMARY'",Integer.class,run)).isEqualTo(1);
+            var view=request("GET","/api/research/agents/"+run+"/context-summary",user(owner),null);
+            assertThat(view.body().path("planner_input_recorded").asBoolean()).isTrue();
+            for(var call:JSON.readTree(Files.readString(dir.resolve("summary-restart-second.json"))).path("calls"))
+                assertThat(JSON.readTree(call.path("wire").path("messages").get(1).path("content").asText()).has("source_segments")).isFalse();
+        } finally {Files.deleteIfExists(config);}
+    }
     @Test void expiredSelectedMemoryRunRetainsTimeoutTerminalStatus() throws Exception {
         String owner="timeout-"+UUID.randomUUID();Run old=history(owner);
         var load=request("POST","/api/research/projects/"+old.project()+"/resume-context",user(owner),object());

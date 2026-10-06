@@ -25,12 +25,28 @@ public class ConversationSummaryService {
     private final boolean enabled;
     private final int maxSummaryChars;
 
+    @Value("${deepresearch.memory.context-trigger-bytes:16000}")
+    private int contextTriggerBytes = 16000;
+    @Value("${deepresearch.memory.context-budget-bytes:24000}")
+    private int contextBudgetBytes = 24000;
+    @Value("${deepresearch.memory.context-recent-records:2}")
+    private int contextRecentRecords = 2;
+
     public ConversationSummaryService(ChatClient chatClient,
                                       @Value("${deepresearch.memory.summary-enabled:true}") boolean enabled,
                                       @Value("${deepresearch.memory.max-summary-chars:1200}") int maxSummaryChars) {
         this.chatClient = chatClient;
         this.enabled = enabled;
         this.maxSummaryChars = maxSummaryChars;
+    }
+
+    /** Reuse memory enable/excerpt policy; autonomous generation goes through its budgeted ledger. */
+    public java.util.Map<String,Object> projectSummaryPolicy() {
+        return java.util.Map.of("enabled",enabled,
+                "trigger_bytes",Math.max(1000,Math.min(60000,contextTriggerBytes)),
+                "budget_bytes",Math.max(2000,Math.min(64000,contextBudgetBytes)),
+                "recent_records",Math.max(1,Math.min(8,contextRecentRecords)),
+                "max_excerpt_chars",Math.max(200,Math.min(4000,maxSummaryChars)));
     }
 
     /** Null means no successful new summary; caller must preserve both text and watermark. */

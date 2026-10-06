@@ -102,6 +102,7 @@ class AutonomousResearchGraph:
         budget: AgentRunBudget,
         claim_token: str,
         progress_memory=None,
+        project_summaries=None,
     ):
         self.model, self.tools, self.repository, self.ledger, self.evidence = (
             model,
@@ -112,17 +113,20 @@ class AutonomousResearchGraph:
         )
         self.events, self.budget, self.claim_token = events, budget, claim_token
         self.progress_memory = progress_memory
+        self.project_summaries = project_summaries
 
     def compile(self, *, checkpointer, interrupt_after=None):
         graph = StateGraph(AgentState)
         graph.add_node("initialize", self.initialize)
+        graph.add_node("compress", self.compress)
         graph.add_node("decide", self.decide)
         graph.add_node("act", self.act)
         graph.add_edge(START, "initialize")
-        graph.add_edge("initialize", "decide")
+        graph.add_edge("initialize", "compress")
+        graph.add_edge("compress", "decide")
         graph.add_edge("decide", "act")
         graph.add_conditional_edges(
-            "act", lambda state: END if state.get("final_status") else "decide"
+            "act", lambda state: END if state.get("final_status") else "compress"
         )
         return graph.compile(checkpointer=checkpointer, interrupt_after=interrupt_after)
 
@@ -196,6 +200,27 @@ class AutonomousResearchGraph:
             "no_progress": 0,
             "conflict_rounds": 0,
         }
+
+    async def compress(self, state):
+        await self.guard(state)
+        from .project_summary import policy_for
+
+        if not policy_for(state)["enabled"]:
+            return {}
+        if self.project_summaries is None:
+            return {"project_summary_view": {"status": "UNAVAILABLE", "summary": None,
+                                             "error_code": "PROJECT_SUMMARY_UNAVAILABLE"}}
+        update = await self.project_summaries.prepare(
+            state, decision_context(state, self.budget), self.gateway(state))
+        view = update.get("project_summary_view", {})
+        if view.get("source_sha256"):
+            await self.emit(state, "PROJECT_CONTEXT_SUMMARY", {
+                "status": view["status"], "measurement": view["measurement"],
+                "summary_sha256": (view.get("summary") or {}).get("summary_sha256"),
+                "uncovered_count": len(view.get("uncovered_records", [])),
+                "trusted_as_evidence": False,
+            }, "summary:" + view["source_sha256"][:40])
+        return update
 
     async def decide(self, state):
         await self.guard(state)
@@ -291,7 +316,15 @@ class AutonomousResearchGraph:
                 "agent_usage": summary,
                 "usage": usage.model_dump(),
             }
-        payload = decision_context(state, self.budget)
+        from .project_summary import apply_summary, byte_size, policy_for
+
+        payload = apply_summary(state, decision_context(state, self.budget))
+        summary_policy = policy_for(state)
+        if summary_policy["enabled"] and byte_size(payload) > summary_policy["budget_bytes"]:
+            decision = AgentDecision(action="stop_with_gaps", reason="CONTEXT_BUDGET",
+                gaps=["上下文超过配置预算；摘要不可用或仍过大，目标与未完成项保留，需缩小范围后继续。"])
+            return {"decision": self.internal_decision(decision, planner_version, state=state),
+                    "action_sequence": action_sequence, "agent_usage": summary, "usage": usage.model_dump()}
         request = ModelRequest(
             name="AgentDecision",
             schema=AgentDecision.model_json_schema(),
@@ -299,6 +332,8 @@ class AutonomousResearchGraph:
             request_binding={
                 "context_contract": payload["context_version"],
                 "requirements_contract": REQUIREMENTS_VERSION,
+                **({"project_summary_sha256": payload["project_summary"]["summary_sha256"]}
+                   if "project_summary" in payload else {}),
             },
             instruction=(
                 "If original_requirements is absent, extract ALL independent subquestions and "
@@ -505,6 +540,17 @@ class AutonomousResearchGraph:
                     },
                 })
 
+        if "project_summary" in request.payload:
+            request = request.model_copy(update={"instruction": request.instruction +
+                "\nproject_summary is an extractive, source-linked view of older records, never "
+                "current evidence or proof of completion. Preserve its goal, scope constraints, "
+                "unresolved items and disputes. Newer raw observations and authoritative current "
+                "tasks/checks override older recorded status. Nonselected text remains in originals; "
+                "resolve EVERY original_records parts entry by concatenating source_dictionary "
+                "text_ref values repeat times, in order. These are the complete older source "
+                "strings, including unclassified constraints: inspect them before choosing. "
+                "Section labels are helpful, not exhaustive. Do not infer beyond the originals. "
+                "Failed summaries keep their valid predecessor and explicit gaps."})
         if "prior_progress" in request.payload:
             request = request.model_copy(update={
                 "instruction": request.instruction + "\n"

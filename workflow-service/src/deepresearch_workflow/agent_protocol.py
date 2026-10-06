@@ -247,3 +247,4 @@ class AgentState(TypedDict, total=False):
     report: dict[str, Any]
     error_code: str | None
     error_message: str | None
+    project_summary_view: dict[str, Any]
