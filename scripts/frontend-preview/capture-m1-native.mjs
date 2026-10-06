@@ -9,11 +9,11 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_CORE || "playwright-core");
-const [handoff, OUT, frontendCandidate = "uncommitted"] = process.argv.slice(2);
+const [handoff, OUT, frontendCandidate = "uncommitted", demoDir = "demo"] = process.argv.slice(2);
 const APP = (process.env.REACT_PREVIEW_BASE || "http://127.0.0.1:5174") + "/app/";
 mkdirSync(OUT, { recursive: true });
-const ready = JSON.parse(readFileSync(`${handoff}/demo/demo-ready.json`, "utf8"));
-const secret = JSON.parse(readFileSync(`${handoff}/demo/demo-private.json`, "utf8"));
+const ready = JSON.parse(readFileSync(`${handoff}/${demoDir}/demo-ready.json`, "utf8"));
+const secret = JSON.parse(readFileSync(`${handoff}/${demoDir}/demo-private.json`, "utf8"));
 const claims = JSON.parse(Buffer.from(secret.viewer_token.split(".")[1], "base64url").toString());
 const backendManifestSha = createHash("sha256").update(readFileSync(`${handoff}/candidate-manifest.json`)).digest("hex");
 
@@ -36,6 +36,7 @@ page.on("console", (m) => { if (m.type() === "error" && !/Failed to load resourc
 const creates = () => requests.filter((r) => r.method === "POST" && /^\/api\/research\/(agents|workflows)$/.test(r.path));
 const resumePosts = () => requests.filter((r) => r.method === "POST" && r.path.endsWith("/resume-context"));
 let runId = "", sessionId = "", projectId = ready.project_id;
+let nativeFinal = null;
 async function shot(target, name, behaviour) {
   const file = `${name}.png`;
   await target.screenshot({ path: `${OUT}/${file}` });
@@ -116,8 +117,22 @@ try {
   check("selection note retained on the report", await page.locator(".memory-note").count() === 1);
   await page.locator(".memory-note details").evaluate((d) => { d.open = true; });
   await shot(page, "native-05-report", "native terminal state: insufficient evidence with recorded gaps; no measured values invented");
-  await page.locator(".unresolved").first().scrollIntoViewIfNeeded().catch(() => {});
-  await shot(page, "native-06-report-gaps", "unresolved items listed at the end of the report");
+  // Authoritative native terminal GET (same origin; Authorization is the handoff value verbatim, already "Bearer …").
+  const native = await page.evaluate(async ([auth, id]) => {
+    const res = await fetch("/api/research/workflows/" + encodeURIComponent(id), { headers: { Authorization: auth } });
+    const v = await res.json();
+    return { http: res.status, status: v.status, goals: (v.finalResponse?.unfinished_goals ?? []).map((g) => g.text ?? g.goal ?? ""),
+      planEvents: (v.trace ?? []).filter((e) => /AGENT_PLAN_(UPDATED|REVISED)/.test(e.type)).length,
+      latencyInPlan: (v.trace ?? []).some((e) => /AGENT_PLAN_(UPDATED|REVISED)/.test(e.type) && JSON.stringify(e.payload).includes("延迟")) };
+  }, [secret.viewer_token, runId]);
+  nativeFinal = native;
+  const shownGoals = await page.locator(".unresolved").last().locator("li").count();
+  const unresolvedText = (await page.locator(".unresolved").last().textContent().catch(() => "")) ?? "";
+  check("native terminal GET has unfinished goals and a latency plan", native.http === 200 && native.goals.length > 0 && native.latencyInPlan, JSON.stringify({ http: native.http, goals: native.goals.length, planEvents: native.planEvents }));
+  check("report lists exactly the native unfinished goals, including the latency task", shownGoals === native.goals.length && unresolvedText.includes("测量延迟"), JSON.stringify({ shownGoals, native: native.goals.length }));
+  check("report does not claim the server returned no details", (await page.locator("#report").textContent()).includes("服务端没有返回未完成目标的明细") === false);
+  await page.locator(".unresolved").last().scrollIntoViewIfNeeded().catch(() => {});
+  await shot(page, "native-06-report-gaps", "unresolved items from the native terminal GET listed at the end of the report");
 
   // 6. Refresh recovers the run without creating another.
   const beforeReload = creates().length;
@@ -125,6 +140,7 @@ try {
   await page.locator("#report-question").waitFor({ timeout: 30000 });
   await page.waitForTimeout(1500);
   check("refresh recovers the run and creates nothing", creates().length === beforeReload && (await page.locator("#report-question").textContent()).includes("接着做"));
+  check("refresh shows the same unfinished goals", await page.locator(".unresolved").last().locator("li").count() === nativeFinal?.goals.length);
   await shot(page, "native-07-after-refresh", "after reload: same run recovered via GET/SSE; no new create POST");
 
   // 7. Load, then delete the snapshot in a second page before Continue (product DELETE on this isolated backend).
@@ -171,6 +187,7 @@ const manifest = {
   frontend: { branch: "claude/deepresearch-memory-m1", base: "066d306", candidate: frontendCandidate, origin: APP },
   identity: { tenantId: claims.tenantId, subject: claims.sub, token: "not recorded" },
   ids: { projectId, sessionId, runId },
+  nativeTerminalGet: nativeFinal,
   requests: requests.filter((r) => r.method !== "GET").map((r) => ({ method: r.method, path: r.path, body: r.path.endsWith("/agents") ? JSON.parse(r.body || "{}") : undefined, idempotencyKeyPresent: !!r.key })),
   screenshots: shots,
   checks: results,
