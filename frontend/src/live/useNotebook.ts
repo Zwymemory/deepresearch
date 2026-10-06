@@ -116,6 +116,10 @@ export function useNotebook({ enabled, ctx, scope, notebookOpen, run }: {
       await deleteProgress(ctx, record.projectId, record.sourceRunId);   // deleted:false also means "gone"
       queryClient.setQueryData<{ items: ProgressSnapshot[]; candidateLimit: number | null }>(["progress-list", scope], (old) =>
         old ? { ...old, items: old.items.filter((i) => recordKey(i.projectId, i.sourceRunId) !== key) } : old);
+      // Deleting an ancestor can make dependent aggregate snapshots unavailable server-side: re-read the
+      // list and every automatic-save status for this identity from the server rather than trusting cache.
+      void queryClient.invalidateQueries({ queryKey: ["progress-list", scope] });
+      void queryClient.invalidateQueries({ queryKey: ["progress-save", scope] });
       // Drop any loaded browser copy that references the deleted snapshot.
       setLoad((current) => current.state === "loaded"
         ? { ...current, context: { ...current.context, progress: current.context.progress.filter((p) => recordKey(p.projectId, p.sourceRunId) !== key) },
@@ -142,6 +146,7 @@ export function useNotebook({ enabled, ctx, scope, notebookOpen, run }: {
       queryClient.setQueryData<{ items: ProgressSnapshot[]; candidateLimit: number | null }>(["progress-list", scope], (old) =>
         old ? { ...old, items: old.items.map((i) => recordKey(i.projectId, i.sourceRunId) === key ? updated : i) } : old);
       void queryClient.invalidateQueries({ queryKey: ["progress-list", scope] });
+      void queryClient.invalidateQueries({ queryKey: ["progress-save", scope] });
       // A loaded copy of this project is now stale: require an explicit reload before Continue.
       setLoad((current) => current.state === "loaded" && current.context.projectId === record.projectId ? { ...current, sourceCorrected: true } : current);
       return true;

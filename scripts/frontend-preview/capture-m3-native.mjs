@@ -12,6 +12,8 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_CORE || "playwright-core");
 const [handoff, OUT, frontendCommit = "uncommitted", demoDir = "demo-native"] = process.argv.slice(2);
+// M3_READ_ONLY=1 retakes screenshots without any write (no PATCH): use after the correction was already submitted.
+const READ_ONLY = process.env.M3_READ_ONLY === "1";
 const APP = (process.env.REACT_PREVIEW_BASE || "http://127.0.0.1:5174") + "/app/";
 mkdirSync(OUT, { recursive: true });
 const ready = JSON.parse(readFileSync(`${handoff}/${demoDir}/demo-ready.json`, "utf8"));
@@ -62,7 +64,7 @@ async function openArchiveRecord(runId) {
     await page.locator(".archive-item").nth(i).click();
     if (!(await page.locator("#archive-record").count())) await page.keyboard.press("Enter");
     await page.locator("#archive-record").waitFor();
-    if ((await page.locator("#archive-record .rec-cover").textContent()).includes(runId.slice(0, 8))) return true;
+    if ((await page.locator("#archive-record .rec-cover").textContent()).includes(runId.slice(0, 8))) { await page.waitForTimeout(900); return true; }
     await page.keyboard.press("Escape");
     await page.locator("#archive-record").waitFor({ state: "detached" });
   }
@@ -95,9 +97,10 @@ try {
 
   // 2. Correction note via real PATCH; reflected in the native snapshot and after refresh.
   check("continuation snapshot found in the archive", await openArchiveRecord(run));
+  const addition = process.env.M3_NOTE_ADDITION || "补充：延迟测量仍须在机器 C 上按同一条件重做，旧结论不作为本轮证据。";
+  if (!READ_ONLY) {
   const before = await api(`/api/research/projects/${encodeURIComponent(ready.project_id)}/progress/runs/${encodeURIComponent(run)}`);
   const oldNote = before.body?.user_correction ?? "";
-  const addition = "补充：延迟测量仍须在机器 C 上按同一条件重做，旧结论不作为本轮证据。";
   const newNote = oldNote ? `${oldNote}\n${addition}` : addition;
   await page.getByRole("button", { name: /纠正说明…$/ }).click();
   await page.locator("#correction-note").fill(newNote);
@@ -113,6 +116,12 @@ try {
   await page.locator("#archive-record .correction").scrollIntoViewIfNeeded();
   await shot("m3-02-correction-saved", run, "Chinese correction note saved by a real PATCH; shown as a user annotation, not a verified fact");
   await page.keyboard.press("Escape");
+  } else {
+    const current = await api(`/api/research/projects/${encodeURIComponent(ready.project_id)}/progress/runs/${encodeURIComponent(run)}`);
+    observations.correctionReadOnly = { nativeNote: current.body?.user_correction ?? null };
+    check("read-only: native snapshot already holds the correction", (current.body?.user_correction ?? "").includes(addition));
+    await page.keyboard.press("Escape");
+  }
   await page.reload();
   await page.locator("#report").waitFor({ timeout: 30000 });
   check("after refresh the archive still shows the corrected note", await openArchiveRecord(run) && (await page.locator("#archive-record .correction").textContent()).includes(addition));
@@ -133,7 +142,8 @@ try {
     check("failure explained in Chinese, raw code only in details", failText.includes("自动保存失败") && !failText.includes("PROGRESS_") && (await page.locator(".auto-save details").count()) === 1, failText);
     check("original report still visible", (await page.locator("#report .outcome").count()) === 1);
     await page.locator(".auto-save details summary").click();
-    await page.locator(".auto-save").scrollIntoViewIfNeeded();
+    await page.locator(".auto-save").evaluate((el) => el.scrollIntoView({ block: "center" }));
+    await page.waitForTimeout(300);
     await shot("m3-04-report-save-failed", failedRun, "automatic save FAILED with a Chinese reason; original report kept; manual save remains the explicit retry");
   }
   check("browser initiated no automatic save (no PUT) and no create", !requests.some((r) => r.method === "PUT") && !requests.some((r) => r.method === "POST" && /\/api\/research\/(agents|workflows)$/.test(r.path)));

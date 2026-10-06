@@ -200,6 +200,7 @@ class Run:
         self.agent = endpoint.endswith("/agents")
         self.tools = body.get("requestedTools") or ["kb_search"]
         self.question = body.get("question") or ""
+        self.research_project = body.get("researchProjectId") if endpoint.endswith("/agents") else None
         self.created = time.monotonic()
         self.created_iso = now_iso()
         self.timeline = agent_timeline() if self.agent else workflow_timeline(scenario, self.tools)
@@ -325,10 +326,11 @@ SAVE_SEQ = [0]
 
 
 def progress_project(run) -> str:
-    return "preview-project-" + run.id
+    # A continuation (researchProjectId) belongs to the selected project, as on the native backend.
+    return getattr(run, "research_project", None) or "preview-project-" + run.id
 
 
-def progress_snapshot(run, origin: str = "manual") -> dict:
+def progress_snapshot(run, origin: str = "manual", owner: str = "") -> dict:
     view = run.view()
     final = view.get("finalResponse") or {}
     unresolved = [{"task_id": g.get("task_id"), "goal": g.get("text") or g.get("task_id") or "未命名目标", "status": "blocked",
@@ -341,7 +343,10 @@ def progress_snapshot(run, origin: str = "manual") -> dict:
     return {"schema_version": "research-progress/1", "context_kind": "prior_progress", "trusted_as_evidence": False,
             "project_id": progress_project(run), "source_run_id": run.id, "source_session_id": run.session,
             "original_goal": "（演示）" + (run.question or "原始问题"), "run_status": view["status"],
-            "current_question": run.question, "save_origin": origin, "historical_completed_work": [], "prior_memory_refs": [], "user_correction": "",
+            "current_question": run.question, "save_origin": origin, "historical_completed_work": [], "user_correction": "",
+            # Synthetic dependency: a continuation snapshot references the project's earlier saved snapshots.
+            "prior_memory_refs": [{"source_run_id": r, "snapshot_sha256": "3" * 64} for (o, p, r) in PROGRESS
+                                  if o == owner and p == progress_project(run) and r != run.id] if run.research_project else [],
             "completed_work": [{"task_id": "task-done", "goal": "确认 SSE 断线恢复机制", "status": "done", "completion_verified": True, "gaps": []}]
             if view["status"] == "SUCCEEDED" else [],
             "unresolved_questions": unresolved,
@@ -350,6 +355,7 @@ def progress_snapshot(run, origin: str = "manual") -> dict:
             "source_claims": [{"claim_id": "claim-resume", "record_sha256": "2" * 64, "decision_status": "contested", "freshness": "fresh"}]}
 LOCK = threading.Lock()
 AUTO_SAVE: dict = {}   # run_id -> first terminal observation (monotonic), for the synthetic reconcile delay
+SAVE_GONE: dict = {}   # run_id -> ("DELETED" | "UNAVAILABLE", error_code) after a deletion (synthetic cascade)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -440,6 +446,8 @@ class Handler(BaseHTTPRequestHandler):
                         "saved": False, "status": "WAITING", "error_code": None, "trusted_as_evidence": False}
                 if self.scenario() == "autosave-off":
                     view.update(enabled=False, status="NOT_ENABLED")
+                elif run.id in SAVE_GONE:
+                    view.update(status=SAVE_GONE[run.id][0], error_code=SAVE_GONE[run.id][1])
                 elif run.terminal():
                     first = AUTO_SAVE.setdefault(run.id, time.monotonic())
                     if self.scenario() == "autosave-fail":
@@ -449,7 +457,7 @@ class Handler(BaseHTTPRequestHandler):
                     elif time.monotonic() - first >= 1.5:
                         with LOCK:
                             SAVE_SEQ[0] += 1
-                            PROGRESS[key] = (SAVE_SEQ[0], progress_snapshot(run, "automatic"))
+                            PROGRESS[key] = (SAVE_SEQ[0], progress_snapshot(run, "automatic", self.owner()))
                         view.update(status="SAVED", saved=True, save_origin="automatic")
                     else:
                         view.update(status="PENDING")
@@ -495,6 +503,12 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(200, saved[1]) if saved else self.send_json(404, {"error": "不存在或无权访问"})
             elif method == "DELETE":
                 existed = PROGRESS.pop(key, None) is not None
+                SAVE_GONE[run_id] = ("DELETED", None)
+                # Dependent snapshots that reference the deleted one become unavailable (not silently kept).
+                for dep_key, (_seq, snap) in list(PROGRESS.items()):
+                    if dep_key[0] == self.owner() and any(ref.get("source_run_id") == run_id for ref in snap.get("prior_memory_refs", [])):
+                        PROGRESS.pop(dep_key, None)
+                        SAVE_GONE[dep_key[2]] = ("UNAVAILABLE", "PROGRESS_SOURCE_CHANGED")
                 self.send_json(200, {"run_id": run_id, "deleted": existed})
             else:
                 self.send_json(405, {"error": "method"})

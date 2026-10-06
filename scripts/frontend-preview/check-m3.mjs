@@ -113,6 +113,45 @@ try {
     await shot(page, `m3-report-${name}`);
     await context.close();
   }
+
+  // 5. Deleting an ancestor removes its dependent snapshot from the re-read list, and the dependent
+  //    run's report re-reads its save status (UNAVAILABLE) instead of keeping a cached SAVED.
+  {
+    const { context, page, requests, errors } = await session(browser);
+    await page.goto(APP + "?scenario=success");
+    await connect(page);
+    await agentRun(page, "合成问题：祖先记录。");
+    await page.getByText("已自动保存已完成事项与待办，可在研究档案查看。").waitFor({ timeout: 15000 });
+    await page.getByRole("button", { name: "研究档案（保存的研究进度）" }).click();
+    await page.locator(".archive-item").first().click();
+    if (!(await page.locator("#archive-record").count())) await page.keyboard.press("Enter");
+    await page.getByRole("button", { name: "载入此项目的研究进度到新会话" }).click();
+    await page.getByRole("button", { name: "在此项目继续研究…" }).first().click();
+    await page.locator("#question").fill("接着做：延续祖先记录。");
+    await page.getByRole("button", { name: "在此项目继续研究", exact: true }).click();
+    await page.locator("#report-question").waitFor({ timeout: 30000 });
+    await page.getByText("已自动保存已完成事项与待办，可在研究档案查看。").waitFor({ timeout: 15000 });
+    await page.getByRole("button", { name: "研究档案（保存的研究进度）" }).click();
+    await page.locator(".archive-item", { hasText: "延续祖先记录" }).waitFor();
+    check("ancestor: dependent continuation listed before deletion", await page.locator(".archive-item", { hasText: "延续祖先记录" }).count() === 1);
+    await page.locator(".archive-item", { hasText: "合成问题：祖先记录" }).click();
+    if (!(await page.locator("#archive-record").count())) await page.keyboard.press("Enter");
+    await page.locator("#archive-record").waitFor();
+    if (!(await page.locator("#archive-record").textContent()).includes("合成问题：祖先记录")) await page.keyboard.press("Enter");
+    await page.getByRole("button", { name: "删除保存的进度…" }).click();
+    await page.getByRole("button", { name: "确认删除" }).click();
+    await page.locator("#archive-record").waitFor({ state: "detached", timeout: 10000 });
+    await page.locator(".archive-item", { hasText: "延续祖先记录" }).waitFor({ state: "detached", timeout: 10000 }).catch(() => {});
+    check("ancestor: dependent snapshot removed after the list is re-read", await page.locator(".archive-item", { hasText: "延续祖先记录" }).count() === 0
+      && requests.filter((r) => r.method === "GET" && r.path === "/api/research/progress").length >= 2);
+    await page.getByRole("button", { name: /返回报告/ }).click();
+    await page.getByText("所引用的来源已变化").waitFor({ timeout: 10000 }).catch(() => {});
+    check("ancestor: dependent report re-reads its save status (UNAVAILABLE, not cached SAVED)",
+      (await page.locator(".auto-save").textContent()).includes("保存的研究进度当前不可用：所引用的来源已变化"), await page.locator(".auto-save").textContent());
+    check("ancestor: no console errors", errors.length === 0, errors.join(" | "));
+    await shot(page, "m3-ancestor-deleted-dependent-unavailable");
+    await context.close();
+  }
 } finally {
   await browser.close();
 }
