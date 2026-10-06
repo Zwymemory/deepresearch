@@ -60,7 +60,11 @@ try {
   await line.click();
   const body = await page.locator(".recall-disclosure .summary-body").textContent();
   check("USED: names the old study and keyword reason", body.includes("Kafka v1.0 的检索延迟对比") && body.includes("“kafka”") && body.includes("“延迟”"));
-  check("USED: version difference and unknown time/conditions are visible", body.includes("涉及版本：v1.0") && body.includes("旧研究涉及的版本与本问题不同") && body.includes("时间：未知") && body.includes("条件：未知"));
+  check("USED: version difference and unknown time/conditions are visible", body.includes("涉及版本：v1.0") && body.includes("旧研究涉及的版本与本次问题不同") && body.includes("时间：未知，需要重新核查") && body.includes("条件：未知，需要重新核查"));
+  const visible = await page.locator(".recall-record").first().innerText();
+  check("USED: raw caution codes, English reasons and method id only in technical details",
+    !/REVERIFY_BEFORE_USE|TIME_UNKNOWN|VERSION_DIFFERENCE|DISPUTED_OR_UNVERIFIED|valid time is not recorded|keyword-baseline/.test(visible)
+      && (await page.locator(".recall-disclosure .summary-body > details").textContent()).includes("VERSION_DIFFERENCE"), visible);
   check("USED: dispute stays a dispute", body.includes("有争议"));
   check("USED: duplicated native sources counted once", body.includes("去重后 1 个") && (await page.locator(".recall-record").first().locator("li", { hasText: "预览来源" }).count()) === 1);
   check("USED: no claim that memory is verified evidence", !body.includes("已核验的事实") && body.includes("只作调查线索"));

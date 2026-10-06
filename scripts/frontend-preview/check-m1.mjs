@@ -107,7 +107,9 @@ try {
     check(`${tag}: one create despite a double click`, sent.length === 1, sent.length);
     check(`${tag}: create goes to /api/research/agents`, sent[0]?.path === "/api/research/agents");
     check(`${tag}: create carries the loaded session and project, identifiers only`, body.sessionId === resume?.targetSessionId
-      && body.researchProjectId === resume?.projectId && Object.keys(body).sort().join(",") === "question,requestedTools,researchProjectId,sessionId", JSON.stringify(body));
+      && body.researchProjectId === resume?.projectId
+      // M4 adds the memoryRecall boolean (default on); still identifiers and flags only, no memory content.
+      && Object.keys(body).sort().join(",") === "memoryRecall,question,requestedTools,researchProjectId,sessionId" && typeof body.memoryRecall === "boolean", JSON.stringify(body));
     await page.locator(".memory-note").waitFor();
     check(`${tag}: run states selection without claiming model receipt`, (await page.locator(".memory-note").textContent())?.includes("页面无法确认这些历史是否已进入模型的规划输入"));
     await page.locator(".memory-note details summary").click();

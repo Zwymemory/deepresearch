@@ -411,10 +411,12 @@ def recall_view(run) -> dict:
         records.append({"source_project_id": key[1], "source_run_id": key[2], "snapshot_sha256": "4" * 64, "snapshot": snap,
                         "reason": {"method": "keyword-baseline/1", "matched_terms": matched, "score": len(matched)},
                         "applicability": {"status": "RECHECK_REQUIRED",
-                                          "cautions": ["旧研究涉及的版本与本问题不同"] if old_versions and q_versions and old_versions != q_versions else [],
+                                          # Backend-style raw codes and English reasons: the page must translate them.
+                                          "cautions": ["REVERIFY_BEFORE_USE", "TIME_UNKNOWN", "CONDITIONS_UNKNOWN", "DISPUTED_OR_UNVERIFIED"]
+                                                      + (["VERSION_DIFFERENCE"] if old_versions and q_versions and old_versions != q_versions else []),
                                           "mentioned_versions": old_versions,
-                                          "time": {"status": "unknown", "value": None, "reason": "有效时间未知"},
-                                          "conditions": {"status": "unknown", "value": None, "reason": "适用条件未知"}},
+                                          "time": {"status": "unknown", "value": None, "reason": "valid time is not recorded"},
+                                          "conditions": {"status": "unknown", "value": None, "reason": "conditions were not verified"}},
                         "source_refs": refs + refs})   # duplicated on purpose: the page must count each source once
     used = run.terminal()
     return dict(base, status="USED" if used else "SELECTED", planner_input_recorded=used, records=records, selection=selection)
