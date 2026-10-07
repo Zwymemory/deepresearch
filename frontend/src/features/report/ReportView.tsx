@@ -7,6 +7,8 @@ import { lastReachedStage, recordedGaps, type RunState } from "../../domain/runS
 import type { UnfinishedGoal, Usage } from "../../domain/types";
 import { Icon } from "../../ui/Icon";
 import { isMemoryCode } from "../../domain/researchMemory";
+import { readResearchDraft } from "../../domain/researchDraft";
+import { ResearchDraft } from "./ResearchDraft";
 import { Markdown, type CiteHandlers } from "./Markdown";
 import { EvidenceRecord } from "../evidence/EvidenceRecord";
 import type { EvidenceViewResult } from "../../domain/evidenceView";
@@ -165,6 +167,8 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
             <button type="button" className="btn btn-quiet btn-sm" style={{ marginTop: 10 }} onClick={onRetryQuestion}>用同一问题重新研究</button>
           </div>
         ) : null}
+        {/* Budget stop: stored material as an unpublished draft (absent → previous behaviour). */}
+        {budgetStop ? <ResearchDraft read={readResearchDraft(run.finalResponse?.researchDraft)} runId={run.runId} /> : null}
         {unknownSources && !demo ? (
           <p className="note" style={{ marginTop: 10 }}>{unknownSources} 个引用缺少来源详情（当前执行引擎未公开标题、地址与摘录），只能显示来源 ID；页面不会推测链接。</p>
         ) : null}

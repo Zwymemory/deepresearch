@@ -5,13 +5,15 @@ import { Sheet } from "../shell/Dialogs";
 type Filter = "all" | "knowledge" | "web";
 
 /** Filtering never renumbers: each row keeps its original citation number and kind. */
-export function SourcesDialog({ open, onOpenChange, citations, onInspect }: {
+export function SourcesDialog({ open, onOpenChange, citations, onInspect, demo = false }: {
   open: boolean; onOpenChange: (open: boolean) => void; citations: NormalizedCitation[]; onInspect: (n: number) => void;
+  /** Only the explicit demo mode is labelled as sample data. */
+  demo?: boolean;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
   const shown = citations.filter((c) => filter === "all" || (filter === "knowledge" ? c.kind === "knowledge" : c.kind === "web-snapshot" || c.kind === "web-original"));
   return (
-    <Sheet open={open} onOpenChange={onOpenChange} title="全部来源" description="按引用编号排列；顺序不代表可信度。示例数据。">
+    <Sheet open={open} onOpenChange={onOpenChange} title="全部来源" description={"按引用编号排列；顺序不代表可信度。" + (demo ? "示例数据。" : "")}>
       <div className="filter segmented" role="radiogroup" aria-label="来源类型">
         {(["all", "knowledge", "web"] as Filter[]).map((f) => (
           <button key={f} type="button" role="radio" className="seg-btn" aria-checked={filter === f} onClick={() => setFilter(f)}>

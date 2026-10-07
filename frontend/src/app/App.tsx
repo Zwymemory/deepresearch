@@ -511,7 +511,7 @@ export function App() {
             <Icon name={t.tone === "error" ? "alert" : t.tone === "success" ? "check" : "spark"} size={16} />{t.message}</div>)}
         </div>
 
-        <SourcesDialog open={dialog === "sources"} onOpenChange={(o) => setDialog(o ? "sources" : null)} citations={citations}
+        <SourcesDialog demo={demoMode} open={dialog === "sources"} onOpenChange={(o) => setDialog(o ? "sources" : null)} citations={citations}
           onInspect={(n) => { setDialog(null); window.setTimeout(() => openCitation(n, null), 0); }} />
         <IdentityDialog open={dialog === "identity"} onOpenChange={(o) => setDialog(o ? "identity" : null)} mode={appMode}
           identity={live.identity} onApply={(next) => { const error = live.applyIdentity(next); if (!error) notify("身份已更新；已清除旧身份的缓存内容", "success"); return error; }}

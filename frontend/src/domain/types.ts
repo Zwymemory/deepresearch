@@ -63,6 +63,8 @@ export interface FinalResponse {
   /** Autonomous (candidate) runs: published claims. Shape not yet mapped in the UI. */
   claims?: unknown;
   semantic_truth_guaranteed?: boolean;
+  /** BUDGET_EXCEEDED autonomous runs: stored-records draft (research-draft/1); validated in domain/researchDraft. */
+  researchDraft?: unknown;
   /** Dify engine: safe failure diagnostics ({ node, code }). */
   diagnostics?: { node?: string; code?: string } | Record<string, never>;
 }
