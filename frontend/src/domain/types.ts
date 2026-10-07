@@ -93,7 +93,8 @@ export interface WorkflowView {
   status: RunStatus;
   stage?: string | null;
   progress?: number;
-  requestedTools?: ToolName[];
+  /** As reported by the server: may include internal capabilities (see domain/tools.ts). */
+  requestedTools?: string[];
   trace?: RunEvent[];
   usage?: Usage | null;
   finalResponse?: FinalResponse | null;

@@ -21,6 +21,7 @@ import {
 } from "../api/identity";
 import { canSafelyRetry, loadPending, newPending, savePending, type CreateBody, type PendingCreate } from "../api/pending";
 import { applyEvent, applyView, emptyRun, isTerminal, mapLegacy, needsTerminalSnapshot, type RunState } from "../domain/runState";
+import { creationTools, publicTools } from "../domain/tools";
 import type { ExecutionMode, ToolName } from "../domain/types";
 import type { EvidenceViewResult } from "../domain/evidenceView";
 import { isMemoryCode, memoryErrorInfo, type MemoryRequest } from "../domain/researchMemory";
@@ -262,15 +263,18 @@ export function useLiveResearch(enabled: boolean, notify: Notify) {
     if (submitting || pending) return { ok: false, reason: "已有待确认的创建请求。" };
     if (researchProjectId && (mode !== "agent" || !sessionId.trim())) return { ok: false, reason: "继续研究需要先载入该项目到新会话（自主研究）。" };
     if (!identity.token) return { ok: false, reason: "needs-identity" };
-    if (mode !== "legacy" && !tools.length) return { ok: false, reason: "请至少允许一个只读工具。" };
-    if (mode !== "legacy" && tools.includes("web_search")) {
+    // Only a NEW request is normalised to public tools; a pending request is replayed byte-for-byte.
+    const selection = creationTools(mode, tools);
+    if (!selection.ok) return { ok: false, reason: selection.reason };
+    const selected = selection.tools;
+    if (mode !== "legacy" && selected.includes("web_search")) {
       const before = scope;
       const configured = await webSearchConfigured(ctx);
       setWebConfigured(configured);
       if (before !== scope) return { ok: false, reason: "连接或身份已变化，请重新提交。" };
       if (configured === false) return { ok: false, reason: "网页搜索尚未配置 Tavily 凭据。请配置后重试，或选择知识库检索。" };
     }
-    const body: CreateBody = mode === "legacy" ? { question } : { question, requestedTools: tools };
+    const body: CreateBody = mode === "legacy" ? { question } : { question, requestedTools: selected };
     if (sessionId.trim()) body.sessionId = sessionId.trim();
     if (researchProjectId) body.researchProjectId = researchProjectId;
     // Sent explicitly for autonomous research so the stored (idempotent) body records the choice.
@@ -282,7 +286,7 @@ export function useLiveResearch(enabled: boolean, notify: Notify) {
     setLegacyRun(null);
     if (mode !== "legacy") { saveRun(null); setCurrent(null); }
     if (mode === "legacy") setLegacyRun({ ...emptyRun(question, [], "legacy"), status: "WORKING", stage: "WORKING" });
-    const ok = await createWithPending(record, question, tools);
+    const ok = await createWithPending(record, question, selected);
     if (!ok && mode === "legacy") setLegacyRun(null);
     return { ok: true, reason: "", accepted: ok };
   }, [submitting, pending, identity, scope, ctx, origin, createWithPending]);
@@ -290,7 +294,7 @@ export function useLiveResearch(enabled: boolean, notify: Notify) {
   const safeRetry = useCallback(async () => {
     const check = canSafelyRetry(pending, requestScope(identity, origin));
     if (!check.ok) return check.reason;
-    await createWithPending(pending!, pending!.body.question, (pending!.body.requestedTools ?? []) as ToolName[]);
+    await createWithPending(pending!, pending!.body.question, publicTools(pending!.body.requestedTools));
     return null;
   }, [pending, identity, origin, createWithPending]);
 

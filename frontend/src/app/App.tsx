@@ -5,7 +5,8 @@ import { normalizeCitations } from "../domain/citations";
 import { parseMarkdown, statementsFor } from "../domain/markdown";
 import { parsePublication } from "../domain/publication";
 import { applyEvent, emptyRun, isTerminal, type RunState } from "../domain/runState";
-import type { ExecutionMode, ToolName } from "../domain/types";
+import { followUpRequest } from "../domain/tools";
+import type { ExecutionMode } from "../domain/types";
 import { DEMO_EVIDENCE_VIEW, DEMO_QUESTION, DEMO_TOOLS } from "../demo/fixtures";
 import { snapshotRun, useDemoRun, type DemoOutcome } from "../demo/useDemoRun";
 import { EntryView, type StartRequest } from "../features/composer/EntryView";
@@ -325,8 +326,10 @@ export function App() {
   const followUp = (question: string) => {
     if (!run) return;
     if (demoMode) { void start({ question, tools: run.tools, mode: run.mode, outcome: "success", sessionId: "" }); return; }
-    const tools: ToolName[] = run.tools.length ? run.tools : ["kb_search"];
-    void live.start(run.mode, question, tools, run.sessionId).then((r) => { if (!r.ok && r.reason) notify(r.reason === "needs-identity" ? "请先连接身份。" : r.reason, "warning"); });
+    // Same mode, session and public tools as the report; never a default or an internal capability.
+    const request = followUpRequest(run);
+    if (!request.ok) { notify(request.reason, "warning"); return; }
+    void live.start(request.mode, question, request.tools, request.sessionId).then((r) => { if (!r.ok && r.reason) notify(r.reason === "needs-identity" ? "请先连接身份。" : r.reason, "warning"); });
   };
 
   const recentItems: RecentItem[] = demoMode ? demoRecent

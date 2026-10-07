@@ -1,5 +1,6 @@
 // Single authoritative run representation plus pure transitions. Event cursor and
 // duplicate handling follow the V1 page (eventKey / advanceEventCursor).
+import { publicTools } from "./tools";
 import type { LegacyResponse } from "../api/endpoints";
 import type { ExecutionMode, FinalResponse, RunEvent, RunStatus, ToolName, Usage, WorkflowView } from "./types";
 
@@ -91,7 +92,7 @@ export function applyView(run: RunState, view: WorkflowView): RunState {
     stage: view.stage ?? next.stage,
     sessionId: view.sessionId ?? next.sessionId,
     errorMessage: view.errorMessage ?? next.errorMessage,
-    tools: view.requestedTools ?? next.tools,
+    tools: view.requestedTools ? publicTools(view.requestedTools) : next.tools,
     finalResponse: view.finalResponse ?? next.finalResponse,
     usage: view.usage ?? next.usage,
     errorCode: view.errorCode ?? next.errorCode,
