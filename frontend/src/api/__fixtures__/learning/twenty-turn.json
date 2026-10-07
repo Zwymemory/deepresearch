@@ -1,0 +1,365 @@
+{
+ "_note": "Captured native learning-notes shapes from the 20-turn synthetic fixture (fixture_only, not research evidence).",
+ "view": {
+  "candidate_limit": 100,
+  "items": [
+   {
+    "correction": "",
+    "discussed": [
+     {
+      "run_id": "wf-fb433346-9218-4fb4-b2d7-3a794c0207ed",
+      "text": "合成资料：HTTP 缓存使用 ETag 验证资源。"
+     }
+    ],
+    "entries": [
+     {
+      "created_at": "2026-10-08 00:17:25.724611",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "HTTP 缓存 ETag 第19轮",
+      "run_id": "wf-fb433346-9218-4fb4-b2d7-3a794c0207ed",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-fb433346-9218-4fb4-b2d7-3a794c0207ed"
+     },
+     {
+      "created_at": "2026-10-08 00:17:25.617597",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "HTTP 缓存 ETag 第18轮",
+      "run_id": "wf-cc7081c5-0082-43d3-be77-709bcded4116",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-cc7081c5-0082-43d3-be77-709bcded4116"
+     },
+     {
+      "created_at": "2026-10-08 00:17:24.214044",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "HTTP 缓存 ETag 第5轮",
+      "run_id": "wf-3a2469ff-d242-408e-a1b5-26b97618a416",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-3a2469ff-d242-408e-a1b5-26b97618a416"
+     }
+    ],
+    "entry_count": 3,
+    "mastery": "unknown",
+    "open_questions": [],
+    "revision": 1,
+    "title": "HTTP 缓存 ETag 第5轮",
+    "topic_id": "learn-87fc425f-bcf4-4a4f-8a6c-84af45bb4bc2"
+   },
+   {
+    "correction": "",
+    "discussed": [
+     {
+      "run_id": "wf-c45dfdb8-eb84-47e6-b9a7-d8858bc38a65",
+      "text": "合成资料：构造器接收必需的依赖。第17轮只讨论示例条件，不代表用户掌握。"
+     },
+     {
+      "run_id": "wf-495e7f7e-6e1b-4f34-921d-6566346db395",
+      "text": "合成资料：构造器接收必需的依赖。第16轮只讨论示例条件，不代表用户掌握。"
+     },
+     {
+      "run_id": "wf-ad19c901-1dda-4867-aacd-b7f8f74faecd",
+      "text": "合成资料：构造器接收必需的依赖。第15轮只讨论示例条件，不代表用户掌握。"
+     },
+     {
+      "run_id": "wf-f8d93f12-fd6e-462d-a740-047f46c203f2",
+      "text": "合成资料：构造器接收必需的依赖。第14轮只讨论示例条件，不代表用户掌握。"
+     },
+     {
+      "run_id": "wf-a731fb0a-2512-4c0e-aaac-ba40054db7ae",
+      "text": "合成资料：构造器接收必需的依赖。第13轮只讨论示例条件，不代表用户掌握。"
+     }
+    ],
+    "entries": [
+     {
+      "created_at": "2026-10-08 00:17:25.51366",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "继续构造器注入：第17轮的条件",
+      "run_id": "wf-c45dfdb8-eb84-47e6-b9a7-d8858bc38a65",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-c45dfdb8-eb84-47e6-b9a7-d8858bc38a65"
+     },
+     {
+      "created_at": "2026-10-08 00:17:25.395564",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "继续构造器注入：第16轮的条件",
+      "run_id": "wf-495e7f7e-6e1b-4f34-921d-6566346db395",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-495e7f7e-6e1b-4f34-921d-6566346db395"
+     },
+     {
+      "created_at": "2026-10-08 00:17:25.271075",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "继续构造器注入：第15轮的条件",
+      "run_id": "wf-ad19c901-1dda-4867-aacd-b7f8f74faecd",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-ad19c901-1dda-4867-aacd-b7f8f74faecd"
+     },
+     {
+      "created_at": "2026-10-08 00:17:25.059168",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "继续构造器注入：第14轮的条件",
+      "run_id": "wf-f8d93f12-fd6e-462d-a740-047f46c203f2",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-f8d93f12-fd6e-462d-a740-047f46c203f2"
+     },
+     {
+      "created_at": "2026-10-08 00:17:24.926203",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "继续构造器注入：第13轮的条件",
+      "run_id": "wf-a731fb0a-2512-4c0e-aaac-ba40054db7ae",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-a731fb0a-2512-4c0e-aaac-ba40054db7ae"
+     },
+     {
+      "created_at": "2026-10-08 00:17:24.803902",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "继续构造器注入：第12轮的条件",
+      "run_id": "wf-2cb4c3d6-5ba5-46d2-9db9-7d6144afa4f1",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-2cb4c3d6-5ba5-46d2-9db9-7d6144afa4f1"
+     },
+     {
+      "created_at": "2026-10-08 00:17:24.718542",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "继续构造器注入：第11轮的条件",
+      "run_id": "wf-6c0b9639-7ca2-40f3-a529-a07a2b3af984",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-6c0b9639-7ca2-40f3-a529-a07a2b3af984"
+     },
+     {
+      "created_at": "2026-10-08 00:17:24.640929",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "继续构造器注入：第10轮的条件",
+      "run_id": "wf-545425e8-1dbb-4259-aa9c-71ec83711e4d",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-545425e8-1dbb-4259-aa9c-71ec83711e4d"
+     },
+     {
+      "created_at": "2026-10-08 00:17:24.557214",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "继续构造器注入：第9轮的条件",
+      "run_id": "wf-a501f522-fdba-4c41-95de-020b6d4c98cc",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-a501f522-fdba-4c41-95de-020b6d4c98cc"
+     },
+     {
+      "created_at": "2026-10-08 00:17:24.479313",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "继续构造器注入：第8轮的条件",
+      "run_id": "wf-9835f4e6-f612-4db0-8f5b-4b6614067110",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-9835f4e6-f612-4db0-8f5b-4b6614067110"
+     },
+     {
+      "created_at": "2026-10-08 00:17:24.395874",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "继续构造器注入：第7轮的条件",
+      "run_id": "wf-c76aa7c5-1fb1-4e00-b533-955ae9cb227a",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-c76aa7c5-1fb1-4e00-b533-955ae9cb227a"
+     },
+     {
+      "created_at": "2026-10-08 00:17:24.302893",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "继续构造器注入：第6轮的条件",
+      "run_id": "wf-a3351347-e4aa-42fb-93c2-f9ffdf9f885a",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-a3351347-e4aa-42fb-93c2-f9ffdf9f885a"
+     },
+     {
+      "created_at": "2026-10-08 00:17:24.118226",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "继续构造器注入：第4轮的条件",
+      "run_id": "wf-dd97f7a9-955c-42cf-b233-16fef6348cb2",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-dd97f7a9-955c-42cf-b233-16fef6348cb2"
+     },
+     {
+      "created_at": "2026-10-08 00:17:24.027156",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "继续构造器注入：第3轮的条件",
+      "run_id": "wf-aa303f6d-88dc-4820-bd02-dcaf2863584d",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-aa303f6d-88dc-4820-bd02-dcaf2863584d"
+     },
+     {
+      "created_at": "2026-10-08 00:17:23.929628",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "继续构造器注入：第2轮的条件",
+      "run_id": "wf-6ea6f254-d337-47a7-819e-440236323edf",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-6ea6f254-d337-47a7-819e-440236323edf"
+     },
+     {
+      "created_at": "2026-10-08 00:17:23.834618",
+      "has_code": false,
+      "has_exercise": false,
+      "question": "继续构造器注入：第1轮的条件",
+      "run_id": "wf-2b3381a5-f4f5-450c-a797-ae90c5104e22",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-2b3381a5-f4f5-450c-a797-ae90c5104e22"
+     },
+     {
+      "created_at": "2026-10-08 00:17:23.580415",
+      "has_code": false,
+      "has_exercise": true,
+      "question": "Spring Boot 构造器注入，给一道练习",
+      "run_id": "wf-2dd20645-4ea8-4239-b874-1400c8d37deb",
+      "run_status": "SUCCEEDED",
+      "source_url": "/api/research/projects/project-eb67daae-2939-4800-b78a-2a204f186b66/learning-notes/sources/wf-2dd20645-4ea8-4239-b874-1400c8d37deb"
+     }
+    ],
+    "entry_count": 17,
+    "mastery": "unknown",
+    "open_questions": [],
+    "revision": 1,
+    "title": "Spring Boot 构造器注入，给一道练习",
+    "topic_id": "learn-cd6e70e7-537f-4601-971d-351634955d13"
+   }
+  ],
+  "project_id": "project-eb67daae-2939-4800-b78a-2a204f186b66",
+  "schema_version": "learning-notes-view/1",
+  "summary_method": "source-excerpts/1",
+  "trusted_as_evidence": false
+ },
+ "selected": {
+  "status": "SELECTED",
+  "project_id": "project-eb67daae-2939-4800-b78a-2a204f186b66",
+  "trusted_as_evidence": false,
+  "learning_notes": {
+   "correction": "为什么无需自己 new 我还没理解；请保留 PaymentGateway 原题。",
+   "entries": [
+    {
+     "discussed": [
+      {
+       "end": 76,
+       "start": 0,
+       "text": "合成练习题：OrderService 需要 PaymentGateway。第1问：用构造器注入并存入 final 字段。第2问：为什么不用自己 new？"
+      }
+     ],
+     "has_code": false,
+     "has_exercise": true,
+     "open_questions": [],
+     "question": "Spring Boot 构造器注入，给一道练习",
+     "run_id": "wf-2dd20645-4ea8-4239-b874-1400c8d37deb",
+     "user_correction": ""
+    },
+    {
+     "discussed": [
+      {
+       "end": 36,
+       "start": 0,
+       "text": "合成资料：构造器接收必需的依赖。第17轮只讨论示例条件，不代表用户掌握。"
+      }
+     ],
+     "has_code": false,
+     "has_exercise": false,
+     "open_questions": [],
+     "question": "继续构造器注入：第17轮的条件",
+     "run_id": "wf-c45dfdb8-eb84-47e6-b9a7-d8858bc38a65",
+     "user_correction": ""
+    },
+    {
+     "discussed": [
+      {
+       "end": 36,
+       "start": 0,
+       "text": "合成资料：构造器接收必需的依赖。第16轮只讨论示例条件，不代表用户掌握。"
+      }
+     ],
+     "has_code": false,
+     "has_exercise": false,
+     "open_questions": [],
+     "question": "继续构造器注入：第16轮的条件",
+     "run_id": "wf-495e7f7e-6e1b-4f34-921d-6566346db395",
+     "user_correction": ""
+    },
+    {
+     "discussed": [
+      {
+       "end": 36,
+       "start": 0,
+       "text": "合成资料：构造器接收必需的依赖。第15轮只讨论示例条件，不代表用户掌握。"
+      }
+     ],
+     "has_code": false,
+     "has_exercise": false,
+     "open_questions": [],
+     "question": "继续构造器注入：第15轮的条件",
+     "run_id": "wf-ad19c901-1dda-4867-aacd-b7f8f74faecd",
+     "user_correction": ""
+    },
+    {
+     "discussed": [
+      {
+       "end": 36,
+       "start": 0,
+       "text": "合成资料：构造器接收必需的依赖。第14轮只讨论示例条件，不代表用户掌握。"
+      }
+     ],
+     "has_code": false,
+     "has_exercise": false,
+     "open_questions": [],
+     "question": "继续构造器注入：第14轮的条件",
+     "run_id": "wf-f8d93f12-fd6e-462d-a740-047f46c203f2",
+     "user_correction": ""
+    }
+   ],
+   "mastery": "unknown",
+   "schema_version": "learning-note-context/1",
+   "source_refs": [
+    {
+     "run_id": "wf-2dd20645-4ea8-4239-b874-1400c8d37deb",
+     "source_sha256": "e59163b94f54db81daf17637ab8885ebb490280f801e9b0f9f1f60a4fc483e0a",
+     "topic_id": "learn-cd6e70e7-537f-4601-971d-351634955d13",
+     "topic_revision": 2
+    },
+    {
+     "run_id": "wf-c45dfdb8-eb84-47e6-b9a7-d8858bc38a65",
+     "source_sha256": "b3fc1530d7142c7cee53e5be32e43941f237bbff8a89e5ae9cff8c833f13599a",
+     "topic_id": "learn-cd6e70e7-537f-4601-971d-351634955d13",
+     "topic_revision": 2
+    },
+    {
+     "run_id": "wf-495e7f7e-6e1b-4f34-921d-6566346db395",
+     "source_sha256": "e688ae9c5d9f07627f229669983555fc4c47226e5ec6eeb6a31731a09727c3bf",
+     "topic_id": "learn-cd6e70e7-537f-4601-971d-351634955d13",
+     "topic_revision": 2
+    },
+    {
+     "run_id": "wf-ad19c901-1dda-4867-aacd-b7f8f74faecd",
+     "source_sha256": "8fd6563f999203d4f0f8ef79e3399b3a7dd0b9234e0a2a67f4e9ad36ba3d7707",
+     "topic_id": "learn-cd6e70e7-537f-4601-971d-351634955d13",
+     "topic_revision": 2
+    },
+    {
+     "run_id": "wf-f8d93f12-fd6e-462d-a740-047f46c203f2",
+     "source_sha256": "053e49b7802271b326a217adb7bcba2203a0a4563a56fce4e4f6d18bb4ab14c8",
+     "topic_id": "learn-cd6e70e7-537f-4601-971d-351634955d13",
+     "topic_revision": 2
+    }
+   ],
+   "summary_method": "source-excerpts/1",
+   "title": "Spring Boot 构造器注入，给一道练习",
+   "topic_id": "learn-cd6e70e7-537f-4601-971d-351634955d13",
+   "total_entries": 17
+  }
+ }
+}

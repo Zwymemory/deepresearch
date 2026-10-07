@@ -15,6 +15,7 @@ import { RecordedDisagreementView } from "../features/evidence/RecordedDisagreem
 import { recordedDisagreements } from "../domain/evidenceView";
 import { Inspector } from "../features/evidence/Inspector";
 import { SourcesDialog } from "../features/evidence/SourcesDialog";
+import { LearningNotesSection } from "../features/memory/LearningNotes";
 import { ReportView } from "../features/report/ReportView";
 import { RunningView } from "../features/running/RunningView";
 import { IdentityDialog, RecentDialog, type RecentItem } from "../features/shell/Dialogs";
@@ -462,7 +463,10 @@ export function App() {
                   lastEventId={run.lastEventId} onCite={openCitation} onOpenSources={() => setDialog("sources")} onNew={goHome}
                   onRetryQuestion={retryQuestion} onFollowUp={followUp} onReady={setReportReady}
                   evidence={evidence} onCompareDisagreement={openDisagreement}
-                  save={reportSave()} memoryNote={memoryNote} summary={summary} autoSave={autoSave} />
+                  save={reportSave()} memoryNote={memoryNote} summary={summary} autoSave={autoSave}
+                  learning={demoMode || run.mode !== "agent" || !run.runId ? null
+                    : <LearningNotesSection key={`${live.scope}\u0000${run.runId}`} ctx={live.ctx} scope={live.scope} runId={run.runId}
+                        projectId={notebook.eligibility.state === "eligible" ? notebook.eligibility.projectId : null} />} />
               ) : null}
               {!liveBlocked && view === "compare" && compare && compareA && compareB ? (
                 <CompareView statement={statementsFor(blocks, compare.a)[0] ?? null} a={compareA} b={compareB} all={citations} demo={demoMode}

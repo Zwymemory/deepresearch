@@ -90,7 +90,7 @@ function claimLabel(body: string): string | null {
 const normalizeUrl = (u: string) => u.replace(/[)）。．.,，;；]+$/, "").replace(/\/$/, "");
 
 /** Bare URLs in prose become compact link nodes (text inside code is never touched). */
-function withLinks(nodes: Inline[]): Inline[] {
+export function withLinks(nodes: Inline[]): Inline[] {
   const out: Inline[] = [];
   for (const node of nodes) {
     if (node.type !== "text") { out.push(node.type === "strong" ? { ...node, children: withLinks(node.children) } : node); continue; }

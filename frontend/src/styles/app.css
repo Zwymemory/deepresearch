@@ -646,3 +646,11 @@ svg.i { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentCo
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* learning notes (memory phase 5): stage notes inside the existing summary disclosure style */
+.learning-topic { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.learning-title { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.learning-history { display: grid; gap: 8px; margin: 8px 0 0; padding-left: 20px; }
+.learning-history .link-btn { margin-left: 8px; }
+.learning-source { display: grid; gap: 6px; margin-top: 8px; padding: 10px 12px; border-left: 2px solid var(--line); overflow-wrap: anywhere; }
+.learning-selection[data-status="UNAVAILABLE"] { color: var(--error-ink); }

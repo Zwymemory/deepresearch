@@ -9,7 +9,7 @@ import { parseList, parseProgressSave, parseProject, parseResume, parseSnapshot,
 const f = (ctx: ApiContext) => ctx.fetch ?? globalThis.fetch.bind(globalThis);
 const enc = encodeURIComponent;
 
-async function call(ctx: ApiContext, method: string, path: string, signal?: AbortSignal, body?: unknown): Promise<unknown> {
+export async function call(ctx: ApiContext, method: string, path: string, signal?: AbortSignal, body?: unknown): Promise<unknown> {
   const response = await f(ctx)(ctx.origin + path, {
     method, cache: "no-store", signal,
     headers: authHeaders(ctx.token, body === undefined ? { Accept: "application/json" } : { Accept: "application/json", "Content-Type": "application/json" }),
