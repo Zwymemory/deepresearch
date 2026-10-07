@@ -12,6 +12,11 @@ const OUT = process.argv[2] || "output/playwright/budget-draft";
 const MOCK = (process.env.MOCK_BASE || "http://127.0.0.1:5175") + "/app/";
 const LIVE = (process.env.LIVE_BASE || "http://127.0.0.1:5173") + "/app/";
 const BUDGET_RUN = "wf-50124710-0812-450d-8c1d-68375f2cdde0", CITED_RUN = "wf-5c0b351c-e9c1-43b7-b62f-e7929f87e676";
+// Credential-free native acceptance fixture (read only): original question and the expected draft.
+const FIXTURE = process.env.DRAFT_FIXTURE || "/Users/zwy/Claude/Projects/deepresearch-memory-mvp/target/local-services/budget-draft-acceptance-2026-10-07.json";
+const fixture = JSON.parse(readFileSync(FIXTURE, "utf8"));
+const QUESTION = fixture.originalQuestion;
+const FIXTURE_DRAFT = fixture.native_view.finalResponse.researchDraft;
 mkdirSync(OUT, { recursive: true });
 const results = [];
 const check = (name, ok, detail = "") => { results.push({ name, ok: !!ok, detail: String(detail) }); console.log(ok ? "PASS" : "FAIL", name, ok ? "" : detail); };
@@ -55,7 +60,7 @@ try {
     const draft = await page.locator(".research-draft").innerText();
     check(`${tag}: budget stop stays visible, not a completed report`, report.includes("因预算上限终止") && !report.includes("研究完成"));
     check(`${tag}: draft labelled unpublished and unchecked`, draft.includes("阶段性资料草稿") && draft.includes("未发布") && draft.includes("尚未核查"));
-    check(`${tag}: original vs search-snippet vs knowledge labels`, draft.includes("已读取原文（网页）") && draft.includes("仅搜索摘要") && draft.includes("已读取原文（知识库片段）"));
+    check(`${tag}: original vs search-snippet vs knowledge labels`, draft.includes("已读取原文（网页）") && draft.includes("仅搜索摘要") && draft.includes("知识库片段") && !draft.includes("已读取原文（知识库片段）"));
     check(`${tag}: recorded conclusion with status and unknown scope, not final`, draft.includes("已记录的核查结论（尚未最终发布）") && draft.includes("有争议") && draft.includes("版本未确定") && draft.includes("有效时间未确定"));
     check(`${tag}: omission note and pending task`, draft.includes("另有 2 条资料未列出") && draft.includes("在同数据集、同硬件下测量端到端延迟"));
     check(`${tag}: excerpts rendered as text, never HTML`, (await page.locator(".research-draft b").count()) === 0);
@@ -85,14 +90,46 @@ try {
     const { context, page, errors, writes } = await session({ width: w, height: h });
     await page.goto(LIVE);
     await identity(page, "demo-tenant", "demo-user", true);
-    await page.evaluate((id) => sessionStorage.setItem("deepresearch.console.currentRun", JSON.stringify({ mode: "agent", runId: id, question: "" })), BUDGET_RUN);
+    await page.evaluate(([id, q]) => sessionStorage.setItem("deepresearch.console.currentRun", JSON.stringify({ mode: "agent", runId: id, question: q })), [BUDGET_RUN, QUESTION]);
     await page.reload();
     await page.getByText("因预算上限终止").first().waitFor({ timeout: 30000 });
+    check(`${tag}: report H1 is the actual original question`, (await page.locator("#report-question").textContent()) === QUESTION);
     const hasDraft = await page.evaluate(async (id) => {
       const auth = "Bearer " + sessionStorage.getItem("deepresearch.console.sessionToken");
       return !!(await (await fetch("/api/research/workflows/" + id, { headers: { Authorization: auth } })).json()).finalResponse?.researchDraft;
     }, BUDGET_RUN);
     check(`${tag}: native budget run renders ${hasDraft ? "its draft" : "the previous budget-stop view (no draft returned yet)"}`, hasDraft ? (await page.locator(".research-draft").count()) === 1 : (await page.locator(".research-draft").count()) === 0);
+    if (hasDraft) {
+      const native = await page.evaluate(async (id) => {
+        const auth = "Bearer " + sessionStorage.getItem("deepresearch.console.sessionToken");
+        const d = (await (await fetch("/api/research/workflows/" + id, { headers: { Authorization: auth } })).json()).finalResponse.researchDraft;
+        return { sources: d.sources.length, tasks: d.pendingTasks.length, markdown: d.markdown, draft: d };
+      }, BUDGET_RUN);
+      check(`${tag}: native GET draft equals the acceptance fixture`, JSON.stringify(native.draft) === JSON.stringify(FIXTURE_DRAFT));
+      const draftText = await page.locator(".research-draft").innerText();
+      const kinds = native.draft.sources.reduce((m, s) => ({ ...m, [s.kind]: (m[s.kind] ?? 0) + 1 }), {});
+      check(`${tag}: kind labels match native counts`, (draftText.match(/已读取原文（网页）/g) ?? []).length === (kinds.WEB_ORIGINAL ?? 0)
+        && (draftText.match(/仅搜索摘要/g) ?? []).length === (kinds.WEB_SEARCH_SNAPSHOT ?? 0) && (draftText.match(/尚未核查/g) ?? []).length >= native.sources, JSON.stringify(kinds));
+      check(`${tag}: stopped-time task status, not "still executing"`, draftText.includes("停止时仍在进行") && !/（running）|（pending）/.test(draftText));
+      check(`${tag}: native draft validated and rendered (not the cannot-confirm fallback)`, (await page.locator(".research-draft h2").count()) === 1
+        && (await page.locator(".draft-sources > li").count()) === native.sources, native.sources);
+      check(`${tag}: native budget stop still visible, not completed`, (await page.locator("#report").innerText()).includes("因预算上限终止") && !(await page.locator("#report").innerText()).includes("研究完成"));
+      if (w === 1440) {
+        const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "下载草稿（.md）" }).click()]);
+        const path = `${OUT}/native-${download.suggestedFilename()}`;
+        await download.saveAs(path);
+        check(`${tag}: native download is exactly the server markdown`, readFileSync(path, "utf8") === native.markdown, readFileSync(path, "utf8").length + " vs " + native.markdown.length);
+      }
+      // Expand one original-page excerpt (text only) for the screenshot.
+      const original = page.locator(".draft-sources > li", { hasText: "已读取原文（网页）" }).first();
+      await original.locator("details > summary").click();
+      check(`${tag}: expanded excerpt is the native excerpt text`, (await original.locator(".ev-quote").innerText()).trim() === native.draft.sources.find((s) => s.kind === "WEB_ORIGINAL").excerpt.trim());
+      await page.locator(".research-draft").scrollIntoViewIfNeeded();
+      await page.screenshot({ path: `${OUT}/${tag}-native-draft.png` });
+      await original.scrollIntoViewIfNeeded();
+      await page.screenshot({ path: `${OUT}/${tag}-native-excerpt-open.png` });
+      await page.evaluate(() => window.scrollTo(0, 0));
+    }
     await page.screenshot({ path: `${OUT}/${tag}-budget-native.png` });
     if (w === 1440) {
       await page.evaluate((id) => sessionStorage.setItem("deepresearch.console.currentRun", JSON.stringify({ mode: "agent", runId: id, question: "" })), CITED_RUN);
