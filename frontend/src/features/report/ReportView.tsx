@@ -219,14 +219,16 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
 
         {/* Follow-up only makes sense after a report exists; failed or cancelled runs offer recovery instead. */}
         {run.status === "SUCCEEDED" || run.status === "INSUFFICIENT_EVIDENCE" ? <form className="followup" onSubmit={(e) => { e.preventDefault(); if (followUp.trim()) onFollowUp(followUp.trim()); }}>
-          <label htmlFor="followup" style={{ fontWeight: 650 }}>{!demo && run.sessionId ? "在同一 Session 中继续追问" : "继续追问"}</label>
+          <label htmlFor="followup" style={{ fontWeight: 650 }}>{demo || !run.sessionId ? "继续追问" : run.mode === "agent" ? "继续追问这份报告" : "在同一会话中继续追问"}</label>
           <div className="followup-row">
             <input id="followup" value={followUp} onChange={(e) => setFollowUp(e.target.value)} placeholder="基于这份报告，再问一个问题" />
             <button type="submit" className="btn btn-primary" disabled={!followUp.trim()}>发起新研究</button>
           </div>
           <p className="note">{demo ? "会以新的示例运行开始；示例模式下不会发送请求。"
-            : run.sessionId ? "会使用同一 Session ID 创建新的研究运行。Single Agent 会按 Session 选取上下文；工作流模式是否使用 Session 上下文尚未经验证。"
-            : "会创建新的研究运行，不沿用本次上下文。"}</p>
+            : !run.sessionId ? "会创建新的研究运行，不沿用本次上下文。"
+            : run.mode === "agent" ? "会结合当前会话的最近回答理解‘这道题’或‘这段代码’，并核对答案所需的原始资料。"
+            : run.mode === "legacy" ? "会使用同一会话 ID 创建新的基线运行；Single Agent 基线按会话选取上下文。"
+            : "会使用同一会话 ID 创建新的研究运行；工作流模式是否使用会话上下文尚未经验证。"}</p>
         </form> : null}
       </article>
     </div>
