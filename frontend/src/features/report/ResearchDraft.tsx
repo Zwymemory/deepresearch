@@ -6,9 +6,14 @@ import { Icon } from "../../ui/Icon";
 const KIND: Record<DraftSourceKind, { label: string; chip: string }> = {
   WEB_ORIGINAL: { label: "已读取原文（网页）", chip: "chip-web" },
   WEB_SEARCH_SNAPSHOT: { label: "仅搜索摘要", chip: "chip-warn" },
-  KNOWLEDGE_CHUNK: { label: "已读取原文（知识库片段）", chip: "chip-kb" },
+  // The same kind can be a retrieval chunk, so it is not claimed as a fully read original.
+  KNOWLEDGE_CHUNK: { label: "知识库片段", chip: "chip-kb" },
 };
-const TASK_STATUS: Record<string, string> = { pending: "待执行", running: "执行中", blocked: "待解决", uncovered: "尚未核查", failed: "失败", FAILED: "失败" };
+// The run has stopped: running / pending describe each task at the time of the budget stop.
+const TASK_STATUS: Record<string, string> = {
+  pending: "停止时尚未开始", running: "停止时仍在进行", blocked: "待解决", unresolved: "未解决", publication_pending: "等待发布",
+  uncovered: "尚未核查", failed: "失败", FAILED: "失败",
+};
 const scopeText = (v: DraftScopeValue, unknown: string, known: string) => v.status === "known" && v.value ? `${known}：${v.value}` : unknown;
 
 /**
