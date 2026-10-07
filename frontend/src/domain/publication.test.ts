@@ -4,8 +4,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { parseMarkdown, statementsFor } from "./markdown";
-import { parsePublication, type ClaimBlock } from "./publication";
+import { inlineText, parseMarkdown, statementsFor } from "./markdown";
+import { parsePublication, proseParagraphs, type ClaimBlock } from "./publication";
 
 const fixture = JSON.parse(readFileSync(join(fileURLToPath(new URL(".", import.meta.url)), "../api/__fixtures__/publication/native-succeeded.json"), "utf8")) as
   { answer: string; citationContract: string; citationCount: number };
@@ -97,8 +97,8 @@ describe("publication adapter (native multiline teaching report)", () => {
   });
 
   it("layers each claim into explanation, analogy, code and exercise without dropping text", () => {
-    expect(cs[0].parts.map((p) => p.kind === "text" ? p.role : p.kind)).toEqual(["body", "analogy", "code", "exercise", "source"]);
-    expect(cs[1].parts.map((p) => p.kind === "text" ? p.role : p.kind)).toEqual(["body", "code", "body", "analogy", "exercise", "source"]);
+    expect(cs[0].parts.map((p) => p.kind === "text" ? p.role : p.kind)).toEqual(["body", "body", "body", "analogy", "code", "exercise", "source"]);
+    expect(cs[1].parts.map((p) => p.kind === "text" ? p.role : p.kind)).toEqual(["body", "body", "code", "body", "analogy", "exercise", "source"]);
     const code = cs[0].parts.find((p) => p.kind === "code");
     expect(code).toMatchObject({ lang: "java", untested: true });
     expect(multi.answer).toContain("```java\n" + (code as { code: string }).code + "\n```");   // indentation kept exactly
@@ -130,5 +130,67 @@ describe("publication adapter (native multiline teaching report)", () => {
   it("falls back to Markdown when multi-line boundaries cannot be validated", () => {
     expect(parsePublication(multi.answer, multi.citationContract, multi.citations.length, { sourceUrls: multi.citations })).toBeNull();
     expect(parsePublication(multi.answer.replace("```java\n@Service", "```java\n@Service\n```\n```"), multi.citationContract, multi.citations.length, ctx)).toBeNull();
+  });
+
+  it("splits long prose only at sentence ends outside quotes/brackets; pieces rejoin to the original", () => {
+    const first = cs[0].parts.filter((p) => p.kind === "text" && p.role === "body").map((p) => (p as { original: string }).original);
+    expect(first.length).toBeGreaterThan(1);
+    expect(multi.answer).toContain(first.join(""));
+    for (const piece of first) expect(piece).toMatch(/[。！？]$/);
+    const quoted = "前言".repeat(40) + "“引语里的句号。不能断开。”" + "后文".repeat(40) + "。";
+    expect(proseParagraphs(quoted)).toEqual([quoted]);
+    expect(proseParagraphs("短句。也短。")).toEqual(["短句。也短。"]);
+    expect(proseParagraphs("长".repeat(150) + "。见 https://example.org/a。后续")).toHaveLength(1);
+  });
+
+  it("shows existing annotations as inline code without changing text", () => {
+    const body = cs[0].parts[0] as Extract<ClaimBlock["parts"][number], { kind: "text" }>;
+    expect(body.inline).toContainEqual({ type: "code", text: "@ComponentScan" });
+    expect(cs[0].text).toContain("@ComponentScan");
+    expect(body.inline.some((n) => n.type === "strong")).toBe(false);
+  });
+});
+
+describe("publication adapter: review preservation boundaries", () => {
+  const multi = JSON.parse(readFileSync(join(fileURLToPath(new URL(".", import.meta.url)), "../api/__fixtures__/publication/native-multiline.json"), "utf8")) as
+    { answer: string; citationContract: string; citations: string[]; claims: Array<{ claim: { text: string } }> };
+  const url = multi.citations[0];
+  // Rewrites the first claim's text consistently in the answer and its structured claim.
+  const variant = (edit: (text: string) => string, sourceUrls: string[] = multi.citations) => {
+    const original = multi.claims[0].claim.text;
+    const changed = edit(original);
+    const structured = multi.claims.map((c, i) => i === 0 ? { ...c, claim: { ...c.claim, text: changed } } : c);
+    const blocks = parsePublication(multi.answer.replace(original, changed), multi.citationContract, sourceUrls.length, { sourceUrls, structuredClaims: structured });
+    expect(blocks).not.toBeNull();
+    return { blocks: blocks!, claim: claims(blocks)[0] };
+  };
+  const shownText = (c: ClaimBlock) => c.parts.flatMap((p) => p.kind === "code" || (p.kind === "source" && p.matched) ? [] : [inlineText(p.inline)]).join("\n");
+
+  it("keeps a source paragraph visible when it also carries a substantive sentence", () => {
+    const { claim } = variant((t) => t.replace(/来源：[^\n]*$/, `来源：${url}。仅在单实例模式适用。`));
+    const src = claim.parts.find((p) => p.kind === "source");
+    expect(src).toMatchObject({ matched: false });
+    expect(shownText(claim)).toContain("仅在单实例模式适用。");
+  });
+
+  it("keeps a source paragraph visible when a following line adds a statement", () => {
+    const { claim } = variant((t) => t.replace(/来源：[^\n]*$/, `来源：${url}\n该行为在 3.x 中改变。`));
+    expect(shownText(claim)).toContain("该行为在 3.x 中改变。");
+  });
+
+  it("shortens only the recognised analogy note; a substantive parenthetical stays visible", () => {
+    const { claim } = variant((t) => t.replace("生活类比（仅为帮助理解的举例，并非官方文档原文）：", "生活类比（仅适用于单实例）："));
+    const analogy = claim.parts.find((p) => p.kind === "text" && p.role === "analogy") as Extract<ClaimBlock["parts"][number], { kind: "text" }>;
+    expect(analogy.tag).toBeNull();
+    expect(inlineText(analogy.inline)).toContain("（仅适用于单实例）");
+  });
+
+  it("collects citations from prose markers and the scope tail, never from code", () => {
+    const { blocks, claim } = variant((t) => t
+      .replace("也就是说，", "也就是说[来源2]，")
+      .replace("private final RiskAssessor riskAssessor;", "private final RiskAssessor riskAssessor; // [来源3]"), [url, "https://example.org/two", "https://example.org/three"]);
+    expect(claim.citations).toEqual([2, 1]);
+    expect(statementsFor(blocks, 2)).toHaveLength(1);
+    expect(statementsFor(blocks, 3)).toHaveLength(0);
   });
 });

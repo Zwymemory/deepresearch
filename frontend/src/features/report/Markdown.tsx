@@ -39,7 +39,7 @@ function ClaimCard({ block, ctx, linked, k }: { block: ClaimBlock; ctx: CiteHand
   const s = block.scope;
   const status = STATUS_LABEL[block.status];
   const single = block.parts.length === 1 && block.parts[0].kind === "text" && block.parts[0].role === "body";
-  const hidden = block.parts.filter((p) => (p.kind === "source" && p.matched) || (p.kind === "text" && p.role === "analogy") || (p.kind === "code" && p.caption));
+  const hidden = block.parts.filter((p) => (p.kind === "source" && p.matched) || (p.kind === "text" && p.role === "analogy" && !!p.tag) || (p.kind === "code" && p.caption));
   const versionKnown = !s.version.startsWith("未确定");
   return (
     <section className="claim-card" data-status={block.status} data-linked={linked} aria-labelledby={block.id.replace(/-body$/, "")}>

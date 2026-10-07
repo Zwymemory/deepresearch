@@ -108,6 +108,73 @@ function withLinks(nodes: Inline[]): Inline[] {
   return out;
 }
 
+/**
+ * Existing Java-style annotations in prose (e.g. "@ComponentScan") are shown as inline code.
+ * Display only: the characters are unchanged, and URLs (already link nodes) are never touched.
+ */
+function withAnnotations(nodes: Inline[]): Inline[] {
+  const out: Inline[] = [];
+  for (const node of nodes) {
+    if (node.type !== "text") { out.push(node.type === "strong" ? { ...node, children: withAnnotations(node.children) } : node); continue; }
+    let cursor = 0;
+    for (const m of node.text.matchAll(/(?<![\w@./:-])@[A-Z][A-Za-z0-9]*\b/g)) {
+      const at = m.index ?? 0;
+      if (at > cursor) out.push({ type: "text", text: node.text.slice(cursor, at) });
+      out.push({ type: "code", text: m[0] });
+      cursor = at + m[0].length;
+    }
+    if (cursor < node.text.length) out.push({ type: "text", text: node.text.slice(cursor) });
+  }
+  return out;
+}
+
+const decorate = (text: string, contract: string | null | undefined, count: number) => withAnnotations(withLinks(parseInline(text, contract, count)));
+
+const OPEN = "《“‘「『（(【[`";
+const CLOSE: Record<string, string> = { "《": "》", "“": "”", "‘": "’", "「": "」", "『": "』", "（": "）", "(": ")", "【": "】", "[": "]", "`": "`" };
+const LONG_PARAGRAPH = 140, MIN_PARAGRAPH = 60;
+
+/**
+ * Display-only split of a long Chinese prose paragraph at sentence ends (。！？) that are outside
+ * quotes, brackets and inline code. Every piece is an exact substring; joined they are the original.
+ */
+export function proseParagraphs(text: string): string[] {
+  if (text.length <= LONG_PARAGRAPH || text.includes("\n") || /https?:\/\//.test(text)) return [text];
+  const sentences: string[] = [];
+  const stack: string[] = [];
+  let start = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (stack.length && ch === CLOSE[stack[stack.length - 1]]) { stack.pop(); continue; }
+    if (OPEN.includes(ch) && !(ch === "`" && stack[stack.length - 1] === "`")) { stack.push(ch); continue; }
+    if (!stack.length && "。！？".includes(ch)) { sentences.push(text.slice(start, i + 1)); start = i + 1; }
+  }
+  if (stack.length) return [text];   // unbalanced quotes or brackets: leave the paragraph whole
+  if (start < text.length) sentences.push(text.slice(start));
+  const pieces: string[] = [];
+  for (const sentence of sentences) {
+    const last = pieces.length - 1;
+    if (last >= 0 && pieces[last].length < MIN_PARAGRAPH) pieces[last] += sentence;
+    else pieces.push(sentence);
+  }
+  // A short trailing sentence joins the previous paragraph rather than standing alone.
+  if (pieces.length > 1 && pieces[pieces.length - 1].length < MIN_PARAGRAPH / 2) pieces.splice(-2, 2, pieces[pieces.length - 2] + pieces[pieces.length - 1]);
+  return pieces;
+}
+
+/** The publisher's illustrative-example note, e.g. "仅为帮助理解的举例，并非官方文档原文". */
+const ANALOGY_NOTE = /^(?:仅|只)?(?:为|用于|是)?帮助理解的?(?:举例|例子|类比|比喻)?(?:[，,、]\s*(?:并?非|不是)(?:官方)?(?:文档)?(?:原文|内容))?$/;
+
+/**
+ * A "来源：" paragraph that is nothing but a source reference: one line, one sentence
+ * (a title and/or URL, optionally in brackets), no further statement after it.
+ */
+function sourceOnly(text: string): boolean {
+  if (text.includes("\n")) return false;
+  const masked = text.replace(URL_RE, "URL");
+  return /^来源[：:][^。！？；;!?]*[。.]?$/.test(masked);
+}
+
 /** Splits a multi-line claim into display parts. Returns null when a code fence is malformed. */
 function claimParts(body: string, cited: Set<string>, contract: string | null | undefined, count: number): ClaimPart[] | null {
   const lines = body.split("\n");
@@ -145,20 +212,27 @@ function claimParts(body: string, cited: Set<string>, contract: string | null | 
     const text = chunk.text;
     if (/^来源[：:]/.test(text)) {
       const urls = [...text.matchAll(URL_RE)].map((m) => normalizeUrl(m[0]));
-      parts.push({ kind: "source", original: text, matched: urls.length > 0 && urls.every((u) => cited.has(u)), inline: withLinks(parseInline(text, contract, count)) });
+      const matched = sourceOnly(text) && urls.length > 0 && urls.every((u) => cited.has(u));
+      parts.push({ kind: "source", original: text, matched, inline: decorate(text, contract, count) });
       continue;
     }
     const analogy = /^生活类比(（[^）]*）)?[：:]/.exec(text);
     if (analogy) {
-      parts.push({ kind: "text", role: "analogy", label: "生活类比", tag: "帮助理解", original: text, inline: withLinks(parseInline(text.slice(analogy[0].length), contract, count)) });
+      // Only the recognised "illustration, not the documentation" note is shortened to a tag;
+      // any other parenthetical (e.g. a condition) stays visible in front of the analogy.
+      const note = analogy[1] ?? "";
+      const boilerplate = !note || ANALOGY_NOTE.test(note.slice(1, -1));
+      const rest = text.slice(analogy[0].length);
+      parts.push({ kind: "text", role: "analogy", label: "生活类比", tag: boilerplate ? "帮助理解" : null, original: text,
+        inline: decorate(boilerplate ? rest : `${note}${rest}`, contract, count) });
       continue;
     }
     const exercise = /^练习[：:]/.exec(text);
     if (exercise) {
-      parts.push({ kind: "text", role: "exercise", label: "练习", tag: null, original: text, inline: withLinks(parseInline(text.slice(exercise[0].length), contract, count)) });
+      parts.push({ kind: "text", role: "exercise", label: "练习", tag: null, original: text, inline: decorate(text.slice(exercise[0].length), contract, count) });
       continue;
     }
-    parts.push({ kind: "text", role: "body", label: null, tag: null, original: text, inline: withLinks(parseInline(text, contract, count)) });
+    for (const piece of proseParagraphs(text)) parts.push({ kind: "text", role: "body", label: null, tag: null, original: piece, inline: decorate(piece, contract, count) });
   }
   return parts;
 }
@@ -238,8 +312,14 @@ export function parsePublication(source: string, contract: string | null | undef
       if (!body.trim()) return null;
       const cites = tail.groups.cites ?? "";
       const citationInline = parseInline(cites.trim(), contract, count).filter((n) => n.type === "citation");
+      // Membership: markers in the claim's prose (fenced and inline code excluded) and in its scope tail.
+      const prose = body.replace(/^\s*```[^\n]*\n[\s\S]*?^\s*```\s*$/gm, "");
       const citations: number[] = [];
-      citationInline.forEach((n) => { if (n.type === "citation" && n.number && !citations.includes(n.number)) citations.push(n.number); });
+      const collect = (nodes: Inline[]): void => nodes.forEach((n) => {
+        if (n.type === "strong") collect(n.children);
+        else if (n.type === "citation" && n.number && !citations.includes(n.number)) citations.push(n.number);
+      });
+      collect([...parseInline(prose, contract, count), ...citationInline]);
       parsedMarkers += (cites.match(MARKER) ?? []).length + (body.match(MARKER) ?? []).length;
       const cited = new Set(citations.map((n) => context.sourceUrls?.[n - 1]).filter((u): u is string => !!u).map(normalizeUrl));
       const multiline = body.includes("\n");
@@ -248,14 +328,14 @@ export function parsePublication(source: string, contract: string | null | undef
       const label = multiline ? null : claimLabel(body);
       const shown = label ? body.slice(label.length + 1) : body;
       const parts = multiline ? claimParts(body, cited, contract, count)
-        : [{ kind: "text" as const, role: "body" as const, label: null, tag: null, original: shown, inline: withLinks(parseInline(shown, contract, count)) }];
+        : [{ kind: "text" as const, role: "body" as const, label: null, tag: null, original: shown, inline: decorate(shown, contract, count) }];
       if (!parts) return null;
       const id = `claim-${++claims}`;
       const heading = label ?? subjectFor(context.structuredClaims, body) ?? `结论 ${claims}`;
       blocks.push({ type: "heading", level: 3, id, inline: [{ type: "text", text: heading }], text: heading });
       blocks.push({
         type: "claim", id: `${id}-body`, status: group, label, parts, citationInline, citations, scope,
-        inline: withLinks(parseInline(shown + cites, contract, count)),
+        inline: decorate(shown + cites, contract, count),
         text: inlineText(parseInline(body, contract, count)),
         gaps: tail.groups.gaps ? jsonStrings(tail.groups.gaps.slice("；缺口：".length)) : null,
         resolution: tail.groups.resolution ? tail.groups.resolution.slice("；争议解决依据：".length) : null,
