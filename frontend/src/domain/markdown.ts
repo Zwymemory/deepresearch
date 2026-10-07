@@ -7,7 +7,9 @@ export type Inline =
   | { type: "text"; text: string }
   | { type: "strong"; children: Inline[] }
   | { type: "code"; text: string }
-  | { type: "citation"; label: string; number: number | null; reason: string | null };
+  | { type: "citation"; label: string; number: number | null; reason: string | null }
+  /** A bare URL shown as a compact, safe link label (the full URL stays the href and title). */
+  | { type: "link"; href: string; label: string };
 
 export type Block =
   | { type: "heading"; level: 2 | 3 | 4 | 5; id: string; inline: Inline[]; text: string }
@@ -16,6 +18,8 @@ export type Block =
   | { type: "quote"; inline: Inline[]; text: string; citations: number[] }
   | { type: "code"; text: string }
   | { type: "hr" }
+  /** Secondary text kept one click away (e.g. the generic scope statement). */
+  | { type: "aside"; title: string; text: string }
   | ClaimBlock;
 
 const INLINE_PATTERN = /(\*\*[^*\n]+\*\*|`[^`\n]+`|\[(?:来源|source)\s*\d+\]|[（(][^()（）\n]{1,80}\s+来源[）)])/gi;
@@ -50,7 +54,7 @@ export function parseInline(source: string, contract: string | null | undefined,
 
 export function inlineText(nodes: Inline[]): string {
   return nodes.map((node) => node.type === "strong" ? inlineText(node.children)
-    : node.type === "citation" ? "" : node.text).join("").replace(/\s+/g, " ").trim();
+    : node.type === "citation" ? "" : node.type === "link" ? node.href : node.text).join("").replace(/\s+/g, " ").trim();
 }
 
 function citationNumbers(nodes: Inline[]): number[] {

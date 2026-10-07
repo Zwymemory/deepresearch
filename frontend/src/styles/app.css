@@ -492,17 +492,39 @@ svg.i { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentCo
 .summary-sources { display: grid; gap: 8px; margin: 8px 0 0; padding-left: 1.4em; }
 .summary-sources p { margin-top: 2px; color: var(--ink-2); overflow-wrap: anywhere; white-space: pre-wrap; }
 
-/* ---------------------------------------------------------------- published claims (report polish) */
-.prose .claim-card { display: grid; gap: 10px; padding: 14px 16px; border: 1px solid var(--line); border-left: 3px solid var(--success); border-radius: 0 var(--radius-md) var(--radius-md) 0; background: var(--paper); }
+/* ---------------------------------------------------------------- published claims (report readability v2) */
+/* Light reading containers: a hairline on the left, no heavy card per paragraph. */
+.prose .claim-card { display: grid; gap: 14px; min-width: 0; padding: 2px 0 2px 18px; border-left: 2px solid var(--success); }
 .prose .claim-card[data-status="contested"], .prose .claim-card[data-status="insufficient"] { border-left-color: var(--warning); }
 .prose .claim-card[data-status="refuted"] { border-left-color: var(--error); }
-.prose .claim-card > p { margin: 0; }
+.prose .claim-card > p, .prose .claim-card .claim-part > p { margin: 0; }
 .prose .claim-card .status-tag { justify-self: start; }
-.prose h3 + .claim-card { margin-top: 8px; }
+.prose h3 + .claim-card { margin-top: 10px; }
+.prose h3 { font-size: 19.5px; font-weight: 800; letter-spacing: .005em; }
+.claim-part { display: grid; gap: 4px; }
+.part-label { display: flex; align-items: center; gap: 8px; color: var(--accent-ink); font: 750 14px/1.5 var(--font-sans); letter-spacing: .04em; }
+.part-tag { padding: 0 6px; border: 1px solid var(--line); border-radius: var(--radius-xs); color: var(--ink-3); font-size: 11.5px; font-weight: 600; letter-spacing: 0; }
+.claim-part[data-role="analogy"] > p:last-child { color: var(--ink-2); }
+.claim-cites, .claim-limit, .claim-source { color: var(--ink-3); font-size: 14px; line-height: 1.7; }
+.claim-limit strong { color: var(--ink-2); }
+.inline-link { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.inline-link::after { content: " ↗"; font-size: .85em; }
 .claim-scope { font-size: 13.5px; line-height: 1.6; color: var(--ink-3); }
 .claim-scope > summary { cursor: pointer; overflow-wrap: anywhere; }
 .claim-scope .facts { margin-top: 8px; grid-template-columns: minmax(0, auto) minmax(0, 1fr); }
 .claim-scope .facts dd { overflow-wrap: anywhere; }
+.report-aside { margin-top: 28px; color: var(--ink-3); font-size: 13.5px; }
+.report-aside > summary { cursor: pointer; }
+.report-aside > p { margin-top: 6px; }
+/* Code: block code never inherits the inline-code colour, background or padding. */
+.code-block { min-width: 0; margin: 0; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--code-bg); overflow: hidden; }
+.code-head { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid rgba(255, 255, 255, .08); color: var(--code-ink); font: 600 12px/1.4 var(--font-mono); }
+.code-lang { text-transform: lowercase; opacity: .85; }
+.code-tag { padding: 0 6px; border: 1px solid rgba(255, 255, 255, .22); border-radius: var(--radius-xs); font-family: var(--font-sans); font-weight: 600; opacity: .9; }
+.code-copy { margin-left: auto; padding: 2px 8px; border: 1px solid rgba(255, 255, 255, .25); border-radius: var(--radius-sm); color: var(--code-ink); background: transparent; cursor: pointer; font: 600 12px var(--font-sans); }
+.code-copy:hover { background: rgba(255, 255, 255, .08); }
+.prose .code-block pre, .prose pre { margin: 0; padding: 12px 14px; overflow-x: auto; border-radius: 0; color: var(--code-ink); background: var(--code-bg); font: 13.5px/1.65 var(--font-mono); white-space: pre; tab-size: 4; }
+.prose pre code, .prose .code-block code { padding: 0; border-radius: 0; color: inherit; background: none; font: inherit; white-space: inherit; }
 .claim-list { margin: 0; padding-left: 1.1em; }
 .ev-fold > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; cursor: pointer; }
 .ev-fold-title { display: inline-flex; align-items: center; gap: 8px; font: 750 18px/1.4 var(--font-sans); color: var(--ink); }

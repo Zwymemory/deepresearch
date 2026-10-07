@@ -147,8 +147,9 @@ export function App() {
   const citations = useMemo(() => normalizeCitations(response?.citations, response?.citationContract, response?.citationDetails), [response]);
   // The evidence publisher's known plain-text format is re-laid out per claim; anything else
   // (or any ambiguity) renders through the unchanged Markdown path.
-  const blocks = useMemo(() => parsePublication(response?.answer ?? "", response?.citationContract, citations.length)
-    ?? parseMarkdown(response?.answer ?? "", response?.citationContract, citations.length), [response, citations.length]);
+  const blocks = useMemo(() => parsePublication(response?.answer ?? "", response?.citationContract, citations.length,
+    { sourceUrls: citations.map((c) => c.url?.href ?? null), structuredClaims: response?.claims })
+    ?? parseMarkdown(response?.answer ?? "", response?.citationContract, citations.length), [response, citations]);
   const terminal = !!run && isTerminal(run.status);
   const hasRun = !!run && (!!run.runId || run.mode === "legacy" || run.status !== "READY");
 

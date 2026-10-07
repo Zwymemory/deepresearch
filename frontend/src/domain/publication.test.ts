@@ -53,7 +53,7 @@ describe("publication adapter (native answer)", () => {
   });
 
   it("keeps the scope note as text", () => {
-    expect(blocks!.some((b) => b.type === "paragraph" && b.text.startsWith("范围说明："))).toBe(true);
+    expect(blocks!.some((b) => b.type === "aside" && b.text.startsWith("范围说明："))).toBe(true);
   });
 });
 
@@ -77,5 +77,58 @@ describe("publication adapter: gaps, disputes and strict fallback", () => {
     expect(parse(fixture.answer.replace("已支持：\n", "已支持：\n这一行不是已发布的主张格式\n"))).toBeNull();
     expect(parse(head + "已支持：\n甲（适用版本：未确定；缺口：x；有效时间未确定） [来源1]" + tail)).toBeNull();
     expect(parse(head + "已支持：\n甲（适用版本：未确定；有效时间未确定）\n" + "多余 [来源1]" + tail)).toBeNull();
+  });
+});
+
+describe("publication adapter (native multiline teaching report)", () => {
+  const multi = JSON.parse(readFileSync(join(fileURLToPath(new URL(".", import.meta.url)), "../api/__fixtures__/publication/native-multiline.json"), "utf8")) as
+    { answer: string; citationContract: string; citations: string[]; claims: unknown };
+  const ctx = { sourceUrls: multi.citations, structuredClaims: multi.claims };
+  const blocks = parsePublication(multi.answer, multi.citationContract, multi.citations.length, ctx);
+  const cs = claims(blocks);
+  const visible = (c: ClaimBlock) => c.parts.flatMap((p) => p.kind === "code" ? [p.code]
+    : p.kind === "source" && p.matched ? [] : p.inline.map((n) => n.type === "text" ? n.text : n.type === "link" ? n.label : "")).join("\n");
+
+  it("recognises both multi-line claims with their own subjects as headings", () => {
+    expect(blocks).not.toBeNull();
+    expect(cs).toHaveLength(2);
+    expect(blocks!.flatMap((b) => b.type === "heading" && b.level === 3 ? [b.text] : []))
+      .toEqual(["Spring Boot 官方文档中 Bean 的概念", "Spring Boot 官方文档中构造器依赖注入的含义与工作方式"]);
+  });
+
+  it("layers each claim into explanation, analogy, code and exercise without dropping text", () => {
+    expect(cs[0].parts.map((p) => p.kind === "text" ? p.role : p.kind)).toEqual(["body", "analogy", "code", "exercise", "source"]);
+    expect(cs[1].parts.map((p) => p.kind === "text" ? p.role : p.kind)).toEqual(["body", "code", "body", "analogy", "exercise", "source"]);
+    const code = cs[0].parts.find((p) => p.kind === "code");
+    expect(code).toMatchObject({ lang: "java", untested: true });
+    expect(multi.answer).toContain("```java\n" + (code as { code: string }).code + "\n```");   // indentation kept exactly
+    // The documentation's own example is not captioned or marked as untested.
+    expect(cs[1].parts.find((p) => p.kind === "code")).toMatchObject({ caption: null, untested: false });
+    for (const c of cs) for (const p of c.parts) if (p.kind !== "code") expect(multi.answer).toContain(p.original);
+  });
+
+  it("keeps each claim's sources and hides only source lines that match the cited source", () => {
+    expect(cs.map((c) => c.citations)).toEqual([[1], [1]]);
+    expect(cs.every((c) => c.parts.some((p) => p.kind === "source" && p.matched))).toBe(true);
+    expect(statementsFor(blocks!, 1)).toHaveLength(2);
+    const other = parsePublication(multi.answer, multi.citationContract, multi.citations.length, { ...ctx, sourceUrls: ["https://example.com/other"] });
+    const src = claims(other)[0].parts.find((p) => p.kind === "source");
+    expect(src).toMatchObject({ matched: false });   // unmatched: stays visible, URL as a compact link
+    expect((src as { inline: Array<{ type: string }> }).inline.some((n) => n.type === "link")).toBe(true);
+  });
+
+  it("the reading view shows no raw URL and no administrative scope dump", () => {
+    for (const c of cs) {
+      const v = visible(c);
+      expect(v).not.toMatch(/https?:\/\//);
+      expect(v).not.toContain("适用版本");
+      expect(v).not.toContain("仅为帮助理解的举例");
+      expect(c.scope.version).toBe("未确定，仅描述引用快照");   // still available in details
+    }
+  });
+
+  it("falls back to Markdown when multi-line boundaries cannot be validated", () => {
+    expect(parsePublication(multi.answer, multi.citationContract, multi.citations.length, { sourceUrls: multi.citations })).toBeNull();
+    expect(parsePublication(multi.answer.replace("```java\n@Service", "```java\n@Service\n```\n```"), multi.citationContract, multi.citations.length, ctx)).toBeNull();
   });
 });
