@@ -26,7 +26,10 @@ export function LinkedText({ text }: { text: string }) {
 
 export type SelectionRead = { state: "loading" } | { state: "absent" } | { state: "ok"; selection: LearningSelection };
 
-/** Only SELECTED and UNAVAILABLE are shown. SELECTED means frozen into the request, not that the model used it. */
+/**
+ * Only SELECTED and UNAVAILABLE are shown. SELECTED means relevant content was frozen into the
+ * request, not that the model used it; total_entries counts what the topic has archived.
+ */
 export function LearningSelectionStrip({ read }: { read: SelectionRead }) {
   if (read.state !== "ok") return null;
   const s = read.selection;
@@ -34,9 +37,9 @@ export function LearningSelectionStrip({ read }: { read: SelectionRead }) {
   if (s.status !== "SELECTED") return null;
   return (
     <p className="note summary-row learning-selection" data-status="SELECTED">
-      本次已载入的学习笔记：<strong>{s.title}</strong>{s.totalEntries != null ? `（${s.totalEntries} 轮问答）` : ""}
+      本次已载入的学习笔记：<strong>{s.title}</strong>{s.totalEntries != null ? `（该主题已记录 ${s.totalEntries} 轮，本次选取相关内容）` : "（本次选取相关内容）"}
       {s.correction ? <>　你的笔记：<span style={{ whiteSpace: "pre-wrap" }}>{s.correction}</span></> : null}
-      <span className="block">已冻结在本次请求中；这不表示模型已采纳，也不是证据。</span>
+      <span className="block">这次追问提交时附带了其中的相关内容，供理解上下文；回答是否用到它无法确认，它也不是证据。</span>
     </p>
   );
 }
@@ -81,6 +84,13 @@ export function NoteStatus({ save }: { save: NoteSave }) {
 function NoteEditor({ topic, onSave }: { topic: LearningTopic; onSave: (note: string) => Promise<NoteSave> }) {
   const [draft, setDraft] = useState(topic.correction);
   const [save, setSave] = useState<NoteSave>({ state: "idle" });
+  // The saved note arrives in the refreshed list: keep the confirmation, and follow server-side
+  // changes only when the user has no unsaved edit.
+  const [seen, setSeen] = useState(topic.correction);
+  if (topic.correction !== seen) {
+    setSeen(topic.correction);
+    if (draft === seen) setDraft(topic.correction);
+  }
   const id = `learning-note-${topic.topicId}`;
   const length = noteLength(draft);
   const busy = save.state === "saving";
@@ -134,7 +144,7 @@ export function TopicCard({ topic, ctx, scope, projectId, onSave, onDelete }: {
         </div>
       ) : null}
 
-      <NoteEditor key={`${topic.topicId}-${topic.revision}`} topic={topic} onSave={onSave} />
+      <NoteEditor key={topic.topicId} topic={topic} onSave={onSave} />
 
       {topic.entries.length ? (
         <details className="note">
@@ -181,7 +191,7 @@ export function NotesBody({ read, onRefresh, refreshing, renderTopic }: {
 }) {
   return (
     <div className="summary-body">
-      <p className="note">{LEARNING_DISCLAIMER}不是语义检索结果，也不是新核验的事实。</p>
+      <p className="note">{LEARNING_DISCLAIMER}</p>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" className="btn btn-quiet btn-sm" onClick={onRefresh} disabled={refreshing}>{refreshing ? "正在刷新…" : "刷新"}</button>
         <span className="note">研究完成后约 2 秒内自动整理；没看到最新一轮时可刷新。</span>

@@ -9,7 +9,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { deleteLearningTopic, getLearningNotes, getLearningSelection, getLearningSource, learningErrorText, patchLearningNote } from "../../api/learningNotes";
 import { ApiError } from "../../api/http";
-import { parseLearningNotes, parseLearningSelection, type LearningNotesView } from "../../domain/learningNotes";
+import { formatNoteTime, parseLearningNotes, parseLearningSelection, type LearningNotesView } from "../../domain/learningNotes";
 import { LearningSelectionStrip, NotesBody, NoteStatus, SourceBody, TopicCard } from "./LearningNotes";
 
 const fixture = JSON.parse(readFileSync(join(fileURLToPath(new URL(".", import.meta.url)), "../../api/__fixtures__/learning/twenty-turn.json"), "utf8")) as
@@ -121,10 +121,10 @@ describe("learning notes rendering", () => {
     const selected = html(createElement(LearningSelectionStrip, { read: { state: "ok", selection: parseLearningSelection(fixture.selected) } }));
     expect(selected).toContain("本次已载入的学习笔记");
     expect(selected).toContain("Spring Boot 构造器注入，给一道练习");
-    expect(selected).toContain("17 轮问答");
+    expect(selected).toContain("该主题已记录 17 轮，本次选取相关内容");
     expect(selected).toContain("PaymentGateway 原题");
-    expect(selected).toContain("不表示模型已采纳");
-    expect(selected).not.toMatch(/USED|已使用|topic_id|learn-658|source-excerpts|sha256/);
+    expect(selected).toContain("回答是否用到它无法确认");
+    expect(selected).not.toMatch(/USED|已使用|冻结|topic_id|learn-658|source-excerpts|sha256/);
     const unavailable = html(createElement(LearningSelectionStrip, { read: { state: "ok", selection: { status: "UNAVAILABLE", projectId: PROJECT } } }));
     expect(unavailable).toContain("学习笔记已变化，请重新开始追问");
     expect(unavailable).not.toContain("Spring Boot");
@@ -141,7 +141,7 @@ describe("learning notes rendering", () => {
     expect(error).toContain("该项目不存在或无权访问");
     const ok = html(createElement(NotesBody, { read: { state: "ok", view }, onRefresh: noop, refreshing: false, renderTopic: () => null }));
     expect(ok).toContain("最近 100 条问答记录，不是完整历史");
-    expect(ok).not.toMatch(/语义检索到|已掌握的|已核验/);
+    expect(ok).not.toMatch(/语义检索|已掌握的|已核验|冻结/);
   });
 
   it("a topic shows title, turns, discussed excerpts, editable note and question history with 查看原问答", () => {
@@ -186,5 +186,15 @@ describe("learning notes rendering", () => {
     expect(out).toContain('title="https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html"');
     expect(out).toContain(">docs.spring.io</a>");
     expect(out).toContain('id="learning-src-wf-1-');
+  });
+
+  it("times: explicit-zone timestamps in the viewer's zone (crossing midnight); zone-less marked; unknown verbatim", () => {
+    expect(formatNoteTime("2026-10-07T16:30:12.123456Z", "Asia/Shanghai")).toBe("2026-10-08 00:30");
+    expect(formatNoteTime("2026-10-07T16:30:12Z", "UTC")).toBe("2026-10-07 16:30");
+    expect(formatNoteTime("2026-10-07T23:30:00+08:00", "Asia/Shanghai")).toBe("2026-10-07 23:30");
+    expect(formatNoteTime("2026-10-07 16:30:12.886901+0000", "Asia/Shanghai")).toBe("2026-10-08 00:30");
+    expect(formatNoteTime("2026-10-07 23:33:02.886901")).toBe("2026-10-07 23:33（未标明时区）");
+    expect(formatNoteTime("昨天")).toBe("昨天");
+    expect(formatNoteTime("")).toBe("时间未记录");
   });
 });

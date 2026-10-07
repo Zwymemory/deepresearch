@@ -96,10 +96,28 @@ export function parseLearningSelection(raw: unknown): LearningSelection {
   throw new ContractError(`未知的学习笔记载入状态（${str(v.status) || "缺失"}）。`);
 }
 
-export function formatNoteTime(value: string): string {
-  // Server timestamps may be ISO or "YYYY-MM-DD HH:MM:SS.ffffff"; show minutes only, never reinterpret zones.
-  const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/.exec(value);
-  return m ? `${m[1]} ${m[2]}` : value;
+/**
+ * A timestamp with an explicit zone (Z or ±hh:mm) is shown in the browser's local time zone,
+ * "YYYY-MM-DD HH:mm". A zone-less timestamp is not reinterpreted: it is shown as given with an
+ * explicit marker. Anything else is shown verbatim.
+ */
+export function formatNoteTime(value: string, timeZone?: string): string {
+  const zoned = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}(?::\d{2})?)(?:\.(\d+))?(Z|[+-]\d{2}:?\d{2})$/i.exec(value.trim());
+  if (zoned) {
+    const [, date, time, fraction = "", zone] = zoned;
+    const ms = fraction ? "." + fraction.slice(0, 3).padEnd(3, "0") : "";
+    const offset = zone.toUpperCase() === "Z" ? "Z" : zone.length === 5 ? zone.slice(0, 3) + ":" + zone.slice(3) : zone;
+    const instant = new Date(`${date}T${time.length === 5 ? time + ":00" : time}${ms}${offset}`);
+    if (!Number.isNaN(instant.getTime())) {
+      const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+        timeZone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+      }).formatToParts(instant).map((p) => [p.type, p.value]));
+      return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
+    }
+  }
+  const local = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?$/.exec(value.trim());
+  if (local) return `${local[1]} ${local[2]}（未标明时区）`;
+  return value || "时间未记录";
 }
 
 /**
