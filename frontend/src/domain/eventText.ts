@@ -13,7 +13,8 @@ export const STEP_LABELS: Record<string, string> = {
   QUEUED: "排队", PLANNING: "规划", WORKING: "执行", REVIEWING: "审阅", SYNTHESIZING: "合成", FINALIZING: "收尾",
 };
 
-const TOOL_LABELS: Record<string, string> = { kb_search: "知识库检索", web_search: "网页搜索", calculator: "计算器" };
+const TOOL_LABELS: Record<string, string> = { kb_search: "知识库检索", web_search: "网页搜索", calculator: "计算器",
+  check_claims: "论断核查", read_source: "原文读取" };
 export const toolLabel = (tool: unknown) => TOOL_LABELS[String(tool)] ?? String(tool ?? "获准工具");
 
 const ROLE_LABELS: Record<string, string> = {

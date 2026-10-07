@@ -197,7 +197,8 @@ export function ReportView({ run, blocks, citations, modeLabel, active, onCite, 
           </section>
         ) : null}
 
-        {evidence ? <EvidenceRecord result={evidence.result} loading={evidence.loading} demo={demo} onCompare={(i) => onCompareDisagreement?.(i)} /> : null}
+        {evidence ? <EvidenceRecord result={evidence.result} loading={evidence.loading} demo={demo} onCompare={(i) => onCompareDisagreement?.(i)}
+          folded={blocks.some((b) => b.type === "claim")} /> : null}
 
         <RunInfo run={run} />
         {!demo && run.runId ? (

@@ -41,11 +41,26 @@ function ClaimItem({ view, claim }: { view: EvidenceView; claim: Claim }) {
   );
 }
 
-export function EvidenceRecord({ result, loading, demo, onCompare }: {
+export function EvidenceRecord({ result, loading, demo, onCompare, folded = false }: {
   result: EvidenceViewResult | null; loading: boolean; demo: boolean; onCompare: (index: number) => void;
+  /** The report already shows each published claim: keep the full record one click away, with counts visible. */
+  folded?: boolean;
 }) {
   if (loading && !result) return <section className="ev-record"><p className="note">正在读取证据记录…</p></section>;
   if (!result) return null;
+  if (folded && result.state === "ok") {
+    const v = result.view;
+    const disagreements = recordedDisagreements(v).length;
+    return (
+      <details className="ev-record ev-fold">
+        <summary>
+          <span className="ev-fold-title"><Icon name="list" />证据记录与核查明细{demo ? <span className="chip chip-warn">示例数据</span> : null}</span>
+          <span className="note">论断 {v.claims.length} · 证据 {v.evidence.length} · 检查 {v.checks.length}{disagreements ? ` · 记录的分歧 ${disagreements}` : ""}{v.blockedAttempts.length ? ` · 受阻尝试 ${v.blockedAttempts.length}` : ""}</span>
+        </summary>
+        <EvidenceBody view={v} onCompare={onCompare} />
+      </details>
+    );
+  }
   return (
     <section className="ev-record" aria-labelledby="ev-title">
       <h2 id="ev-title"><Icon name="list" />证据记录{demo ? <span className="chip chip-warn">示例数据</span> : null}</h2>

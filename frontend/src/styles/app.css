@@ -485,12 +485,27 @@ svg.i { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentCo
 .recall-toggle strong { color: var(--ink-2); }
 .auto-save { margin: -10px 0 18px; }
 .auto-save[data-status="FAILED"], .auto-save[data-status="UNAVAILABLE"] { color: var(--error-ink); }
-.summary-disclosure { margin-top: 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paper); font-size: 14px; }
-.summary-disclosure > summary { cursor: pointer; color: var(--ink-2); font-weight: 650; overflow-wrap: anywhere; }
+.summary-disclosure { margin-top: 8px; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paper); font-size: 14px; }
+.summary-disclosure > summary { cursor: pointer; color: var(--ink-2); font-size: 13.5px; font-weight: 600; line-height: 1.55; overflow-wrap: anywhere; }
 .summary-disclosure[data-status="FAILED"] { border-color: var(--error); }
 .summary-body { display: grid; gap: 12px; margin-top: 12px; }
 .summary-sources { display: grid; gap: 8px; margin: 8px 0 0; padding-left: 1.4em; }
 .summary-sources p { margin-top: 2px; color: var(--ink-2); overflow-wrap: anywhere; white-space: pre-wrap; }
+
+/* ---------------------------------------------------------------- published claims (report polish) */
+.prose .claim-card { display: grid; gap: 10px; padding: 14px 16px; border: 1px solid var(--line); border-left: 3px solid var(--success); border-radius: 0 var(--radius-md) var(--radius-md) 0; background: var(--paper); }
+.prose .claim-card[data-status="contested"], .prose .claim-card[data-status="insufficient"] { border-left-color: var(--warning); }
+.prose .claim-card[data-status="refuted"] { border-left-color: var(--error); }
+.prose .claim-card > p { margin: 0; }
+.prose .claim-card .status-tag { justify-self: start; }
+.prose h3 + .claim-card { margin-top: 8px; }
+.claim-scope { font-size: 13.5px; line-height: 1.6; color: var(--ink-3); }
+.claim-scope > summary { cursor: pointer; overflow-wrap: anywhere; }
+.claim-scope .facts { margin-top: 8px; grid-template-columns: minmax(0, auto) minmax(0, 1fr); }
+.claim-scope .facts dd { overflow-wrap: anywhere; }
+.claim-list { margin: 0; padding-left: 1.1em; }
+.ev-fold > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; cursor: pointer; }
+.ev-fold-title { display: inline-flex; align-items: center; gap: 8px; font: 750 18px/1.4 var(--font-sans); color: var(--ink); }
 
 /* ---------------------------------------------------------------- record reading layer */
 .rec-layer { position: fixed; z-index: 30; top: var(--topbar-h); left: 0; right: 0; bottom: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--canvas); }

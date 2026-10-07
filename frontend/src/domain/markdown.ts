@@ -1,6 +1,7 @@
 // A deliberately small Markdown subset, parsed into a typed tree and rendered by
 // React as text nodes (never innerHTML). Rules follow the V1 renderer.
 import { isVerifiedMarker } from "./citations";
+import type { ClaimBlock } from "./publication";
 
 export type Inline =
   | { type: "text"; text: string }
@@ -14,7 +15,8 @@ export type Block =
   | { type: "list"; ordered: boolean; start: number; items: { inline: Inline[]; text: string; citations: number[] }[] }
   | { type: "quote"; inline: Inline[]; text: string; citations: number[] }
   | { type: "code"; text: string }
-  | { type: "hr" };
+  | { type: "hr" }
+  | ClaimBlock;
 
 const INLINE_PATTERN = /(\*\*[^*\n]+\*\*|`[^`\n]+`|\[(?:来源|source)\s*\d+\]|[（(][^()（）\n]{1,80}\s+来源[）)])/gi;
 
@@ -127,7 +129,8 @@ export function parseMarkdown(source: string, contract: string | null | undefine
 export function statementsFor(blocks: Block[], number: number): string[] {
   const out: string[] = [];
   for (const block of blocks) {
-    if ((block.type === "paragraph" || block.type === "quote") && block.citations.includes(number)) out.push(block.text);
+    // A published claim contributes only its own text, never the whole report.
+    if ((block.type === "paragraph" || block.type === "quote" || block.type === "claim") && block.citations.includes(number)) out.push(block.text);
     if (block.type === "list") block.items.forEach((item) => { if (item.citations.includes(number)) out.push(item.text); });
   }
   return out;

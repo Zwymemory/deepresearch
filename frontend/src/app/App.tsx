@@ -3,6 +3,7 @@ import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { normalizeCitations } from "../domain/citations";
 import { parseMarkdown, statementsFor } from "../domain/markdown";
+import { parsePublication } from "../domain/publication";
 import { applyEvent, emptyRun, isTerminal, type RunState } from "../domain/runState";
 import type { ExecutionMode, ToolName } from "../domain/types";
 import { DEMO_EVIDENCE_VIEW, DEMO_QUESTION, DEMO_TOOLS } from "../demo/fixtures";
@@ -144,7 +145,10 @@ export function App() {
 
   const response = run?.finalResponse ?? null;
   const citations = useMemo(() => normalizeCitations(response?.citations, response?.citationContract, response?.citationDetails), [response]);
-  const blocks = useMemo(() => parseMarkdown(response?.answer ?? "", response?.citationContract, citations.length), [response, citations.length]);
+  // The evidence publisher's known plain-text format is re-laid out per claim; anything else
+  // (or any ambiguity) renders through the unchanged Markdown path.
+  const blocks = useMemo(() => parsePublication(response?.answer ?? "", response?.citationContract, citations.length)
+    ?? parseMarkdown(response?.answer ?? "", response?.citationContract, citations.length), [response, citations.length]);
   const terminal = !!run && isTerminal(run.status);
   const hasRun = !!run && (!!run.runId || run.mode === "legacy" || run.status !== "READY");
 
