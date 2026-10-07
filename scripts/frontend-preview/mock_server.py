@@ -208,6 +208,9 @@ class Run:
         self.created = time.monotonic()
         self.created_iso = now_iso()
         self.timeline = agent_timeline() if self.agent else workflow_timeline(scenario, self.tools)
+        if self.agent and scenario == "budget-draft":
+            # 界面检查：自主研究因预算终止，服务端提供由已存储记录整理的阶段性资料草稿（合成）。
+            self.timeline = self.timeline[:5] + [ev(5.0, "SYSTEM", "BUDGET_EXCEEDED", {"errorCode": "BUDGET_EXCEEDED"}, "BUDGET_EXCEEDED", "TERMINAL", 100)]
         if self.agent and scenario == "memory-revoked" and body.get("researchProjectId"):
             # 界面检查：运行在下一次使用前发现所选快照已变化，停止使用历史进度。
             self.timeline = self.timeline[:2] + [ev(1.8, "SYSTEM", "FAILED", {"errorCode": "RESEARCH_MEMORY_REVOKED"}, "FAILED", "TERMINAL", 100)]
@@ -275,6 +278,8 @@ class Run:
             error = next((e["payload"].get("errorCode") for _, e in reversed(visible) if e["type"] == "FAILED"), None) or "MODEL_PROVIDER_FAILED"
         elif status == "BUDGET_EXCEEDED":
             error = "BUDGET_EXCEEDED"
+            if self.scenario == "budget-draft":
+                final = {"researchDraft": BUDGET_DRAFT}
         terminal = status in TERMINAL_STATUSES
         usage = {"modelCalls": 5, "toolCalls": len(self.tools) + 1, "totalTokens": 18342, "inputTokens": 15120,
                  "outputTokens": 3222, "durationMs": int((self.timeline[-1]["at"]) * 1000),
@@ -358,6 +363,25 @@ def progress_snapshot(run, origin: str = "manual", owner: str = "") -> dict:
             "source_evidence": [{"evidence_id": "ev-web", "receipt_id": "read-web", "snapshot_sha256": "1" * 64, "source_id": "src-web"}],
             "source_claims": [{"claim_id": "claim-resume", "record_sha256": "2" * 64, "decision_status": "contested", "freshness": "fresh"}]}
 LOCK = threading.Lock()
+BUDGET_DRAFT = {
+    "schemaVersion": "research-draft/1", "reasonCode": "BUDGET_EXCEEDED", "generatedFrom": "STORED_RECORDS", "additionalModelCalls": 0,
+    "sources": [
+        {"sourceId": "draft-src-1", "kind": "WEB_ORIGINAL", "title": "（合成）Kafka 消费者延迟说明", "url": "https://example.com/kafka-latency",
+         "excerpt": "合成摘录：消费者延迟受批量大小与 fetch.min.bytes 影响。<b>不应被渲染为 HTML</b>", "excerptTruncated": True,
+         "observedAt": "2026-10-07T08:00:00Z", "verificationStatus": "NOT_CLAIM_CHECKED"},
+        {"sourceId": "draft-src-2", "kind": "WEB_SEARCH_SNAPSHOT", "title": "（合成）搜索结果：Kafka 延迟基准", "url": "https://example.org/search",
+         "excerpt": "合成搜索摘要：某基准报告了端到端延迟，但未说明硬件。", "excerptTruncated": False,
+         "observedAt": None, "verificationStatus": "NOT_CLAIM_CHECKED"},
+        {"sourceId": "draft-src-3", "kind": "KNOWLEDGE_CHUNK", "title": "（合成）知识库：检索延迟记录", "url": None,
+         "excerpt": "合成知识库片段：同数据集、同硬件下尚无实测数据。", "excerptTruncated": False,
+         "observedAt": "2026-10-07T08:01:00Z", "verificationStatus": "NOT_CLAIM_CHECKED"}],
+    "checkedClaims": [{"text": "（合成）批量大小会影响消费者延迟。", "decisionStatus": "contested",
+                       "applicability": {"version": {"status": "unknown", "value": None}, "validAt": {"status": "unknown", "value": None}, "conditions": ["同数据集", "同硬件"]},
+                       "sourceIds": ["draft-src-1"]}],
+    "pendingTasks": [{"text": "在同数据集、同硬件下测量端到端延迟", "status": "pending"}],
+    "limits": {"sourceLimit": 20, "excerptChars": 1800, "omittedSources": 2, "omittedClaims": 0, "omittedTasks": 0},
+    "markdown": "# 阶段性资料草稿（合成）\n\n> 因预算终止；尚未核查，未发布。\n\n1. （合成）Kafka 消费者延迟说明 — 已读取原文\n",
+}
 AUTO_SAVE: dict = {}   # run_id -> first terminal observation (monotonic), for the synthetic reconcile delay
 RECALL_TERMS = ["kafka", "延迟", "检索", "认证", "版本"]
 
