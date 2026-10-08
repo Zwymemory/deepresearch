@@ -116,4 +116,21 @@ describe("digest rendering", () => {
     expect(html).not.toContain("<img");
     expect(html).toContain(">docs.spring.io</a>");
   });
+
+  it("renders the backend digest sample (fixture_only): exact spans, stats captions and distinct runs", () => {
+    const sample = JSON.parse(readFileSync(join(fileURLToPath(new URL(".", import.meta.url)), "../../api/__fixtures__/learning/digest-backend-sample.json"), "utf8")) as
+      { digest: { points: Array<{ text: string; sources: Array<{ run_id: string; start: number; end: number }> }> }; sources: Array<{ run_id: string; question: string; answer: string }> };
+    const answers = new Map(sample.sources.map((x) => [x.run_id, x.answer]));
+    for (const p of sample.digest.points) for (const x of p.sources) expect(answers.get(x.run_id)!.slice(x.start, x.end)).toBe(p.text);
+    const raw = { topic_id: "learn-sample", title: "Bean 和构造器依赖注入", revision: 1, correction: "", entry_count: sample.sources.length, discussed: [], open_questions: [], digest: sample.digest,
+      entries: sample.sources.map((x) => ({ run_id: x.run_id, question: x.question, created_at: "2026-10-08T01:00:00Z", run_status: "SUCCEEDED",
+        source_url: `/api/research/projects/${PROJECT}/learning-notes/sources/${x.run_id}` })) };
+    const topic = parseLearningNotes({ ...fixture.view, items: [raw] }, PROJECT).items[0];
+    expect(topic.digest!.points).toHaveLength(7);
+    expect(topic.digest!.points.find((p) => p.runIds.length === 3)?.text).toContain("无需在代码里手工 new");
+    const html = digestHtml(topic);
+    expect(html).toContain("已合并 3 处重复表述；另有 4 条未显示");
+    expect(html).toContain("来源（3 轮）");
+    expect(html).not.toMatch(/sample-\d|point-[0-9a-f]/);
+  });
 });
