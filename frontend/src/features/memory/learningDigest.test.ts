@@ -44,6 +44,27 @@ describe("digest parsing", () => {
     expect(topicOf(raw).digest!.points[1].runIds).toEqual(sources.slice(0, 3).map((s) => (s as { run_id: string }).run_id));
   });
 
+  it("a point whose representative is not a known entry of the topic is dropped", () => {
+    const raw = beanRaw();
+    const p = raw.digest!.points[0] as { representative: Record<string, unknown>; sources: Array<Record<string, unknown>> };
+    p.representative = { run_id: "wf-not-in-this-topic", start: 0, end: 10 };
+    p.sources.push({ ...p.representative });                                   // even if also listed as a source
+    expect(topicOf(raw).digest!.points.map((x) => x.category)).toEqual(["condition", "practice"]);
+  });
+
+  it("a point whose representative span is missing from its valid sources is dropped", () => {
+    const raw = beanRaw();
+    const [a, b, c] = raw.digest!.points as Array<{ representative: Record<string, unknown>; sources: Array<Record<string, unknown>> }>;
+    a.representative = { ...a.representative, end: (a.representative.end as number) + 1 };   // same run, different span
+    b.sources = b.sources.filter((s) => s.run_id !== b.representative.run_id);              // representative run unlisted
+    c.sources = [];                                                                         // no sources at all
+    expect(topicOf(raw).digest).toBeNull();                                                  // no valid points: legacy list
+    const html = card(topicOf(raw));
+    expect(html).not.toContain("核心知识");
+    expect(html).not.toContain("来源（");
+    expect(html).toContain("已讨论（原回答摘录）");
+  });
+
   it("absent, unknown-version or unknown-method digests fall back; malformed points are dropped", () => {
     const entries = topicOf(beanRaw()).entries;
     expect(parseDigest(undefined, entries)).toBeNull();

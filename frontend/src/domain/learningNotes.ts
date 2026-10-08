@@ -66,15 +66,18 @@ export function noteLength(note: string): number {
 }
 
 const count = (v: unknown): number => (typeof v === "number" && Number.isInteger(v) && v > 0 ? v : 0);
-const span = (v: unknown): { runId: string } | null => {
+const span = (v: unknown): { runId: string; start: number; end: number } | null => {
   const s = obj(v);
   const runId = str(s.run_id);
-  return runId && Number.isInteger(s.start) && Number.isInteger(s.end) && (s.start as number) >= 0 && (s.end as number) > (s.start as number) ? { runId } : null;
+  return runId && Number.isInteger(s.start) && Number.isInteger(s.end) && (s.start as number) >= 0 && (s.end as number) > (s.start as number)
+    ? { runId, start: s.start as number, end: s.end as number } : null;
 };
 
 /**
  * The optional per-topic digest. Anything not matching the documented shape yields null (the old
- * flat list is shown); a malformed point is dropped. A source run counts only when it is an entry of
+ * flat list is shown); a malformed point is dropped. A point is kept only when its representative
+ * span is one of its valid sources (same run/start/end) and that run is an entry of this topic, so
+ * no text is shown without a listed source. A source run counts only when it is an entry of
  * this topic, so no action is ever derived from a run id the topic does not list; whether that
  * entry's original Q&A can be opened is still the entry's own confirmed source path.
  */
@@ -89,10 +92,13 @@ export function parseDigest(raw: unknown, entries: LearningEntry[]): LearningDig
     const p = obj(rawPoint);
     const pointId = str(p.point_id), text = str(p.text);
     const category = DIGEST_CATEGORIES.find((c) => c === p.category);
-    if (!pointId || seen.has(pointId) || !text.trim() || !category || !span(p.representative)) continue;
+    const rep = span(p.representative);
+    if (!pointId || seen.has(pointId) || !text.trim() || !category || !rep || !known.has(rep.runId)) continue;
+    const valid = arr(p.sources).map(span).filter((s): s is NonNullable<typeof s> => !!s && known.has(s.runId));
+    if (!valid.some((s) => s.runId === rep.runId && s.start === rep.start && s.end === rep.end)) continue;
     seen.add(pointId);
     const runIds: string[] = [];
-    for (const s of arr(p.sources).map(span)) if (s && known.has(s.runId) && !runIds.includes(s.runId)) runIds.push(s.runId);
+    for (const s of valid) if (!runIds.includes(s.runId)) runIds.push(s.runId);
     points.push({ pointId, category, text, runIds });
   }
   if (!points.length) return null;
