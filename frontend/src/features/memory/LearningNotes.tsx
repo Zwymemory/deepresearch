@@ -6,7 +6,7 @@ import { useState, type ReactNode } from "react";
 import type { ApiContext } from "../../api/endpoints";
 import { deleteLearningTopic, getLearningNotes, getLearningSelection, getLearningSource, learningErrorText, patchLearningNote } from "../../api/learningNotes";
 import { safeCitationUrl } from "../../domain/citations";
-import { formatNoteTime, noteLength, NOTE_MAX_CHARS, sourceBlocks, type LearningNotesView, type LearningSelection, type LearningTopic } from "../../domain/learningNotes";
+import { formatNoteTime, noteLength, NOTE_MAX_CHARS, sourceBlocks, type DigestCategory, type LearningDigest, type LearningEntry, type LearningNotesView, type LearningSelection, type LearningTopic } from "../../domain/learningNotes";
 import { withLinks } from "../../domain/publication";
 import { Markdown, type CiteHandlers } from "../report/Markdown";
 
@@ -115,6 +115,61 @@ function NoteEditor({ topic, onSave }: { topic: LearningTopic; onSave: (note: st
   );
 }
 
+// ---- grouped excerpts (digest) ----
+
+const DIGEST_GROUPS: Array<{ category: DigestCategory; label: string }> = [
+  { category: "concept", label: "核心知识" }, { category: "condition", label: "适用条件" }, { category: "practice", label: "练习与代码" },
+];
+
+/** The original questions behind one excerpt; full answers are fetched only when one is opened. */
+function PointSources({ runIds, entries, ctx, scope, projectId }: { runIds: string[]; entries: LearningEntry[]; ctx: ApiContext; scope: string; projectId: string }) {
+  const [open, setOpen] = useState<string | null>(null);
+  const rows = runIds.map((id) => entries.find((e) => e.runId === id)).filter((e): e is LearningEntry => !!e);
+  if (!rows.length) return null;
+  return (
+    <details className="note digest-sources">
+      <summary style={{ cursor: "pointer", width: "fit-content" }}>来源（{rows.length} 轮）</summary>
+      <ul className="learning-history">
+        {rows.map((e) => (
+          <li key={e.runId}>
+            <span style={{ overflowWrap: "anywhere" }}>{e.question || "（未记录问题）"}</span>
+            <span className="note">　{formatNoteTime(e.createdAt)}</span>
+            {e.sourceOk ? (
+              <button type="button" className="link-btn" aria-expanded={open === e.runId} onClick={() => setOpen((c) => (c === e.runId ? null : e.runId))}>
+                {open === e.runId ? "收起原问答" : "查看原问答"}
+              </button>
+            ) : <span className="note">　原问答地址无法确认，未提供查看</span>}
+            {open === e.runId ? <SourceView ctx={ctx} scope={scope} projectId={projectId} runId={e.runId} /> : null}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
+export function DigestView({ digest, entries, ctx, scope, projectId }: { digest: LearningDigest; entries: LearningEntry[]; ctx: ApiContext; scope: string; projectId: string }) {
+  return (
+    <div className="learning-digest">
+      <p className="insp-label">已讨论（原回答摘录）</p>
+      <p className="note">从原回答中挑选的原文摘录，不是全部历史的总结{digest.mergedCount ? `；已合并 ${digest.mergedCount} 处重复表述` : ""}{digest.omittedCount ? `；另有 ${digest.omittedCount} 条未显示` : ""}。</p>
+      {DIGEST_GROUPS.map(({ category, label }) => {
+        const points = digest.points.filter((p) => p.category === category);
+        return points.length ? (
+          <div key={category} className="digest-group">
+            <p className="digest-head">{label}</p>
+            <ul className="nb-gaps">{points.map((p) => (
+              <li key={p.pointId} style={{ overflowWrap: "anywhere" }}>
+                <LinkedText text={p.text} />
+                <PointSources runIds={p.runIds} entries={entries} ctx={ctx} scope={scope} projectId={projectId} />
+              </li>
+            ))}</ul>
+          </div>
+        ) : null;
+      })}
+    </div>
+  );
+}
+
 // ---- one topic ----
 
 export function TopicCard({ topic, ctx, scope, projectId, onSave, onDelete }: {
@@ -131,7 +186,8 @@ export function TopicCard({ topic, ctx, scope, projectId, onSave, onDelete }: {
       <h4 className="learning-title">{topic.title}</h4>
       <p className="note">已记录 {count} 轮问答{topic.revision != null ? ` · 第 ${topic.revision} 版` : ""}</p>
 
-      {topic.discussed.length ? (
+      {topic.digest ? <DigestView digest={topic.digest} entries={topic.entries} ctx={ctx} scope={scope} projectId={projectId} />
+        : topic.discussed.length ? (
         <div>
           <p className="insp-label">已讨论（原回答摘录）</p>
           <ul className="nb-gaps">{topic.discussed.map((d, i) => <li key={i} style={{ overflowWrap: "anywhere" }}><LinkedText text={d.text} /></li>)}</ul>

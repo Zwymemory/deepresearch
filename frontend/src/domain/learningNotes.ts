@@ -15,9 +15,29 @@ export interface LearningEntry {
   /** true only when the payload's source_url is exactly the expected same-origin API path. */
   sourceOk: boolean;
 }
+export const DIGEST_SCHEMA = "learning-note-digest/1";
+export type DigestCategory = "concept" | "condition" | "practice";
+export const DIGEST_CATEGORIES: DigestCategory[] = ["concept", "condition", "practice"];
+
+/** One grouped source excerpt. `text` is the backend's exact source span, shown verbatim. */
+export interface DigestPoint {
+  pointId: string; category: DigestCategory; text: string;
+  /** Distinct source runs that are entries of this topic, in source order (unknown run ids are dropped). */
+  runIds: string[];
+}
+export interface LearningDigest {
+  points: DigestPoint[];
+  /** Repeated statements merged into the points shown (0 when unknown). */
+  mergedCount: number;
+  /** Points the backend did not display (0 when unknown). */
+  omittedCount: number;
+}
+
 export interface LearningTopic {
   topicId: string; title: string; revision: number | null; correction: string; entryCount: number | null;
   discussed: Array<{ runId: string; text: string }>;
+  /** Grouped excerpts; null when absent or not valid (the flat `discussed` list is used instead). */
+  digest: LearningDigest | null;
   openQuestions: Array<{ runId: string; text: string; kind: "user_question" | "research_gap" | "other" }>;
   entries: LearningEntry[];
 }
@@ -45,6 +65,41 @@ export function noteLength(note: string): number {
   return [...note].length;
 }
 
+const count = (v: unknown): number => (typeof v === "number" && Number.isInteger(v) && v > 0 ? v : 0);
+const span = (v: unknown): { runId: string } | null => {
+  const s = obj(v);
+  const runId = str(s.run_id);
+  return runId && Number.isInteger(s.start) && Number.isInteger(s.end) && (s.start as number) >= 0 && (s.end as number) > (s.start as number) ? { runId } : null;
+};
+
+/**
+ * The optional per-topic digest. Anything not matching the documented shape yields null (the old
+ * flat list is shown); a malformed point is dropped. A source run counts only when it is an entry of
+ * this topic, so no action is ever derived from a run id the topic does not list; whether that
+ * entry's original Q&A can be opened is still the entry's own confirmed source path.
+ */
+export function parseDigest(raw: unknown, entries: LearningEntry[]): LearningDigest | null {
+  if (raw == null) return null;
+  const d = obj(raw);
+  if (d.schema_version !== DIGEST_SCHEMA || d.method !== "source-grouping/1" || !Array.isArray(d.points)) return null;
+  const known = new Set(entries.map((e) => e.runId));
+  const seen = new Set<string>();
+  const points: DigestPoint[] = [];
+  for (const rawPoint of d.points) {
+    const p = obj(rawPoint);
+    const pointId = str(p.point_id), text = str(p.text);
+    const category = DIGEST_CATEGORIES.find((c) => c === p.category);
+    if (!pointId || seen.has(pointId) || !text.trim() || !category || !span(p.representative)) continue;
+    seen.add(pointId);
+    const runIds: string[] = [];
+    for (const s of arr(p.sources).map(span)) if (s && known.has(s.runId) && !runIds.includes(s.runId)) runIds.push(s.runId);
+    points.push({ pointId, category, text, runIds });
+  }
+  if (!points.length) return null;
+  const stats = obj(d.stats);
+  return { points, mergedCount: count(stats.merged_count), omittedCount: count(stats.omitted_count) };
+}
+
 export function parseLearningNotes(raw: unknown, expectedProjectId: string): LearningNotesView {
   const v = obj(raw);
   if (v.schema_version !== LEARNING_VIEW_SCHEMA) throw new ContractError(`未知的学习笔记版本（${str(v.schema_version) || "缺失"}）。`);
@@ -55,13 +110,14 @@ export function parseLearningNotes(raw: unknown, expectedProjectId: string): Lea
     const t = obj(rawTopic);
     const topicId = str(t.topic_id);
     if (!topicId) throw new ContractError("学习主题缺少 topic_id。");
-    return {
+    const topic: LearningTopic = {
       topicId, title: str(t.title) || "（未命名主题）", revision: num(t.revision), correction: str(t.correction), entryCount: num(t.entry_count),
       discussed: arr(t.discussed).map(obj).filter((d) => str(d.text)).map((d) => ({ runId: str(d.run_id), text: str(d.text) })),
       openQuestions: arr(t.open_questions).map(obj).filter((q) => str(q.text)).map((q) => ({
         runId: str(q.run_id), text: str(q.text),
         kind: q.kind === "user_question" || q.kind === "research_gap" ? q.kind : "other" as const,
       })),
+      digest: null,
       entries: arr(t.entries).map(obj).filter((e) => str(e.run_id)).map((e) => {
         const runId = str(e.run_id);
         return {
@@ -71,6 +127,8 @@ export function parseLearningNotes(raw: unknown, expectedProjectId: string): Lea
         };
       }),
     };
+    topic.digest = parseDigest(t.digest, topic.entries);
+    return topic;
   });
   return { projectId: expectedProjectId, candidateLimit: num(v.candidate_limit), items };
 }
