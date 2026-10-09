@@ -6,7 +6,7 @@ import copy
 import hashlib
 
 from .agent_budget import canonical
-from .agent_decision_instruction import CHECK_CAPACITY_POLICIES
+from .agent_decision_instruction import CHECK_CAPACITY_POLICIES, POLICY_VERSION
 from .agent_investigations import investigation_state
 
 CONTEXT_VERSION = "agent-decision-context/2"
@@ -203,6 +203,45 @@ def decision_context(state, budget):
             "task_id": criterion_tasks.get(r["criterion_id"]), "question": r["text"],
             "current_status": r["status"], "current_gaps": r["gaps"],
         } for r in payload["requirement_coverage"]["requirements"]]
+    if state.get("instruction_policy") == POLICY_VERSION:
+        # Keep a small navigation aid outside lossless string interning so the
+        # model does not mistake previously completed criteria for new work.
+        criterion_tasks = {
+            c["criterion_id"]: t["task_id"]
+            for t in state["tasks"]
+            for c in t.get("criteria", [])
+        }
+        payload["current_work_summary"] = {
+            "verified_criterion_ids": [
+                r["criterion_id"]
+                for r in payload["requirement_coverage"]["requirements"]
+                if r["status"] == "resolved" and not r["gaps"]
+            ],
+            "remaining": [
+                {
+                    "criterion_id": r["criterion_id"],
+                    "requirement_id": r["requirement_id"],
+                    "task_id": criterion_tasks.get(r["criterion_id"]),
+                    "question": r["text"],
+                    "status": r["status"],
+                }
+                for r in payload["requirement_coverage"]["requirements"]
+                if r["status"] != "resolved" or r["gaps"]
+            ],
+            "read_originals": [
+                {
+                    "evidence_id": row["evidence_id"],
+                    "source_id": row.get("source", {}).get("source_id"),
+                    "title": row.get("source", {}).get("title"),
+                    "availability": row.get("availability"),
+                    "freshness": row.get("freshness"),
+                    "preview": row.get("snapshot", {}).get("text", "")[:PREVIEW_CHARACTERS],
+                    "preview_only": len(row.get("snapshot", {}).get("text", ""))
+                    > PREVIEW_CHARACTERS,
+                }
+                for row in state.get("evidence", [])
+            ],
+        }
     # Build last: interning packet/tasks may add canonical objects.
     payload["canonical_objects"] = {"claim_specs": specs, "records": records, "checks": checks}
     from .progress_memory import frozen_progress, frozen_recall

@@ -210,6 +210,7 @@ async def test_revocation_blocks_lossless_projection_before_storing_history():
 
 
 async def test_actual_runtime_wire_matches_measurement_and_exposes_batch_limit():
+    from deepresearch_workflow.agent_decision_instruction import POLICY_VERSION
     from deepresearch_workflow.agent_obligations import CLAIMS_VERSION, PLANNER_VERSION
 
     from .test_agent_first_planning import PlanningLedger, graph
@@ -218,6 +219,7 @@ async def test_actual_runtime_wire_matches_measurement_and_exposes_batch_limit()
     from .test_question_segments import RecordingAdapter
 
     s = planning_state()
+    s["instruction_policy"] = POLICY_VERSION
     s["planner_contract"] = PLANNER_VERSION
     s["context_snapshot"] = {
         "project_summary_policy": {

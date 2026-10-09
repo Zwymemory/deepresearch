@@ -17,7 +17,7 @@ from .agent_completion import (
     normalized_claim,
     recompute_tasks,
 )
-from .agent_context import PREVIEW_CHARACTERS, decision_context
+from .agent_context import decision_context
 from .agent_decision_instruction import (
     CHECK_CAPACITY_POLICIES,
     POLICY_VERSION,
@@ -338,45 +338,6 @@ class AutonomousResearchGraph:
         from .project_summary import apply_summary, byte_size, policy_for
 
         payload = apply_summary(state, decision_context(state, self.budget))
-        if policy == POLICY_VERSION:
-            # Keep a small navigation aid outside lossless string interning so the
-            # model does not mistake previously completed criteria for new work.
-            criterion_tasks = {
-                c["criterion_id"]: t["task_id"]
-                for t in state["tasks"]
-                for c in t.get("criteria", [])
-            }
-            payload["current_work_summary"] = {
-                "verified_criterion_ids": [
-                    r["criterion_id"]
-                    for r in coverage["requirements"]
-                    if r["status"] == "resolved" and not r["gaps"]
-                ],
-                "remaining": [
-                    {
-                        "criterion_id": r["criterion_id"],
-                        "requirement_id": r["requirement_id"],
-                        "task_id": criterion_tasks.get(r["criterion_id"]),
-                        "question": r["text"],
-                        "status": r["status"],
-                    }
-                    for r in coverage["requirements"]
-                    if r["status"] != "resolved" or r["gaps"]
-                ],
-                "read_originals": [
-                    {
-                        "evidence_id": row["evidence_id"],
-                        "source_id": row.get("source", {}).get("source_id"),
-                        "title": row.get("source", {}).get("title"),
-                        "availability": row.get("availability"),
-                        "freshness": row.get("freshness"),
-                        "preview": row.get("snapshot", {}).get("text", "")[:PREVIEW_CHARACTERS],
-                        "preview_only": len(row.get("snapshot", {}).get("text", ""))
-                        > PREVIEW_CHARACTERS,
-                    }
-                    for row in state.get("evidence", [])
-                ],
-            }
         summary_policy = policy_for(state)
         if summary_policy["enabled"] and byte_size(payload) > summary_policy["budget_bytes"]:
             decision = AgentDecision(
@@ -889,7 +850,10 @@ class AutonomousResearchGraph:
                 }
             )
 
-        if policy == POLICY_VERSION and "conversation_context" in request.payload:
+        if policy == POLICY_VERSION and (
+            "conversation_context" in request.payload
+            or request.payload.get("context_encoding") == "shared-context-values/1"
+        ):
             from .conversation_context import followup_instruction
 
             request = request.model_copy(

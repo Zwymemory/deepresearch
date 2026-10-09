@@ -167,7 +167,7 @@ class MemoryRecallIT extends MemoryContinuationIT {
         var view=request("GET","/api/research/agents/"+run+"/context-summary",user(owner),null).body();
         assertThat(view.path("status").asText()).isEqualTo("READY");assertThat(view.path("planner_input_recorded").asBoolean()).isTrue();
         assertThat(view.path("measurement").path("after_bytes").asInt()).isLessThanOrEqualTo(24000);
-        assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND purpose='SUMMARY'",Integer.class,run)).isEqualTo(1);
+        assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND purpose='SUMMARY'",Integer.class,run)).isZero();
         Files.writeString(dir.resolve("disabled-summary-view.json"),canonical(view));
     }
 

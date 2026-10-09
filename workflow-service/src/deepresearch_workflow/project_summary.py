@@ -626,7 +626,7 @@ class ProjectSummaryCoordinator:
             summary, effective, after = None, raw, before
         within = after <= policy["budget_bytes"]
         view = {
-            "status": "READY" if ready else "NOT_NEEDED" if within else "FAILED",
+            "status": "FAILED" if not within else "READY" if ready else "NOT_NEEDED",
             "summary": summary,
             "source_sha256": source_hash,
             "sources": sources,
@@ -665,7 +665,11 @@ def shared_summary(state, raw, sources, policy):
 def shared_payload(raw, summary):
     from .context_dictionary import pack
 
-    result = pack(raw)
+    # Keep navigation readable without omitting it from measured input bytes.
+    fields = {key: value for key, value in raw.items() if key != "current_work_summary"}
+    result = pack(fields)
+    if "current_work_summary" in raw:
+        result["current_work_summary"] = copy.deepcopy(raw["current_work_summary"])
     # Scope/history/checks are already present in full through reversible refs.
     # Do not duplicate their display-only sections in the actual planner input.
     result["project_summary"] = {

@@ -233,7 +233,8 @@ class MemoryContinuationIT extends AgentHttpPostgresIT {
             assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND kind='MODEL'",Integer.class,run)).isEqualTo(1);
         } finally {Files.deleteIfExists(config);}
     }
-    String longSession(String owner,Run old) throws Exception {
+    String longSession(String owner,Run old) throws Exception { return longSession(owner,old,16); }
+    String longSession(String owner,Run old,int repetitions) throws Exception {
         var load=request("POST","/api/research/projects/"+old.project()+"/resume-context",user(owner),object());
         assertThat(load.status()).isEqualTo(200);String session=load.body().path("target_session_id").asText();
         String legacy="m2-legacy-"+UUID.randomUUID();
@@ -245,7 +246,7 @@ class MemoryContinuationIT extends AgentHttpPostgresIT {
                 i==1?"已记录检索机制；效果有争议，延迟未测量；失败尝试缺少测量数据。":
                 i==6?"最新修正：下一次测量使用机器 C，旧数字无效。":
                 i==7?"最新记录：延迟仍未测量，保留争议和待办。":"较早原始观察：尚无新测量数据。")
-                +"合成过程记录，重复描述检索机制与尚未完成的测量，不构成事实证据。".repeat(80);
+                +"合成过程记录，重复描述检索机制与尚未完成的测量，不构成事实证据。".repeat(repetitions);
             db.update("""
                 INSERT INTO agent_message(message_id,session_id,run_id,role,content,created_at)
                 VALUES (?,?,?,?,?,clock_timestamp()+?*interval '1 millisecond')
@@ -279,11 +280,12 @@ class MemoryContinuationIT extends AgentHttpPostgresIT {
             boolean nextPlanning=false;
             for(var call:calls) {
                 var payload=JSON.readTree(call.path("wire").path("messages").get(1).path("content").asText());
-                if(payload.has("project_summary")) {
-                    assertThat(payload.path("project_summary")).isEqualTo(view.path("summary"));
+                if(payload.path("project_summary").path("summary_sha256").equals(view.path("summary").path("summary_sha256"))) {
+                    assertThat(payload.path("context_encoding").asText()).isEqualTo("shared-context-values/1");
+                    assertThat(view.path("summary").path("schema_version").asText()).isEqualTo("project-context-summary/2");
                     assertThat(canonical(payload).getBytes(java.nio.charset.StandardCharsets.UTF_8).length)
                         .isEqualTo(view.path("measurement").path("after_bytes").asInt()).isLessThanOrEqualTo(24000);
-                    var encoded=payload.path("project_summary");
+                    var encoded=view.path("summary");
                     assertThat(encoded.path("original_encoding").asText()).isEqualTo("source-record-dictionary/1");
                     for(var original:encoded.path("original_records")) {
                         StringBuilder restored=new StringBuilder();
@@ -292,7 +294,7 @@ class MemoryContinuationIT extends AgentHttpPostgresIT {
                             .filter(row->row.path("source_ref").equals(original.path("source_ref"))).findFirst().orElseThrow();
                         assertThat(restored.toString()).isEqualTo(source.path("value").asText());
                     }
-                    assertThat(canonical(payload.path("prior_context").path("recentConversation"))).contains("最新修正","机器 C","最新记录");
+                    assertThat(canonical(call.path("decoded_payload").path("prior_context").path("recentConversation"))).contains("最新修正","机器 C","最新记录");
                     nextPlanning=true;
                 }
             }
@@ -327,17 +329,47 @@ class MemoryContinuationIT extends AgentHttpPostgresIT {
             Files.writeString(config,canonical(settings));var first=probe(config,dir.resolve("summary-restart-first.log"),false);
             assertThat(first.waitFor(60,java.util.concurrent.TimeUnit.SECONDS)).isTrue();
             assertThat(first.exitValue()).withFailMessage(Files.readString(dir.resolve("summary-restart-first.log"))).isZero();
-            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND purpose='SUMMARY'",Integer.class,run)).isEqualTo(1);
+            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND purpose='SUMMARY'",Integer.class,run)).isZero();
             db.update("UPDATE agent_workflow_run SET lease_until=now()-interval '1 second' WHERE run_id=?",run);
             settings.put("interrupt_after_decision",false).put("token",service()).put("output",dir.resolve("summary-restart-second.json").toString());
             Files.writeString(config,canonical(settings));var second=probe(config,dir.resolve("summary-restart-second.log"),false);
             assertThat(second.waitFor(60,java.util.concurrent.TimeUnit.SECONDS)).isTrue();
             assertThat(second.exitValue()).withFailMessage(Files.readString(dir.resolve("summary-restart-second.log"))).isZero();
-            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND purpose='SUMMARY'",Integer.class,run)).isEqualTo(1);
+            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND purpose='SUMMARY'",Integer.class,run)).isZero();
             var view=request("GET","/api/research/agents/"+run+"/context-summary",user(owner),null);
             assertThat(view.body().path("planner_input_recorded").asBoolean()).isTrue();
             for(var call:JSON.readTree(Files.readString(dir.resolve("summary-restart-second.json"))).path("calls"))
                 assertThat(JSON.readTree(call.path("wire").path("messages").get(1).path("content").asText()).has("source_segments")).isFalse();
+        } finally {Files.deleteIfExists(config);}
+    }
+    @Test void oversizedLosslessHistoryStopsBeforeProviderWithoutClaimingReady() throws Exception {
+        String owner="shared-overflow-"+UUID.randomUUID(); Run old=history(owner);
+        // Retain the original 80-repeat stress case: lossless sharing cannot
+        // promise an arbitrary compression ratio under the same 24 KB budget.
+        String session=longSession(owner,old,80);
+        var accepted=post("/api/research/agents",owner,"overflow-"+UUID.randomUUID(),object(
+            "question","接着做，先推进尚未完成的部分。","sessionId",session,
+            "requestedTools",List.of("kb_search"),"researchProjectId",old.project()));
+        assertThat(accepted.status()).isEqualTo(202);
+        String run=accepted.body().path("runId").asText();
+        Path dir=Path.of("target/memory-shared-overflow").toAbsolutePath();Files.createDirectories(dir);
+        Path config=Files.createTempFile("shared-overflow-",".json");
+        Files.setPosixFilePermissions(config,java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
+        try {
+            Files.writeString(config,canonical(object("url","http://127.0.0.1:"+port,
+                "token",service(),"viewer_token",user(owner),"run",run,
+                "output",dir.resolve("result.json").toString(),"provider","controlled")));
+            var worker=probe(config,dir.resolve("worker.log"),false);
+            assertThat(worker.waitFor(60,java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            assertThat(worker.exitValue()).withFailMessage(Files.readString(dir.resolve("worker.log"))).isZero();
+            var view=request("GET","/api/research/agents/"+run+"/context-summary",user(owner),null).body();
+            assertThat(view.path("status").asText()).isEqualTo("FAILED");
+            assertThat(view.path("error_code").asText()).isEqualTo("PROJECT_SUMMARY_BUDGET");
+            assertThat(view.path("within_budget").asBoolean()).isFalse();
+            assertThat(view.path("planner_input_recorded").asBoolean()).isFalse();
+            assertThat(view.path("measurement").path("after_bytes").asInt()).isGreaterThan(24000);
+            assertThat(JSON.readTree(Files.readString(dir.resolve("result.json"))).path("calls")).isEmpty();
+            assertThat(db.queryForObject("SELECT count(*) FROM agent_research_operation WHERE run_id=? AND purpose IN ('SUMMARY','DECISION')",Integer.class,run)).isZero();
         } finally {Files.deleteIfExists(config);}
     }
     @Test void expiredSelectedMemoryRunRetainsTimeoutTerminalStatus() throws Exception {

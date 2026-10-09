@@ -12,6 +12,7 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from deepresearch_workflow.agent_budget import SqlAgentLedger
 from deepresearch_workflow.agent_model import OpenAIAgentModel
 from deepresearch_workflow.agent_runtime import AutonomousResearchGraph
+from deepresearch_workflow.context_dictionary import unpack
 from deepresearch_workflow.control_plane import HttpControlPlaneClient
 from deepresearch_workflow.domain import ToolExecutionResult
 from deepresearch_workflow.evidence_client import HttpEvidenceBackend
@@ -190,7 +191,9 @@ async def main():
             async def transport(wire):
                 body = json.loads(wire.content)
                 payload = json.loads(body["messages"][1]["content"])
-                capture = {"provider": cfg.get("provider", "controlled"), "wire": body}
+                decoded = unpack(payload) if payload.get("context_encoding") else payload
+                capture = {"provider": cfg.get("provider", "controlled"), "wire": body,
+                           "decoded_payload": decoded}
                 captures.append(capture)
                 # Store no Authorization headers, private keys, or provider raw failure body.
                 await output.write_text(
@@ -222,7 +225,7 @@ async def main():
                 result = (
                     {"selected_segment_ids": [payload["source_segments"][0]["segment_id"]]}
                     if "source_segments" in payload
-                    else controlled_decision(payload, cfg.get("scenario"))
+                    else controlled_decision(decoded, cfg.get("scenario"))
                 )
                 capture["result"] = result
                 return httpx.Response(

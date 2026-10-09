@@ -1,6 +1,10 @@
 target
 .git
 .github
+.claude
+.codex-handoffs
+**/node_modules
+frontend/dist
 .idea
 .playwright-cli
 output/playwright
