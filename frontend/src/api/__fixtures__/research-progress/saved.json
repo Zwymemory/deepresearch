@@ -1,0 +1,59 @@
+{
+  "schema_version" : "research-progress/1",
+  "context_kind" : "prior_progress",
+  "trusted_as_evidence" : false,
+  "project_id" : "project-http",
+  "source_run_id" : "run-http",
+  "source_session_id" : "session-http",
+  "original_goal" : "Keep this original goal",
+  "run_status" : "FAILED",
+  "completed_work" : [ ],
+  "unresolved_questions" : [ {
+    "task_id" : "task-main",
+    "goal" : "Resolve disputed work",
+    "status" : "blocked",
+    "completion_verified" : false,
+    "criteria" : [ {
+      "criterionId" : "criterion-1540fd4212281e371b3478ba8c1a017e800ac1c0c526b95b",
+      "text" : "resolve disputed work",
+      "status" : "uncovered",
+      "checkIds" : [ ],
+      "claimIds" : [ ],
+      "gaps" : [ "Stored standard has no valid stable coverage identity" ]
+    } ],
+    "gaps" : [ "Stored standard coverage is missing or inconsistent" ]
+  }, {
+    "task_id" : "original-requirements",
+    "goal" : "Original question coverage",
+    "status" : "blocked",
+    "completion_verified" : false,
+    "criteria" : [ {
+      "criterionId" : "coverage-original-requirements",
+      "text" : "Original question coverage",
+      "status" : "uncovered",
+      "checkIds" : [ ],
+      "claimIds" : [ ],
+      "gaps" : [ "Original requirements have not been explicitly extracted" ]
+    } ],
+    "gaps" : [ "Original requirements have not been explicitly extracted" ]
+  }, {
+    "goal" : "Keep this original goal",
+    "status" : "FAILED",
+    "completion_verified" : false,
+    "error_code" : "LOCAL_FIXTURE_FAILURE",
+    "gaps" : [ "原始运行未建立整题完成；保留其未解决状态并重新核验后续工作" ]
+  } ],
+  "next_steps" : [ "逐项重新检查未解决问题及原始来源；历史进度不能替代新的核验" ],
+  "source_evidence" : [ {
+    "evidence_id" : "evidence-http",
+    "receipt_id" : "read-http",
+    "snapshot_sha256" : "d9aad2df867b8b316af8260ba8495a3b8f4b7722e842b349706625fd3edfcede",
+    "source_id" : "source-http"
+  } ],
+  "source_claims" : [ {
+    "claim_id" : "claim-http",
+    "record_sha256" : "32baf4339cfda59d9d6800bf6b10d77d394ae66233b9dab698eb3716e5c8daf8",
+    "decision_status" : "contested",
+    "freshness" : "fresh"
+  } ]
+}

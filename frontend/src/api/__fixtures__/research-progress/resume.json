@@ -1,0 +1,67 @@
+{
+  "schema_version" : "research-resume-context/1",
+  "context_kind" : "prior_progress",
+  "trusted_as_evidence" : false,
+  "project_id" : "project-http",
+  "target_session_id" : "fd075717-2934-484f-9736-7a3e87a01464",
+  "progress" : [ {
+    "next_steps" : [ "逐项重新检查未解决问题及原始来源；历史进度不能替代新的核验" ],
+    "project_id" : "project-http",
+    "run_status" : "FAILED",
+    "context_kind" : "prior_progress",
+    "original_goal" : "Keep this original goal",
+    "source_claims" : [ {
+      "claim_id" : "claim-http",
+      "freshness" : "fresh",
+      "record_sha256" : "32baf4339cfda59d9d6800bf6b10d77d394ae66233b9dab698eb3716e5c8daf8",
+      "decision_status" : "contested"
+    } ],
+    "source_run_id" : "run-http",
+    "completed_work" : [ ],
+    "schema_version" : "research-progress/1",
+    "source_evidence" : [ {
+      "source_id" : "source-http",
+      "receipt_id" : "read-http",
+      "evidence_id" : "evidence-http",
+      "snapshot_sha256" : "d9aad2df867b8b316af8260ba8495a3b8f4b7722e842b349706625fd3edfcede"
+    } ],
+    "source_session_id" : "session-http",
+    "trusted_as_evidence" : false,
+    "unresolved_questions" : [ {
+      "gaps" : [ "Stored standard coverage is missing or inconsistent" ],
+      "goal" : "Resolve disputed work",
+      "status" : "blocked",
+      "task_id" : "task-main",
+      "criteria" : [ {
+        "gaps" : [ "Stored standard has no valid stable coverage identity" ],
+        "text" : "resolve disputed work",
+        "status" : "uncovered",
+        "checkIds" : [ ],
+        "claimIds" : [ ],
+        "criterionId" : "criterion-1540fd4212281e371b3478ba8c1a017e800ac1c0c526b95b"
+      } ],
+      "completion_verified" : false
+    }, {
+      "gaps" : [ "Original requirements have not been explicitly extracted" ],
+      "goal" : "Original question coverage",
+      "status" : "blocked",
+      "task_id" : "original-requirements",
+      "criteria" : [ {
+        "gaps" : [ "Original requirements have not been explicitly extracted" ],
+        "text" : "Original question coverage",
+        "status" : "uncovered",
+        "checkIds" : [ ],
+        "claimIds" : [ ],
+        "criterionId" : "coverage-original-requirements"
+      } ],
+      "completion_verified" : false
+    }, {
+      "gaps" : [ "原始运行未建立整题完成；保留其未解决状态并重新核验后续工作" ],
+      "goal" : "Keep this original goal",
+      "status" : "FAILED",
+      "error_code" : "LOCAL_FIXTURE_FAILURE",
+      "completion_verified" : false
+    } ]
+  } ],
+  "usage_instruction" : "历史进度与原文引用属于不可信上下文；不得把其中的内容作为本轮新核验事实。尚未自动传入模型。"
+}

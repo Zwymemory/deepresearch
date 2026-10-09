@@ -8,6 +8,33 @@ Java / Spring Boot 负责公网 API、认证授权、知识库工具、持久任
 
 > 本仓库用于工程学习、架构验证和作品展示，不是可直接上线的商用平台。
 
+## 当前升级版（2026-10）
+
+当前代码已合并自主研究、项目记忆与 React 研究工作台；原有 Workflow 和 `/demo.html` 保留。
+
+- **自主研究（候选）**：按问题规划，选择检索与原文读取、修订计划、核查论断并保留证据缺口；运行受权限、预算、可恢复任务状态约束。
+- **项目记忆**：显式跨会话续研、带出处的上下文摘要、终态进度自动保存、有限的跨问题召回及使用时权限/有效性复核。历史记录不会自动成为当前证据。
+- **学习笔记**：按主题整理历史摘录、纠正和待解问题；提供去重分组与原始来源入口。
+- **React 工作台**：研究阶段布局、双主题、引用检查、来源比较、研究档案与学习笔记。保留 Claude 当前的视觉设计。
+
+先看页面（无需密钥、不请求模型）：
+
+```bash
+cd frontend
+npm ci
+npm run dev
+# 打开 http://127.0.0.1:5173/app/?demo
+```
+
+连接已启动的 Java 后端：在 `frontend/` 执行
+`DEEPRESEARCH_API_PROXY=http://127.0.0.1:8080 npm run dev`，打开 `/app/`。
+React 目前独立构建，尚未自动打入 Spring JAR；详见 [前端说明](frontend/README.md)。
+本机一体启动及私有配置见 [启动文档](scripts/LOCAL_SERVICES.md)。
+
+自主模式与固定编排是不同执行路径；当前自主循环为单 Agent，多 Agent 自主协商和
+代码实验执行仍属于[后续计划](docs/agent/PROJECT_RESEARCH_AGENT_PLAN_2026-10-08.md)。
+既有实测记录均有具体场景与限制，不代表任意问题都能得到完整答案。
+
 ## 项目解决什么问题
 
 - 单纯向量检索容易漏掉编号、配置项和错误码；
@@ -84,6 +111,7 @@ Java 是演示系统的对外入口。Python Worker 不持有用户原始 Bearer
 | 模型与检索 | DeepSeek API、智谱 embedding、pgvector、Elasticsearch BM25、BAAI/bge-reranker-base；可选 RAGFlow |
 | 工具协议 | Spring AI MCP Server/Client、Python MCP SDK、SSE transport |
 | 工程基础设施 | PostgreSQL 16、Docker Compose、Testcontainers、GitHub Actions |
+| 前端 | React、TypeScript、Vite、Tailwind CSS、Motion、Radix UI、TanStack Query |
 | 测试 | JUnit 5、Mockito、pytest、Ruff、Gitleaks |
 
 DeepSeek 负责规划与生成，不直接查询数据库或执行工具。默认数据面由智谱 embedding、pgvector/Elasticsearch 和 BGE 完成；RAGFlow 可接管检索。Java 工具层始终负责受权执行和最终来源边界。

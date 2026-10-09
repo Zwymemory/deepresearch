@@ -1,0 +1,180 @@
+{
+ "_note": "Backend digest sample from Codex handoff source-sample-preview.json (fixture_only, sample run ids; not a real research run).",
+ "digest": {
+  "method": "source-grouping/1",
+  "points": [
+   {
+    "category": "concept",
+    "occurrence_count": 1,
+    "point_id": "point-fc68d104c3c08cda",
+    "representative": {
+     "end": 211,
+     "run_id": "sample-4",
+     "start": 173
+    },
+    "sources": [
+     {
+      "end": 211,
+      "run_id": "sample-4",
+      "start": 173
+     }
+    ],
+    "text": "Spring Bean 就是由 Spring 容器注册和管理的应用组件对象。"
+   },
+   {
+    "category": "concept",
+    "occurrence_count": 1,
+    "point_id": "point-22ee032aa6169ee6",
+    "representative": {
+     "end": 924,
+     "run_id": "sample-4",
+     "start": 836
+    },
+    "sources": [
+     {
+      "end": 924,
+      "run_id": "sample-4",
+      "start": 836
+     }
+    ],
+    "text": "构造器依赖注入（constructor-based dependency injection）是指对象通过构造器参数声明自己所需的依赖，由容器在创建该对象时把这些依赖对象传入。"
+   },
+   {
+    "category": "concept",
+    "occurrence_count": 1,
+    "point_id": "point-4e039b53697bc03e",
+    "representative": {
+     "end": 1049,
+     "run_id": "sample-4",
+     "start": 924
+    },
+    "sources": [
+     {
+      "end": 1049,
+      "run_id": "sample-4",
+      "start": 924
+     }
+    ],
+    "text": "文档明确推荐使用构造器注入来装配依赖，并用 @ComponentScan 查找 Bean；示例中 @Service 类 MyAccountService 通过构造器接收一个必需的 RiskAssessor Bean，并把它保存到 final 字段中。"
+   },
+   {
+    "category": "condition",
+    "occurrence_count": 3,
+    "point_id": "point-57413be7bf9a02a5",
+    "representative": {
+     "end": 488,
+     "run_id": "sample-0",
+     "start": 399
+    },
+    "sources": [
+     {
+      "end": 488,
+      "run_id": "sample-0",
+      "start": 399
+     },
+     {
+      "end": 460,
+      "run_id": "sample-1",
+      "start": 371
+     },
+     {
+      "end": 455,
+      "run_id": "sample-2",
+      "start": 366
+     }
+    ],
+    "text": "因此 PaymentGateway 只要被注册为 Bean，就由 Spring 容器负责创建，并在构造 OrderService 时作为构造器参数传入，无需在代码里手工 new。"
+   },
+   {
+    "category": "condition",
+    "occurrence_count": 1,
+    "point_id": "point-607e526f711810c0",
+    "representative": {
+     "end": 1106,
+     "run_id": "sample-4",
+     "start": 1049
+    },
+    "sources": [
+     {
+      "end": 1106,
+      "run_id": "sample-4",
+      "start": 1049
+     }
+    ],
+    "text": "文档还指出，如果一个 Bean 有多个构造器，需要用 @Autowired 标注希望 Spring 使用的那一个。"
+   },
+   {
+    "category": "condition",
+    "occurrence_count": 1,
+    "point_id": "point-068e8c57839cc302",
+    "representative": {
+     "end": 414,
+     "run_id": "sample-4",
+     "start": 211
+    },
+    "sources": [
+     {
+      "end": 414,
+      "run_id": "sample-4",
+      "start": 211
+     }
+    ],
+    "text": "文档说明，只要把应用类放在顶层包中，就可以不加参数地使用 @ComponentScan，或使用隐含包含它的 @SpringBootApplication 注解；这样，所有应用组件（@Component、@Service、@Repository、@Controller 等）都会被自动注册为 Spring Bean。也就是说，Bean 不是靠手工 new 出来的对象，而是交给容器统一创建、装配和管理的对象。"
+   },
+   {
+    "category": "practice",
+    "occurrence_count": 1,
+    "point_id": "point-8e4b3a185f67fe71",
+    "representative": {
+     "end": 2429,
+     "run_id": "sample-4",
+     "start": 2257
+    },
+    "sources": [
+     {
+      "end": 2429,
+      "run_id": "sample-4",
+      "start": 2257
+     }
+    ],
+    "text": "题目：请写一个 @Service 类 OrderService，它需要一个必需的依赖 PaymentGateway。要求：(1) 用构造器依赖注入声明该依赖，并保存到 final 字段；(2) 说明为什么不需要自己 new PaymentGateway；(3) 如果 OrderService 有两个构造器，如何告诉 Spring 使用哪一个？"
+   }
+  ],
+  "schema_version": "learning-note-digest/1",
+  "stats": {
+   "candidate_count": 14,
+   "displayed_count": 7,
+   "merged_count": 3,
+   "omitted_count": 4,
+   "unique_count": 11
+  }
+ },
+ "fixture_only": true,
+ "sources": [
+  {
+   "answer": "研究报告（已完成）\n\n已支持：\n上一轮构造器注入练习第二问的解答（练习假设：OrderService 与 PaymentGateway 是题目虚构的类名，官方文档中并未出现这两个名字；以下代码为未执行的说明性示例，非官方文档原文代码）。\n\n为什么不需要自己 new PaymentGateway：Spring Boot 官方文档《Spring Beans and Dependency Injection》说明，只要把应用类放在顶层包中，就可以不加参数地使用 @ComponentScan，或使用隐含包含它的 @SpringBootApplication 注解，此时所有应用组件（@Component、@Service、@Repository、@Controller 等）都会被自动注册为 Spring Bean；文档还明确推荐用构造器注入（constructor injection）来装配依赖。因此 PaymentGateway 只要被注册为 Bean，就由 Spring 容器负责创建，并在构造 OrderService 时作为构造器参数传入，无需在代码里手工 new。\n\n```java\nimport org.springframework.stereotype.Service;\n\n@Service\npublic class OrderService {\n\n    private final PaymentGateway paymentGateway;\n\n    public OrderService(PaymentGateway paymentGateway) {\n        this.paymentGateway = paymentGateway;\n    }\n}\n```\n\n说明：上述 OrderService/PaymentGateway 代码是练习假设下的未执行示例；官方文档支持的原理是“组件被自动注册为 Spring Bean”与“推荐构造器注入”，文档原文使用的是 MyAccountService 与 RiskAssessor 作为示例类名。（适用版本：未确定，仅描述引用快照；有效时间未确定；条件：[\"依据 Spring Boot 官方文档（docs.spring.io）说明原理\",\"区分练习假设（OrderService/PaymentGateway 为虚构类名）与官方文档支持的原理\",\"回到构造器注入那道练习，\",\"用中文说明\",\"请解答第二问。\"]） [来源1]\n\n范围说明：上述裁决绑定所列原文、版本与条件；结构和回执校验不保证模型语义判断正确。",
+   "question": "回到构造器注入那道练习，请解答第二问。",
+   "run_id": "sample-0"
+  },
+  {
+   "answer": "研究报告（已完成）\n\n已支持：\n上一轮练习第二问的解答（练习假设：OrderService 与 PaymentGateway 是题目虚构的类名，官方文档中并未出现这两个名字；以下代码为未执行的说明性示例，非官方文档原文代码）。\n\n为什么不需要自己 new PaymentGateway：Spring Boot 官方文档《Spring Beans and Dependency Injection》说明，只要把应用类放在顶层包中，就可以不加参数地使用 @ComponentScan，或使用隐含包含它的 @SpringBootApplication 注解，此时所有应用组件（@Component、@Service、@Repository、@Controller 等）都会被自动注册为 Spring Bean；文档还明确推荐用构造器注入来装配依赖。因此 PaymentGateway 只要被注册为 Bean，就由 Spring 容器负责创建，并在构造 OrderService 时作为构造器参数传入，无需在代码里手工 new。\n\n```java\nimport org.springframework.stereotype.Service;\n\n@Service\npublic class OrderService {\n\n    private final PaymentGateway paymentGateway;\n\n    public OrderService(PaymentGateway paymentGateway) {\n        this.paymentGateway = paymentGateway;\n    }\n}\n```\n\n说明：上述 OrderService/PaymentGateway 代码是练习假设下的未执行示例；官方文档支持的原理是“组件被自动注册为 Bean”与“推荐构造器注入”，文档原文使用的是 MyAccountService 与 RiskAssessor 作为示例类名。（适用版本：未确定，仅描述引用快照；有效时间未确定；条件：[\"依据 Spring Boot 官方文档（docs.spring.io）\",\"区分练习假设（OrderService/PaymentGateway 为虚构类名）与官方文档支持的原理\",\"回到构造器注入那道练习，\",\"用中文说明\",\"请解答第二问。\"]） [来源1]\n\n范围说明：上述裁决绑定所列原文、版本与条件；结构和回执校验不保证模型语义判断正确。",
+   "question": "回到构造器注入那道练习，请解答第二问。",
+   "run_id": "sample-1"
+  },
+  {
+   "answer": "研究报告（已完成）\n\n已支持：\n上一轮练习第(2)问的解答（练习假设：OrderService 与 PaymentGateway 是题目虚构的类名，官方文档中并未出现这两个名字；以下代码为未执行的说明性示例，非官方文档原文代码）。\n\n为什么不需要自己 new PaymentGateway：Spring Boot 官方文档《Spring Beans and Dependency Injection》说明，只要把应用类放在顶层包，就可以无参使用 @ComponentScan，或使用隐含包含它的 @SpringBootApplication，此时所有应用组件（@Component、@Service、@Repository、@Controller 等）都会被自动注册为 Spring Bean；文档还明确推荐用构造器注入来装配依赖。因此 PaymentGateway 只要被注册为 Bean，就由 Spring 容器负责创建，并在构造 OrderService 时作为构造器参数传入，无需在代码里手工 new。\n\n```java\nimport org.springframework.stereotype.Service;\n\n@Service\npublic class OrderService {\n\n    private final PaymentGateway paymentGateway;\n\n    public OrderService(PaymentGateway paymentGateway) {\n        this.paymentGateway = paymentGateway;\n    }\n}\n```\n\n说明：上述 OrderService/PaymentGateway 代码是练习假设下的未执行示例；官方文档支持的原理是“组件被自动注册为 Bean”与“推荐构造器注入”，文档原文使用的是 MyAccountService 与 RiskAssessor 作为示例类名。（适用版本：未确定，仅描述引用快照；有效时间未确定；条件：[\"依据 Spring 官方文档（docs.spring.io）说明原理\",\"区分练习假设（OrderService/PaymentGateway 为虚构类名）与官方文档支持的原理\",\"用中文说明\",\"那第二问为什么不用自己 new？\"]） [来源1]\n\n范围说明：上述裁决绑定所列原文、版本与条件；结构和回执校验不保证模型语义判断正确。",
+   "question": "那第二问为什么不用自己 new？",
+   "run_id": "sample-2"
+  },
+  {
+   "answer": "研究报告（已完成）\n\n已支持：\n上一轮自创练习的解答（练习假设：OrderService 与 PaymentGateway 是题目虚构的类名，官方文档并未出现这两个名字；以下代码为未执行的说明性示例，非官方文档原文代码）。\n\n(1) 用构造器依赖注入声明必需依赖并保存到 final 字段：\n\n```java\nimport org.springframework.stereotype.Service;\n\n@Service\npublic class OrderService {\n\n    private final PaymentGateway paymentGateway;\n\n    public OrderService(PaymentGateway paymentGateway) {\n        this.paymentGateway = paymentGateway;\n    }\n}\n```\n\n(2) 为什么不需要自己 new PaymentGateway：官方文档说明，把应用类放在顶层包时，可无参使用 @ComponentScan，或使用隐含包含它的 @SpringBootApplication，所有应用组件（@Component、@Service、@Repository、@Controller 等）都会被自动注册为 Spring Bean；文档还明确推荐用构造器注入来装配依赖。因此 PaymentGateway 只要被注册为 Bean，就由容器负责创建并在构造 OrderService 时传入，无需手工 new。\n\n(3) 如果 OrderService 有两个构造器：官方文档指出，若一个 Bean 有多个构造器，需要用 @Autowired 标注希望 Spring 使用的那一个，例如：\n\n```java\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.stereotype.Service;\n\n@Service\npublic class OrderService {\n\n    private final PaymentGateway paymentGateway;\n\n    @Autowired\n    public OrderService(PaymentGateway paymentGateway) {\n        this.paymentGateway = paymentGateway;\n    }\n\n    public OrderService(PaymentGateway paymentGateway, String note) {\n        this.paymentGateway = paymentGateway;\n    }\n}\n```\n\n来源：Spring Boot 官方文档《Spring Beans and Dependency Injection》（https://docs.spring.io/spring-boot/3.5/reference/using/spring-beans-and-dependency-injection.html）。（适用版本：未确定，仅描述引用快照；有效时间未确定；条件：[\"依据 Spring Boot 官方文档\",\"区分练习假设与官方文档支持的原理\",\"用中文说明\",\"给出可运行的 Java 代码\",\"这道题的答案是？\"]） [来源1]\n\n范围说明：上述裁决绑定所列原文、版本与条件；结构和回执校验不保证模型语义判断正确。",
+   "question": "这道题的答案是？",
+   "run_id": "sample-3"
+  },
+  {
+   "answer": "研究报告（已完成）\n\n已支持：\n根据 Spring Boot 官方文档《Spring Beans and Dependency Injection》（来源：https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html）：Spring Bean 就是由 Spring 容器注册和管理的应用组件对象。文档说明，只要把应用类放在顶层包中，就可以不加参数地使用 @ComponentScan，或使用隐含包含它的 @SpringBootApplication 注解；这样，所有应用组件（@Component、@Service、@Repository、@Controller 等）都会被自动注册为 Spring Bean。也就是说，Bean 不是靠手工 new 出来的对象，而是交给容器统一创建、装配和管理的对象。\n\n生活类比（自创类比，非官方文档原文）：Bean 好比公司里由人事部门统一招聘、登记在册并安排工位的正式员工——你不需要自己临时去街上找人干活，只要说明“我需要一个会做风险评估的人”，人事（容器）就会把登记在册的合适员工派给你。（适用版本：未确定，仅描述引用快照；有效时间未确定；条件：[\"依据 Spring Boot 官方文档\",\"先举生活例子，\",\"包含生活类比（说明性示例）\",\"并注明来源。\",\"用中文解释\",\"用中文解释 Bean 和构造器依赖注入。\",\"请根据 Spring Boot 官方文档，\"]） [来源1]\n根据 Spring Boot 官方文档《Spring Beans and Dependency Injection》（来源：https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html）：构造器依赖注入（constructor-based dependency injection）是指对象通过构造器参数声明自己所需的依赖，由容器在创建该对象时把这些依赖对象传入。文档明确推荐使用构造器注入来装配依赖，并用 @ComponentScan 查找 Bean；示例中 @Service 类 MyAccountService 通过构造器接收一个必需的 RiskAssessor Bean，并把它保存到 final 字段中。文档还指出，如果一个 Bean 有多个构造器，需要用 @Autowired 标注希望 Spring 使用的那一个。\n\n生活类比（自创类比，非官方文档原文）：这就像入职时公司直接把配好的电脑和工牌交到你手上——你在“入职”（构造）那一刻就声明需要什么，公司（容器）负责准备好并交给你，而不是等你上岗后再自己去仓库翻找。（适用版本：未确定，仅描述引用快照；有效时间未确定；条件：[\"依据 Spring Boot 官方文档\",\"先举生活例子，\",\"包含生活类比（说明性示例）\",\"并注明来源。\",\"用中文解释\",\"用中文解释 Bean 和构造器依赖注入。\",\"请根据 Spring Boot 官方文档，\"]） [来源1]\n最小代码示例（未执行的说明性示例，非官方文档原文代码；来源：Spring Boot 官方文档《Spring Beans and Dependency Injection》，https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html）：\n\n```java\nimport org.springframework.stereotype.Service;\n\n@Service\npublic class MyAccountService implements AccountService {\n\n    private final RiskAssessor riskAssessor;\n\n    public MyAccountService(RiskAssessor riskAssessor) {\n        this.riskAssessor = riskAssessor;\n    }\n}\n```\n\n说明：@Service 把 MyAccountService 注册为 Spring Bean；构造器参数 RiskAssessor 声明了必需依赖，由容器在创建该 Bean 时注入，并保存到 final 字段。官方文档还指出，若一个 Bean 有多个构造器，需用 @Autowired 标注希望 Spring 使用的那一个。以上代码为说明性示例，未实际执行。（适用版本：未确定，仅描述引用快照；有效时间未确定；条件：[\"再给最小代码示例，\",\"并注明来源。\",\"最小代码示例\",\"标注为未执行的说明性示例\"]） [来源1]\n练习题（自创练习，非官方文档原文；来源：Spring Boot 官方文档《Spring Beans and Dependency Injection》，https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html）：\n\n题目：请写一个 @Service 类 OrderService，它需要一个必需的依赖 PaymentGateway。要求：(1) 用构造器依赖注入声明该依赖，并保存到 final 字段；(2) 说明为什么不需要自己 new PaymentGateway；(3) 如果 OrderService 有两个构造器，如何告诉 Spring 使用哪一个？\n\n参考答案要点：用构造器参数接收 PaymentGateway 并赋给 final 字段；因为 PaymentGateway 由容器注册为 Spring Bean 并负责创建与装配，所以无需手工 new；用 @Autowired 标注希望 Spring 使用的那个构造器。（适用版本：未确定，仅描述引用快照；有效时间未确定；条件：[\"并注明来源。\",\"最后一道练习\",\"最后出一道练习，\",\"标注为自创练习\"]） [来源1]\n\n范围说明：上述裁决绑定所列原文、版本与条件；结构和回执校验不保证模型语义判断正确。",
+   "question": "请根据 Spring Boot 官方文档，用中文解释 Bean 和构造器依赖注入。先举生活例子，再给最小代码示例，最后出一道练习，并注明来源。",
+   "run_id": "sample-4"
+  }
+ ]
+}

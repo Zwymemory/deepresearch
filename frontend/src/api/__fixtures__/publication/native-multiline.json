@@ -1,0 +1,27 @@
+{
+ "note": "Real SUCCEEDED run wf-392dc2a4… (report-readability-v2 native-run-fixture.json): published answer, citation URLs/contract, and each structured claim's text + subject only.",
+ "question": "请根据 Spring Boot 官方文档，用中文解释 Bean 和构造器依赖注入。先举生活例子，再给最小代码示例，最后出一道练习，并注明来源。",
+ "answer": "研究报告（已完成）\n\n已支持：\n根据 Spring Boot 官方文档《Spring Beans and Dependency Injection》：你可以自由使用 Spring Framework 的任何标准技术来定义 Bean 及其被注入的依赖；官方一般推荐使用构造器注入（constructor injection）来装配依赖，并用 @ComponentScan 来发现 Bean。若按文档建议把应用类放在顶层包中，可以不加参数地使用 @ComponentScan，或使用隐含包含它的 @SpringBootApplication；你的应用组件（@Component、@Service、@Repository、@Controller 等）都会被自动注册为 Spring Bean。也就是说，Spring Bean 就是由 Spring 容器注册并管理的应用组件对象。\n\n生活类比（仅为帮助理解的举例，并非官方文档原文）：Bean 像公司里登记在册的员工——只要被登记（注册）进公司名册（Spring 容器），公司就能按需把任务（依赖）派给他；@ComponentScan 相当于人事部门自动扫描并登记员工。\n\n最小代码示例（示意，未实际运行）：\n```java\n@Service\npublic class MyAccountService implements AccountService {\n    private final RiskAssessor riskAssessor;\n\n    public MyAccountService(RiskAssessor riskAssessor) {\n        this.riskAssessor = riskAssessor;\n    }\n}\n```\n\n练习：请说明为什么上面的 MyAccountService 会被自动注册为 Spring Bean，以及 @ComponentScan 在其中起什么作用。\n\n来源：Spring Boot 官方文档 “Spring Beans and Dependency Injection”（https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html）。（适用版本：未确定，仅描述引用快照；有效时间未确定；条件：[\"依据 Spring Boot 官方文档\",\"先举生活例子，\",\"再给最小代码示例，\",\"并注明来源。\",\"最后出一道练习，\",\"用中文解释\",\"用中文解释 Bean 和构造器依赖注入。\",\"请根据 Spring Boot 官方文档，\"]） [来源1]\n根据 Spring Boot 官方文档《Spring Beans and Dependency Injection》：构造器依赖注入（constructor-based dependency injection）指 Bean 通过构造器参数声明它所需要的依赖，由 Spring 在创建该 Bean 时把依赖对象传入构造器完成装配。文档给出的示例是一个使用构造器注入获取必需 RiskAssessor Bean 的 @Service Bean：\n```java\n@Service\npublic class MyAccountService implements AccountService {\n    private final RiskAssessor riskAssessor;\n\n    public MyAccountService(RiskAssessor riskAssessor) {\n        this.riskAssessor = riskAssessor;\n    }\n}\n```\n文档还说明：如果一个 Bean 有多个构造器，需要用 @Autowired 标注你想让 Spring 使用的那个构造器。\n\n生活类比（仅为帮助理解的举例，并非官方文档原文）：构造器注入像入职时一次性配齐工位和工具——员工（Bean）在“入职”（构造）那一刻就拿到自己需要的工具（依赖），之后不必再自己去找。\n\n练习：若 MyAccountService 有两个构造器，Spring 如何知道该用哪一个？请结合 @Autowired 说明。\n\n来源：Spring Boot 官方文档 “Spring Beans and Dependency Injection”（https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html）。（适用版本：未确定，仅描述引用快照；有效时间未确定；条件：[\"依据 Spring Boot 官方文档\",\"先举生活例子，\",\"再给最小代码示例，\",\"并注明来源。\",\"最后出一道练习，\",\"用中文解释\",\"用中文解释 Bean 和构造器依赖注入。\",\"请根据 Spring Boot 官方文档，\"]） [来源1]\n\n范围说明：上述裁决绑定所列原文、版本与条件；结构和回执校验不保证模型语义判断正确。",
+ "citationContract": "INDEXED_V1",
+ "citations": [
+  "https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html"
+ ],
+ "claims": [
+  {
+   "claim": {
+    "text": "根据 Spring Boot 官方文档《Spring Beans and Dependency Injection》：你可以自由使用 Spring Framework 的任何标准技术来定义 Bean 及其被注入的依赖；官方一般推荐使用构造器注入（constructor injection）来装配依赖，并用 @ComponentScan 来发现 Bean。若按文档建议把应用类放在顶层包中，可以不加参数地使用 @ComponentScan，或使用隐含包含它的 @SpringBootApplication；你的应用组件（@Component、@Service、@Repository、@Controller 等）都会被自动注册为 Spring Bean。也就是说，Spring Bean 就是由 Spring 容器注册并管理的应用组件对象。\n\n生活类比（仅为帮助理解的举例，并非官方文档原文）：Bean 像公司里登记在册的员工——只要被登记（注册）进公司名册（Spring 容器），公司就能按需把任务（依赖）派给他；@ComponentScan 相当于人事部门自动扫描并登记员工。\n\n最小代码示例（示意，未实际运行）：\n```java\n@Service\npublic class MyAccountService implements AccountService {\n    private final RiskAssessor riskAssessor;\n\n    public MyAccountService(RiskAssessor riskAssessor) {\n        this.riskAssessor = riskAssessor;\n    }\n}\n```\n\n练习：请说明为什么上面的 MyAccountService 会被自动注册为 Spring Bean，以及 @ComponentScan 在其中起什么作用。\n\n来源：Spring Boot 官方文档 “Spring Beans and Dependency Injection”（https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html）。",
+    "applicability": {
+     "subject": "Spring Boot 官方文档中 Bean 的概念"
+    }
+   }
+  },
+  {
+   "claim": {
+    "text": "根据 Spring Boot 官方文档《Spring Beans and Dependency Injection》：构造器依赖注入（constructor-based dependency injection）指 Bean 通过构造器参数声明它所需要的依赖，由 Spring 在创建该 Bean 时把依赖对象传入构造器完成装配。文档给出的示例是一个使用构造器注入获取必需 RiskAssessor Bean 的 @Service Bean：\n```java\n@Service\npublic class MyAccountService implements AccountService {\n    private final RiskAssessor riskAssessor;\n\n    public MyAccountService(RiskAssessor riskAssessor) {\n        this.riskAssessor = riskAssessor;\n    }\n}\n```\n文档还说明：如果一个 Bean 有多个构造器，需要用 @Autowired 标注你想让 Spring 使用的那个构造器。\n\n生活类比（仅为帮助理解的举例，并非官方文档原文）：构造器注入像入职时一次性配齐工位和工具——员工（Bean）在“入职”（构造）那一刻就拿到自己需要的工具（依赖），之后不必再自己去找。\n\n练习：若 MyAccountService 有两个构造器，Spring 如何知道该用哪一个？请结合 @Autowired 说明。\n\n来源：Spring Boot 官方文档 “Spring Beans and Dependency Injection”（https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html）。",
+    "applicability": {
+     "subject": "Spring Boot 官方文档中构造器依赖注入的含义与工作方式"
+    }
+   }
+  }
+ ]
+}

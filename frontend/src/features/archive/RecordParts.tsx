@@ -1,0 +1,172 @@
+// Pieces of a saved research-progress record, shared by the archive's selection panel and
+// reading layer. Everything shown comes from the snapshot as saved; nothing is re-verified.
+import { useRef, useState } from "react";
+import { CLAIM_STATUS, recordKey, type ProgressGoal, type ProgressSnapshot } from "../../domain/progressMemory";
+import type { LoadState } from "../../live/useNotebook";
+import { Icon } from "../../ui/Icon";
+import { shortId, statusLabel } from "./recordText";
+
+const GOAL_STATUS: Record<string, string> = { done: "已完成", blocked: "待解决", pending: "待执行", running: "执行中", uncovered: "尚未核查", resolved: "已核查", FAILED: "失败" };
+function Goals({ index, title, goals, empty }: { index: string; title: string; goals: ProgressGoal[]; empty: string }) {
+  return (
+    <section className="rec-section">
+      <h2 className="rec-h"><span className="rec-n" aria-hidden="true">{index}</span>{title}</h2>
+      {goals.length ? (
+        <ul className="nb-goals">
+          {goals.map((g, i) => (
+            <li key={i}>
+              <div className="flex flex-wrap items-center gap-2">
+                {g.status !== "unknown" ? <span className="chip">{GOAL_STATUS[g.status] ?? g.status}</span> : null}
+                <strong style={{ overflowWrap: "anywhere" }}>{g.goal}</strong>
+                {g.completionVerified ? <span className="chip chip-ok">保存时已有完成证明</span> : null}
+                {g.historical ? <span className="chip" title={g.fromRunId ?? undefined}>沿用自更早的运行</span> : null}
+                {g.errorCode ? <code>{g.errorCode}</code> : null}
+              </div>
+              {g.gaps.length ? <ul className="nb-gaps">{g.gaps.map((gap, j) => <li key={j}>{gap}</li>)}</ul> : null}
+              {g.criteria.length ? <ul className="nb-gaps">{g.criteria.map((c, j) => (
+                <li key={j}><span className="note">{GOAL_STATUS[c.status] ?? c.status}</span>　{c.text}{c.gaps.length ? <span className="note">（{c.gaps.join("；")}）</span> : null}</li>
+              ))}</ul> : null}
+            </li>
+          ))}
+        </ul>
+      ) : <p className="note">{empty}</p>}
+    </section>
+  );
+}
+
+const ORIGIN_LABEL: Record<string, string> = { automatic: "自动保存", manual: "手动保存" };
+
+/** How and when this snapshot was saved; an unrecorded origin is never shown as automatic. */
+export function SaveFacts({ record }: { record: ProgressSnapshot }) {
+  return (
+    <div className="meta-row" style={{ marginTop: 10 }}>
+      <span className="chip" title="保存方式由服务端记录">{record.saveOrigin ? ORIGIN_LABEL[record.saveOrigin] ?? record.saveOrigin : "保存方式未记录"}</span>
+      {record.currentQuestion && record.currentQuestion !== record.originalGoal ? <span>保存时的本轮问题：{record.currentQuestion}</span> : null}
+    </div>
+  );
+}
+
+/** User correction note: an annotation shown beside the saved record; it never edits verified facts. */
+export function CorrectionNote({ record, onSave, busy, error, preview }: {
+  record: ProgressSnapshot; onSave?: ((note: string) => Promise<boolean>) | null; busy: boolean; error: string | null; preview: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(record.userCorrection);
+  const editButton = useRef<HTMLButtonElement>(null);
+  // Keep keyboard focus inside the reading layer when the editor closes.
+  const close = () => { setEditing(false); window.requestAnimationFrame(() => editButton.current?.focus()); };
+  const save = async (note: string) => { if (onSave && await onSave(note)) close(); };
+  return (
+    <section className="rec-section correction">
+      <h2 className="rec-h"><span className="rec-n" aria-hidden="true">✎</span>纠正说明（用户批注，不修改已核验的事实）</h2>
+      {editing ? (
+        <div className="grid gap-2">
+          <label className="sr-only" htmlFor="correction-note">纠正说明</label>
+          <textarea id="correction-note" className="text-input" rows={4} maxLength={2000} value={draft} onChange={(e) => setDraft(e.target.value)}
+            placeholder="例如：延迟测量须在同一台机器上重做；某条结论仍有争议。" disabled={busy} style={{ resize: "vertical" }} />
+          <p className="note">{draft.length} / 2000 · 保存后，下一次载入并继续研究时会带上这条说明（作为历史上下文，不是证据）。{preview ? "示例模式：只在本页修改。" : ""}</p>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => void save(draft)} disabled={busy || draft === record.userCorrection}>{busy ? "正在保存…" : "保存纠正说明"}</button>
+            {record.userCorrection ? <button type="button" className="btn btn-quiet btn-sm" onClick={() => void save("")} disabled={busy}>清除说明</button> : null}
+            <button type="button" className="btn btn-quiet btn-sm" onClick={() => { setDraft(record.userCorrection); close(); }} disabled={busy}>取消</button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {record.userCorrection ? <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{record.userCorrection}</p> : <p className="note">没有纠正说明。</p>}
+          {onSave ? <button ref={editButton} type="button" className="btn btn-quiet btn-sm" style={{ justifySelf: "start", marginTop: 8 }} onClick={() => { setDraft(record.userCorrection); setEditing(true); }}>
+            {record.userCorrection ? "修改纠正说明…" : "添加纠正说明…"}</button> : null}
+        </>
+      )}
+      {error ? <p className="missing" role="alert" style={{ marginTop: 8 }}>{error}</p> : null}
+    </section>
+  );
+}
+
+/** The snapshot as a readable document: numbered sections, report-sized text. */
+export function RecordSections({ record }: { record: ProgressSnapshot }) {
+  return (
+    <div className="rec-body">
+      <Goals index="01" title="已完成的工作（保存时的记录，不是重新核验）" goals={record.completedWork} empty="没有记录到已完成的工作。" />
+      {record.historicalCompletedWork.length ? <Goals index="01·" title="更早保存的已完成工作（历史记录，不能作为本次完成证明）" goals={record.historicalCompletedWork} empty="" /> : null}
+      <Goals index="02" title="尚未解决的问题" goals={record.unresolvedQuestions} empty="没有记录到未解决的问题。" />
+      <section className="rec-section">
+        <h2 className="rec-h"><span className="rec-n" aria-hidden="true">03</span>下一步</h2>
+        {record.nextSteps.length ? <ul className="nb-gaps rec-list">{record.nextSteps.map((s, i) => <li key={i}>{s}</li>)}</ul> : <p className="note">未记录</p>}
+      </section>
+      <section className="rec-section">
+        <h2 className="rec-h"><span className="rec-n" aria-hidden="true">04</span>出处（标识与当时状态，不是标题或链接）</h2>
+        {record.sourceClaims.length ? <ul className="grid gap-2">{record.sourceClaims.map((c) => {
+          const s = CLAIM_STATUS[c.decisionStatus] ?? { label: c.decisionStatus, chip: "chip" };
+          return <li key={c.claimId} className="flex flex-wrap items-center gap-2"><span className={"chip " + s.chip}>{s.label}</span><span className="source-id">论断 {shortId(c.claimId)}{c.freshness ? ` · ${c.freshness === "fresh" ? "引用记录仍有效" : c.freshness}` : ""}</span></li>;
+        })}</ul> : null}
+        {record.sourceEvidence.length ? <p className="source-id" style={{ marginTop: 8 }}>证据 {record.sourceEvidence.map((e) => shortId(e.evidenceId)).join("、")}</p> : null}
+        {record.priorMemoryRefs.length ? <p className="source-id" style={{ marginTop: 8 }}>沿用的更早进度：{record.priorMemoryRefs.map((r) => shortId(r.sourceRunId)).join("、")}</p> : null}
+        {!record.sourceClaims.length && !record.sourceEvidence.length ? <p className="note">未记录</p> : null}
+      </section>
+    </div>
+  );
+}
+
+/** Load and two-step delete. Loading creates a new, empty session; it never starts research. */
+export function RecordActions({ onLoad, loadBusy, loadedHere, onContinue, onDelete, deleting, deleteError }: {
+  onLoad: () => void; loadBusy: boolean;
+  /** This project's context is already loaded into a new session; another load creates another session. */
+  loadedHere: boolean;
+  /** Present only while the loaded project/session pair is still valid. Continue is a separate explicit step. */
+  onContinue?: (() => void) | null;
+  onDelete: () => void; deleting: boolean; deleteError: string | null;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  return (
+    <div className="grid gap-3">
+      <div className="rec-actions">
+        {loadedHere && onContinue ? <button type="button" className="btn btn-primary btn-sm" onClick={onContinue}>在此项目继续研究…</button> : null}
+        <button type="button" className={"btn btn-sm " + (loadedHere && onContinue ? "btn-quiet" : "btn-primary")} onClick={onLoad} disabled={loadBusy || loadedHere}>
+          {loadBusy ? "正在载入…" : loadedHere ? "已载入到新会话" : "载入此项目的研究进度到新会话"}
+        </button>
+        {loadedHere && !loadBusy ? <button type="button" className="btn btn-quiet btn-sm" onClick={onLoad}>另建一个新会话再次载入</button> : null}
+        {confirming ? <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn btn-danger btn-sm" onClick={onDelete} disabled={deleting}>{deleting ? "正在删除…" : "确认删除"}</button>
+          <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirming(false)} disabled={deleting}>取消</button>
+        </div> : <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirming(true)}>删除保存的进度…</button>}
+      </div>
+      <p className="note">先载入：新建一个空会话并返回该项目最近的研究进度（可能不止这一条），不会开始研究。再单独选择“继续研究”并写下本轮问题，才会创建研究运行。删除只移除这一份保存的进度快照，不删除项目、原始运行、证据或会话。</p>
+      {deleteError ? <p className="missing" role="alert">{deleteError}</p> : null}
+    </div>
+  );
+}
+
+export function LoadedPanel({ load, onClear, onRetry, onContinue }: {
+  load: LoadState; onClear: () => void; onRetry: (projectId: string) => void;
+  /** Continue with the loaded pair; omitted where the panel is only informational. */
+  onContinue?: ((projectId: string) => void) | null;
+}) {
+  if (load.state === "loading") return <p className="note" role="status">正在新建会话并读取该项目的研究进度…</p>;
+  if (load.state === "failed") return (
+    <div className="unknown" role="alert" style={{ marginTop: 0 }}>
+      <strong><Icon name="alert" size={16} />{load.maybeCreated ? "载入结果未知" : "载入未完成"}</strong>
+      <p>{load.message}</p>
+      {load.maybeCreated ? <>
+        <p className="note">第一次请求可能已经创建了一个空会话（空会话不会开始研究）。页面不会自动重试；如需继续，请明确载入到另一个新会话。</p>
+        <button type="button" className="btn btn-quiet btn-sm" style={{ justifySelf: "start" }} onClick={() => onRetry(load.projectId)}>再次载入（会再新建一个会话）</button>
+      </> : null}
+    </div>
+  );
+  if (load.state !== "loaded") return null;
+  const { context } = load;
+  return (
+    <div className="limits loaded-panel" role="status" style={{ marginTop: 0 }}>
+      <p><strong>已载入历史研究进度（尚未传入模型；未开始研究）</strong>{load.recovered ? <span className="note">　已用会话 ID 重新读取</span> : null}</p>
+      <p className="note" style={{ marginTop: 4 }}>项目级载入：返回 {context.progress.length} 条研究进度。新会话 <span className="source-id">{shortId(context.targetSessionId)}</span></p>
+      {context.progress.length ? <ul className="nb-gaps" style={{ marginTop: 6 }}>{context.progress.map((p) => (
+        <li key={recordKey(p.projectId, p.sourceRunId)}>{p.originalGoal}<span className="note">（保存时：{statusLabel(p.runStatus)}，未解决 {p.unresolvedQuestions.length} 项）</span></li>
+      ))}</ul> : <p className="note">该项目当前没有可用的研究进度。</p>}
+      {context.usageInstruction ? <p className="note" style={{ marginTop: 6 }}>服务端说明：{context.usageInstruction}</p> : null}
+      {load.sourceDeleted ? <p className="missing" style={{ marginTop: 8 }}>该项目的一份保存的进度快照已删除。这个载入记录不能再用于继续研究；请重新载入。</p>
+        : load.sourceCorrected ? <p className="missing" style={{ marginTop: 8 }}>该项目的纠正说明已更新。这个载入记录仍是旧内容，不能再用于继续研究；请重新载入。</p>
+        : onContinue ? <button type="button" className="btn btn-primary btn-sm" style={{ marginTop: 10 }} onClick={() => onContinue(context.projectId)}>在此项目继续研究…</button> : null}
+      <button type="button" className="link-btn" style={{ marginTop: 6, marginLeft: onContinue && !load.sourceDeleted ? 12 : 0 }} onClick={onClear}>清除载入记录</button>
+    </div>
+  );
+}
