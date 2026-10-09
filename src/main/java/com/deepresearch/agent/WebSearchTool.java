@@ -52,8 +52,23 @@ public class WebSearchTool implements Tool {
         if (input == null || input.isBlank()) {
             return CitationAwareToolOutput.withoutSources("（搜索失败：查询词为空）");
         }
-        try {
-            List<SearchHit> hits = searchClient.search(input.trim(), topK);
+        try { return executeChecked(input); }
+        catch (RuntimeException exception) {
+            return CitationAwareToolOutput.withoutSources("（搜索失败：服务暂时不可用）");
+        }
+    }
+
+    /** The workflow must distinguish a provider failure from a successful empty search. */
+    public static final class SearchFailure extends RuntimeException {
+        private final String code;
+        public SearchFailure(String code) { super(code); this.code = code; }
+        public String code() { return code; }
+    }
+
+    public CitationAwareToolOutput executeChecked(String input) {
+            var outcome = searchClient.searchChecked(input == null ? null : input.trim(), topK);
+            if (!"OK".equals(outcome.code())) throw new SearchFailure(outcome.code());
+            List<SearchHit> hits = outcome.hits();
             if (hits.isEmpty()) {
                 return CitationAwareToolOutput.withoutSources("（未检索到相关结果，可换个查询词再试）");
             }
@@ -77,9 +92,6 @@ public class WebSearchTool implements Tool {
             }
             return new CitationAwareToolOutput(
                     ToolOutputSanitizer.markUntrusted("web", sb.toString().trim()), sourceIds, snapshots);
-        } catch (RuntimeException exception) {
-            return CitationAwareToolOutput.withoutSources("（搜索失败：服务暂时不可用）");
-        }
     }
 
     private String truncate(String s) {

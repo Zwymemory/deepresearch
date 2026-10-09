@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 
 from .agent_budget import canonical
-from .agent_decision_instruction import CHECK_CAPACITY_POLICIES, SUPPORTED_POLICIES
+from .agent_decision_instruction import CHECK_CAPACITY_POLICIES, POLICY_VERSION, SUPPORTED_POLICIES
 from .agent_protocol import ModelRequest
 from .graph import ModelCallError, WorkflowExecutionError
 
@@ -65,7 +65,8 @@ class HttpEvidenceBackend:
         policy = state.get("instruction_policy")
         if policy is not None and policy not in SUPPORTED_POLICIES:
             raise WorkflowExecutionError(
-                "Agent instruction policy unknown", error_code="AGENT_INSTRUCTION_POLICY_INVALID",
+                "Agent instruction policy unknown",
+                error_code="AGENT_INSTRUCTION_POLICY_INVALID",
             )
         identifiers = self.identifiers(state, task, call_id)
         current = state.get("packet", {})
@@ -104,11 +105,18 @@ class HttpEvidenceBackend:
                 "dispute_round": round_number,
                 "parent_check_id": parent,
                 "investigation_id": investigation_id,
-                **({"claims_contract": state["claims_contract"],
-                    "requirements_ref": state["original_requirements"]["manifest_sha256"],
-                    "claim_references": [{k: r[k] for k in ("requirement_id", "criterion_id")}
-                                         for r in state["claim_references"]]}
-                   if state.get("claims_contract") == "agent-obligation-claims/1" else {}),
+                **(
+                    {
+                        "claims_contract": state["claims_contract"],
+                        "requirements_ref": state["original_requirements"]["manifest_sha256"],
+                        "claim_references": [
+                            {k: r[k] for k in ("requirement_id", "criterion_id")}
+                            for r in state["claim_references"]
+                        ],
+                    }
+                    if state.get("claims_contract") == "agent-obligation-claims/1"
+                    else {}
+                ),
             },
         )
         if prepared.get("errorCode"):
@@ -135,19 +143,107 @@ class HttpEvidenceBackend:
                     **({"instruction_policy": policy} if policy in CHECK_CAPACITY_POLICIES else {}),
                 },
             )
+            if (
+                state.get("context_snapshot", {})
+                .get("project_summary_policy", {})
+                .get("projection_encoding")
+                == "shared-context-values/1"
+            ):
+                request = request.model_copy(
+                    update={
+                        "instruction": request.instruction
+                        + "\nJSON outer shape (empty arrays illustrate syntax only; include "
+                        "EVERY requested claim row in the actual result): "
+                        '{"claims": [], "follow_up_actions": [], "planning_alignment": '
+                        '{"status": "complete", "reason": "Explain the plan assessment"}}. '
+                        "The three fields belong to the SAME top-level object. Close the "
+                        "claims array with ] before follow_up_actions; close the outer object "
+                        "with } ONLY after planning_alignment. Do not emit standalone claim "
+                        "objects or separate objects for follow-up actions. "
+                        "JSON syntax: return exactly ONE enclosing object. Put all claim "
+                        "rows inside its claims array; never append another object or a comma "
+                        "after the enclosing object. Escape embedded double quotes, backslashes "
+                        "and newlines inside quote strings. Preserve the decoded exact source "
+                        "text; JSON escaping must not change the quotation. "
+                        "planning_alignment assesses only whether the frozen plan contains ALL "
+                        "original substantive questions and classifies source/output constraints "
+                        "correctly. Do not mark the PLAN incomplete merely because the currently "
+                        "read evidence supports only some criteria, because few sources were "
+                        "read, or because some claims lack support. Report those evidence gaps "
+                        "through relations, answer_alignment, source_alignment and follow-ups. "
+                        "A genuinely omitted question, lost condition or misclassified "
+                        "citation/output instruction still makes planning_alignment incomplete. "
+                        "Judge every explicitly named failure condition separately: process "
+                        "restart is not client connection/stream recovery. Model/tool attempt "
+                        "reservation and replay do not alone establish idempotent creation of "
+                        "a research task/run. Reject a claim that substitutes those adjacent "
+                        "behaviors for the original requested behavior unless read originals "
+                        "explicitly establish that relationship.",
+                        "request_binding": {
+                            **request.request_binding,
+                            "context_encoding": "shared-context-values/1",
+                        },
+                    }
+                )
+                evidence_ids = [e["evidence_id"] for e in prepared["request"]["evidence"]]
+                request = request.model_copy(
+                    update={
+                        "instruction": request.instruction
+                        + f"\nFor EACH claim, relations must contain exactly {len(evidence_ids)} "
+                        f"rows, one for EACH evidence_id in {canonical(evidence_ids)}. "
+                        "Do not assign just one source to a claim and omit the other selected "
+                        "sources. For an irrelevant source include an insufficient relation "
+                        "with an exact complete paragraph. Keep reasons concise."
+                    }
+                )
             model_id = (
                 "model:agent:check-"
                 + hashlib.sha256(prepared["check_id"].encode()).hexdigest()[:32]
             )
-            try:
-                result = await gateway.model_call(
-                    model_id,
-                    "CHECK",
-                    request,
-                    lambda value: parse_verifier_response(
-                        canonical(value), prepared["request"], prepared["request_sha256"]
-                    ),
+            compact_quotes = policy == POLICY_VERSION
+            if compact_quotes:
+                from . import evidence_quotes
+
+                request = request.model_copy(
+                    update={
+                        "payload": evidence_quotes.model_payload(
+                            prepared["request"], prepared["request_sha256"]
+                        ),
+                        "result_schema": evidence_quotes.model_schema(prepared["request"]),
+                        "instruction": evidence_quotes.instruction(
+                            verifier_instruction(prepared["request"]), prepared["request"]
+                        )
+                        + "\nplanning_alignment assesses the frozen plan, not whether every "
+                        "obligation has already been checked. Evidence gaps belong in the "
+                        "individual relations and alignments. Return one enclosing JSON object.",
+                        "request_binding": {
+                            **request.request_binding,
+                            "evidence_quote_encoding": evidence_quotes.encoding_for(
+                                prepared["request"]
+                            ),
+                        },
+                    }
                 )
+            try:
+                if compact_quotes:
+
+                    def expand(value):
+                        return evidence_quotes.expand(
+                            value, prepared["request"], prepared["request_sha256"]
+                        )
+
+                    result = await gateway.model_call(
+                        model_id, "CHECK", request, expand, canonicalize=expand
+                    )
+                else:
+                    result = await gateway.model_call(
+                        model_id,
+                        "CHECK",
+                        request,
+                        lambda value: parse_verifier_response(
+                            canonical(value), prepared["request"], prepared["request_sha256"]
+                        ),
+                    )
             except WorkflowExecutionError as failed:
                 non_retryable = (
                     isinstance(failed, ModelCallError) and failed.retryable is False

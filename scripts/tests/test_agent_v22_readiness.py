@@ -288,7 +288,7 @@ class SchemaTests(unittest.TestCase):
             with tempfile.TemporaryDirectory() as directory:
                 built = built_fixture(directory, location)
                 self.assertEqual(
-                    len(native.candidate_schema_policy(built)["migrations"]), 22
+                    len(native.candidate_schema_policy(built)["migrations"]), 26
                 )
                 with zipfile.ZipFile(built["jar_path"], "a") as jar:
                     jar.writestr(
@@ -320,7 +320,7 @@ class SchemaTests(unittest.TestCase):
             policy = native.candidate_schema_policy(built)
             self.assertEqual(
                 [r["version"] for r in policy["migrations"]],
-                [str(v) for v in range(1, 23)],
+                [str(v) for v in range(1, 27)],
             )
             for key in ("build_sha", "source_manifest_sha256", "jar_sha256"):
                 broken = {**built, key: "0" * len(built[key])}
@@ -345,7 +345,7 @@ class SchemaTests(unittest.TestCase):
             operation.assert_not_called()
             api.assert_not_called()
 
-    def test_actual_schema_preflight_accepts_exact22_and_rejects_drift(self):
+    def test_actual_schema_preflight_accepts_exact26_and_rejects_drift(self):
         with tempfile.TemporaryDirectory() as directory:
             policy = native.candidate_schema_policy(built_fixture(directory))
 
@@ -420,7 +420,7 @@ class SchemaTests(unittest.TestCase):
 
         conn = Connection()
         self.assertEqual(
-            native.verify_database_schema(conn, policy)["migration_version"], 22
+            native.verify_database_schema(conn, policy)["migration_version"], 26
         )
         for defect in (
             "21",

@@ -2,9 +2,12 @@
 
 LEGACY_POLICY_VERSION = "agent-obligation-instruction/1"
 CAPACITY_POLICY_VERSION = "agent-obligation-instruction/2"
-POLICY_VERSION = "agent-obligation-instruction/3"
-SUPPORTED_POLICIES = frozenset({LEGACY_POLICY_VERSION, CAPACITY_POLICY_VERSION, POLICY_VERSION})
-CHECK_CAPACITY_POLICIES = frozenset({CAPACITY_POLICY_VERSION, POLICY_VERSION})
+SHAPE_POLICY_VERSION = "agent-obligation-instruction/3"
+POLICY_VERSION = "agent-obligation-instruction/4"
+SUPPORTED_POLICIES = frozenset(
+    {LEGACY_POLICY_VERSION, CAPACITY_POLICY_VERSION, SHAPE_POLICY_VERSION, POLICY_VERSION}
+)
+CHECK_CAPACITY_POLICIES = frozenset({CAPACITY_POLICY_VERSION, SHAPE_POLICY_VERSION, POLICY_VERSION})
 
 UNKNOWN_EXAMPLE = '{"status":"unknown","value":null,"reason":"Original does not establish this"}'
 VERSION_EXAMPLE = '{"status":"known","value":"1.0"}'
@@ -46,7 +49,7 @@ def obligation_instruction(schema, *, continuation, policy=POLICY_VERSION):
         "revision time; use known only with seconds/timezone declared by an original. "
         "Otherwise use unknown with a concrete reason. Version is a separate text field. "
     )
-    if policy == POLICY_VERSION and not continuation:
+    if policy in {SHAPE_POLICY_VERSION, POLICY_VERSION} and not continuation:
         phase = phase.replace(
             "Otherwise use unknown with a concrete reason. Version is a separate text field. ",
             "Both version and valid_at are tagged JSON OBJECTS, never bare strings or null. "
@@ -131,5 +134,48 @@ def obligation_instruction(schema, *, continuation, policy=POLICY_VERSION):
             "contract; they do not complete other criteria or erase counterevidence. "
             "A non-retryable unusable CHECK is terminal for this run; never re-submit it "
             "as an initial check, change its scope or request another planning correction. "
+        )
+    if policy == POLICY_VERSION:
+        if not continuation:
+            instruction = (
+                "TUTORIAL PLANNING RULE: when asked to explain concepts using an analogy, "
+                "a minimal illustrative example and a practice question, make the concepts "
+                "the obligations. Put the analogy/example/exercise segments ONLY in output "
+                "constraints linked to those obligations. Do NOT create inference or "
+                "recommendation obligations for these teaching aids. The concept claims "
+                "must include the requested teaching content as explicitly labeled examples "
+                "before they are checked; merely stating definitions omits requested output. "
+                "Preserve separately requested runnable deliverables or empirical tests as "
+                "substantive obligations. "
+            ) + instruction
+        instruction += (
+            " allowed_tools is the exhaustive list enabled for THIS run. Never request a "
+            "disabled search tool, even when mentioned in the question or history. If an "
+            "explicit source restriction requires a disabled tool, preserve that restriction "
+            "and report the configuration conflict in plain Chinese; do not keep retrying "
+            "the disabled tool or pretend another source satisfies it. For named official "
+            "documentation, target the publisher's documentation site and product in the "
+            "search query (for example site:docs.spring.io/spring-boot), then read that "
+            "actual original. Prefer those originals over tutorials, copies or unrelated "
+            "results. Language, analogy, an illustrative minimal example and a practice "
+            "question used to explain the SAME concept are output constraints attached to "
+            "that concept; do not invent independent factual obligations asserting that "
+            "the official source contains your particular analogy or exercise. Preserve "
+            "these requested teaching elements in the claim's explanatory text and mark "
+            "them as illustrations, not original quotations or executed/tested code. A "
+            "separate requested implementation, empirical test or recommendation remains "
+            "a substantive obligation. Keep each factual statement supported by read originals."
+            " current_work_summary is an unencoded server-derived checklist. Do not check "
+            "its verified criteria again without new contradictory or stale evidence. "
+            "Its read_originals are already retrieved original evidence, not search snippets "
+            "or saved history. Their previews are bounded; the verifier receives full originals. "
+            "Use their exact evidence_ids and the remaining item's "
+            "task_id/requirement_id/criterion_id "
+            "to check claims supported by visible text. Do not repeat read_source for a fresh "
+            "available original. Seek another original only for a specific fact still missing. "
+            "CRITERION_SCOPE_CHANGED is an action validation rejection, NOT a terminal "
+            "model failure: preserve the previously verified claim and continue with the "
+            "remaining unresolved criteria. Only an explicit non_retryable_check receipt "
+            "makes a CHECK unusable. Do not infer that unrelated goals are blocked."
         )
     return instruction

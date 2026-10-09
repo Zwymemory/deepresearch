@@ -186,9 +186,12 @@ def candidate_schema_policy(built):
                 }
             )
     rows.sort(key=lambda row: int(row["version"]))
-    if [row["version"] for row in rows] != [str(v) for v in range(1, 23)]:
-        raise ValueError("SCHEMA_ONLY_REVIEWED_V1_V22_SUPPORTED")
-    if rows[-1]["script"] != "V22__agent_original_requirements.sql":
+    if [row["version"] for row in rows] not in (
+        [str(v) for v in range(1, 23)],
+        [str(v) for v in range(1, 27)],
+    ):
+        raise ValueError("SCHEMA_ONLY_REVIEWED_V1_V22_OR_V26_SUPPORTED")
+    if rows[21]["script"] != "V22__agent_original_requirements.sql":
         raise ValueError("SCHEMA_V22_REQUIREMENTS_MISSING")
     return {
         "policy": SCHEMA_POLICY,
@@ -203,7 +206,7 @@ def candidate_schema_policy(built):
 def verify_database_schema(conn, policy):
     if policy.get("policy") != SCHEMA_POLICY or [
         r["version"] for r in policy["migrations"]
-    ] != [str(v) for v in range(1, 23)]:
+    ] not in ([str(v) for v in range(1, 23)], [str(v) for v in range(1, 27)]):
         raise ValueError("SCHEMA_POLICY_INVALID")
     rows = conn.execute(
         "SELECT version,type,script,checksum,success FROM public.flyway_schema_history WHERE type<>'SCHEMA' ORDER BY installed_rank"
@@ -274,7 +277,7 @@ def verify_database_schema(conn, policy):
         "policy": SCHEMA_POLICY,
         "candidate_sha": policy["candidate_sha"],
         "policy_sha256": digest(policy),
-        "migration_version": 22,
+        "migration_version": int(policy["migrations"][-1]["version"]),
         "applied_migrations": len(rows),
         "required_tables_and_role_verified": True,
     }

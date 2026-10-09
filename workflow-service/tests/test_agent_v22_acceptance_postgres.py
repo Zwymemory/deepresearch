@@ -156,7 +156,7 @@ def test_actual_migrated_schema_matches_committed_checksums_tables_and_role():
     with tempfile.TemporaryDirectory() as directory:
         policy = native.candidate_schema_policy(fixtures.built_fixture(directory))
     with psycopg.connect(URL) as conn:
-        assert native.verify_database_schema(conn, policy)["migration_version"] == 22
+        assert native.verify_database_schema(conn, policy)["migration_version"] == 26
         for sql in (
             "DELETE FROM flyway_schema_history WHERE version='22'",
             "DELETE FROM flyway_schema_history WHERE version='11'",

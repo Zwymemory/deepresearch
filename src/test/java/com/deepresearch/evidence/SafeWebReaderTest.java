@@ -76,6 +76,27 @@ class SafeWebReaderTest {
             assertThatThrownBy(() -> reader.read(null,candidate("https://example.org/"))).isInstanceOf(EvidenceException.class);
         }
     }
+    @Test void articleSurvivesLargeNavigationAndKeepsQualificationsAndCode() {
+        String html = "<html><body><nav>" + "Menu entry ".repeat(1600) + "</nav>"
+                + "<main><article class='doc'><h1>Constructor injection</h1>"
+                + "<p>The container supplies a <code>Bean</code> through its constructor.</p>"
+                + "<aside><p>Only when component scanning includes this package.</p></aside>"
+                + "<pre>def example():\n    return '🧪'\n</pre>"
+                + "<footer>Version: 3.5</footer></article></main></body></html>";
+        var reader = new SafeWebReader(h -> List.of(ip("8.8.8.8")), (u,a,t,m) ->
+                response(200,Map.of("content-type","text/html"),html,"8.8.8.8"));
+        var document = reader.read(null,candidate("https://example.org/docs"));
+        assertThat(document.truncated()).isFalse();
+        assertThat(document.text()).startsWith("Constructor injection")
+                .contains("a Bean through its constructor.", "Only when component scanning", "Version: 3.5",
+                        "def example():\n    return '🧪'")
+                .doesNotContain("Menu entry");
+    }
+    @Test void severalArticlesAreNotSilentlyReducedToTheFirstOne() throws Exception {
+        assertThat(SafeWebReader.htmlText("<main><article><p>Supported in v1.</p></article>"
+                + "<article><p>Except when legacy mode is enabled.</p></article></main>"))
+                .contains("Supported in v1.","Except when legacy mode is enabled.");
+    }
     @Test void truncatedUnicodeTextCannotClaimFullText() {
         String original = "🧪".repeat(8000) + "\n\n" + "Limit: 10 " + "x".repeat(4000) + " only in legacy mode.";
         var reader = new SafeWebReader(h -> List.of(ip("8.8.8.8")),(u,a,t,m) -> response(200,Map.of("content-type","text/plain"),original,"8.8.8.8"));

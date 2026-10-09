@@ -22,6 +22,13 @@ class EvidenceConfigurationTest {
         });
     }
 
+    @Test void dnsConfigurationIsExplicitAndUnknownModesFailClosed() {
+        var config = new EvidenceConfiguration();
+        assertThat(config.safeWebReader("system")).isNotNull();
+        assertThat(config.safeWebReader("google-doh")).isNotNull();
+        assertThatThrownBy(() -> config.safeWebReader("allow-private")).isInstanceOf(IllegalArgumentException.class);
+    }
+
     @Test void enablingWithoutControlPlaneDeniesBeforeDatabaseOrProviderAccess() {
         var db = mock(JdbcTemplate.class);
         var provider = mock(RagflowClient.class);

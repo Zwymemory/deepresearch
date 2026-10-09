@@ -53,7 +53,7 @@ public class McpKnowledgeTools {
     @Tool(name = "web_search", description = "Search public web sources for current factual evidence")
     public McpToolResponse webSearch(
             @ToolParam(description = "One focused public-web query", required = true) String query) {
-        return execute("web_search", "query", query, () -> webSearchTool.executeWithCitations(query));
+        return execute("web_search", "query", query, () -> webSearchTool.executeChecked(query));
     }
 
     @Tool(name = "calculator", description = "Evaluate a bounded arithmetic expression")
@@ -104,6 +104,8 @@ public class McpKnowledgeTools {
                     .filter(detail -> evidence.stream().anyMatch(item -> item.evidenceId().equals(detail.sourceId())))
                     .toList();
             response = new McpToolResponse(true, "OK", toolName, evidence, snapshots);
+        } catch (WebSearchTool.SearchFailure failure) {
+            response = McpToolResponse.failure(toolName, failure.code(), "网页搜索未完成（" + failure.code() + "）");
         } catch (RuntimeException failure) {
             response = McpToolResponse.failure(
                     toolName, "TOOL_UNAVAILABLE", "工具服务暂时不可用");
@@ -151,8 +153,8 @@ public class McpKnowledgeTools {
         if (!result.isEmpty()) {
             return List.copyOf(result);
         }
-        if ("kb_search".equals(toolName)) {
-            // A no-result message is diagnostic text, not a citable knowledge source.
+        if ("kb_search".equals(toolName) || "web_search".equals(toolName)) {
+            // A no-result message is diagnostic text, not a new/citable source.
             return List.of();
         }
         String content = truncate(raw);
@@ -191,6 +193,7 @@ public class McpKnowledgeTools {
             this(success, code, tool, evidence, List.of());
         }
         static McpToolResponse failure(String tool, String code, String message) {
+            if ("web_search".equals(tool)) return new McpToolResponse(false, code, tool, List.of());
             Evidence evidence = new Evidence(tool + ":error", tool, "tool error", "", message,
                     ToolArgumentFingerprint.sha256(message));
             return new McpToolResponse(false, code, tool, List.of(evidence));

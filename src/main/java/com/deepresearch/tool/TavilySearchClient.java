@@ -86,25 +86,29 @@ public class TavilySearchClient {
         if (!configured()) return SearchOutcome.failure("WEB_SEARCH_NOT_CONFIGURED");
         if (query == null || query.isBlank() || maxResults < 1 || maxResults > 10)
             return SearchOutcome.failure("INVALID_ARGUMENT");
-        List<String> domains = new ArrayList<>();
+        List<SiteScope> sites = new ArrayList<>();
+        List<String> terms = new ArrayList<>();
         for (String token : query.split("\\s+")) {
-            if (!token.toLowerCase(Locale.ROOT).startsWith("site:")) continue;
-            String domain = token.substring(5).toLowerCase(Locale.ROOT);
-            if (!DOMAIN.matcher(domain).matches() || domains.size() == 3)
+            if (!token.toLowerCase(Locale.ROOT).startsWith("site:")) { terms.add(token); continue; }
+            SiteScope site = SiteScope.parse(token.substring(5));
+            if (site == null || sites.size() == 3)
                 return SearchOutcome.failure("INVALID_ARGUMENT");
-            domains.add(domain);
+            sites.add(site);
         }
 
         // Tavily 请求体：basic 深度足够日常用，省额度
         Map<String, Object> body = new HashMap<>();
         body.put("api_key", apiKey);
-        body.put("query", query);
+        String providerQuery = String.join(" ", terms).trim();
+        if (providerQuery.isBlank()) providerQuery = sites.stream()
+                .map(site -> site.domain() + site.path()).collect(java.util.stream.Collectors.joining(" "));
+        body.put("query", providerQuery);
         body.put("max_results", maxResults);
         body.put("search_depth", "basic");
         body.put("include_answer", false);
         body.put("include_raw_content", false); // 用 content 摘要即可，省 token
-        if (!domains.isEmpty()) {
-            body.put("include_domains", domains.stream().distinct().toList());
+        if (!sites.isEmpty()) {
+            body.put("include_domains", sites.stream().map(SiteScope::domain).distinct().toList());
             body.put("include_domains_mode", "restrict");
         }
 
@@ -121,7 +125,7 @@ public class TavilySearchClient {
             }
             List<SearchHit> hits = resp.results().stream()
                     // Provider filtering is not trusted as the final scope check.
-                    .filter(r -> domains.isEmpty() || inScope(r.url(), domains))
+                    .filter(r -> sites.isEmpty() || inScope(r.url(), sites))
                     .map(r -> new SearchHit(
                             safe(r.title()),
                             safe(r.url()),
@@ -152,7 +156,26 @@ public class TavilySearchClient {
         return s == null ? "" : s;
     }
 
-    private static boolean inScope(String url, List<String> domains) {
+    private record SiteScope(String domain, String path) {
+        static SiteScope parse(String value) {
+            try {
+                URI uri = URI.create("https://" + value);
+                String host = uri.getHost(), path = uri.getPath();
+                if (host == null || !DOMAIN.matcher(host.toLowerCase(Locale.ROOT)).matches()
+                        || uri.getUserInfo() != null || uri.getPort() != -1 || uri.getQuery() != null
+                        || uri.getFragment() != null || value.contains("%") || value.contains(":")
+                        || !uri.normalize().getPath().equals(path)) return null;
+                return new SiteScope(host.toLowerCase(Locale.ROOT), path);
+            } catch (IllegalArgumentException invalid) { return null; }
+        }
+        boolean matches(String host, String actualPath) {
+            return (host.equals(domain) || host.endsWith("." + domain))
+                    && (path.isEmpty() || path.equals("/") || actualPath.equals(path)
+                        || actualPath.startsWith(path.endsWith("/") ? path : path + "/"));
+        }
+    }
+
+    private static boolean inScope(String url, List<SiteScope> sites) {
         try {
             URI parsed = URI.create(url);
             String host = parsed.getHost();
@@ -160,7 +183,7 @@ public class TavilySearchClient {
                     || parsed.getUserInfo() != null || host == null) return false;
             String normalized = host.toLowerCase(Locale.ROOT);
             if (!DOMAIN.matcher(normalized).matches()) return false;
-            return domains.stream().anyMatch(domain -> normalized.equals(domain) || normalized.endsWith("." + domain));
+            return sites.stream().anyMatch(site -> site.matches(normalized, parsed.normalize().getPath()));
         } catch (IllegalArgumentException | NullPointerException invalid) {
             return false;
         }

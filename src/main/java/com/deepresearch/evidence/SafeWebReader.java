@@ -1,10 +1,11 @@
 package com.deepresearch.evidence;
 
-import javax.swing.text.MutableAttributeSet;
-import javax.swing.text.html.HTML;
-import javax.swing.text.html.HTMLEditorKit;
-import javax.swing.text.html.parser.ParserDelegator;
-import java.io.StringReader;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
+import org.jsoup.select.NodeTraversor;
+import org.jsoup.select.NodeVisitor;
 import java.net.InetAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -94,7 +95,13 @@ public final class SafeWebReader implements SourceReader {
             }
             throw new EvidenceException("SOURCE_REDIRECT_DENIED");
         } catch (EvidenceException failure) { throw failure; }
+        catch (java.util.concurrent.ExecutionException failure) {
+            if (failure.getCause() instanceof EvidenceException evidence) throw evidence;
+            if (failure.getCause() instanceof java.net.SocketTimeoutException) throw new EvidenceException("SOURCE_TIMEOUT");
+            throw new EvidenceException("SOURCE_DNS_FAILED");
+        }
         catch (java.util.concurrent.TimeoutException failure) { throw new EvidenceException("SOURCE_TIMEOUT"); }
+        catch (java.net.SocketTimeoutException failure) { throw new EvidenceException("SOURCE_TIMEOUT"); }
         catch (InterruptedException failure) { Thread.currentThread().interrupt(); throw new EvidenceException("SOURCE_INTERRUPTED"); }
         catch (Exception failure) { throw new EvidenceException("SOURCE_READ_FAILED"); }
     }
@@ -132,20 +139,35 @@ public final class SafeWebReader implements SourceReader {
     }
 
     static String htmlText(String html) throws Exception {
+        var document = Jsoup.parse(html);
+        // The previous HTML3 parser consumed site navigation before the article,
+        // using most of the bounded evidence window without reaching the answer.
+        Element root = document.body();
+        for (String selector : List.of("article.doc", "article", "main, [role=main]")) {
+            var matches = document.select(selector);
+            if (matches.size() == 1) { root = matches.first(); break; }
+        }
+        // Keep article headers, footnotes, asides and warnings: they may qualify a fact.
+        root.select("script, style, template, noscript, nav, [role=navigation]").remove();
         StringBuilder out = new StringBuilder();
-        new ParserDelegator().parse(new StringReader(html), new HTMLEditorKit.ParserCallback() {
-            int ignored;
-            public void handleStartTag(HTML.Tag tag, MutableAttributeSet a, int p) {
-                if (tag == HTML.Tag.SCRIPT || tag == HTML.Tag.STYLE || tag == HTML.Tag.HEAD) ignored++;
-                else if (ignored == 0 && tag.isBlock()) out.append('\n');
+        NodeTraversor.traverse(new NodeVisitor() {
+            int pre;
+            public void head(Node node, int depth) {
+                if (node instanceof Element element) {
+                    if (element.tag().isBlock() || element.normalName().equals("br")) out.append('\n');
+                    if (element.normalName().equals("pre")) pre++;
+                    if (List.of("td", "th").contains(element.normalName())) out.append('\t');
+                } else if (node instanceof TextNode text) {
+                    out.append(pre > 0 ? text.getWholeText() : text.getWholeText().replaceAll("\\s+", " "));
+                }
             }
-            public void handleEndTag(HTML.Tag tag, int p) {
-                if (tag == HTML.Tag.SCRIPT || tag == HTML.Tag.STYLE || tag == HTML.Tag.HEAD) ignored = Math.max(0, ignored - 1);
-                else if (ignored == 0 && tag.isBlock()) out.append('\n');
+            public void tail(Node node, int depth) {
+                if (node instanceof Element element) {
+                    if (element.tag().isBlock()) out.append('\n');
+                    if (element.normalName().equals("pre")) pre--;
+                }
             }
-            public void handleSimpleTag(HTML.Tag tag, MutableAttributeSet a, int p) { if (ignored == 0 && tag == HTML.Tag.BR) out.append('\n'); }
-            public void handleText(char[] text, int p) { if (ignored == 0) out.append(text).append(' '); }
-        }, true);
+        }, root);
         return out.toString().replaceAll("[ \\t]+\\n", "\n").replaceAll("\\n{3,}", "\n\n");
     }
 }

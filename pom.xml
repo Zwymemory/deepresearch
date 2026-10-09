@@ -48,6 +48,12 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- Parse bounded, already-fetched HTML; never use jsoup's network client. -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.17.2</version>
+        </dependency>
         <!-- Web：提供 REST 接口、SSE 流式 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

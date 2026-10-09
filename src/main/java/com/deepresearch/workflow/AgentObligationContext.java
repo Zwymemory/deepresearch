@@ -90,7 +90,7 @@ public final class AgentObligationContext {
         }return spans;
     }
     public JsonNode context(String run,String task,String manifestRef,List<EvidenceDtos.ClaimReference> refs) {
-        var rows=db.queryForList("SELECT r.manifest::text AS manifest,w.question,o.safe_result::text AS receipt,o.status,o.kind,o.purpose FROM agent_research_requirements r JOIN agent_workflow_run w USING(run_id) JOIN agent_research_operation o ON o.run_id=r.run_id AND o.operation_key=r.declaration_key AND o.attempt=r.declaration_attempt WHERE r.run_id=?",run);
+        var rows=db.queryForList("SELECT r.manifest::text AS manifest,w.question,w.context_snapshot::text AS context_snapshot,o.safe_result::text AS receipt,o.status,o.kind,o.purpose FROM agent_research_requirements r JOIN agent_workflow_run w USING(run_id) JOIN agent_research_operation o ON o.run_id=r.run_id AND o.operation_key=r.declaration_key AND o.attempt=r.declaration_attempt WHERE r.run_id=?",run);
         if(rows.size()!=1 || refs==null || refs.isEmpty() || refs.size()>4) throw new EvidenceException("REQUIREMENT_CLAIM_REFERENCE_INVALID");
         var row=rows.get(0);var manifest=parse((String)row.get("manifest"));String question=(String)row.get("question");var receipt=parse((String)row.get("receipt"));var declarations=declarations(question,receipt);
         if(!"SETTLED".equals(row.get("status")) || !"MODEL".equals(row.get("kind")) || !"DECISION".equals(row.get("purpose"))
@@ -112,8 +112,15 @@ public final class AgentObligationContext {
             if(id==null) throw new EvidenceException("ORIGINAL_CONTEXT_INVALID");orderedIds.add(id);
         }
         for(var c:raw.path("constraints")) {var ids=JSON.createArrayNode();c.path("obligation_indices").forEach(i->ids.add(orderedIds.get(i.asInt())));constraints.add(object("role",c.path("role"),"question_spans",spans(references(c.path("segment_ids"),units),units),"requirement_ids",ids));}
-        return object("contract_version","agent-obligation-context/1","question",question,"manifest_sha256",manifestRef,
+        var result = object("contract_version","agent-obligation-context/1","question",question,"manifest_sha256",manifestRef,
                 "declaration_sha256",receipt.path("request_binding").path("wire_response_sha256"),"obligations",manifest.path("requirements"),"constraints",constraints,"claim_bindings",bindings);
+        var snapshot = row.get("context_snapshot");
+        var conversation = snapshot instanceof String text ? parse(text).path("conversation_context") : JSON.nullNode();
+        if (conversation.isObject()) {
+            result.put("contract_version","agent-obligation-context/2");
+            result.set("conversation_context",conversation.deepCopy());
+        }
+        return result;
     }
     public boolean attested(String run,String task,JsonNode request,JsonNode result,String requestHash,String responseHash) {
         try {

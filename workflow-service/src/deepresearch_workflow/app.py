@@ -17,7 +17,6 @@ from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from .agent_budget import SqlAgentLedger
 from .agent_model import OpenAIAgentModel
 from .agent_runtime import AutonomousResearchGraph
-from .project_summary import ProjectSummaryCoordinator, SqlProjectSummaryStore
 from .auth import ServiceJwtProvider
 from .control_plane import HttpControlPlaneClient
 from .domain import AgentRunBudget, RunBudget
@@ -27,6 +26,7 @@ from .mcp import HttpGrantTokenProvider, HttpMcpToolClient, ReceiptCachingToolCl
 from .model import OpenAIWorkflowModel
 from .ports import RepositoryEventSink
 from .progress_memory import HttpProgressMemoryClient
+from .project_summary import ProjectSummaryCoordinator, SqlProjectSummaryStore
 from .repository import PostgresWorkflowRepository, checkpoint_pool
 from .runner import WorkflowRunner
 from .settings import Settings, harden_langgraph_deserialization
@@ -59,9 +59,7 @@ class ServiceRuntime:
         await repository.check_schema()
         await repository.check_checkpoint_schema(self.settings.checkpointer_schema)
 
-        connections = checkpoint_pool(
-            self.settings.database_url, self.settings.checkpointer_schema
-        )
+        connections = checkpoint_pool(self.settings.database_url, self.settings.checkpointer_schema)
         self.checkpoint_connections = connections
         await connections.open(wait=True)
         # Pass the allowlist explicitly: relying only on an environment flag is
@@ -91,7 +89,7 @@ class ServiceRuntime:
         )
         tools = ReceiptCachingToolClient(mcp, repository)
         model = OpenAIWorkflowModel(self.settings)
-        agent_model = OpenAIAgentModel(self.settings,http_client)
+        agent_model = OpenAIAgentModel(self.settings, http_client)
         ledger = SqlAgentLedger(repository)
         evidence = HttpEvidenceBackend(
             client=http_client,
@@ -100,8 +98,10 @@ class ServiceRuntime:
         )
         events = RepositoryEventSink(repository)
         progress_memory = HttpProgressMemoryClient(
-            client=http_client, java_base_url=self.settings.java_base_url,
-            service_tokens=service_tokens, timeout_seconds=self.settings.http_timeout_seconds,
+            client=http_client,
+            java_base_url=self.settings.java_base_url,
+            service_tokens=service_tokens,
+            timeout_seconds=self.settings.http_timeout_seconds,
         )
         control_plane = HttpControlPlaneClient(
             client=http_client,
@@ -113,11 +113,19 @@ class ServiceRuntime:
         project_summaries = ProjectSummaryCoordinator(SqlProjectSummaryStore(repository))
 
         def graph_factory(claim_token: str, budget: RunBudget) -> Any:
-            if isinstance(budget,AgentRunBudget):
-                return AutonomousResearchGraph(model=agent_model,tools=tools,repository=repository,
-                    ledger=ledger,evidence=evidence,events=events,budget=budget,
-                    claim_token=claim_token,progress_memory=progress_memory,
-                    project_summaries=project_summaries).compile(checkpointer=saver)
+            if isinstance(budget, AgentRunBudget):
+                return AutonomousResearchGraph(
+                    model=agent_model,
+                    tools=tools,
+                    repository=repository,
+                    ledger=ledger,
+                    evidence=evidence,
+                    events=events,
+                    budget=budget,
+                    claim_token=claim_token,
+                    progress_memory=progress_memory,
+                    project_summaries=project_summaries,
+                ).compile(checkpointer=saver)
             return DurableResearchGraph(
                 model=model,
                 tools=tools,

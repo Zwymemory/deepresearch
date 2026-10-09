@@ -98,10 +98,12 @@ class AgentRunBudget(RunBudget):
     max_tasks: int = Field(default=16, alias="maxTasks", ge=1, le=16)
     max_concurrency: int = Field(default=1, alias="maxConcurrency", ge=1, le=1)
     max_revision_rounds: int = Field(default=2, alias="maxRevisionRounds", ge=0, le=2)
-    max_model_calls: int = Field(default=16, alias="maxModelCalls", ge=1, le=16)
+    max_model_calls: int = Field(default=16, alias="maxModelCalls", ge=1, le=24)
+    max_tokens: int = Field(default=100_000, alias="maxTokens", ge=1_000, le=200_000)
+    max_cost_cny: float = Field(default=1.0, alias="maxCostCny", ge=0.01, le=2.0)
     deadline_seconds: int = Field(default=180, alias="deadlineSeconds", ge=10, le=180)
-    max_decision_steps: int = Field(default=8, alias="maxDecisionSteps", ge=1, le=8)
-    max_input_tokens: int = Field(default=64_000, alias="maxInputTokens", ge=1, le=64_000)
+    max_decision_steps: int = Field(default=8, alias="maxDecisionSteps", ge=1, le=16)
+    max_input_tokens: int = Field(default=64_000, alias="maxInputTokens", ge=1, le=240_000)
     max_output_tokens: int = Field(default=16_384, alias="maxOutputTokens", ge=1, le=16_384)
 
 

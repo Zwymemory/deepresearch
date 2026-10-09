@@ -88,6 +88,29 @@ class WorkflowCitationDetailsHttpIT {
         db.update("UPDATE agent_workflow_run SET status='FINALIZING',stage='FINALIZING',claim_token=?::uuid,lease_until=now()+interval '120 seconds' WHERE run_id=?", claim, id);
         return new Run(id, claim, tenant, owner);
     }
+    @Test void budgetStopRecoversTrustedSnapshotsWithoutPublishingOrCallingProviders() throws Exception {
+        Run run=create("draft-tenant","draft-owner");
+        receipt(run,"draft-search","web_search",List.of(CitationDetail.web("https://example.org/recovery",
+                "Recovery original title","https://example.org/recovery","Collected search material.")));
+        clearInvocations(ragflow,webSearch);
+        var stop=request("POST","/internal/research/workflows/"+run.id()+"/finalize",service(),
+                object("claimToken",run.claim(),"status","BUDGET_EXCEEDED","errorCode","BUDGET_EXCEEDED"));
+        assertThat(stop.status()).withFailMessage(stop.body().toString()).isEqualTo(200);
+        String stored=db.queryForObject("SELECT final_response::text FROM agent_workflow_run WHERE run_id=?",String.class,run.id());
+        var recovered=request("GET","/api/research/workflows/"+run.id(),user(run.tenant(),run.owner()),null);
+        assertThat(recovered.status()).isEqualTo(200);
+        var draft=recovered.body().path("finalResponse").path("researchDraft");
+        assertThat(recovered.body().path("status").asText()).isEqualTo("BUDGET_EXCEEDED");
+        assertThat(recovered.body().path("finalResponse").path("citations")).isEmpty();
+        assertThat(draft.path("sources")).hasSize(1);
+        assertThat(draft.path("sources").get(0).path("excerpt").asText()).isEqualTo("Collected search material.");
+        assertThat(draft.toString()).doesNotContain("sidecar forged","forged.example.org");
+        assertThat(draft.path("additionalModelCalls").asInt()).isZero();
+        assertThat(request("GET","/api/research/workflows/"+run.id(),user("other-tenant",run.owner()),null).status()).isEqualTo(404);
+        assertThat(request("GET","/api/research/workflows/"+run.id(),user(run.tenant(),run.owner()),null).body().path("finalResponse").path("researchDraft")).isEqualTo(draft);
+        assertThat(db.queryForObject("SELECT final_response::text FROM agent_workflow_run WHERE run_id=?",String.class,run.id())).isEqualTo(stored);
+        verifyNoInteractions(ragflow,webSearch);
+    }
     void receipt(Run run, String call, String tool, List<CitationDetail> snapshots) throws Exception {
         var evidence = snapshots.stream().map(detail -> new Evidence(detail.sourceId(), tool,
                 "Untrusted parsed title", "", "parsed content", sha("parsed content"))).toList();

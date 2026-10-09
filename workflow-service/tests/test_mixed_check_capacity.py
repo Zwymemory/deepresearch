@@ -19,6 +19,7 @@ from deepresearch_workflow.agent_decision_instruction import (
     CHECK_CAPACITY_POLICIES,
     LEGACY_POLICY_VERSION,
     POLICY_VERSION,
+    SHAPE_POLICY_VERSION,
 )
 from deepresearch_workflow.agent_model import OpenAIAgentModel
 from deepresearch_workflow.agent_protocol import AgentRunBudget, ModelRequest, ModelResult
@@ -128,7 +129,7 @@ async def test_legacy_check_wire_and_settled_replay_preserve_original_binding(
     monkeypatch.setattr(HttpEvidenceBackend, "check", selected)
     monkeypatch.setattr(AgentBudgetGateway, "model_call", call)
     await peer.test_peer_verifier_request_and_model_receipt_bind_exact_response_and_current_claim(
-        protocol
+        protocol, None
     )
 
 
@@ -359,6 +360,7 @@ async def test_unusable_check_resume_stops_without_planning_recheck_or_duplicate
         (None, 1024),
         (LEGACY_POLICY_VERSION, 1024),
         (CAPACITY_POLICY_VERSION, 4096),
+        (SHAPE_POLICY_VERSION, 4096),
         (POLICY_VERSION, 4096),
     ],
 )
@@ -381,9 +383,10 @@ async def test_backend_selection_retains_legacy_bindings_and_unusable_prepared_i
         )
 
     class Gateway:
-        async def model_call(self, key, purpose, req, validate):
+        async def model_call(self, key, purpose, req, validate, *, canonicalize=None):
             requests.append(req)
             assert purpose == "CHECK" and req.max_output_tokens == cap
+            assert (canonicalize is not None) == (policy == POLICY_VERSION)
             raise ModelCallError(
                 key,
                 attempt=1,

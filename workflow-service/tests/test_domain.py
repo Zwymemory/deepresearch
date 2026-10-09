@@ -4,6 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from deepresearch_workflow.domain import (
+    AgentRunBudget,
     PlannedTaskDraft,
     PlanOutput,
     ReviewOutput,
@@ -15,6 +16,19 @@ from deepresearch_workflow.domain import (
     merge_usage,
 )
 from deepresearch_workflow.model import conservative_token_estimate
+
+
+def test_memory_agent_budget_accepts_new_finite_limits_and_preserves_legacy_defaults():
+    budget = AgentRunBudget(runtime="agent", maxInputTokens=240000,
+                            maxModelCalls=24, maxDecisionSteps=16)
+    assert budget.max_input_tokens == 240000
+    assert budget.max_decision_steps == 16
+    old = AgentRunBudget(runtime="agent")
+    assert (old.max_input_tokens, old.max_decision_steps, old.max_model_calls) == (64000, 8, 16)
+    for field, value in [("maxInputTokens", 240001), ("maxModelCalls", 25),
+                         ("maxDecisionSteps", 17), ("maxTokens", 200001), ("maxCostCny", 2.01)]:
+        with pytest.raises(ValidationError):
+            AgentRunBudget.model_validate({"runtime": "agent", field: value})
 
 
 def test_usage_reducer_sums_parallel_deltas() -> None:

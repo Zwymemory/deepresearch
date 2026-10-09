@@ -185,7 +185,9 @@ def mandatory_sections(state, sources=()):
     # Current tasks/requirements/check history remain whole in the decision payload;
     # mutable task status must not retrigger a summary of the same older range.
     for kind in ("prior_progress", "recalled_progress"):
-        for index, row in enumerate(state.get("context_snapshot", {}).get(kind, {}).get("records", [])):
+        for index, row in enumerate(
+            state.get("context_snapshot", {}).get(kind, {}).get("records", [])
+        ):
             snap = row["snapshot"]
             base = f"context_snapshot/{kind}/records/{index}/snapshot"
             for field, category in [
@@ -437,6 +439,10 @@ class ProjectSummaryCoordinator:
         if not policy["enabled"]:
             return {}
         raw = baseline(state, payload, policy)
+        from .context_dictionary import ENCODING as SHARED_ENCODING
+
+        if policy.get("projection_encoding") == SHARED_ENCODING:
+            return await self.prepare_shared(state, raw, policy, gateway)
         before = byte_size(raw)
         sources = material(state, raw, policy)
         if before < policy["trigger_bytes"] or not sources:
@@ -469,6 +475,11 @@ class ProjectSummaryCoordinator:
                     "Stored summary differs from original records",
                     error_code="PROJECT_SUMMARY_INVALID",
                 )
+            # Cache the selection, not a measurement of an earlier decision input.
+            saved["measurement"]["before_bytes"] = before
+            effective = compressed(raw, saved["summary"], sources) if saved.get("summary") else raw
+            saved["measurement"]["after_bytes"] = byte_size(effective)
+            saved["within_budget"] = byte_size(effective) <= policy["budget_bytes"]
             return {"project_summary_view": saved}
         previous = state.get("project_summary_view", {}).get("summary")
         if not usable(previous, sources, state):
@@ -536,8 +547,16 @@ class ProjectSummaryCoordinator:
                     "source_segments": segments,
                     "selection_limit": selection_limit,
                     "mandatory": mandatory_sections(state),
-                    **({"recalled_progress": {"trusted_as_evidence": False,
-                        "context_kind": "recalled_progress"}} if "recalled_progress" in payload else {}),
+                    **(
+                        {
+                            "recalled_progress": {
+                                "trusted_as_evidence": False,
+                                "context_kind": "recalled_progress",
+                            }
+                        }
+                        if "recalled_progress" in payload
+                        else {}
+                    ),
                     **(
                         {
                             "prior_progress": {
@@ -582,6 +601,87 @@ class ProjectSummaryCoordinator:
         await self.store.save(state, gateway.claim_token, source_hash, view)
         return {"project_summary_view": view}
 
+    async def prepare_shared(self, state, raw, policy, gateway):
+        await gateway.guard()
+        if any(kind in raw for kind in ("prior_progress", "recalled_progress")):
+            if gateway.validate_memory is None:
+                raise WorkflowExecutionError(
+                    "Saved progress validator unavailable", error_code="RESEARCH_MEMORY_UNAVAILABLE"
+                )
+            await gateway.validate_memory()
+            await gateway.guard()
+        # Every new input gets its own key. Recent evidence, task/check changes and
+        # current usage are included, so an earlier failure cannot suppress a retry.
+        source_hash = digest({"payload": raw, "policy": policy})
+        saved = await self.store.get(state["run_id"], source_hash)
+        if saved is not None:
+            validate_shared(state, raw, policy, saved)
+            return {"project_summary_view": saved}
+        sources = material(state, raw, policy)
+        summary = shared_summary(state, raw, sources, policy)
+        effective = shared_payload(raw, summary)
+        before, after = byte_size(raw), byte_size(effective)
+        ready = before >= policy["trigger_bytes"] and after < before
+        if not ready:
+            summary, effective, after = None, raw, before
+        within = after <= policy["budget_bytes"]
+        view = {
+            "status": "READY" if ready else "NOT_NEEDED" if within else "FAILED",
+            "summary": summary,
+            "source_sha256": source_hash,
+            "sources": sources,
+            "uncovered_records": [],
+            "error_code": None if within else "PROJECT_SUMMARY_BUDGET",
+            "measurement": {
+                "method": METHOD,
+                "before_bytes": before,
+                "after_bytes": after,
+                "budget_bytes": policy["budget_bytes"],
+            },
+            "within_budget": within,
+        }
+        if not ready and within:
+            # Like v1, NOT_NEEDED is an ephemeral view, not an attempted summary.
+            # The durable table admits READY/FAILED only.
+            view.pop("source_sha256")
+            return {"project_summary_view": view}
+        await self.store.save(state, gateway.claim_token, source_hash, view)
+        return {"project_summary_view": view}
+
+
+def shared_summary(state, raw, sources, policy):
+    summary = assemble(state, sources, [], [], policy, allow_empty=True)
+    summary.update(
+        schema_version="project-context-summary/2",
+        projection_encoding="shared-context-values/1",
+        projection_sha256=digest(raw),
+        coverage_note="Lossless shared values; all projected originals retained. Not verification.",
+    )
+    summary.pop("summary_sha256", None)
+    summary["summary_sha256"] = digest(summary)
+    return summary
+
+
+def shared_payload(raw, summary):
+    from .context_dictionary import pack
+
+    result = pack(raw)
+    # Scope/history/checks are already present in full through reversible refs.
+    # Do not duplicate their display-only sections in the actual planner input.
+    result["project_summary"] = {
+        key: summary[key]
+        for key in ("schema_version", "trusted_as_evidence", "summary_sha256", "projection_sha256")
+    }
+    return result
+
+
+def validate_shared(state, raw, policy, view):
+    summary = view.get("summary")
+    if summary and summary != shared_summary(state, raw, material(state, raw, policy), policy):
+        raise WorkflowExecutionError(
+            "Summary differs from original records", error_code="PROJECT_SUMMARY_INVALID"
+        )
+
 
 def apply_summary(state, payload):
     policy = policy_for(state)
@@ -589,6 +689,9 @@ def apply_summary(state, payload):
         return payload
     raw = baseline(state, payload, policy)
     view = state.get("project_summary_view") or {}
+    if policy.get("projection_encoding") == "shared-context-values/1":
+        validate_shared(state, raw, policy, view)
+        return shared_payload(raw, view["summary"]) if view.get("summary") else raw
     sources = material(state, raw, policy)
     summary = view.get("summary")
     if summary and not usable(summary, sources, state):

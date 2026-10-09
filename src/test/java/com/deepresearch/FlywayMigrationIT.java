@@ -25,7 +25,7 @@ class FlywayMigrationIT {
             .withPassword("deepresearch");
 
     @Test
-    void appliesCompleteMigrationChainThroughV22OnCleanDatabase() {
+    void appliesCompleteMigrationChainThroughV26OnCleanDatabase() {
         Flyway flyway = Flyway.configure()
                 .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
                 .locations("classpath:db/migration")
@@ -40,7 +40,7 @@ class FlywayMigrationIT {
                 SELECT version FROM flyway_schema_history
                 WHERE success ORDER BY installed_rank
                 """, String.class)).containsExactlyElementsOf(
-                List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22"));
+                List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26"));
         assertThat(db.queryForList("""
                 SELECT table_name FROM information_schema.tables
                 WHERE table_schema='public' AND table_name IN (

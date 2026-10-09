@@ -6,9 +6,9 @@ Date: 2026-10-05
 
 The initial backend progress-memory implementation is ready for frontend integration on branch `feat/research-progress-memory-mvp-20261005`, based on `cdbb89bed829851eaa32f23c75ad603a1b86438e`.
 
-Backend checkout: `/Users/zwy/Claude/Projects/deepresearch-memory-mvp`.
+Backend checkout: `<backend-checkout>`.
 
-Frontend checkout: `/Users/zwy/Claude/Projects/deepresearch-github/.claude/worktrees/deepresearch-frontend-redesign-1bb438`.
+Frontend checkout: `<frontend-checkout>`.
 
 Continue from Claude's frontend commit `39ddfef` or newer work. Preserve the existing visual identity, themes, stage-based layout and Motion interactions. This assignment connects the existing notebook; it does not restart the redesign or authorize another milestone.
 
@@ -82,7 +82,7 @@ Exact, synthetic responses captured through the real HTTP/JWT stack are checked 
 - `resume.json`: context and a newly created target session.
 - `deleted.json`: deletion result.
 
-These are controlled test records, not production research or credentials. Their IDs are illustrative. The real source directory is `/Users/zwy/Claude/Projects/deepresearch-memory-mvp/docs/agent/fixtures/research-progress/`.
+These are controlled test records, not production research or credentials. Their IDs are illustrative. The real source directory is `<backend-checkout>/docs/agent/fixtures/research-progress/`.
 
 | Snapshot field | Meaning / frontend treatment |
 | --- | --- |
@@ -133,7 +133,7 @@ Use the existing Vite `DEEPRESEARCH_API_PROXY` setting only with a confirmed Jav
 On 2026-10-05, this command passed with **2 tests, 0 failures, 0 errors, 0 skips**:
 
 ```bash
-cd /Users/zwy/Claude/Projects/deepresearch-memory-mvp
+cd <backend-checkout>
 mvn -o -Pintegration -Dtest=NoTests \
   -Dsurefire.failIfNoSpecifiedTests=false \
   -Dit.test=ResearchProgressMemoryIT verify

@@ -75,3 +75,7 @@ workflow-service/schema/001_tool_receipt.sql
 dist/
 build/
 .tox/
+
+# Private agent handoffs and local IDE launch configuration.
+.codex-handoffs/
+.claude/

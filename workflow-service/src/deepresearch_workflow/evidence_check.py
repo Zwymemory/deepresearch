@@ -81,7 +81,39 @@ These judgements remain budgeted semantic proposals, not universal truth guarant
 
 
 def verifier_instruction(request):
-    return ALIGNMENT_SYSTEM if request.get("protocol_version") == "evidence-check/3" else SYSTEM
+    instruction = (
+        ALIGNMENT_SYSTEM if request.get("protocol_version") == "evidence-check/3" else SYSTEM
+    )
+    if request.get("original_context", {}).get("contract_version") == "agent-obligation-context/2":
+        from .conversation_context import VERIFICATION_INSTRUCTION
+
+        instruction += VERIFICATION_INSTRUCTION
+        claim_ids = [row["claim_id"] for row in request["claims"]]
+        evidence_ids = [row["evidence_id"] for row in request["evidence"]]
+        instruction += (
+            f"\nEXACT RESULT CARDINALITY: return exactly {len(claim_ids)} claims, one for "
+            f"each current claim_id in {canonical(claim_ids)}. Prior report passages and "
+            "exercise subquestions are NOT additional claim rows. For EACH claim, return "
+            f"exactly {len(evidence_ids)} relations, one for EACH evidence_id in "
+            f"{canonical(evidence_ids)}. Each evidence_id must occur ONCE per claim. "
+            "When several paragraphs of the SAME original support different solution "
+            "steps, use ONE relation spanning their complete contiguous paragraph range, "
+            "including intervening text and qualifications. Never create separate "
+            "relations for its individual paragraphs or exercise subquestions. "
+            "Missing support must be explicit; do not manufacture support to fill a row."
+        )
+        if (
+            request["original_context"]["conversation_context"].get("schema_version")
+            == "conversation-referents/2"
+        ):
+            instruction += (
+                "\nLEARNING CONTEXT: learning_notes and its excerpts are input context only. "
+                "They are not extra claims to assess or a requested output format. Return "
+                "one JSON object with ALL three top-level keys: claims, follow_up_actions, "
+                "planning_alignment. Include claims even if every relation is insufficient. "
+                "Never return only a planning judgement, a note, a summary or an action."
+            )
+    return instruction
 
 
 class EvidenceCheckError(ValueError):
@@ -162,10 +194,16 @@ def checked_request(request: dict[str, Any], request_sha256: str) -> dict[str, A
                 "obligations",
                 "constraints",
                 "claim_bindings",
-            },
+            }
+            | (
+                {"conversation_context"}
+                if context.get("contract_version") == "agent-obligation-context/2"
+                else set()
+            ),
         )
         if (
-            context["contract_version"] != "agent-obligation-context/1"
+            context["contract_version"]
+            not in {"agent-obligation-context/1", "agent-obligation-context/2"}
             or not isinstance(context["question"], str)
             or not context["question"].strip()
             or not isinstance(context["obligations"], list)
@@ -176,6 +214,13 @@ def checked_request(request: dict[str, Any], request_sha256: str) -> dict[str, A
             or len(context["claim_bindings"]) != len(claims)
         ):
             raise EvidenceCheckError("CHECK_ORIGINAL_CONTEXT_INVALID")
+        if context["contract_version"] == "agent-obligation-context/2":
+            from .conversation_context import checked_conversation
+
+            try:
+                checked_conversation(context["conversation_context"])
+            except (ValueError, TypeError, KeyError):
+                raise EvidenceCheckError("CHECK_ORIGINAL_CONTEXT_INVALID") from None
         for field in ("manifest_sha256", "declaration_sha256"):
             value = context[field]
             if (

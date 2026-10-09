@@ -192,10 +192,19 @@ class ModelRequest(StrictModel):
     @model_validator(mode="after")
     def output_allocation(self):
         if self.max_output_tokens > 1024 and not (
-            self.name == "EvidenceCheck"
-            and self.request_binding.get("instruction_policy") in CHECK_CAPACITY_POLICIES
+            (
+                self.name == "EvidenceCheck"
+                and self.request_binding.get("instruction_policy") in CHECK_CAPACITY_POLICIES
+            )
+            or (
+                self.name == "AgentDecision"
+                and self.max_output_tokens <= 2048
+                and self.request_binding.get("context_encoding") == "shared-context-values/1"
+            )
         ):
-            raise ValueError("Expanded output requires the fresh CHECK policy")
+            raise ValueError(
+                "Expanded output requires an authorized CHECK or lossless decision policy"
+            )
         return self
 
 

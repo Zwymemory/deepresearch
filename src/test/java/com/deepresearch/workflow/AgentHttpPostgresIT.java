@@ -48,6 +48,8 @@ import static org.mockito.Mockito.when;
 })
 @ActiveProfiles("integration-test")
 @Testcontainers
+@org.springframework.test.annotation.DirtiesContext(
+    classMode=org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS)
 @Import(AgentHttpPostgresIT.ControlledOriginalTransport.class)
 class AgentHttpPostgresIT {
     /** Substitute DNS/HTTP bytes only; all native source/check/publication gates remain real. */
@@ -89,6 +91,10 @@ class AgentHttpPostgresIT {
     record Reply(int status,JsonNode body) {}
 
     @BeforeEach void sourceTransport() {
+        // This class owns a disposable database. Earlier scenarios may intentionally
+        // leave runs queued or with expired leases; do not let a later Python worker
+        // claim those runs instead of the scenario under test.
+        db.update("TRUNCATE agent_session CASCADE");
         when(ragflow.datasets()).thenReturn(List.of("dataset-http"));
         when(ragflow.chunk("dataset-http","document-http","chunk-old"))
             .thenReturn(object("id","chunk-old","doc_id","document-http","content",TEXT));

@@ -11,6 +11,7 @@ from anyio import Path
 from langgraph.checkpoint.memory import InMemorySaver
 from psycopg import AsyncConnection
 from psycopg.types.json import Jsonb
+from quote_wire import check_wire, original_quote
 
 from deepresearch_workflow.agent_budget import SqlAgentLedger
 from deepresearch_workflow.agent_completion import ensure_criteria
@@ -190,7 +191,7 @@ class Verifier:
                             {
                                 "evidence_id": e["evidence_id"],
                                 "relation": "supports",
-                                "quote": e["snapshot"]["text"],
+                                "quote": original_quote(e),
                                 "reason": ("Controlled exact original assessment. " * 20)
                                 if cfg["mode"] == "obligations-auto-mixed"
                                 else "Controlled exact original assessment",
@@ -215,6 +216,8 @@ class Verifier:
                     else "Controlled full original question classification",
                 },
             }
+        if request.name == "EvidenceCheck":
+            value = check_wire(value, request.payload)
         if request.name == "EvidenceCheck" and cfg["mode"] == "obligations-auto-mixed":
             assert request.max_output_tokens == 4096 and len(json.dumps(value)) > 4096
             return ModelResult(value=value, input_tokens=30, output_tokens=1536)

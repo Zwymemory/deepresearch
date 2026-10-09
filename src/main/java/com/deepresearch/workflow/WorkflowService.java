@@ -47,6 +47,10 @@ public class WorkflowService {
     private final boolean enabled;
     private final Duration deadline;
     private final String engine;
+    private BudgetResearchDraftService budgetDrafts;
+
+    @Autowired
+    void setBudgetDrafts(BudgetResearchDraftService budgetDrafts) { this.budgetDrafts = budgetDrafts; }
 
     @Autowired
     public WorkflowService(WorkflowRepository repository,
@@ -407,6 +411,15 @@ public class WorkflowService {
 
     private View view(WorkflowRepository.RunRow row) {
         JsonNode finalResponse = json(row.finalResponseJson());
+        // A read-only recovery document is separate from the sealed final report.
+        // This also recovers historical budget stops without changing their terminal records.
+        if ("BUDGET_EXCEEDED".equals(row.status()) && budgetDrafts != null) {
+            var draft = budgetDrafts.build(row, userContextService.currentPrincipalRequired());
+            if (draft != null) {
+                if (!finalResponse.isObject()) finalResponse = objectMapper.createObjectNode();
+                ((com.fasterxml.jackson.databind.node.ObjectNode) finalResponse).set("researchDraft", draft);
+            }
+        }
         if (finalResponse.isObject() && finalResponse.path("citations").isArray()
                 && !finalResponse.has("citationDetails")) {
             List<String> citations = new ArrayList<>();

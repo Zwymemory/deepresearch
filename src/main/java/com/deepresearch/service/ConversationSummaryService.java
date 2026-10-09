@@ -43,6 +43,7 @@ public class ConversationSummaryService {
     /** Reuse memory enable/excerpt policy; autonomous generation goes through its budgeted ledger. */
     public java.util.Map<String,Object> projectSummaryPolicy() {
         return java.util.Map.of("enabled",enabled,
+                "projection_encoding","shared-context-values/1",
                 "trigger_bytes",Math.max(1000,Math.min(60000,contextTriggerBytes)),
                 "budget_bytes",Math.max(2000,Math.min(64000,contextBudgetBytes)),
                 "recent_records",Math.max(1,Math.min(8,contextRecentRecords)),

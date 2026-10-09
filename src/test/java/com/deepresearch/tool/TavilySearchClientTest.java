@@ -83,11 +83,31 @@ class TavilySearchClientTest {
 
     @Test
     void malformedAndUnboundedSiteConstraintsNeverCallProvider() {
-        for (String scope : new String[]{"site:", "site:https://example.org", "site:example.org/path",
+        for (String scope : new String[]{"site:", "site:https://example.org", "site:example.org/a/../b",
+                "site:example.org/a?query=1", "site:example.org/a%2fb",
                 "site:*.example.org", "site:example.org:443", "site:127.0.0.1",
                 "site:a.org site:b.org site:c.org site:d.org"}) {
             assertThat(client.searchChecked("topic " + scope, 5).code()).isEqualTo("INVALID_ARGUMENT");
         }
+        server.verify();
+    }
+
+    @Test void sitePathBecomesProviderDomainFilterAndRemainsAPostFilter() {
+        server.expect(requestTo("https://api.tavily.com/search"))
+                .andExpect(content().json("{\"query\":\"constructor injection\",\"include_domains\":[\"docs.spring.io\"]}"))
+                .andRespond(withSuccess("""
+                    {"results":[
+                      {"url":"https://docs.spring.io/spring-boot/reference/using/beans.html","content":"match"},
+                      {"url":"https://docs.spring.io/spring-framework/beans.html","content":"other product"},
+                      {"url":"https://docs.spring.io/spring-boot-old/beans.html","content":"wrong prefix"},
+                      {"url":"https://docs.spring.io.evil.org/spring-boot/a","content":"wrong host"},
+                      {"url":"https://docs.spring.io/spring-boot/../other","content":"traversal"}
+                    ]}
+                    """, MediaType.APPLICATION_JSON));
+        var result = client.searchChecked("site:docs.spring.io/spring-boot constructor injection",5);
+        assertThat(result.code()).isEqualTo("OK");
+        assertThat(result.hits()).extracting(hit -> hit.url()).containsExactly(
+                "https://docs.spring.io/spring-boot/reference/using/beans.html");
         server.verify();
     }
 

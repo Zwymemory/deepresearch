@@ -114,4 +114,23 @@ class McpKnowledgeToolsReceiptTest {
         assertThat(response.success()).isTrue();
         assertThat(response.evidence()).isEmpty();
     }
+    @Test void emptyWebSearchIsNotEvidenceAndProviderFailureKeepsItsCode() {
+        var webDelegation = new WorkflowDelegationContext(delegation.principal(), "run-1", "grant-1",
+                "task-1", delegation.claimToken(), Set.of("web_search"), "tool-call-0001");
+        var authentication = new UsernamePasswordAuthenticationToken(webDelegation.principal(),null,List.of());
+        authentication.setDetails(webDelegation);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        when(receipts.begin(any(),any(),any())).thenReturn(new WorkflowMcpReceiptService.BeginResult(
+                WorkflowMcpReceiptService.Action.EXECUTE,"fingerprint",null,null));
+        when(receipts.complete(any(),any(),any(),any())).thenReturn(true);
+        when(web.executeChecked("query")).thenReturn(CitationAwareToolOutput.withoutSources("未检索到相关结果"));
+        var empty = tools.webSearch("query");
+        assertThat(empty.success()).isTrue();
+        assertThat(empty.evidence()).isEmpty();
+        when(web.executeChecked("query")).thenThrow(new WebSearchTool.SearchFailure("WEB_SEARCH_RATE_LIMITED"));
+        var failed = tools.webSearch("query");
+        assertThat(failed.success()).isFalse();
+        assertThat(failed.code()).isEqualTo("WEB_SEARCH_RATE_LIMITED");
+        assertThat(failed.evidence()).isEmpty();
+    }
 }

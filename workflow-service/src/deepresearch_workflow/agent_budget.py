@@ -23,6 +23,8 @@ from .agent_question_segments import PLANNER_VERSION, replay_declaration
 from .agent_requirements import RequirementError
 from .agent_schema_diagnostics import diagnostic as schema_failure_diagnostic
 from .evidence_check import EvidenceCheckError
+from .evidence_quotes import SUPPORTED_ENCODINGS as QUOTE_ENCODINGS
+from .evidence_quotes import replay_wire as replay_quote_wire
 from .graph import (
     ModelCallError,
     RunBudgetExceededError,
@@ -42,16 +44,47 @@ def canonical(value):
 
 # These are field names in the public Agent function contracts, not model-supplied
 # values. A path outside this vocabulary is represented as an anonymous field.
-SAFE_FIELDS = frozenset({
-    "action", "answer", "applicability", "claims", "conditions", "criterion_bindings",
-    "criterion_id", "evidence_ids", "gaps", "investigation_id", "kind", "query",
-    "reason", "source_id", "status", "subject", "task_id", "tool", "valid_at",
-    "value", "version",
-    "requirements", "requirement_bindings", "question_spans", "start", "end", "text",
-    "requirement_id",
-    "segment_ids", "planner_contract", "continuation_contract", "requirements_ref",
-    "obligations", "constraints", "role", "obligation_indices", "claims_contract",
-})
+SAFE_FIELDS = frozenset(
+    {
+        "action",
+        "answer",
+        "applicability",
+        "claims",
+        "conditions",
+        "criterion_bindings",
+        "criterion_id",
+        "evidence_ids",
+        "gaps",
+        "investigation_id",
+        "kind",
+        "query",
+        "reason",
+        "source_id",
+        "status",
+        "subject",
+        "task_id",
+        "tool",
+        "valid_at",
+        "value",
+        "version",
+        "requirements",
+        "requirement_bindings",
+        "question_spans",
+        "start",
+        "end",
+        "text",
+        "requirement_id",
+        "segment_ids",
+        "planner_contract",
+        "continuation_contract",
+        "requirements_ref",
+        "obligations",
+        "constraints",
+        "role",
+        "obligation_indices",
+        "claims_contract",
+    }
+)
 
 
 def safe_issue_path(parts):
@@ -377,9 +410,12 @@ class SqlAgentLedger:
                         "SELECT question FROM agent_workflow_run WHERE run_id=%s", (run_id,)
                     )
                     question = (await cursor.fetchone())["question"]
-                    freeze_requirements(run_id, question,
-                                        declaration_drafts(question, receipt["safe_result"]),
-                                        existing=manifest)
+                    freeze_requirements(
+                        run_id,
+                        question,
+                        declaration_drafts(question, receipt["safe_result"]),
+                        existing=manifest,
+                    )
                     await conn.execute(
                         "INSERT INTO "
                         "agent_research_requirements(run_id,manifest,declaration_key,"
@@ -482,25 +518,36 @@ class SqlAgentLedger:
 
 
 class AgentBudgetGateway:
-    def __init__(self, *, run_id, claim_token, budget, ledger, model: AgentModel, guard,
-                 validate_memory=None):
+    def __init__(
+        self, *, run_id, claim_token, budget, ledger, model: AgentModel, guard, validate_memory=None
+    ):
         self.run_id, self.claim_token, self.budget = run_id, claim_token, budget
         self.ledger, self.model, self.guard = ledger, model, guard
         self.validate_memory = validate_memory
 
     @staticmethod
     def classify_model_failure(
-        key, attempt, error, result, schema_name, *, request=None, request_hash=None,
+        key,
+        attempt,
+        error,
+        result,
+        schema_name,
+        *,
+        request=None,
+        request_hash=None,
     ):
         failure_kind, error_class, retryable, status_code, paths = (
-            "SCHEMA", "validator_rejected", False, None, [],
+            "SCHEMA",
+            "validator_rejected",
+            False,
+            None,
+            [],
         )
         tool_call_count = None
         schema_diagnostic = None
         diagnostic_enabled = (
             request is not None
-            and request.request_binding.get("instruction_policy")
-            in SUPPORTED_POLICIES
+            and request.request_binding.get("instruction_policy") in SUPPORTED_POLICIES
             and request_hash is not None
         )
         stage, domain_code = None, None
@@ -508,7 +555,9 @@ class AgentBudgetGateway:
             stage, error = error.stage, error.error
         if isinstance(error, AgentModelFailure):
             failure_kind, error_class, retryable = (
-                error.failure_kind, error.error_class, error.retryable,
+                error.failure_kind,
+                error.error_class,
+                error.retryable,
             )
             status_code, tool_call_count = error.status_code, error.tool_call_count
             input_tokens, output_tokens = error.input_tokens, error.output_tokens
@@ -520,15 +569,28 @@ class AgentBudgetGateway:
                 paths = [safe_issue_path(error.absolute_path)]
                 if diagnostic_enabled:
                     schema_diagnostic = schema_failure_diagnostic(
-                        error, request, request_hash, SAFE_FIELDS,
+                        error,
+                        request,
+                        request_hash,
+                        SAFE_FIELDS,
                     )
             elif isinstance(error, PydanticValidationError):
                 error_class = "schema_validation"
-                paths = sorted({safe_issue_path(item["loc"]) for item in error.errors(
-                    include_input=False, include_context=False, include_url=False)})[:4]
+                paths = sorted(
+                    {
+                        safe_issue_path(item["loc"])
+                        for item in error.errors(
+                            include_input=False, include_context=False, include_url=False
+                        )
+                    }
+                )[:4]
                 if diagnostic_enabled:
                     schema_diagnostic = schema_failure_diagnostic(
-                        error, request, request_hash, SAFE_FIELDS, pydantic=True,
+                        error,
+                        request,
+                        request_hash,
+                        SAFE_FIELDS,
+                        pydantic=True,
                     )
             elif isinstance(error, RequirementError):
                 domain_code = safe_requirement_code(error.code)
@@ -544,9 +606,13 @@ class AgentBudgetGateway:
             elif not isinstance(error, WorkflowExecutionError):
                 failure_kind, error_class = "INTERNAL", "application_internal"
         failure = ModelCallError(
-            key, failure_kind=failure_kind, attempt=attempt,
-            error_class=error_class, retryable=retryable,
-            validation_stage=stage, domain_error_code=domain_code,
+            key,
+            failure_kind=failure_kind,
+            attempt=attempt,
+            error_class=error_class,
+            retryable=retryable,
+            validation_stage=stage,
+            domain_error_code=domain_code,
             json_diagnostic=error.json_diagnostic if isinstance(error, AgentModelFailure) else None,
         )
         failure.status_code = status_code
@@ -570,8 +636,11 @@ class AgentBudgetGateway:
             metadata["identity"] = error.identity_diagnostic
         if failure.json_diagnostic is not None:
             metadata["json_diagnostic"] = failure.json_diagnostic
-        if (isinstance(error, AgentModelFailure) and type(error.finish_reason) is str
-                and error.finish_reason in FINISH_REASONS):
+        if (
+            isinstance(error, AgentModelFailure)
+            and type(error.finish_reason) is str
+            and error.finish_reason in FINISH_REASONS
+        ):
             metadata["finish_reason"] = error.finish_reason
             failure.finish_reason = error.finish_reason
         if status_code is not None:
@@ -613,8 +682,13 @@ class AgentBudgetGateway:
                 raise ResultValidationError(error, "domain_validation") from None
 
     async def model_call(
-        self, key, purpose, request: ModelRequest, validate: Callable | None = None,
-        *, canonicalize: Callable | None = None,
+        self,
+        key,
+        purpose,
+        request: ModelRequest,
+        validate: Callable | None = None,
+        *,
+        canonicalize: Callable | None = None,
     ):
         # Freeze the exact provider bytes before admission; binding metadata is not sent.
         prepared = None
@@ -625,16 +699,37 @@ class AgentBudgetGateway:
             policy = request.request_binding.get("instruction_policy")
             if policy is not None and policy not in SUPPORTED_POLICIES:
                 raise ValueError("Unknown instruction policy")
-            if request.max_output_tokens > 1024 and purpose != "CHECK":
-                raise ValueError("Expanded output is CHECK-only")
+            quote_encoding = request.request_binding.get("evidence_quote_encoding")
+            if quote_encoding is not None and not (
+                quote_encoding in QUOTE_ENCODINGS
+                and purpose == "CHECK"
+                and request.name == "EvidenceCheck"
+                and policy == POLICY_VERSION
+                and canonicalize is not None
+            ):
+                raise ValueError("Unauthorized evidence encoding")
+            if (
+                request.max_output_tokens > 1024
+                and purpose != "CHECK"
+                and not (
+                    purpose == "DECISION"
+                    and request.name == "AgentDecision"
+                    and request.max_output_tokens <= 2048
+                    and request.request_binding.get("context_encoding") == "shared-context-values/1"
+                )
+            ):
+                raise ValueError("Expanded output purpose is not authorized")
             request = request.model_copy(deep=True)
             if isinstance(self.model, OpenAIAgentModel):
                 prepared = self.model.prepare(request)
                 encoded_request = prepared.identity
                 input_reserved = len(prepared.wire) + 1024
             else:
-                request_data = {**request.model_dump(mode="json", by_alias=True),
-                                "rules": MODEL_RULES, "transport": "fixture-invoke/1"}
+                request_data = {
+                    **request.model_dump(mode="json", by_alias=True),
+                    "rules": MODEL_RULES,
+                    "transport": "fixture-invoke/1",
+                }
                 encoded_request = canonical(request_data).encode()
                 input_reserved = len(encoded_request) + 1024
         except Exception as error:
@@ -642,8 +737,11 @@ class AgentBudgetGateway:
                 error.error_class if isinstance(error, AgentModelFailure) else "request_encoding"
             )
             failure = ModelCallError(
-                key, attempt=0, failure_kind="SCHEMA",
-                error_class=label, retryable=False,
+                key,
+                attempt=0,
+                failure_kind="SCHEMA",
+                error_class=label,
+                retryable=False,
             )
             raise failure from None
         request_hash = hashlib.sha256(encoded_request).hexdigest()
@@ -651,9 +749,26 @@ class AgentBudgetGateway:
             await self.guard()
             # Revalidate on every planning attempt, including settled replay and retries.
             # This local check is not an atomic check-and-send or a revocation permit.
-            if purpose in {"DECISION", "SUMMARY"} and any(
+            needs_memory = purpose in {"DECISION", "SUMMARY"} and any(
                 kind in request.payload for kind in ("prior_progress", "recalled_progress")
-            ):
+            )
+            if purpose in {"DECISION", "SUMMARY"}:
+                needs_memory = (
+                    needs_memory
+                    or request.payload.get("conversation_context", {}).get("schema_version")
+                    == "conversation-referents/2"
+                )
+            # CHECK now receives the same frozen conversational referent. Revalidate
+            # selected project memory before sending any of that history to the verifier.
+            if purpose == "CHECK":
+                conversation = request.payload.get("original_context", {}).get(
+                    "conversation_context", {}
+                )
+                needs_memory = needs_memory or any(
+                    row.get("origin") in {"selected_project", "learning_project"}
+                    for row in conversation.get("reports", [])
+                )
+            if needs_memory:
                 if self.validate_memory is None:
                     raise WorkflowExecutionError(
                         "Saved progress validator unavailable",
@@ -684,18 +799,28 @@ class AgentBudgetGateway:
                 result = ModelResult.model_validate(reservation["replay"])
                 self.check_bounds(result, input_reserved, request.max_output_tokens)
                 try:
-                    if request.request_binding.get("planner_contract") in {
-                            PLANNER_VERSION, "agent-planning-obligations/3"}:
-                        if (any(result.request_binding.get(k) != v
-                                for k, v in request.request_binding.items())
-                                or result.request_binding.get("response_sha256")
-                                != hashlib.sha256(canonical(result.value).encode()).hexdigest()):
+                    if quote_encoding or request.request_binding.get("planner_contract") in {
+                        PLANNER_VERSION,
+                        "agent-planning-obligations/3",
+                    }:
+                        if (
+                            any(
+                                result.request_binding.get(k) != v
+                                for k, v in request.request_binding.items()
+                            )
+                            or result.request_binding.get("response_sha256")
+                            != hashlib.sha256(canonical(result.value).encode()).hexdigest()
+                        ):
                             raise ResultValidationError(
                                 RequirementError("REQUIREMENT_SEGMENT_BINDING_INVALID"),
                                 "planning_requirements",
                             )
                         try:
-                            wire_value = replay_declaration(result.model_dump(mode="json"))
+                            wire_value = (
+                                replay_quote_wire(result)
+                                if quote_encoding
+                                else replay_declaration(result.model_dump(mode="json"))
+                            )
                         except Exception as error:
                             raise ResultValidationError(error, "planning_requirements") from None
                         wire_result = result.model_copy(update={"value": wire_value})
@@ -704,29 +829,39 @@ class AgentBudgetGateway:
                             reconstructed = canonicalize(wire_value) if canonicalize else None
                         except Exception as error:
                             raise ResultValidationError(error, "planning_requirements") from None
-                        if (canonicalize is None
-                                or canonical(reconstructed) != canonical(result.value)):
+                        if canonicalize is None or canonical(reconstructed) != canonical(
+                            result.value
+                        ):
                             raise ResultValidationError(
                                 RequirementError("REQUIREMENT_SEGMENT_BINDING_INVALID"),
                                 "planning_requirements",
                             )
-                        return wire_result
+                        return result if quote_encoding else wire_result
                     self.validate_result(request, result, validate)
                 except (
-                    RunBudgetExceededError, RunCancelledError, RunTimedOutError, StaleClaimError,
+                    RunBudgetExceededError,
+                    RunCancelledError,
+                    RunTimedOutError,
+                    StaleClaimError,
                 ):
                     raise
                 except Exception as error:
                     failure, _ = self.classify_model_failure(
-                        key, reservation["attempt"], error, result, request.name,
-                        request=request, request_hash=request_hash,
+                        key,
+                        reservation["attempt"],
+                        error,
+                        result,
+                        request.name,
+                        request=request,
+                        request_hash=request_hash,
                     )
                     raise failure from None
                 return result
             result = None
             try:
                 result = (
-                    await self.model.invoke_prepared(request, prepared) if prepared is not None
+                    await self.model.invoke_prepared(request, prepared)
+                    if prepared is not None
                     else await self.model.invoke(request)
                 )
                 self.validate_result(request, result, validate)
@@ -745,7 +880,9 @@ class AgentBudgetGateway:
                         raise ResultValidationError(error, "planning_requirements") from None
                     stored_result = result.model_copy(update={"value": value})
                     extra_binding = {
-                        "planner_declaration": declaration,
+                        (
+                            "encoded_response" if quote_encoding else "planner_declaration"
+                        ): declaration,
                         "wire_response_sha256": hashlib.sha256(declaration.encode()).hexdigest(),
                     }
                 result = result.model_copy(
@@ -771,13 +908,23 @@ class AgentBudgetGateway:
                 raise
             except Exception as error:
                 failure, usage = self.classify_model_failure(
-                    key, reservation["attempt"], error, result, request.name,
-                    request=request, request_hash=request_hash,
+                    key,
+                    reservation["attempt"],
+                    error,
+                    result,
+                    request.name,
+                    request=request,
+                    request_hash=request_hash,
                 )
                 try:
                     await self.ledger.settle(
-                        self.run_id, self.claim_token, key, reservation["attempt"],
-                        {}, usage, unknown=True,
+                        self.run_id,
+                        self.claim_token,
+                        key,
+                        reservation["attempt"],
+                        {},
+                        usage,
+                        unknown=True,
                     )
                 except StaleClaimError:
                     raise
@@ -791,12 +938,23 @@ class AgentBudgetGateway:
             await self.guard()
             try:
                 await self.ledger.settle(
-                    self.run_id, self.claim_token, key, reservation["attempt"],
+                    self.run_id,
+                    self.claim_token,
+                    key,
+                    reservation["attempt"],
                     stored_result.model_dump(mode="json"),
-                    (result.model_dump(mode="json", exclude={"value"}) if canonicalize is None
-                     else {**result.model_dump(mode="json", exclude={"value", "request_binding"}),
-                           "request_binding": {k: v for k, v in result.request_binding.items()
-                                               if k != "planner_declaration"}}),
+                    (
+                        result.model_dump(mode="json", exclude={"value"})
+                        if canonicalize is None
+                        else {
+                            **result.model_dump(mode="json", exclude={"value", "request_binding"}),
+                            "request_binding": {
+                                k: v
+                                for k, v in result.request_binding.items()
+                                if k not in {"planner_declaration", "encoded_response"}
+                            },
+                        }
+                    ),
                 )
             except StaleClaimError:
                 raise
@@ -805,7 +963,7 @@ class AgentBudgetGateway:
                     "Agent 模型回执结算失败", error_code="AGENT_SETTLEMENT_FAILED"
                 ) from None
             self.check_bounds(result, input_reserved, request.max_output_tokens)
-            return result
+            return stored_result if quote_encoding else result
         raise AssertionError("bounded model admission loop exited without a result")
 
     async def tool_call(

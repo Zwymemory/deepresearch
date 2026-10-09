@@ -188,18 +188,31 @@ class WorkflowRunner:
             graph = self._graph_factory(run.claim_token, budget)
             config: dict[str, Any] = {
                 "configurable": {"thread_id": run.graph_thread_id},
-                "recursion_limit": 32,
+                # Agent cycles are compress -> decide -> act. The engine limit
+                # must admit every authorized decision plus initialization/closure.
+                "recursion_limit": max(32, budget.max_decision_steps * 3 + 4)
+                if isinstance(budget, AgentRunBudget)
+                else 32,
                 "max_concurrency": budget.max_concurrency,
             }
             snapshot = await graph.aget_state(config)
             if isinstance(budget, AgentRunBudget):
-                from .progress_memory import frozen_progress, frozen_recall
+                from .progress_memory import frozen_learning, frozen_progress, frozen_recall
 
-                current = (frozen_progress(run.context_snapshot), frozen_recall(run.context_snapshot))
-                if snapshot.values and (
-                    frozen_progress(snapshot.values.get("context_snapshot", {})),
-                    frozen_recall(snapshot.values.get("context_snapshot", {})),
-                ) != current:
+                current = (
+                    frozen_progress(run.context_snapshot),
+                    frozen_recall(run.context_snapshot),
+                    frozen_learning(run.context_snapshot),
+                )
+                if (
+                    snapshot.values
+                    and (
+                        frozen_progress(snapshot.values.get("context_snapshot", {})),
+                        frozen_recall(snapshot.values.get("context_snapshot", {})),
+                        frozen_learning(snapshot.values.get("context_snapshot", {})),
+                    )
+                    != current
+                ):
                     raise WorkflowExecutionError(
                         "Saved progress checkpoint differs from persisted selection",
                         error_code="RESEARCH_MEMORY_INVALID",
@@ -226,7 +239,8 @@ class WorkflowRunner:
                             )
                             if cancelled:
                                 raise RunCancelledError(
-                                    "run cancelled during memory check") from None
+                                    "run cancelled during memory check"
+                                ) from None
                             if not active:
                                 raise StaleClaimError("claim changed during memory check") from None
                             if run.deadline_at <= datetime.now(UTC):
@@ -277,15 +291,13 @@ class WorkflowRunner:
     def _effective_budget(self, snapshot: RunBudget) -> RunBudget:
         """Apply process safety ceilings without replacing the persisted snapshot."""
 
-        if isinstance(snapshot,AgentRunBudget):
+        if isinstance(snapshot, AgentRunBudget):
             return snapshot.model_copy(
                 update={
                     "max_model_calls": min(
                         snapshot.max_model_calls, self._settings.max_model_calls
                     ),
-                    "max_tool_calls": min(
-                        snapshot.max_tool_calls, self._settings.max_tool_calls
-                    ),
+                    "max_tool_calls": min(snapshot.max_tool_calls, self._settings.max_tool_calls),
                 }
             )
         return RunBudget(
@@ -489,13 +501,14 @@ class WorkflowRunner:
             from .agent_json import FINISH_REASONS
 
             observed_finish = cls._exception_attribute(chain, "finish_reason")
-            finish_reason = (observed_finish if type(observed_finish) is str
-                             and observed_finish in FINISH_REASONS else None)
+            finish_reason = (
+                observed_finish
+                if type(observed_finish) is str and observed_finish in FINISH_REASONS
+                else None
+            )
             content_state = cls._exception_attribute(chain, "content_state")
             tool_call_count = cls._exception_attribute(chain, "tool_call_count")
-            validation_issue_codes = cls._exception_attribute(
-                chain, "validation_issue_codes"
-            )
+            validation_issue_codes = cls._exception_attribute(chain, "validation_issue_codes")
             from .agent_diagnostics import safe_domain_code, safe_validation_stage
 
             validation_stage = safe_validation_stage(
@@ -506,9 +519,7 @@ class WorkflowRunner:
             )
             from .agent_json import safe_json_diagnostic
 
-            json_metadata = safe_json_diagnostic(
-                cls._exception_attribute(chain, "json_diagnostic")
-            )
+            json_metadata = safe_json_diagnostic(cls._exception_attribute(chain, "json_diagnostic"))
             cause_chain = ">".join(cls._safe_log_scalar(type(item).__name__) for item in chain)
             logger.error(
                 "workflow execution failed run_id=%s error_code=%s operation=%s "
@@ -539,7 +550,8 @@ class WorkflowRunner:
                 cls._safe_log_scalar(validation_stage),
                 cls._safe_log_scalar(domain_error_code),
                 json.dumps(json_metadata, sort_keys=True, separators=(",", ":"))
-                if json_metadata is not None else "none",
+                if json_metadata is not None
+                else "none",
             )
         except Exception:
             # Diagnostic extraction must never prevent durable failure finalization.
@@ -621,22 +633,23 @@ class WorkflowRunner:
             "durationMs": max(0, int((time.monotonic() - started) * 1000)),
         }
 
-    async def _result_wire_usage(self,run,usage,started):
-        if not isinstance(run.budget,AgentRunBudget):
-            return self._wire_usage(usage,started)
+    async def _result_wire_usage(self, run, usage, started):
+        if not isinstance(run.budget, AgentRunBudget):
+            return self._wire_usage(usage, started)
         from .agent_budget import SqlAgentLedger
+
         ledger = (
             self._agent_ledger_factory(self._repository)
             if self._agent_ledger_factory
             else SqlAgentLedger(self._repository)
         )
-        value=await ledger.summary(run.run_id,run.claim_token)
+        value = await ledger.summary(run.run_id, run.claim_token)
         value["totalTokens"] = (
             None
             if value["inputTokens"] is None or value["outputTokens"] is None
             else value["inputTokens"] + value["outputTokens"]
         )
-        value["durationMs"]=max(0,int((time.monotonic()-started)*1000))
+        value["durationMs"] = max(0, int((time.monotonic() - started) * 1000))
         return value
 
     @staticmethod

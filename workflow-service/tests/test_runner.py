@@ -383,3 +383,45 @@ async def test_runner_uses_run_snapshot_but_never_exceeds_process_caps(
         )
     ]
     assert captured_configs[0]["max_concurrency"] == 1
+
+
+async def test_agent_engine_admits_all_budgeted_compress_decide_act_cycles():
+    from langgraph.checkpoint.memory import InMemorySaver
+    from langgraph.graph import END, StateGraph
+
+    from deepresearch_workflow.domain import AgentRunBudget
+
+    from .test_agent_runtime import setup
+
+    budget = AgentRunBudget(runtime="agent", maxDecisionSteps=16)
+    runner, run, *_rest = setup("version-difference", budget=budget)
+    calls = []
+    graph = StateGraph(dict)
+
+    def decide(value):
+        step = value.get("decision_steps", 0) + 1
+        calls.append(step)
+        return {**value, "decision_steps": step}
+
+    def act(value):
+        return {
+            **value,
+            "final_status": "INSUFFICIENT_EVIDENCE",
+            "final_answer": "Offline engine-limit regression",
+            "citations": [],
+        }
+
+    graph.add_node("compress", lambda value: value)
+    graph.add_node("decide", decide)
+    graph.add_node("act", act)
+    graph.set_entry_point("compress")
+    graph.add_edge("compress", "decide")
+    graph.add_edge("decide", "act")
+    graph.add_conditional_edges(
+        "act", lambda value: END if value["decision_steps"] == 16 else "compress"
+    )
+    compiled = graph.compile(checkpointer=InMemorySaver())
+    runner._graph_factory = lambda claim, effective: compiled
+    await runner.run_claimed(run)
+    assert calls == list(range(1, 17))
+    assert runner.last_error_code is None

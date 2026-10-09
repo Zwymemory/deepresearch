@@ -8,6 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import httpx
+from quote_wire import check_wire, original_quote, original_text
 
 from deepresearch_workflow.agent_budget import SqlAgentLedger
 from deepresearch_workflow.agent_completion import ensure_criteria
@@ -101,7 +102,7 @@ class ExactSourceVerifier:
             }
             relations = []
             for evidence in request.payload["evidence"]:
-                original = evidence["snapshot"]["text"]
+                original = original_text(evidence)
                 assert "Document version: 2.0" in original
                 if "per minute." in text:
                     assert "100 requests per minute" in original
@@ -109,7 +110,7 @@ class ExactSourceVerifier:
                     {
                         "evidence_id": evidence["evidence_id"],
                         "relation": "refutes" if "3.0" in text else "supports",
-                        "quote": original,
+                        "quote": original_quote(evidence),
                         "reason": "The original declares the selected fact or contrary version.",
                     }
                 )
@@ -117,7 +118,8 @@ class ExactSourceVerifier:
                 {"claim_id": claim["claim_id"], "relations": relations, "limitations": []}
             )
         return ModelResult(
-            value={"claims": proposals, "follow_up_actions": []}, input_tokens=30, output_tokens=30
+            value=check_wire({"claims": proposals, "follow_up_actions": []}, request.payload),
+            input_tokens=30, output_tokens=30
         )
 
 

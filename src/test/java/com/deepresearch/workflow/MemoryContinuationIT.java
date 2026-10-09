@@ -18,6 +18,76 @@ import static org.assertj.core.api.Assertions.*;
 class MemoryContinuationIT extends AgentHttpPostgresIT {
     @Autowired ResearchProgressRepository memory;
     final List<JsonNode> examples=new ArrayList<>();
+    @Test void exerciseReferentSurvivesBothSessionFollowupAndExplicitProjectResume() throws Exception {
+        String owner="exercise-"+UUID.randomUUID();
+        Run old=history(owner);
+        String answer="题目：写一个 OrderService，构造器注入 PaymentGateway；说明为何无需手动 new。";
+        db.update("UPDATE agent_workflow_run SET status='SUCCEEDED',stage='SUCCEEDED',final_response=?::jsonb WHERE run_id=?",
+                canonical(object("answer",answer)),old.id());
+        String originalSession=db.queryForObject("SELECT session_id FROM agent_workflow_run WHERE run_id=?",String.class,old.id());
+        var same=post("/api/research/agents",owner,"same-"+UUID.randomUUID(),object(
+                "question","这道题的答案是？","sessionId",originalSession,"requestedTools",List.of("web_search")));
+        assertThat(same.status()).isEqualTo(202);
+        var sameContext=JSON.readTree(db.queryForObject("SELECT context_snapshot::text FROM agent_workflow_run WHERE run_id=?",
+                String.class,same.body().path("runId").asText()));
+        assertThat(sameContext.path("conversation_context").path("reports").get(0).path("answer").asText()).isEqualTo(answer);
+        assertThat(sameContext.path("conversation_context").path("schema_version").asText()).isEqualTo("conversation-referents/2");
+        assertThat(sameContext.path("conversation_context").path("reports").get(0).path("origin").asText()).isEqualTo("learning_project");
+        assertThat(sameContext.has("learning_memory_binding")).isTrue();
+
+        db.update("UPDATE agent_workflow_run SET status='INSUFFICIENT_EVIDENCE',stage='INSUFFICIENT_EVIDENCE',final_response=?::jsonb WHERE run_id=?",
+                canonical(object("answer","尚无完成核查的主张","claims",null)),same.body().path("runId").asText());
+        var repeated=post("/api/research/agents",owner,"same-after-failure-"+UUID.randomUUID(),object(
+                "question","这道题的答案是？","sessionId",originalSession,"requestedTools",List.of("web_search")));
+        assertThat(repeated.status()).isEqualTo(202);
+        var repeatedContext=JSON.readTree(db.queryForObject("SELECT context_snapshot::text FROM agent_workflow_run WHERE run_id=?",
+                String.class,repeated.body().path("runId").asText()));
+        assertThat(repeatedContext.path("conversation_context").path("reports")).hasSize(1);
+        assertThat(repeatedContext.path("conversation_context").path("reports").get(0).path("answer").asText()).isEqualTo(answer);
+
+        var loaded=request("POST","/api/research/projects/"+old.project()+"/resume-context",user(owner),object());
+        String session=loaded.body().path("target_session_id").asText();
+        var body=object("question","这道题的答案是？","sessionId",session,"requestedTools",List.of("web_search"),"researchProjectId",old.project());
+        String key="exercise-"+UUID.randomUUID();
+        var next=post("/api/research/agents",owner,key,body);
+        assertThat(next.status()).isEqualTo(202);
+        String run=next.body().path("runId").asText();
+        var context=JSON.readTree(db.queryForObject("SELECT context_snapshot::text FROM agent_workflow_run WHERE run_id=?",String.class,run));
+        var conversation=context.path("conversation_context");
+        assertThat(conversation.path("trusted_as_evidence").asBoolean()).isFalse();
+        assertThat(conversation.path("reports").get(0).path("answer").asText()).isEqualTo(answer);
+        assertThat(conversation.path("schema_version").asText()).isEqualTo("conversation-referents/2");
+        assertThat(conversation.path("reports").get(0).path("origin").asText()).isEqualTo("learning_project");
+        assertThat(conversation.path("reports").get(0).path("run_id").asText()).isEqualTo(old.id());
+        // A later empty failure may consume the progress budget, but its bound
+        // predecessor must still supply the exercise rather than the failure boilerplate.
+        var principal=new AuthPrincipal("tenant-http",owner,List.of("USER"));
+        var predecessor=memory.saved(old.project(),principal,old.id()).get(0);
+        com.fasterxml.jackson.databind.node.ObjectNode failed=predecessor.deepCopy();
+        failed.put("source_run_id",run).put("source_session_id",session);
+        failed.set("source_claims",JSON.createArrayNode());
+        failed.set("prior_memory_refs",JSON.valueToTree(List.of(object("source_run_id",old.id(),"snapshot_sha256",sha(canonical(predecessor))))));
+        failed.put("user_correction","x".repeat(Math.max(0,15500-canonical(failed).getBytes(java.nio.charset.StandardCharsets.UTF_8).length)));
+        db.update("UPDATE agent_workflow_run SET status='INSUFFICIENT_EVIDENCE',stage='INSUFFICIENT_EVIDENCE',final_response=?::jsonb WHERE run_id=?",
+                canonical(object("answer","尚无完成核查的主张","claims",List.of())),run);
+        memory.save(old.project(),run,principal,failed);
+        var reloaded=request("POST","/api/research/projects/"+old.project()+"/resume-context",user(owner),object());
+        var afterFailure=post("/api/research/agents",owner,"after-failure-"+key,object("question","这道题的答案是？",
+                "sessionId",reloaded.body().path("target_session_id").asText(),"requestedTools",List.of("web_search"),"researchProjectId",old.project()));
+        assertThat(afterFailure.status()).isEqualTo(202);
+        var afterContext=JSON.readTree(db.queryForObject("SELECT context_snapshot::text FROM agent_workflow_run WHERE run_id=?",String.class,afterFailure.body().path("runId").asText()));
+        assertThat(afterContext.path("prior_progress").path("records")).hasSize(1);
+        assertThat(afterContext.path("conversation_context").path("reports").get(0).path("answer").asText()).isEqualTo(answer);
+        // Accepted replay keeps exactly the original context, even if history later changes.
+        db.update("UPDATE agent_workflow_run SET final_response=?::jsonb WHERE run_id=?",canonical(object("answer","changed")),old.id());
+        assertThat(post("/api/research/agents",owner,key,body).body().path("runId").asText()).isEqualTo(run);
+        assertThat(JSON.readTree(db.queryForObject("SELECT context_snapshot::text FROM agent_workflow_run WHERE run_id=?",String.class,run))).isEqualTo(context);
+        assertThat(post("/api/research/agents","foreign-"+owner,"foreign-"+key,body).status()).isEqualTo(404);
+        // Arbitrary projects and recalled history are not used by this referent channel.
+        var fresh=post("/api/research/agents",owner,"fresh-"+UUID.randomUUID(),object("question","这道题的答案是？","requestedTools",List.of("web_search")));
+        var freshContext=JSON.readTree(db.queryForObject("SELECT context_snapshot::text FROM agent_workflow_run WHERE run_id=?",String.class,fresh.body().path("runId").asText()));
+        assertThat(freshContext.has("conversation_context")).isFalse();
+    }
     Reply post(String path,String owner,String key,JsonNode body) throws Exception {
         var request=HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+path))
             .timeout(Duration.ofSeconds(20)).header("Authorization",user(owner))

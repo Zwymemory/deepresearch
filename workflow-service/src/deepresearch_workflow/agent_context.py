@@ -171,6 +171,12 @@ def decision_context(state, budget):
             ),
         },
     }
+    if state.get("context_snapshot", {}).get("project_summary_policy", {}).get(
+        "projection_encoding") == "shared-context-values/1":
+        read_ids = {row.get("source", {}).get("source_id") for row in state.get("evidence", [])}
+        payload["candidates"] = [{**row,
+            "read_status": "ORIGINAL_READ" if row.get("source_id") in read_ids else "NOT_READ",
+            "trusted_as_evidence": False} for row in payload["candidates"]]
     if state.get("instruction_policy") in CHECK_CAPACITY_POLICIES:
         payload["actual_read_source_kinds"] = sorted({
             item["source"]["kind"] for item in evidence
@@ -186,6 +192,17 @@ def decision_context(state, budget):
         state.get("investigations", {}),
         state.get("requirement_bindings", []),
     )
+    if state.get("context_snapshot", {}).get("project_summary_policy", {}).get(
+        "projection_encoding") == "shared-context-values/1":
+        # A compact navigation aid derived from the same checked coverage, not
+        # another completion decision. Full scopes/history remain above.
+        criterion_tasks = {c["criterion_id"]: t.get("task_id")
+                           for t in state["tasks"] for c in t.get("criteria", [])}
+        payload["research_checklist"] = [{
+            "requirement_id": r["requirement_id"], "criterion_id": r["criterion_id"],
+            "task_id": criterion_tasks.get(r["criterion_id"]), "question": r["text"],
+            "current_status": r["status"], "current_gaps": r["gaps"],
+        } for r in payload["requirement_coverage"]["requirements"]]
     # Build last: interning packet/tasks may add canonical objects.
     payload["canonical_objects"] = {"claim_specs": specs, "records": records, "checks": checks}
     from .progress_memory import frozen_progress, frozen_recall
@@ -198,4 +215,8 @@ def decision_context(state, budget):
     if recalled is not None and recalled[0]["records"]:
         payload["context_version"] = "agent-decision-context/4"
         payload["recalled_progress"] = recalled[0]
+    conversation = state.get("context_snapshot", {}).get("conversation_context")
+    if conversation is not None:
+        from .conversation_context import checked_conversation
+        payload["conversation_context"] = checked_conversation(conversation)
     return payload

@@ -13,6 +13,7 @@ from deepresearch_workflow.agent_budget import SAFE_FIELDS
 from deepresearch_workflow.agent_decision_instruction import (
     CAPACITY_POLICY_VERSION,
     POLICY_VERSION,
+    SHAPE_POLICY_VERSION,
     TIME_EXAMPLE,
     UNKNOWN_EXAMPLE,
     VERSION_EXAMPLE,
@@ -142,4 +143,10 @@ def test_prior2_check_prepared_bytes_and_continuation_instruction_are_frozen():
         copy.deepcopy(schema), continuation=True, policy=CAPACITY_POLICY_VERSION
     )
     new = obligation_instruction(copy.deepcopy(schema), continuation=True, policy=POLICY_VERSION)
-    assert old == new
+    previous = obligation_instruction(
+        copy.deepcopy(schema), continuation=True, policy=SHAPE_POLICY_VERSION
+    )
+    assert old == previous
+    assert new.startswith(old)
+    assert "allowed_tools is the exhaustive list" not in old
+    assert "allowed_tools is the exhaustive list" in new

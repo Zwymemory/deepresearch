@@ -104,17 +104,28 @@ async def prepare(s, model=None, store=None):
     return {**s, **update}, m, store
 
 
-async def test_m3_user_annotation_and_historical_completion_survive_summary_without_keyword_selection():
+async def test_m3_annotation_and_completion_survive_summary_without_keyword_selection():
     s = state()
     snapshot = s["context_snapshot"]["prior_progress"]["records"][0]["snapshot"]
     snapshot["user_correction"] = "以后改用机器 C 和认证方案 Z。"
-    snapshot["historical_completed_work"] = [{"goal": "Earlier version check", "historical": True,
-                                              "source_run_id": "previous", "completion_verified": True}]
-    updated, model, _ = await prepare(s)
+    snapshot["historical_completed_work"] = [
+        {
+            "goal": "Earlier version check",
+            "historical": True,
+            "source_run_id": "previous",
+            "completion_verified": True,
+        }
+    ]
+    updated, _model, _ = await prepare(s)
     compact = apply_summary(updated, decision_context(updated, AgentRunBudget(runtime="agent")))
     summary = compact["project_summary"]
-    assert any(row["value"] == snapshot["user_correction"] for row in summary["sections"]["constraints"])
-    assert any(row["value"] == snapshot["historical_completed_work"] for row in summary["sections"]["findings"])
+    assert any(
+        row["value"] == snapshot["user_correction"] for row in summary["sections"]["constraints"]
+    )
+    assert any(
+        row["value"] == snapshot["historical_completed_work"]
+        for row in summary["sections"]["findings"]
+    )
     assert compact["prior_progress"]["trusted_as_evidence"] is False
     assert "historical" in str(summary)
 

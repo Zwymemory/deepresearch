@@ -25,8 +25,9 @@ def _read_version_fixture():
 
 
 @pytest.mark.parametrize("protocol", ["evidence-check/1", "evidence-check/2"])
+@pytest.mark.parametrize("projection", [None, "shared-context-values/1"])
 async def test_peer_verifier_request_and_model_receipt_bind_exact_response_and_current_claim(
-    protocol,
+    protocol, projection,
 ):
     pytest.importorskip(
         "deepresearch_workflow.evidence_check", reason="committed peer source bundle required"
@@ -74,6 +75,12 @@ async def test_peer_verifier_request_and_model_receipt_bind_exact_response_and_c
     class Model:
         async def invoke(self, request):
             assert request.name == "EvidenceCheck" and request.payload == prepared
+            if projection:
+                assert request.request_binding["context_encoding"] == projection
+                assert "ONE enclosing object" in request.instruction
+                assert "planning_alignment assesses only" in request.instruction
+            else:
+                assert "context_encoding" not in request.request_binding
             return ModelResult(value=proposal)
 
     async def guard():
@@ -129,7 +136,8 @@ async def test_peer_verifier_request_and_model_receipt_bind_exact_response_and_c
     state = {
         "run_id": "wf-test",
         "claim_token": "current-claim",
-        "context_snapshot": {"agent_scope": {"project_id": "project-test"}},
+        "context_snapshot": {"agent_scope": {"project_id": "project-test"},
+                             "project_summary_policy": {"projection_encoding": projection}},
         "evidence": [record],
         "packet": {},
     }

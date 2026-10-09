@@ -18,12 +18,21 @@ import static com.deepresearch.workflow.ResearchProgressSelectionDtos.*;
 public class AgentRunService {
     @org.springframework.beans.factory.annotation.Value("${deepresearch.memory.auto-save.enabled:true}")
     private boolean autoSaveEnabled=true;
+    @org.springframework.beans.factory.annotation.Value("${deepresearch.memory.agent-max-input-tokens:120000}")
+    private int agentMaxInputTokens=120000;
+    @org.springframework.beans.factory.annotation.Value("${deepresearch.memory.agent-max-decision-steps:16}")
+    private int agentMaxDecisionSteps=16;
+    @org.springframework.beans.factory.annotation.Value("${deepresearch.memory.agent-max-tokens:100000}")
+    private int agentMaxTokens=100000;
+    @org.springframework.beans.factory.annotation.Value("${deepresearch.memory.agent-max-cost-cny:1.0}")
+    private double agentMaxCostCny=1.0;
     private final WorkflowService workflows;
     private final UserContextService users;
     private final JdbcTemplate jdbc;
     private final ResearchProgressSelectionService progress;
     private final com.deepresearch.service.ConversationSummaryService summaries;
     private final ResearchRecallService recall;
+    @Autowired(required=false) private LearningNotesService learningNotes;
     @Autowired
     public AgentRunService(WorkflowService workflows, UserContextService users, JdbcTemplate jdbc,
                            ResearchProgressSelectionService progress,
@@ -60,6 +69,7 @@ public class AgentRunService {
             requireOwnedRun(accepted.runId(),principal.tenantId(),principal.userId());
             return accepted;
         }
+        request.validateSourceSelection();
         String session=original.sessionId();
         if (session==null || session.isBlank()) {
             session="sess-wf-"+ToolArgumentFingerprint.sha256(principal.storageUserId()+":"+(key == null ? null : key.trim())).substring(0,24);
@@ -110,6 +120,21 @@ public class AgentRunService {
         }
         jdbc.update("INSERT INTO agent_research_run(run_id,project_id,tenant_id,owner_id) VALUES (?,?,?,?)",
                 accepted.runId(),project,principal.tenantId(),principal.userId());
+        var conversation = ConversationReferents.freeze(jdbc,principal,project,session,
+                frozen == null ? null : frozen.priorProgress());
+        if(learningNotes!=null) {
+            learningNotes.catchUp(project,principal);
+            var learned=learningNotes.freeze(project,session,request.question(),principal);
+            if(learned!=null) {
+                conversation=learned;
+                jdbc.update("UPDATE agent_workflow_run SET context_snapshot=context_snapshot || ?::jsonb WHERE run_id=?",
+                        EvidenceJson.canonical(EvidenceJson.object("learning_memory_binding",EvidenceJson.object("project_id",project,
+                            "projection_sha256",EvidenceJson.sha(EvidenceJson.canonical(learned)),"canonical_bytes",LearningNotesService.bytes(learned)))),accepted.runId());
+            }
+        }
+        if (conversation != null) jdbc.update("""
+            UPDATE agent_workflow_run SET context_snapshot=context_snapshot || ?::jsonb WHERE run_id=?
+            """,EvidenceJson.canonical(EvidenceJson.object("conversation_context",conversation)),accepted.runId());
         if(recall!=null && !Boolean.FALSE.equals(request.memoryRecall())) {
             var recalled=recall.select(request.question(),session,selected,principal);
             var recallBinding=EvidenceJson.object("project_id",project,"projection_sha256",EvidenceJson.sha(EvidenceJson.canonical(recalled)),
@@ -125,9 +150,13 @@ public class AgentRunService {
             EvidenceJson.canonical(EvidenceJson.object("schema_version","project-progress-policy/1","enabled",autoSaveEnabled)),accepted.runId());
         jdbc.update("UPDATE agent_workflow_run SET budget=CAST(? AS jsonb) WHERE run_id=?", """
             {"runtime":"agent","maxTasks":16,"maxConcurrency":1,"maxRevisionRounds":2,
-             "maxDecisionSteps":8,"maxModelCalls":16,"maxToolCalls":16,"deadlineSeconds":180,
-             "maxTokens":100000,"maxCostCny":1.0,"maxInputTokens":64000,"maxOutputTokens":16384}
-            """,accepted.runId());
+             "maxDecisionSteps":%d,"maxModelCalls":24,"maxToolCalls":16,"deadlineSeconds":180,
+             "maxTokens":%d,"maxCostCny":%s,"maxInputTokens":%d,"maxOutputTokens":16384}
+            """.formatted(Math.max(1,Math.min(16,agentMaxDecisionSteps)),
+                           Math.max(1000,Math.min(200000,agentMaxTokens)),
+                           Double.toString(Double.isFinite(agentMaxCostCny)
+                               ? Math.max(0.01,Math.min(2.0,agentMaxCostCny)) : 1.0),
+                           Math.max(1,Math.min(240000,agentMaxInputTokens))),accepted.runId());
         if (frozen!=null) jdbc.update("""
             INSERT INTO agent_workflow_event(run_id,event_key,role,type,safe_payload)
             VALUES (?,?,'SYSTEM','RESEARCH_PROGRESS_SELECTED',?::jsonb)
